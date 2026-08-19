@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block body_class %}landing-page{% endblock %}
+
+{% block content %}
+<!-- NAVBAR -->
+  <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 nav-glass transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <div class="brand-icon brand-icon--md btn-primary">MO</div>
+        <span class="font-black text-xl tracking-tight">
+          <span class="text-brand-900">My</span><span class="gradient-text-blue">Own</span>
+        </span>
+      </a>
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#home" class="nav-link">Home</a>
+        <a href="#about" class="nav-link">About Us</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth/login" class="btn-outline text-sm font-semibold px-5 py-2.5 rounded-xl hidden sm:block">Log
+          In</a>
+        <a href="/auth/register" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-xl">Sign UP</a>
+      </div>
+      <button id="mobileMenuBtn" class="md:hidden text-slate-500 hover:text-brand-600 p-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+    <div id="mobileMenu" class="hidden md:hidden px-6 pb-5 border-t border-blue-100 pt-4 space-y-2 bg-white">
+      <a href="#home" class="block nav-link py-2">Home</a>
+      <a href="#about" class="block nav-link py-2">About Us</a>
+      <a href="#contact" class="block nav-link py-2">Contact</a>
+      <a href="/auth/register"
+        class="block btn-primary text-white text-sm font-semibold px-4 py-2.5 rounded-xl text-center mt-3">Get
+        Started</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="home" class="relative min-h-screen flex items-center overflow-hidden">
+    <div class="hero-glow absolute inset-0 pointer-events-none"></div>
+    <!-- Decorative blobs -->
+    <div class="absolute top-32 right-10 w-72 h-72 bg-blue-200/40 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-20 left-10 w-56 h-56 bg-violet-200/30 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="relative max-w-7xl mx-auto px-6 pt-28 pb-20 w-full text-center">
+      <h1 class="text-5xl font-black mb-6">Simplify Your Tax Workflow with <span class="gradient-text-blue">{{ app_name
+          }}</span></h1>
+      <p class="text-lg text-slate-600 mb-8 max-w-2xl mx-auto">Secure, enterprise-grade B2B platform for end-to-end US
+        tax preparation, filing, and compliance management.</p>
+      <div class="flex justify-center gap-4">
+        <a href="/auth/register" class="btn-primary font-semibold px-8 py-3 rounded-xl text-lg">Start Free Trial</a>
+        <a href="/api/docs" class="btn-outline font-semibold px-8 py-3 rounded-xl text-lg">API Docs</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="py-24">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div class="space-y-8">
+          <div>
+            <p class="section-label mb-3">About {{ app_name }}</p>
+            <h2 class="section-heading">Built for the Long<br /><span
+                class="gradient-text">Haul of Compliance</span></h2>
+          </div>
+          <p class="text-slate-500 leading-relaxed">
+            {{ app_name }} was architected with a Unlimited operational mandate. No reckless dependency sprawl — just
+            rock-solid, battle-tested open standards that will outlive any trend.
+          </p>
+          <p class="text-slate-500 leading-relaxed">
+            Our internal operations team uses it daily to shepherd client cases from raw financial documents all the way
+            through IRS submission and closed billing — with a complete, tamper-proof audit trail at every step.
+          </p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="stat-card p-4">
+              <div class="text-lg font-black text-brand-800">Secure Backend</div>
+              <div class="text-xs text-slate-500 mt-1">Battle-tested core</div>
+            </div>
+            <div class="stat-card p-4">
+              <div class="text-lg font-black text-brand-800">ACID Database</div>
+              <div class="text-xs text-slate-500 mt-1">Strict compliance</div>
+            </div>
+            <div class="stat-card p-4">
+              <div class="text-lg font-black text-brand-800">Zero-JS Bloat</div>
+              <div class="text-xs text-slate-500 mt-1">HTMX-driven UI</div>
+            </div>
+            <div class="stat-card p-4">
+              <div class="text-lg font-black text-brand-800">Private Storage</div>
+              <div class="text-xs text-slate-500 mt-1">Encrypted document vault</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-5">
+          <div class="team-card p-5 text-center">
+            <div class="team-avatar bg-gradient-to-br from-blue-500 to-blue-700">MJ</div>
+            <p class="text-brand-900 font-bold">Marcus J.</p>
+            <p class="text-xs text-slate-500 mt-1">Head of Operations</p>
+            <p class="text-xs text-blue-600 mt-2 font-medium">12 yrs IRS experience</p>
+          </div>
+          <div class="team-card p-5 text-center mt-8">
+            <div class="team-avatar bg-gradient-to-br from-violet-500 to-violet-700">PS</div>
+            <p class="text-brand-900 font-bold">Priya S.</p>
+            <p class="text-xs text-slate-500 mt-1">Lead Tax Engineer</p>
+            <p class="text-xs text-violet-600 mt-2 font-medium">CPA • PTIN Certified</p>
+          </div>
+          <div class="team-card p-5 text-center">
+            <div class="team-avatar bg-gradient-to-br from-teal-500 to-teal-700">RH</div>
+            <p class="text-brand-900 font-bold">Robert H.</p>
+            <p class="text-xs text-slate-500 mt-1">Compliance Officer</p>
+            <p class="text-xs text-teal-600 mt-2 font-medium">SOC 2 • NIST 800-53</p>
+          </div>
+          <div class="team-card p-5 text-center mt-8">
+            <div class="team-avatar bg-gradient-to-br from-amber-500 to-orange-600">SK</div>
+            <p class="text-brand-900 font-bold">Sarah K.</p>
+            <p class="text-xs text-slate-500 mt-1">Client Relations</p>
+            <p class="text-xs text-amber-600 mt-2 font-medium">EA • 8 yrs filing</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" class="py-24"
+    style="background:rgba(255,255,255,0.55);border-top:1px solid rgba(59,130,246,0.08);">
+    <div class="max-w-3xl mx-auto px-6">
+      <div class="text-center mb-12">
+        <p class="section-label mb-3">Contact Us</p>
+        <h2 class="section-heading">Get In <span class="gradient-text">Touch</span></h2>
+        <p class="text-slate-500 mt-3">Have questions about onboarding or enterprise licensing? Reach our team directly.
+        </p>
+      </div>
+      <div class="glass-strong rounded-2xl p-8 space-y-5">
+        <div class="grid sm:grid-cols-2 gap-5">
+          <div class="space-y-1.5">
+            <label class="form-label" for="contact-name">Full Name</label>
+            <input id="contact-name" type="text" placeholder="John Smith" class="form-input" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="form-label" for="contact-email">Email</label>
+            <input id="contact-email" type="email" placeholder="john@company.com" class="form-input" />
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="form-label" for="contact-company">Company / Organization</label>
+          <input id="contact-company" type="text" placeholder="Acme Corp." class="form-input" />
+        </div>
+        <div class="space-y-1.5">
+          <label class="form-label" for="contact-msg">Message</label>
+          <textarea id="contact-msg" rows="4" placeholder="Tell us about your tax workflow needs..." class="form-input resize-none"></textarea>
+        </div>
+        <button onclick="handleContactSubmit()" class="btn-submit btn-primary">Send Message</button>
+        <p id="contact-success" class="hidden text-center text-emerald-600 text-sm font-semibold">Message sent! Our team
+          will respond within 24 hours.</p>
+      </div>
+      <div class="grid sm:grid-cols-3 gap-4 mt-8">
+        <a href="mailto:ops@urtax.com" class="stat-card rounded-xl p-4 text-center hover:shadow-md transition-shadow">
+          <p class="text-2xl mb-2">✉️</p>
+          <p class="text-xs text-slate-500 font-medium">operations@myown.com</p>
+        </a>
+        <a href="tel:+18005551234" class="stat-card rounded-xl p-4 text-center hover:shadow-md transition-shadow">
+          <p class="text-2xl mb-2">📞</p>
+          <p class="text-xs text-slate-500 font-medium">+1 800 555 1234</p>
+        </a>
+        <div class="stat-card rounded-xl p-4 text-center">
+          <p class="text-2xl mb-2">📍</p>
+          <p class="text-xs text-slate-500 font-medium">New York, NY 10004</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-blue-100 py-12 bg-white/60">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="brand-icon brand-icon--sm btn-primary">MO</div>
+        <span class="font-black text-brand-900">My<span class="gradient-text-blue">Own</span></span>
+      </div>
+      <p class="text-xs text-slate-400 text-center">© 2025 {{ app_name }} Inc. All rights reserved. • IRS Authorized
+        e-File Provider • SOC 2 Type II</p>
+      <div class="flex gap-6 text-xs text-slate-500">
+        <a href="#" class="footer-link">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms of Use</a>
+        <a href="/auth/login" class="footer-link">Portal Login</a>
+      </div>
+    </div>
+  </footer>
+
+  {% block scripts %}
+  <script src="/static/js/landing.js" defer></script>
+  {% endblock %}
+{% endblock %}

@@ -1,0 +1,33 @@
+# ── Web Framework ─────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+jinja2==3.1.5
+python-multipart==0.0.20
+aiofiles==24.1.0
+
+# ── Database ──────────────────────────────────────────────────
+sqlalchemy==2.0.36
+alembic==1.14.0
+psycopg[binary]>=3.2.10
+
+# ── Auth / Security ───────────────────────────────────────────
+pyjwt==2.10.1
+pwdlib[argon2]==0.2.1
+cryptography==44.0.0
+
+# ── Config ────────────────────────────────────────────────────
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-dotenv==1.0.1
+pydantic[email]==2.10.4
+
+# ── Async tasks ───────────────────────────────────────────────
+celery==5.4.0
+redis==5.2.1
+
+# ── HTTP / Utils ──────────────────────────────────────────────
+httpx==0.28.1
+
+# ── Data processing ───────────────────────────────────────────
+pandas==2.2.3
+numpy==2.2.1
