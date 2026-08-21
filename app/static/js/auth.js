@@ -1,6 +1,26 @@
 /* app/static/js/auth.js — Login & Register form enhancements */
 'use strict';
 
+// Shared auth theme
+const authPage = document.querySelector('.auth-page');
+const authThemeToggle = document.getElementById('auth-theme-toggle');
+const savedAuthTheme = window.localStorage.getItem('landing-theme');
+
+const applyAuthTheme = (isDark) => {
+  authPage?.classList.toggle('dark-theme', isDark);
+  document.body.classList.toggle('dark-theme', isDark);
+  authThemeToggle?.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+  authThemeToggle?.setAttribute('title', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+};
+
+applyAuthTheme(savedAuthTheme === 'dark');
+
+authThemeToggle?.addEventListener('click', () => {
+  const isDark = !authPage?.classList.contains('dark-theme');
+  applyAuthTheme(isDark);
+  window.localStorage.setItem('landing-theme', isDark ? 'dark' : 'light');
+});
+
 // ── Password visibility toggle ──────────────────────────────────
 const toggleBtn = document.getElementById('toggle-password');
 const passwordInput = document.getElementById('password');

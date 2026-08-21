@@ -9,6 +9,10 @@
 {% block body_class %}auth-page{% endblock %}
 
 {% block content %}
+<button type="button" id="auth-theme-toggle" class="auth-theme-toggle" aria-label="Switch to dark theme" title="Switch to dark theme">
+  <svg class="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+  <svg class="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path></svg>
+</button>
 <!-- Back link -->
 <a href="/" class="back-link">
   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,8 +23,8 @@
 
 <div class="auth-card fade-in">
   <div class="auth-header">
-    <div class="brand-icon brand-icon--lg btn-primary mx-auto mb-4">MO</div>
-    <h1 class="auth-header__title">Sign In to <span class="gradient-text-blue">{{ app_name }}</span></h1>
+    <div class="brand-icon brand-icon--lg btn-primary mx-auto mb-4">UT</div>
+    <h1 class="auth-header__title">Sign In to <span class="auth-title-accent">{{ app_name }}</span></h1>
     <p class="auth-header__subtitle">Enter your credentials to access the secure portal.</p>
   </div>
 
@@ -38,8 +42,6 @@
       <div class="space-y-1.5">
         <div class="flex items-center justify-between">
           <label class="form-label">Password</label>
-          <a href="/auth/forgot-password" class="text-xs font-semibold text-brand-600 hover:underline">Forgot
-            Password?</a>
         </div>
         <input name="password" id="password" type="password" placeholder="••••••••" class="form-input" required />
       </div>
@@ -47,6 +49,8 @@
       <button type="submit" class="btn-submit btn-primary mt-4">Log In</button>
 
       <div class="text-center mt-6">
+        <a href="/auth/reset-password" class="text-xs font-semibold text-brand-600 hover:underline">Forgot
+            Password?</a>
         <p class="auth-header__subtitle">Don't have an account?
           <a href="/auth/register" class="text-brand-600 font-semibold hover:underline">Register here</a>
         </p>
@@ -55,3 +59,5 @@
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', path='/js/auth.js') }}"></script>{% endblock %}

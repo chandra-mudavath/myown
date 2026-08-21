@@ -9,6 +9,10 @@
 {% block body_class %}auth-page{% endblock %}
 
 {% block content %}
+<button type="button" id="auth-theme-toggle" class="auth-theme-toggle" aria-label="Switch to dark theme" title="Switch to dark theme">
+  <svg class="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+  <svg class="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path></svg>
+</button>
 <!-- Back link -->
 <a href="/" class="back-link">
   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,8 +23,8 @@
 
 <div class="auth-card fade-in">
   <div class="auth-header">
-    <div class="brand-icon brand-icon--lg btn-primary mx-auto mb-4">MO</div>
-    <h1 class="auth-header__title">Create an <span class="gradient-text-blue">Account</span></h1>
+    <div class="brand-icon brand-icon--lg btn-primary mx-auto mb-4">UT</div>
+    <h1 class="auth-header__title">Create an <span class="auth-title-accent">Account</span></h1>
     <p class="auth-header__subtitle">Get started with your free client portal.</p>
   </div>
 
@@ -74,3 +78,5 @@
   </div>
 </div>
 {% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', path='/js/auth.js') }}"></script>{% endblock %}
