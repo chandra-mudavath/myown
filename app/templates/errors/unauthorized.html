@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Access Required - UrTax{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/errors.css') }}" />
+{% endblock %}
+
+{% block body_class %}error-page{% endblock %}
+
+{% block content %}
+<main class="message-card" aria-labelledby="access-title">
+  <div class="message-mark" aria-hidden="true">UT</div>
+  <h1 id="access-title">Sign-in required</h1>
+  <p>{{ message }} Your account must be authenticated before you can view client information.</p>
+  <a href="/auth/login">Go to sign in</a>
+</main>
+{% endblock %}

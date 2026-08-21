@@ -10,7 +10,7 @@ body {
 
 /* Apply this class on the landing page body or wrapper */
 .landing-page {
-    background: linear-gradient(145deg, #0d8d75 0%, #59c0cc 35%, #056e7e 70%, #045681 100%);
+    background: #d7e8e3;
 }
 
 .glass {

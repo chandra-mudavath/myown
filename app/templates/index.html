@@ -2,14 +2,18 @@
 
 {% block body_class %}landing-page{% endblock %}
 
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}" />
+{% endblock %}
+
 {% block content %}
 <!-- NAVBAR -->
   <nav id="navbar" class="fixed top-0 left-0 right-0 z-50 nav-glass transition-all duration-300">
     <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
       <a href="/" class="flex items-center gap-3">
-        <div class="brand-icon brand-icon--md btn-primary">MO</div>
+        <div class="brand-icon brand-icon--md btn-primary">UT</div>
         <span class="font-black text-xl tracking-tight">
-          <span class="text-brand-900">My</span><span class="gradient-text-blue">Own</span>
+          <span class="text-brand-900">Ur</span><span class="gradient-text-blue">Tax</span>
         </span>
       </a>
       <div class="hidden md:flex items-center gap-8">
@@ -160,7 +164,7 @@
       <div class="grid sm:grid-cols-3 gap-4 mt-8">
         <a href="mailto:ops@urtax.com" class="stat-card rounded-xl p-4 text-center hover:shadow-md transition-shadow">
           <p class="text-2xl mb-2">✉️</p>
-          <p class="text-xs text-slate-500 font-medium">operations@myown.com</p>
+          <p class="text-xs text-slate-500 font-medium">operations@urtax.com</p>
         </a>
         <a href="tel:+18005551234" class="stat-card rounded-xl p-4 text-center hover:shadow-md transition-shadow">
           <p class="text-2xl mb-2">📞</p>
@@ -178,8 +182,8 @@
   <footer class="border-t border-blue-100 py-12 bg-white/60">
     <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="flex items-center gap-3">
-        <div class="brand-icon brand-icon--sm btn-primary">MO</div>
-        <span class="font-black text-brand-900">My<span class="gradient-text-blue">Own</span></span>
+        <div class="brand-icon brand-icon--sm btn-primary">UT</div>
+        <span class="font-black text-brand-900">Ur<span class="gradient-text-blue">Tax</span></span>
       </div>
       <p class="text-xs text-slate-400 text-center">© 2025 {{ app_name }} Inc. All rights reserved. • IRS Authorized
         e-File Provider • SOC 2 Type II</p>

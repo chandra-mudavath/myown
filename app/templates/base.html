@@ -9,17 +9,17 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   
   <script src="{{ url_for('static', path='/js/tailwind-config.js') }}"></script>
   
-  <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}" />
+  {% block styles %}{% endblock %}
   {% block head %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
   {% block content %}{% endblock %}
-  
+  <script src="{{ url_for('static', path='/js/main.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

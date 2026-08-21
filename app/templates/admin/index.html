@@ -1,27 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Dashboard — UrTax</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans:['Inter','sans-serif'], mono:['JetBrains Mono','monospace'] },
-          colors: {
-            brand: { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' },
-            gold: { 400:'#f59e0b', 500:'#d97706' }
-          }
-        }
-      }
-    }
-  </script>
-  <link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}" />
-</head>
-<body class="flex min-h-screen">
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - UrTax{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}" />
+{% endblock %}
+
+{% block body_class %}admin-page{% endblock %}
+
+{% block content %}
 
 <!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar fixed left-0 top-0 h-screen flex flex-col py-6 px-4 overflow-y-auto z-30">
@@ -161,27 +148,27 @@
         <div class="space-y-5">
           <div>
             <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Doc Collection</span><span class="text-blue-600 font-bold">72 cases</span></div>
-            <div class="h-2.5 bg-blue-50 rounded-full"><div class="h-2.5 bg-blue-500 rounded-full bar-fill" style="width:29%"></div></div>
+            <div class="h-2.5 bg-blue-50 rounded-full"><div class="h-2.5 bg-blue-500 rounded-full bar-fill bar-29"></div></div>
           </div>
           <div>
             <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Preparation</span><span class="text-violet-600 font-bold">65 cases</span></div>
-            <div class="h-2.5 bg-violet-50 rounded-full"><div class="h-2.5 bg-violet-500 rounded-full bar-fill" style="width:26%"></div></div>
+            <div class="h-2.5 bg-violet-50 rounded-full"><div class="h-2.5 bg-violet-500 rounded-full bar-fill bar-26"></div></div>
           </div>
           <div>
             <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Review</span><span class="text-amber-600 font-bold">48 cases</span></div>
-            <div class="h-2.5 bg-amber-50 rounded-full"><div class="h-2.5 bg-amber-500 rounded-full bar-fill" style="width:19%"></div></div>
+            <div class="h-2.5 bg-amber-50 rounded-full"><div class="h-2.5 bg-amber-500 rounded-full bar-fill bar-19"></div></div>
           </div>
           <div>
             <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Tax Filer</span><span class="text-orange-600 font-bold">32 cases</span></div>
-            <div class="h-2.5 bg-orange-50 rounded-full"><div class="h-2.5 bg-orange-500 rounded-full bar-fill" style="width:13%"></div></div>
+            <div class="h-2.5 bg-orange-50 rounded-full"><div class="h-2.5 bg-orange-500 rounded-full bar-fill bar-13"></div></div>
           </div>
           <div>
             <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Acknowledger</span><span class="text-teal-600 font-bold">18 cases</span></div>
-            <div class="h-2.5 bg-teal-50 rounded-full"><div class="h-2.5 bg-teal-500 rounded-full bar-fill" style="width:7%"></div></div>
+            <div class="h-2.5 bg-teal-50 rounded-full"><div class="h-2.5 bg-teal-500 rounded-full bar-fill bar-7"></div></div>
           </div>
           <div>
             <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Payment</span><span class="text-emerald-600 font-bold">12 cases</span></div>
-            <div class="h-2.5 bg-emerald-50 rounded-full"><div class="h-2.5 bg-emerald-500 rounded-full bar-fill" style="width:5%"></div></div>
+            <div class="h-2.5 bg-emerald-50 rounded-full"><div class="h-2.5 bg-emerald-500 rounded-full bar-fill bar-5"></div></div>
           </div>
         </div>
       </div>
@@ -191,7 +178,7 @@
         <div class="card p-5">
           <p class="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Closed This Month</p>
           <p class="text-2xl font-black text-brand-900">43</p>
-          <div class="mt-3 h-1.5 bg-emerald-50 rounded-full"><div class="h-1.5 bg-emerald-500 rounded-full" style="width:73%"></div></div>
+          <div class="mt-3 h-1.5 bg-emerald-50 rounded-full"><div class="h-1.5 bg-emerald-500 rounded-full bar-73"></div></div>
           <p class="text-xs text-slate-500 font-medium mt-2">73% of monthly target</p>
         </div>
         <div class="card p-5">
@@ -424,6 +411,8 @@
 
 </main>
 
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ url_for('static', path='/js/admin.js') }}"></script>
-</body>
-</html>
+{% endblock %}

@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # App
-    APP_NAME: str = "MyOwn"
+    APP_NAME: str = "UrTax"
     APP_ENV: str = "development"
     DEBUG: bool = True
     SECRET_KEY: str

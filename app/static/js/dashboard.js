@@ -1,3 +1,31 @@
+const accountMenuButton = document.querySelector('.account-menu-button');
+const accountMenu = document.getElementById('account-menu');
+
+if (accountMenuButton && accountMenu) {
+  accountMenuButton.addEventListener('click', () => {
+    const isOpen = accountMenuButton.getAttribute('aria-expanded') === 'true';
+    accountMenuButton.setAttribute('aria-expanded', String(!isOpen));
+    accountMenu.hidden = isOpen;
+  });
+
+  document.addEventListener('click', event => {
+    if (!accountMenuButton.contains(event.target) && !accountMenu.contains(event.target)) {
+      accountMenuButton.setAttribute('aria-expanded', 'false');
+      accountMenu.hidden = true;
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      accountMenuButton.setAttribute('aria-expanded', 'false');
+      accountMenu.hidden = true;
+      accountMenuButton.focus();
+    }
+  });
+
+  accountMenu.addEventListener('click', event => event.stopPropagation());
+}
+
 let uploadedFiles = [];
 let currentStep = 1;
 
