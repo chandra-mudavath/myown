@@ -1,5 +1,7 @@
 * { box-sizing:border-box; }
 body { background:#080c1a; color:#e2e8f0; font-family:'Inter',sans-serif; }
+.staff-page { background:radial-gradient(ellipse 50% 30% at 50% -10%,rgba(41,82,255,0.1) 0%,transparent 60%),#080c1a; }
+.staff-nav { background:rgba(8,12,26,0.92); backdrop-filter:blur(20px); border-bottom:1px solid rgba(255,255,255,0.06); }
 .glass { background:rgba(255,255,255,0.04); backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,0.08); }
 .glass-card { background:rgba(255,255,255,0.06); backdrop-filter:blur(25px); border:1px solid rgba(255,255,255,0.1); }
 .card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:16px; transition:all .3s; }

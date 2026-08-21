@@ -18,6 +18,7 @@ body { background: linear-gradient(145deg, #eff6ff 0%, #e0effe 35%, #f0f4ff 70%,
 .badge-orange { background:rgba(249,115,22,0.15); color:#ea580c; }
 .badge-purple { background:rgba(168,85,247,0.15); color:#9333ea; }
 .stat-up { color:#059669; font-size:11px; font-weight:600;}
+.bar-29 { width:29%; }.bar-26 { width:26%; }.bar-19 { width:19%; }.bar-13 { width:13%; }.bar-7 { width:7%; }.bar-5 { width:5%; }.bar-73 { width:73%; }
 .stat-down { color:#dc2626; font-size:11px; font-weight:600;}
 .bar-fill { transition: width 1s ease; }
 .audit-row:hover { background:rgba(59,130,246,0.03); }
