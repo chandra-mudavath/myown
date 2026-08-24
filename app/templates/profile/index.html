@@ -7,8 +7,14 @@
 {% endblock %}
 
 {% block content %}
+  {% set active_nav = 'profile' %}
+  {% include "partials/client_sidebar.html" %}
+
   <header class="site-header">
-    <a class="brand" href="/dashboard" aria-label="Return to dashboard"><span class="brand-mark" aria-hidden="true">UT</span><span>UrTax</span></a>
+    <div class="site-header-left">
+      {% include "partials/sidebar_toggle.html" %}
+      <a class="brand" href="/dashboard" aria-label="Return to dashboard"><span class="brand-mark" aria-hidden="true">UT</span><span>UrTax</span></a>
+    </div>
     <div class="header-account"><span>{{ profile.first_name }} {{ profile.last_name }}</span><form action="/auth/logout" method="post"><button class="button button-quiet" type="submit">Sign out</button></form></div>
   </header>
 
@@ -51,5 +57,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
 <script src="{{ url_for('static', path='/js/profile.js') }}"></script>
 {% endblock %}

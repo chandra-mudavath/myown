@@ -39,7 +39,7 @@ class RegisterRequest(BaseModel):
     first_name: str = Field(min_length=1, max_length=15)
     last_name: Optional[str] = Field(default=None, max_length=15)
     email: EmailStr
-    phone: str = Field(min_length=7, max_length=20)
+    phone: str = Field(pattern=r"^\+\d{1,3}\d{10}$")
     password: str = Field(min_length=8)
     password_confirmation: str
 

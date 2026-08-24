@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import ClientAccount
+from app.core.templates import templates
+from app.core.config import settings
 from app.models.client import Client
 from app.schemas.client import (
     AddressInformationUpdate,
@@ -24,7 +25,6 @@ from app.services.client_profile import (
 )
 
 router = APIRouter(prefix="/profile", tags=["client-profile"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 def _client_or_404(db: Session, account_id: str) -> Client:
@@ -41,7 +41,7 @@ def profile_page(request: Request, account: ClientAccount, db: Session = Depends
     client = _client_or_404(db, account.id)
     return templates.TemplateResponse(
         "profile/index.html",
-        {"request": request, "account": account, "profile": serialize_profile(client, account)},
+        {"request": request, "account": account, "profile": serialize_profile(client, account), "app_name": settings.APP_NAME},
     )
 
 

@@ -1,21 +1,65 @@
 :root {
-    --landing-primary: #22d3ee;
-    --landing-primary-dark: #0891b2;
-    --landing-ink: #f8fafc;
-    --landing-muted: #94a3b8;
-    --landing-paper: #07111f;
-    --landing-line: rgba(148, 163, 184, .2);
+    --landing-primary: #0f766e;
+    --landing-primary-dark: #115e59;
+    --landing-ink: #17202b;
+    --landing-muted: #64748b;
+    --landing-paper: #f7f8f6;
+    --landing-line: #dce5e2;
+    --landing-nav-bg: rgba(247, 248, 246, .94);
+    --landing-nav-border: rgba(15, 118, 110, .14);
+    --landing-nav-link: #334155;
+    --landing-login-text: #17202b;
+    --landing-login-border: #dce5e2;
+    --landing-login-hover-border: rgba(15, 118, 110, .35);
+    --landing-signup-text: #fff;
+    --landing-toggle-bg: rgba(15, 118, 110, .08);
+    --landing-toggle-border: rgba(15, 118, 110, .2);
+    --landing-toggle-hover-bg: rgba(15, 118, 110, .12);
+    --landing-toggle-hover-border: rgba(15, 118, 110, .35);
+    --landing-toggle-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
+    --landing-hero-bg: linear-gradient(120deg, #f7f8f6 0%, #eaf2ef 58%, #d9ece7 100%);
+    --landing-hero-copy: #526170;
+    --landing-hero-note: #526170;
+    --landing-secondary-action-bg: rgba(255, 255, 255, .68);
+    --landing-panel-bg: #fff;
+    --landing-panel-border: rgba(15, 118, 110, .14);
+    --landing-panel-shadow: 0 18px 45px rgba(23, 62, 57, .13);
+    --landing-card-bg: #f8faf9;
+    --landing-card-shadow: 0 8px 20px rgba(15, 118, 110, .04);
+    --landing-card-hover-shadow: 0 14px 28px rgba(15, 118, 110, .12);
+    --landing-section-alt-bg: #e8f1ee;
+    --landing-section-card-bg: #f7faf8;
+    --landing-preview-metric-bg: #f2f8f5;
+    --landing-icon-bg: #d9ece7;
+    --landing-image-bg: #e7f2ef;
+    --landing-input-bg: #f8faf9;
+    --landing-label: #334155;
+    --landing-placeholder: #64748b;
+    --landing-footer-copy: #64748b;
+    --landing-preview-muted: #94a3b8;
+    --landing-preview-dot: #a4c5be;
+    --landing-success: #047857;
+    --landing-auth-shadow: 0 24px 60px rgba(15, 118, 110, .12);
 }
 
 .landing-page {
     background: var(--landing-paper);
     color: var(--landing-muted);
     font-family: 'Roboto Slab', Georgia, serif;
+    /* Let the shared phone/country-picker widget (main.css) follow this page's theme. */
+    --auth-surface: var(--landing-paper);
+    --auth-ink: var(--landing-ink);
+    --auth-muted: var(--landing-muted);
+    --auth-line: var(--landing-line);
+    --auth-primary: var(--landing-primary);
+    --auth-primary-dark: var(--landing-primary-dark);
+    --auth-input: var(--landing-input-bg);
+    --auth-shadow: var(--landing-auth-shadow);
 }
 
 .landing-page .main-nav {
-    background: rgba(7, 17, 31, .94);
-    border-bottom: 1px solid rgba(34, 211, 238, .18);
+    background: var(--landing-nav-bg);
+    border-bottom: 1px solid var(--landing-nav-border);
     transition: background .25s ease, box-shadow .25s ease;
 }
 
@@ -56,7 +100,7 @@
 }
 
 .landing-page .navbar > li > a {
-    color: #cbd5e1;
+    color: var(--landing-nav-link);
     display: block;
     font-size: .82rem;
     padding: 1.3rem .8rem;
@@ -98,22 +142,17 @@
 .landing-page .login-link {
     background: transparent;
     border: 1px solid var(--landing-line);
-    color: #000000;
-}
-
-.landing-page.dark-theme .login-link {
-    border-color: rgba(148, 163, 184, .28);
-    color: #f8fafc;
+    color: var(--landing-login-text);
 }
 
 .landing-page .login-link:hover {
-    border-color: rgba(34, 211, 238, .35);
+    border-color: var(--landing-login-hover-border);
     color: var(--landing-primary);
 }
 
 .landing-page .signup-link {
     background: var(--landing-primary);
-    color: #07111f;
+    color: var(--landing-signup-text);
 }
 
 .landing-page .signup-link:hover {
@@ -131,8 +170,8 @@
 
 .landing-page .theme-toggle {
     align-items: center;
-    background: rgba(148, 163, 184, .08);
-    border: 1px solid rgba(148, 163, 184, .2);
+    background: var(--landing-toggle-bg);
+    border: 1px solid var(--landing-toggle-border);
     border-radius: 50%;
     color: var(--landing-primary);
     display: flex;
@@ -141,12 +180,12 @@
     padding: 0;
     position: relative;
     width: 2.4rem;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04);
+    box-shadow: var(--landing-toggle-shadow);
 }
 
 .landing-page .theme-toggle:hover {
-    background: rgba(34, 211, 238, .08);
-    border-color: rgba(34, 211, 238, .35);
+    background: var(--landing-toggle-hover-bg);
+    border-color: var(--landing-toggle-hover-border);
 }
 
 .landing-page .theme-icon {
@@ -207,7 +246,7 @@
 }
 
 .landing-page .hero-section {
-    background: linear-gradient(rgba(7, 17, 31, .9), rgba(7, 17, 31, .96)), radial-gradient(circle at 50% 0%, rgba(34, 211, 238, .2), transparent 45%);
+    background: var(--landing-hero-bg);
     min-height: 720px;
     overflow: hidden;
     padding-top: 5rem;
@@ -259,7 +298,7 @@
 }
 
 .landing-page .hero-copy {
-    color: #526170;
+    color: var(--landing-hero-copy);
     font-size: 1.12rem;
     line-height: 1.75;
     max-width: 36rem;
@@ -428,7 +467,7 @@
 }
 
 .landing-page .action-secondary {
-    background: rgba(255, 255, 255, .68);
+    background: var(--landing-secondary-action-bg);
     border-color: var(--landing-line);
     color: var(--landing-ink);
 }
@@ -440,7 +479,7 @@
 }
 
 .landing-page .hero-note {
-    color: #64748b;
+    color: var(--landing-hero-note);
     font-size: .8rem;
     margin-top: 1.25rem;
 }
@@ -448,9 +487,9 @@
 .landing-page .workflow-preview,
 .landing-page .trust-panel,
 .landing-page .contact-panel {
-    background: rgba(255, 255, 255, .96);
-    border: 1px solid rgba(15, 118, 110, .14);
-    box-shadow: 0 18px 45px rgba(23, 62, 57, .13);
+    background: var(--landing-panel-bg);
+    border: 1px solid var(--landing-panel-border);
+    box-shadow: var(--landing-panel-shadow);
 }
 
 .landing-page .workflow-preview {
@@ -466,21 +505,21 @@
 }
 
 .landing-page .preview-bar > span {
-    background: #a4c5be;
+    background: var(--landing-preview-dot);
     border-radius: 50%;
     height: .45rem;
     width: .45rem;
 }
 
 .landing-page .preview-bar small {
-    color: #94a3b8;
+    color: var(--landing-preview-muted);
     font-size: .65rem;
     margin-left: auto;
 }
 
 .landing-page .preview-label,
 .landing-page .preview-metrics small {
-    color: #94a3b8;
+    color: var(--landing-preview-muted);
     font-size: .65rem;
     text-transform: uppercase;
 }
@@ -504,7 +543,7 @@
 }
 
 .landing-page .preview-metrics > div {
-    background: #f2f8f5;
+    background: var(--landing-preview-metric-bg);
     padding: .75rem;
 }
 
@@ -536,7 +575,7 @@
 
 .landing-page .preview-list i {
     align-items: center;
-    background: #d9ece7;
+    background: var(--landing-icon-bg);
     border-radius: 50%;
     color: var(--landing-primary-dark);
     display: flex;
@@ -564,7 +603,7 @@
 }
 
 .landing-page .preview-list small {
-    color: #94a3b8;
+    color: var(--landing-preview-muted);
     font-size: .66rem;
     margin-top: .15rem;
 }
@@ -602,7 +641,7 @@
 }
 
 .landing-page .solution-card {
-    background: #f7faf8;
+    background: var(--landing-section-card-bg);
     border-bottom: 2px solid var(--landing-line);
     padding: 1.7rem;
     transition: border-color .25s ease, transform .25s ease;
@@ -637,7 +676,7 @@
 }
 
 .landing-page .workflow-section {
-    background: #e8f1ee;
+    background: var(--landing-section-alt-bg);
 }
 
 .landing-page .steps {
@@ -708,18 +747,18 @@
 }
 
 .landing-page .team-card {
-    background: #f8faf9;
+    background: var(--landing-card-bg);
     border: 1px solid var(--landing-line);
     border-bottom: 2px solid var(--landing-line);
     border-radius: 8px;
-    box-shadow: 0 8px 20px rgba(15, 118, 110, .04);
+    box-shadow: var(--landing-card-shadow);
     padding: 1.5rem;
     text-align: center;
     transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 
 .landing-page .team-card img {
-    background: #e7f2ef;
+    background: var(--landing-image-bg);
     display: block;
     height: 12rem;
     margin: 0 auto 1.1rem;
@@ -729,13 +768,13 @@
 
 .landing-page .team-card:hover {
     border-color: var(--landing-primary);
-    box-shadow: 0 14px 28px rgba(15, 118, 110, .12);
+    box-shadow: var(--landing-card-hover-shadow);
     transform: translateY(-6px);
 }
 
 .landing-page .team-initials {
     align-items: center;
-    background: #d9ece7;
+    background: var(--landing-icon-bg);
     border-radius: 50%;
     color: var(--landing-primary-dark);
     display: flex;
@@ -748,11 +787,11 @@
 }
 
 .landing-page .pricing-section {
-    background: #f7faf8;
+    background: var(--landing-section-card-bg);
 }
 
 .landing-page .plan-card {
-    background: #fff;
+    background: var(--landing-panel-bg);
     border: 1px solid var(--landing-line);
     border-radius: 4px;
     padding: 1.8rem;
@@ -856,21 +895,21 @@
 }
 
 .landing-page .testimonials-section {
-    background: #e8f1ee;
+    background: var(--landing-section-alt-bg);
 }
 
 .landing-page .testimonial-card {
-    background: #fff;
+    background: var(--landing-panel-bg);
     border: 1px solid var(--landing-line);
     border-top: 3px solid var(--landing-primary);
     border-radius: 8px;
-    box-shadow: 0 12px 26px rgba(15, 118, 110, .06);
+    box-shadow: var(--landing-card-shadow);
     padding: 1.6rem;
     transition: transform .25s ease, box-shadow .25s ease;
 }
 
 .landing-page .testimonial-card:hover {
-    box-shadow: 0 18px 32px rgba(15, 118, 110, .12);
+    box-shadow: var(--landing-card-hover-shadow);
     transform: translateY(-4px);
 }
 
@@ -910,15 +949,15 @@
 }
 
 .landing-page .contact-panel label {
-    color: #334155;
+    color: var(--landing-label);
     display: block;
     font-size: .82rem;
     font-weight: 700;
 }
 
-.landing-page .contact-panel input,
+.landing-page .contact-panel input:not(.phone-number-input):not(.country-search),
 .landing-page .contact-panel textarea {
-    background: #f8faf9;
+    background: var(--landing-input-bg);
     border: 1px solid var(--landing-line);
     color: var(--landing-ink);
     display: block;
@@ -930,7 +969,7 @@
     width: 100%;
 }
 
-.landing-page .contact-panel input:focus,
+.landing-page .contact-panel input:focus:not(.phone-number-input):not(.country-search),
 .landing-page .contact-panel textarea:focus {
     border-color: var(--landing-primary);
     box-shadow: 0 0 0 3px rgba(15, 118, 110, .12);
@@ -938,20 +977,20 @@
 }
 
 .landing-page .success-message {
-    color: #047857;
+    color: var(--landing-success);
     font-size: .85rem;
     font-weight: 700;
     margin-top: 1rem;
 }
 
 .landing-page .site-footer {
-    background: #fff;
+    background: var(--landing-panel-bg);
     border-top: 1px solid var(--landing-line);
     padding: 1.5rem 0;
 }
 
 .landing-page .site-footer p {
-    color: #64748b;
+    color: var(--landing-footer-copy);
     font-size: .78rem;
     text-align: center;
 }
@@ -989,7 +1028,7 @@
 }
 
 .landing-page .preloader span {
-    border: 3px solid #c8ddd8;
+    border: 3px solid var(--landing-line);
     border-radius: 50%;
     border-top-color: var(--landing-primary);
     height: 2rem;
@@ -1123,6 +1162,8 @@
     --landing-muted: #64748b;
     --landing-paper: #f7f8f6;
     --landing-line: #dce5e2;
+    --auth-input: #f8faf9;
+    --auth-shadow: 0 24px 60px rgba(15, 118, 110, .12);
     background: #f7f8f6;
 }
 
@@ -1179,21 +1220,6 @@
     color: #526170;
 }
 
-/* Restore the pre-theme-toggle landing appearance. */
-:root {
-    --landing-primary: #0f766e;
-    --landing-primary-dark: #115e59;
-    --landing-ink: #17202b;
-    --landing-muted: #64748b;
-    --landing-paper: #f7f8f6;
-    --landing-line: #dce5e2;
-}
-
-.landing-page {
-    background: #f7f8f6;
-    color: #64748b;
-}
-
 .landing-page .main-nav,
 .landing-page .site-footer {
     background: rgba(247, 248, 246, .94);
@@ -1213,16 +1239,6 @@
     background: linear-gradient(120deg, #f7f8f6 0%, #eaf2ef 58%, #d9ece7 100%);
 }
 
-.landing-page .hero-title {
-    font-size: clamp(2.35rem, 5vw, 4rem);
-    max-width: 38rem;
-}
-
-.landing-page .typed-word {
-    display: inline;
-    font-size: .86em;
-}
-
 .landing-page .hero-copy,
 .landing-page .hero-note {
     color: #526170;
@@ -1231,11 +1247,6 @@
 .landing-page .hero-art {
     background: #dff0ec;
     border-color: transparent;
-}
-
-.landing-page .action-secondary {
-    background: rgba(255, 255, 255, .68);
-    color: var(--landing-ink);
 }
 
 .landing-page .action-primary,
@@ -1375,7 +1386,7 @@
     color: #f8fafc;
 }
 
-.landing-page.dark-theme .contact-panel input,
+.landing-page.dark-theme .contact-panel input:not(.phone-number-input),
 .landing-page.dark-theme .contact-panel textarea {
     background: rgba(8, 21, 34, .9);
     border-color: rgba(148, 163, 184, .28);

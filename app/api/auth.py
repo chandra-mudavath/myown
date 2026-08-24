@@ -6,18 +6,29 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+import phonenumbers
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.core.templates import templates
 from app.models.auth import AccountType
 from app.schemas.auth import RegisterRequest
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-templates = Jinja2Templates(directory="app/templates")
+
+
+@router.get("/countries")
+def countries() -> list[dict[str, str | int]]:
+    """Return the supported country regions and their international dial codes."""
+    result = []
+    for region in sorted(phonenumbers.SUPPORTED_REGIONS):
+        dial_code = phonenumbers.country_code_for_region(region)
+        if dial_code:
+            result.append({"region": region, "dial_code": dial_code})
+    return result
 
 _COOKIE_OPTS = dict(httponly=True, samesite="lax", secure=False)  # secure=True in prod
 _CTX = {"app_name": settings.APP_NAME}
@@ -74,7 +85,8 @@ def register(
     first_name: str = Form(...),
     last_name: str = Form(None),
     email: str = Form(...),
-    phone: str = Form(...),
+    country_code: str = Form(...),
+    phone_local: str = Form(...),
     password: str = Form(...),
     password_confirmation: str = Form(...),
     db: Session = Depends(get_db),
@@ -84,7 +96,7 @@ def register(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            phone=phone,
+            phone=f"{country_code}{phone_local}",
             password=password,
             password_confirmation=password_confirmation,
         )
@@ -143,7 +155,7 @@ def login(
     access_token, raw_refresh = auth_service.issue_tokens(db, account)
 
     redirect_map = {
-        AccountType.CLIENT: "client_dashboard",
+        AccountType.CLIENT: "select_year_page",
         AccountType.STAFF:  "staff_dashboard",
         AccountType.ADMIN:  "admin_dashboard",
     }

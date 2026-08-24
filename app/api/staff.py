@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.deps import StaffAccount
+from app.core.templates import templates
 from app.models.staff import Staff
 
 router = APIRouter(prefix="/staff", tags=["staff"])
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/dashboard", response_class=HTMLResponse)

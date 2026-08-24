@@ -1,0 +1,39 @@
+<div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
+
+<aside class="dashboard-sidebar" id="dashboard-sidebar">
+  <a class="brand" href="/dashboard" aria-label="{{ app_name }} client dashboard">
+    <span class="brand-mark" aria-hidden="true">UT</span>
+    <span>{{ app_name }}</span>
+  </a>
+  <nav class="sidebar-nav" aria-label="Client navigation">
+    <a class="sidebar-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/dashboard">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#9635;</span> Dashboard
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> Filing (this year)
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#128194;</span> All filings
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> Documents (this year)
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#128193;</span> All documents
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#128179;</span> Invoices &amp; payments
+    </a>
+    <a class="sidebar-nav-item" href="#">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#128276;</span> Notifications
+    </a>
+    <a class="sidebar-nav-item{% if active_nav == 'profile' %} active{% endif %}" href="/profile">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#128100;</span> Profile
+    </a>
+  </nav>
+  <form class="sidebar-logout" action="/auth/logout" method="post">
+    <button type="submit" class="sidebar-nav-item sidebar-nav-item--logout">
+      <span class="sidebar-nav-icon" aria-hidden="true">&#8630;</span> Logout
+    </button>
+  </form>
+</aside>

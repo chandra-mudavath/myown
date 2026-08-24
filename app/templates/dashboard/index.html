@@ -7,11 +7,13 @@
 {% endblock %}
 
 {% block content %}
+  {% set app_name = dashboard.app_name %}
+  {% set active_nav = 'dashboard' %}
+  {% include "partials/client_sidebar.html" %}
+
+  <div class="dashboard-main">
   <header class="site-header">
-    <a class="brand" href="/dashboard" aria-label="{{ dashboard.app_name }} client dashboard">
-      <span class="brand-mark" aria-hidden="true">UT</span>
-      <span>{{ dashboard.app_name }}</span>
-    </a>
+    {% include "partials/sidebar_toggle.html" %}
     <div class="account-menu-wrap">
       <button class="account-menu-button" type="button" aria-expanded="false" aria-controls="account-menu" aria-label="Open account menu">
         <span class="account-avatar" aria-hidden="true">{{ dashboard.initials }}</span>
@@ -32,7 +34,7 @@
         <p class="welcome-copy">Your client dashboard for tax year {{ dashboard.tax_year }}.</p>
       </div>
       <div class="welcome-meta">
-        <div><span>Tax year</span><strong>{{ dashboard.tax_year }}</strong></div>
+        <div><span>Tax year</span><strong>{{ dashboard.tax_year }} <a href="/dashboard/select-year" class="change-year-link">Change</a></strong></div>
         <div><span>Current filing</span><strong>{{ dashboard.filing.case_id if dashboard.filing else "No active filing" }}</strong></div>
         <div><span>Status</span><strong>{{ dashboard.filing.status if dashboard.filing else "Not started" }}</strong></div>
         <div><span>Last updated</span><strong>{{ dashboard.last_updated }}</strong></div>
@@ -91,8 +93,10 @@
       </section>
     </div>
   </main>
+  </div>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
 <script src="{{ url_for('static', path='/js/dashboard.js') }}?v=2"></script>
 {% endblock %}

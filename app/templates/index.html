@@ -38,8 +38,7 @@
                                 class="theme-toggle"
                                 type="button"
                                 aria-label="Switch to dark theme"
-                                title="Switch theme"
-                                onclick="const body=document.body; const landing=document.querySelector('.landing-page'); const isDark=!body.classList.contains('dark-theme'); body.classList.toggle('dark-theme', isDark); landing && landing.classList.toggle('dark-theme', isDark); landing && landing.classList.toggle('light-theme', !isDark); localStorage.setItem('landing-theme', isDark ? 'dark' : 'light'); this.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme'); this.setAttribute('title', isDark ? 'Switch to light theme' : 'Switch to dark theme'); this.setAttribute('data-theme', isDark ? 'dark' : 'light');">
+                                title="Switch theme">
                             <svg class="theme-icon theme-icon-sun"
                                  viewBox="0 0 24 24"
                                  fill="none"
@@ -58,8 +57,8 @@
                             </svg>
                             <span class="sr-only">Switch theme</span>
                         </button>
-                        <a class="login-link" href="/auth/login">Log in</a>
                         <a class="signup-link" href="/auth/register">Get started</a>
+                        <a class="login-link" href="/auth/login">Log in</a>
                         <button class="menu-mobile block lg:hidden"
                                 type="button"
                                 aria-expanded="false"
@@ -295,6 +294,26 @@
                                                 <label>
                                                     Full name<input id="contact-name" type="text" placeholder="Jordan Miller"></label><label>Work email<input id="contact-email" type="email" placeholder="jordan@firm.com">
                                                     </label>
+                                                <label>Phone number
+                                                    <div class="phone-fields mt-2">
+                                                        <div class="country-picker" id="contact-country-picker">
+                                                            <button type="button" class="country-picker-toggle" id="contact-country-picker-toggle" aria-haspopup="listbox" aria-expanded="false">
+                                                                <span class="country-flag" id="contact-selected-country-flag" aria-hidden="true">🌐</span>
+                                                                <span class="country-picker-code" id="contact-selected-country-code"></span>
+                                                                <svg class="country-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6" />
+                                                                </svg>
+                                                            </button>
+                                                            <div class="country-picker-menu" id="contact-country-picker-menu" hidden>
+                                                                <input type="search" class="country-search" id="contact-country-search" placeholder="Search country" aria-label="Search country">
+                                                                <div class="country-options" id="contact-country-options" role="listbox" aria-label="Countries"></div>
+                                                            </div>
+                                                            <input name="country_code" id="contact-country_code" type="hidden">
+                                                        </div>
+                                                        <input name="phone_local" id="contact-phone_local" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="Mobile Number *" class="phone-number-input" minlength="10" maxlength="10" pattern="[0-9]{10}" title="Enter exactly 10 digits after the country code" />
+                                                        <input name="phone" id="contact-phone" type="hidden" />
+                                                    </div>
+                                                </label>
                                                 </div>
                                                 <label class="block mt-5">
                                                     Message<textarea id="contact-msg"
@@ -314,5 +333,5 @@
                                 </div>
                             </footer>
                             <a class="back-top" href="#hero" aria-label="Back to top">↑</a>
-                            {% block scripts %}<script src="/static/js/landing.js" defer></script>{% endblock %}
 {% endblock %}
+{% block scripts %}<script src="/static/js/landing.js" defer></script>{% endblock %}

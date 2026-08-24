@@ -5,11 +5,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from app.api import auth, dashboard, profile, staff, admin
 from app.core.config import settings
 from app.core.database import Base, engine
+from app.core.templates import templates
 import app.models  # noqa: F401 — registers all models with Base.metadata
 
 app = FastAPI(
@@ -47,7 +47,6 @@ def create_tables():
 
 # Static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
 
 
 @app.exception_handler(HTTPException)
