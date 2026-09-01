@@ -1,337 +1,516 @@
-{% extends "base.html" %}
-{% block title %}{{ app_name }} | Tax workflow management{% endblock %}
-{% block meta_desc %}{{ app_name }} helps tax professionals organize client documents, prepare returns, manage filing deadlines, and maintain compliance records.{% endblock %}
-{% block body_class %}landing-page{% endblock %}
-{% block head %}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap"
-          rel="stylesheet">
-{% endblock %}
-{% block content %}
-    <div class="preloader" aria-hidden="true">
-        <span></span>
-    </div>
-    <header class="fixed top-0 left-0 right-0 z-40">
-        <nav class="main-nav">
-            <div class="container xl:max-w-6xl mx-auto px-4">
-                <div class="nav-shell lg:flex">
-                    <div class="nav-brand-wrap">
-                        <a class="brand-mark" href="/">{{ app_name }}</a>
-                    </div>
-                    <ul id="landing-menu"
-                        class="navbar bg-white lg:bg-transparent w-full hidden lg:flex flex-col lg:flex-row items-center text-sm font-bold">
-                        <li>
-                            <a class="active" href="#hero">Home</a>
-                        </li>
-                        <li>
-                            <a href="#services">Tax solutions</a>
-                        </li>
-                        <li><a href="#workflow">Workflow</a></li>
-                        <li><a href="#team">Our team</a></li>
-                        <li><a href="#testimonials">Stories</a></li>
-                        <li><a href="#pricing">Plans</a></li>
-                        <li><a href="#faq">FAQ</a></li>
-                    </ul>
-                    <div class="nav-actions">
-                        <button id="theme-toggle"
-                                class="theme-toggle"
-                                type="button"
-                                aria-label="Switch to dark theme"
-                                title="Switch theme">
-                            <svg class="theme-icon theme-icon-sun"
-                                 viewBox="0 0 24 24"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 aria-hidden="true">
-                                <circle cx="12" cy="12" r="4"></circle>
-                                <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41">
-                                </path>
-                            </svg>
-                            <svg class="theme-icon theme-icon-moon"
-                                 viewBox="0 0 24 24"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path>
-                            </svg>
-                            <span class="sr-only">Switch theme</span>
-                        </button>
-                        <a class="signup-link" href="/auth/register">Get started</a>
-                        <a class="login-link" href="/auth/login">Log in</a>
-                        <button class="menu-mobile block lg:hidden"
-                                type="button"
-                                aria-expanded="false"
-                                aria-controls="landing-menu">
-                            <span class="sr-only">Open navigation</span>
-                            <svg class="open" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                            <svg class="close" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M6 18L18 6" />
-                            </svg>
-                        </button>
-                    </div>
+{% extends "base.html" %} {% block title %}{{ app_name }} | Tax workflow management{% endblock %} {% block meta_desc
+%}{{ app_name }} helps tax professionals organize client documents, prepare returns, manage filing deadlines, and
+maintain compliance records.{% endblock %} {% block body_class %}landing-page{% endblock %} {% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet" />
+{% endblock %} {% block content %}
+<div class="preloader" aria-hidden="true">
+    <span></span>
+</div>
+<header class="fixed top-0 left-0 right-0 z-40">
+    <nav class="main-nav">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <div class="nav-shell lg:flex">
+                <div class="nav-brand-wrap">
+                    <a class="brand-mark" href="/">{{ app_name }}</a>
+                </div>
+                <ul
+                    id="landing-menu"
+                    class="navbar bg-white lg:bg-transparent w-full hidden lg:flex flex-col lg:flex-row items-center text-sm font-bold">
+                    <li>
+                        <a class="active" href="#hero">Home</a>
+                    </li>
+                    <li>
+                        <a href="#services">Tax solutions</a>
+                    </li>
+                    <li><a href="#workflow">Workflow</a></li>
+                    <li><a href="#team">Our team</a></li>
+                    <li><a href="#testimonials">Stories</a></li>
+                    <li><a href="#pricing">Plans</a></li>
+                    <li><a href="#faq">FAQ</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button
+                        id="theme-toggle"
+                        class="theme-toggle"
+                        type="button"
+                        aria-label="Switch to dark theme"
+                        title="Switch theme"
+                    >
+                        <svg
+                            class="theme-icon theme-icon-sun"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            aria-hidden="true"
+                        >
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <path
+                                stroke-linecap="round"
+                                d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+                            ></path>
+                        </svg>
+                        <svg
+                            class="theme-icon theme-icon-moon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            aria-hidden="true"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"
+                            ></path>
+                        </svg>
+                        <span class="sr-only">Switch theme</span>
+                    </button>
+                    <a class="signup-link" href="/auth/register">Get started</a>
+                    <a class="login-link" href="/auth/login">Log in</a>
+                    <button
+                        class="menu-mobile block lg:hidden"
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="landing-menu"
+                    >
+                        <span class="sr-only">Open navigation</span>
+                        <svg class="open" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16"
+                            />
+                        </svg>
+                        <svg class="close" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 6l12 12M6 18L18 6"
+                            />
+                        </svg>
+                    </button>
                 </div>
             </div>
-        </nav>
-    </header>
-    <main id="content">
-        <section id="hero"
-                 class="section hero-section relative z-0 py-16 md:pt-32 md:pb-20">
-            <div class="container xl:max-w-6xl mx-auto px-4">
-                <div class="hero-tailone-layout">
-                    <div class="hero-art hero-art-centered">
-                        <img src="{{ url_for('static', path='/img/tailone-hero.svg') }}"
-                             alt="Tax team collaborating on returns">
-                    </div>
-                    <div class="hero-copy-content">
-                        <p class="eyebrow">Tax operations, organized</p>
-                        <h1 class="hero-title">
-                            Make every return easier to
-                            <br>
-                            <span class="typed-word"
-                                  data-typed-words="Prepare and File|Review and Approve|Track and Complete">prepare and file.</span>
-                        </h1>
-                        <!-- <p class="hero-art-caption"
+        </div>
+    </nav>
+</header>
+<main id="content">
+    <section id="hero" class="section hero-section relative z-0 py-16 md:pt-32 md:pb-20">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <div class="hero-tailone-layout">
+                <div class="hero-art hero-art-centered">
+                    <img
+                        src="{{ url_for('static', path='/img/tailone-hero.svg') }}"
+                        alt="Tax team collaborating on returns"
+                    />
+                </div>
+                <div class="hero-copy-content">
+                    <p class="eyebrow">Tax operations, organized</p>
+                    <h1 class="hero-title">
+                        Make every return easier to
+                        <br />
+                        <span
+                            class="typed-word"
+                            data-typed-words="Prepare and File|Review and Approve|Track and Complete"
+                            >prepare and file.</span
+                        >
+                    </h1>
+                    <!-- <p class="hero-art-caption"
                            data-typed-words="One team. One clear filing process.|One workflow. Every return on track.|One practice. Complete visibility.">One team. One clear filing process.</p> -->
-                        <p class="hero-copy">A secure workspace for tax professionals to collect client documents, manage preparation, track deadlines, and keep every filing moving forward. Built for preparers, firms, and tax operations teams.</p>
-                        <div class="hero-actions"><a class="action-primary" href="/auth/register">Start your workspace</a><a class="action-secondary" href="#services">Explore solutions</a></div>
+                    <p class="hero-copy">
+                        A secure workspace for tax professionals to collect client documents, manage preparation, track
+                        deadlines, and keep every filing moving forward. Built for preparers, firms, and tax operations
+                        teams.
+                    </p>
+                    <div class="hero-actions">
+                        <a class="action-primary" href="/auth/register">Start your workspace</a
+                        ><a class="action-secondary" href="#services">Explore solutions</a>
                     </div>
-                    <div class="hero-preview-column">
-                        <div class="workflow-preview">
-                            <div class="preview-bar"><span></span><span></span><span></span><small>Tax practice overview</small></div>
-                            <div class="p-6">
-                                <p class="preview-label">Current filing season</p>
-                                <div class="flex justify-between items-end">
-                                    <h2>Return <span>pipeline</span></h2>
-                                    <strong>+18.4%</strong>
+                </div>
+                <div class="hero-preview-column">
+                    <div class="workflow-preview">
+                        <div class="preview-bar">
+                            <span></span><span></span><span></span><small>Tax practice overview</small>
+                        </div>
+                        <div class="p-6">
+                            <p class="preview-label">Current filing season</p>
+                            <div class="flex justify-between items-end">
+                                <h2>Return <span>pipeline</span></h2>
+                                <strong>+18.4%</strong>
+                            </div>
+                            <div class="preview-metrics">
+                                <div><b>128</b><small>Active files</small></div>
+                                <div><b>34</b><small>Ready to file</small></div>
+                                <div><b>7</b><small>Need review</small></div>
+                            </div>
+                            <div class="preview-list">
+                                <div>
+                                    <i>JM</i><span><b>Jordan Miller</b><small>1040 Individual return</small></span
+                                    ><em class="ready">Ready</em>
                                 </div>
-                                <div class="preview-metrics">
-                                    <div><b>128</b><small>Active files</small></div>
-                                    <div><b>34</b><small>Ready to file</small></div>
-                                    <div><b>7</b><small>Need review</small></div>
+                                <div>
+                                    <i>AC</i><span><b>Atlas Coffee Co.</b><small>1120S Business return</small></span
+                                    ><em class="review">Review</em>
                                 </div>
-                                <div class="preview-list">
-                                    <div><i>JM</i><span><b>Jordan Miller</b><small>1040 Individual return</small></span><em class="ready">Ready</em></div>
-                                    <div><i>AC</i><span><b>Atlas Coffee Co.</b><small>1120S Business return</small></span><em class="review">Review</em></div>
-                                    <div><i>RB</i><span><b>Riley Brooks</b><small>Extension requested</small></span><em class="pending">Pending</em></div>
+                                <div>
+                                    <i>RB</i><span><b>Riley Brooks</b><small>Extension requested</small></span
+                                    ><em class="pending">Pending</em>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-        <section id="services" class="section py-20 bg-white">
-            <div class="container xl:max-w-6xl mx-auto px-4">
-                <header class="section-header">
-                    <p class="eyebrow">One workspace. Every filing.</p>
-                    <h2>Tax work that <span>stays on track</span></h2>
-                    <p>Replace scattered spreadsheets and inboxes with a focused system for the work your tax team handles every day.</p>
-                </header>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <article class="solution-card"><b>01</b>
-                        <h3>Client <span>intake</span></h3>
-                        <p>Collect taxpayer details and engagement information in a consistent, reviewable flow.</p>
-                        </article><article class="solution-card"><b>02</b>
-                        <h3>Document <span>collection</span></h3>
-                        <p>Keep W-2s, 1099s, receipts, and supporting schedules together with each client file.</p>
-                        </article><article class="solution-card"><b>03</b>
-                        <h3>Return <span>preparation</span></h3>
-                        <p>Give preparers a shared view of missing information, review notes, and next actions.</p>
-                        </article><article class="solution-card"><b>04</b>
-                        <h3>Filing <span>readiness</span></h3>
-                        <p>See which returns are ready for approval, e-file submission, or an extension.</p>
-                        </article><article class="solution-card"><b>05</b>
-                        <h3>Compliance <span>tracking</span></h3>
-                        <p>Stay ahead of deadlines and preserve an audit-friendly history of every decision.</p>
-                        </article><article class="solution-card"><b>06</b>
-                        <h3>Firm <span>visibility</span></h3>
-                        <p>Help staff and administrators understand workload, bottlenecks, and client progress.</p>
-                        </article>
-                    </div>
-                </div>
-            </section>
-            <section id="workflow" class="section workflow-section py-20">
-                <div class="container xl:max-w-6xl mx-auto px-4">
-                    <div class="grid lg:grid-cols-2 gap-14 items-center">
+        </div>
+    </section>
+    <section id="services" class="section py-20 bg-white">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header">
+                <p class="eyebrow">One workspace. Every filing.</p>
+                <h2>Tax work that <span>stays on track</span></h2>
+                <p>
+                    Replace scattered spreadsheets and inboxes with a focused system for the work your tax team handles
+                    every day.
+                </p>
+            </header>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <article class="solution-card">
+                    <b>01</b>
+                    <h3>Client <span>intake</span></h3>
+                    <p>Collect taxpayer details and engagement information in a consistent, reviewable flow.</p>
+                </article>
+                <article class="solution-card">
+                    <b>02</b>
+                    <h3>Document <span>collection</span></h3>
+                    <p>Keep W-2s, 1099s, receipts, and supporting schedules together with each client file.</p>
+                </article>
+                <article class="solution-card">
+                    <b>03</b>
+                    <h3>Return <span>preparation</span></h3>
+                    <p>Give preparers a shared view of missing information, review notes, and next actions.</p>
+                </article>
+                <article class="solution-card">
+                    <b>04</b>
+                    <h3>Filing <span>readiness</span></h3>
+                    <p>See which returns are ready for approval, e-file submission, or an extension.</p>
+                </article>
+                <article class="solution-card">
+                    <b>05</b>
+                    <h3>Compliance <span>tracking</span></h3>
+                    <p>Stay ahead of deadlines and preserve an audit-friendly history of every decision.</p>
+                </article>
+                <article class="solution-card">
+                    <b>06</b>
+                    <h3>Firm <span>visibility</span></h3>
+                    <p>Help staff and administrators understand workload, bottlenecks, and client progress.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+    <section id="workflow" class="section workflow-section py-20">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <div class="grid lg:grid-cols-2 gap-14 items-center">
+                <div>
+                    <p class="eyebrow">A calmer filing season</p>
+                    <h2 class="section-heading">From first upload to <span>final submission.</span></h2>
+                    <p class="section-copy">
+                        Every case has a visible next step, so your team spends less time asking for updates and more
+                        time serving clients.
+                    </p>
+                    <div class="steps">
                         <div>
-                            <p class="eyebrow">A calmer filing season</p>
-                            <h2 class="section-heading">From first upload to <span>final submission.</span></h2>
-                            <p class="section-copy">Every case has a visible next step, so your team spends less time asking for updates and more time serving clients.</p>
-                            <div class="steps">
-                                <div><b>1</b><span><strong>Gather</strong><small>Open a client profile and collect the information needed to prepare accurately.</small></span></div>
-                                <div><b>2</b><span><strong>Review</strong><small>Resolve missing documents and questions before a return reaches final review.</small></span></div>
-                                <div><b>3</b><span><strong>File</strong><small>Move approved returns through filing and keep a complete record for follow-up.</small></span></div>
-                            </div>
+                            <b>1</b
+                            ><span
+                                ><strong>Gather</strong
+                                ><small
+                                    >Open a client profile and collect the information needed to prepare
+                                    accurately.</small
+                                ></span
+                            >
                         </div>
-                        <aside class="trust-panel">
-                            <p class="eyebrow">Designed around trust</p>
-                            <h3>Your client data deserves a <span>clear home.</span></h3>
-                            <p>Role-aware access, secure authentication, and a durable case history help your firm protect sensitive tax information while keeping work moving.</p>
-                            <a href="/api/docs">View platform documentation &rarr;</a>
-                        </aside>
+                        <div>
+                            <b>2</b
+                            ><span
+                                ><strong>Review</strong
+                                ><small
+                                    >Resolve missing documents and questions before a return reaches final
+                                    review.</small
+                                ></span
+                            >
+                        </div>
+                        <div>
+                            <b>3</b
+                            ><span
+                                ><strong>File</strong
+                                ><small
+                                    >Move approved returns through filing and keep a complete record for
+                                    follow-up.</small
+                                ></span
+                            >
+                        </div>
                     </div>
                 </div>
-            </section>
-            <section id="team" class="section py-20 bg-white">
-                <div class="container xl:max-w-6xl mx-auto px-4">
-                    <header class="section-header">
-                        <p class="eyebrow">People behind the platform</p>
-                        <h2>Built with tax <span class="auth-title-accent">teams in mind</span></h2>
-                        <p>Practical product thinking for the people who prepare, review, file, and support tax work.</p>
-                    </header>
-                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                        <article class="team-card">
-                            <img src="{{ url_for('static', path='/img/tax-team-operations.png') }}"
-                                 alt="Tax operations team member">
-                            <h3><span>Operations</span></h3>
-                            <p>Keep deadlines and case progress visible across the firm.</p>
-                        </article><article class="team-card">
-                            <img src="{{ url_for('static', path='/img/tax-team-preparer.png') }}"
-                                 alt="Tax preparer team member">
-                            <h3><span>Preparation</span></h3>
-                            <p>Focus on accurate returns with fewer follow-ups.</p>
-                        </article><article class="team-card">
-                            <img src="{{ url_for('static', path='/img/tax-team-compliance.png') }}"
-                                 alt="Tax compliance team member">
-                            <h3><span>Compliance</span></h3>
-                            <p>Preserve a clear history of every client decision.</p>
-                        </article><article class="team-card">
-                            <img src="{{ url_for('static', path='/img/tax-team-client-service.png') }}"
-                                 alt="Tax client service team member">
-                            <h3>Client <span>service</span></h3>
-                            <p>Give clients a more consistent filing experience.</p>
-                        </article>
-                    </div>
-                </div>
-            </section>
-            <section id="testimonials" class="section testimonials-section py-20">
-                <div class="container xl:max-w-6xl mx-auto px-4">
-                    <header class="section-header">
-                        <p class="eyebrow">What tax teams say</p>
-                        <h2>Less chasing. <span>More progress.</span></h2>
-                        <p>Real tax work is collaborative. {{ app_name }} helps every person involved stay aligned.</p>
-                    </header>
-                    <div class="grid md:grid-cols-3 gap-5">
-                        <article class="testimonial-card">
-                            <div class="quote-mark">“</div>
-                            <p>We can see which client documents are missing before a return reaches review. That has changed our daily workflow.</p>
-                            <strong>Jordan Miller</strong><small>Tax preparer</small></article><article class="testimonial-card">
-                                <div class="quote-mark">“</div>
-                                <p>Our staff finally has one shared place for deadlines, notes, and filing status instead of another spreadsheet.</p>
-                                <strong>Priya Shah</strong><small>Practice manager</small></article><article class="testimonial-card">
-                                    <div class="quote-mark">“</div>
-                                    <p>Clients get faster answers because the team can find the case history and next action immediately.</p>
-                                    <strong>Riley Brooks</strong><small>Client service lead</small></article>
+                <aside class="trust-panel">
+                    <p class="eyebrow">Designed around trust</p>
+                    <h3>Your client data deserves a <span>clear home.</span></h3>
+                    <p>
+                        Role-aware access, secure authentication, and a durable case history help your firm protect
+                        sensitive tax information while keeping work moving.
+                    </p>
+                    <a href="/api/docs">View platform documentation &rarr;</a>
+                </aside>
+            </div>
+        </div>
+    </section>
+    <section id="team" class="section py-20 bg-white">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header">
+                <p class="eyebrow">People behind the platform</p>
+                <h2>Built with tax <span class="auth-title-accent">teams in mind</span></h2>
+                <p>Practical product thinking for the people who prepare, review, file, and support tax work.</p>
+            </header>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <article class="team-card">
+                    <img
+                        src="{{ url_for('static', path='/img/tax-team-operations.png') }}"
+                        alt="Tax operations team member"
+                    />
+                    <h3><span>Operations</span></h3>
+                    <p>Keep deadlines and case progress visible across the firm.</p>
+                </article>
+                <article class="team-card">
+                    <img
+                        src="{{ url_for('static', path='/img/tax-team-preparer.png') }}"
+                        alt="Tax preparer team member"
+                    />
+                    <h3><span>Preparation</span></h3>
+                    <p>Focus on accurate returns with fewer follow-ups.</p>
+                </article>
+                <article class="team-card">
+                    <img
+                        src="{{ url_for('static', path='/img/tax-team-compliance.png') }}"
+                        alt="Tax compliance team member"
+                    />
+                    <h3><span>Compliance</span></h3>
+                    <p>Preserve a clear history of every client decision.</p>
+                </article>
+                <article class="team-card">
+                    <img
+                        src="{{ url_for('static', path='/img/tax-team-client-service.png') }}"
+                        alt="Tax client service team member"
+                    />
+                    <h3>Client <span>service</span></h3>
+                    <p>Give clients a more consistent filing experience.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+    <section id="testimonials" class="section testimonials-section py-20">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header">
+                <p class="eyebrow">What tax teams say</p>
+                <h2>Less chasing. <span>More progress.</span></h2>
+                <p>Real tax work is collaborative. {{ app_name }} helps every person involved stay aligned.</p>
+            </header>
+            <div class="grid md:grid-cols-3 gap-5">
+                <article class="testimonial-card">
+                    <div class="quote-mark">“</div>
+                    <p>
+                        We can see which client documents are missing before a return reaches review. That has changed
+                        our daily workflow.
+                    </p>
+                    <strong>Jordan Miller</strong><small>Tax preparer</small>
+                </article>
+                <article class="testimonial-card">
+                    <div class="quote-mark">“</div>
+                    <p>
+                        Our staff finally has one shared place for deadlines, notes, and filing status instead of
+                        another spreadsheet.
+                    </p>
+                    <strong>Priya Shah</strong><small>Practice manager</small>
+                </article>
+                <article class="testimonial-card">
+                    <div class="quote-mark">“</div>
+                    <p>
+                        Clients get faster answers because the team can find the case history and next action
+                        immediately.
+                    </p>
+                    <strong>Riley Brooks</strong><small>Client service lead</small>
+                </article>
+            </div>
+        </div>
+    </section>
+    <section id="pricing" class="section pricing-section py-20">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header">
+                <p class="eyebrow">Choose your workspace</p>
+                <h2>Plans that fit your <span>tax practice</span></h2>
+                <p>Start with the tools your team needs today and grow into a clearer filing operation.</p>
+            </header>
+            <div class="grid md:grid-cols-3 gap-5">
+                <article class="plan-card">
+                    <p class="plan-label">Starter</p>
+                    <h3>For independent <span>preparers</span></h3>
+                    <strong>Focused</strong>
+                    <p>Client profiles, document tracking, and filing readiness in one place.</p>
+                    <a href="/auth/register">Get started</a>
+                </article>
+                <article class="plan-card featured">
+                    <p class="plan-label">Practice</p>
+                    <h3>For growing <span>firms</span></h3>
+                    <strong>Connected</strong>
+                    <p>Staff visibility, review workflows, and compliance follow-up for every case.</p>
+                    <a href="/auth/register">Start a practice</a>
+                </article>
+                <article class="plan-card">
+                    <p class="plan-label">Operations</p>
+                    <h3>For established <span>teams</span></h3>
+                    <strong>Controlled</strong>
+                    <p>Role-aware workflows and operational visibility across your tax practice.</p>
+                    <a href="/auth/register">Talk to us</a>
+                </article>
+            </div>
+        </div>
+    </section>
+    <section id="faq" class="section py-20 bg-white">
+        <div class="container xl:max-w-4xl mx-auto px-4">
+            <header class="section-header">
+                <p class="eyebrow">Questions, answered</p>
+                <h2>Everything you <span class="auth-title-accent">need to know</span></h2>
+            </header>
+            <div class="faq-list">
+                <details>
+                    <summary>Who is {{ app_name }} for?</summary>
+                    <p>
+                        {{ app_name }} is designed for tax preparers, staff members, and administrators who manage
+                        client returns and compliance work.
+                    </p>
+                </details>
+                <details>
+                    <summary>Can my staff work from the same case information?</summary>
+                    <p>
+                        Yes. The workspace is designed to give authorized team members a shared view of documents,
+                        status, notes, and next actions.
+                    </p>
+                </details>
+                <details>
+                    <summary>Does it support both individual and business returns?</summary>
+                    <p>
+                        The workflow can organize individual and business tax cases with their supporting documents and
+                        filing milestones.
+                    </p>
+                </details>
+                <details>
+                    <summary>How do I get started?</summary>
+                    <p>Create an account to open your workspace, then begin by setting up your first client profile.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+    <section id="contact" class="section contact-section pb-20 bg-white">
+        <div class="container xl:max-w-4xl mx-auto px-4">
+            <div class="contact-panel">
+                <header class="section-header">
+                    <p class="eyebrow">Let’s talk tax operations</p>
+                    <h2>Ready for a better <span>filing season?</span></h2>
+                    <p>Create your workspace or tell us how your firm manages tax work today.</p>
+                </header>
+                <form id="contact-form">
+                    <div class="grid md:grid-cols-2 gap-5">
+                        <label> Full name<input id="contact-name" type="text" placeholder="Jordan Miller" /></label
+                        ><label
+                            >Work email<input id="contact-email" type="email" placeholder="jordan@firm.com" />
+                        </label>
+                        <label
+                            >Phone number
+                            <div class="phone-fields mt-2">
+                                <div class="country-picker" id="contact-country-picker">
+                                    <button
+                                        type="button"
+                                        class="country-picker-toggle"
+                                        id="contact-country-picker-toggle"
+                                        aria-haspopup="listbox"
+                                        aria-expanded="false"
+                                    >
+                                        <span class="country-flag" id="contact-selected-country-flag" aria-hidden="true"
+                                            >🌐</span
+                                        >
+                                        <span class="country-picker-code" id="contact-selected-country-code"></span>
+                                        <svg
+                                            class="country-picker-chevron"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            aria-hidden="true"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M6 9l6 6 6-6"
+                                            />
+                                        </svg>
+                                    </button>
+                                    <div class="country-picker-menu" id="contact-country-picker-menu" hidden>
+                                        <input
+                                            type="search"
+                                            class="country-search"
+                                            id="contact-country-search"
+                                            placeholder="Search country"
+                                            aria-label="Search country"
+                                        />
+                                        <div
+                                            class="country-options"
+                                            id="contact-country-options"
+                                            role="listbox"
+                                            aria-label="Countries"
+                                        ></div>
+                                    </div>
+                                    <input name="country_code" id="contact-country_code" type="hidden" />
+                                </div>
+                                <input
+                                    name="phone_local"
+                                    id="contact-phone_local"
+                                    type="tel"
+                                    inputmode="numeric"
+                                    autocomplete="tel-national"
+                                    placeholder="Mobile Number *"
+                                    class="phone-number-input"
+                                    minlength="10"
+                                    maxlength="10"
+                                    pattern="[0-9]{10}"
+                                    title="Enter exactly 10 digits after the country code"
+                                />
+                                <input name="phone" id="contact-phone" type="hidden" />
                             </div>
-                        </div>
-                    </section>
-                    <section id="pricing" class="section pricing-section py-20">
-                        <div class="container xl:max-w-6xl mx-auto px-4">
-                            <header class="section-header">
-                                <p class="eyebrow">Choose your workspace</p>
-                                <h2>Plans that fit your <span>tax practice</span></h2>
-                                <p>Start with the tools your team needs today and grow into a clearer filing operation.</p>
-                            </header>
-                            <div class="grid md:grid-cols-3 gap-5">
-                                <article class="plan-card">
-                                    <p class="plan-label">Starter</p>
-                                    <h3>For independent <span>preparers</span></h3>
-                                    <strong>Focused</strong>
-                                    <p>Client profiles, document tracking, and filing readiness in one place.</p>
-                                    <a href="/auth/register">Get started</a></article><article class="plan-card featured">
-                                        <p class="plan-label">Practice</p>
-                                        <h3>For growing <span>firms</span></h3>
-                                        <strong>Connected</strong>
-                                        <p>Staff visibility, review workflows, and compliance follow-up for every case.</p>
-                                        <a href="/auth/register">Start a practice</a></article><article class="plan-card">
-                                            <p class="plan-label">Operations</p>
-                                            <h3>For established <span>teams</span></h3>
-                                            <strong>Controlled</strong>
-                                            <p>Role-aware workflows and operational visibility across your tax practice.</p>
-                                            <a href="/auth/register">Talk to us</a></article>
-                                    </div>
-                                </div>
-                            </section>
-                            <section id="faq" class="section py-20 bg-white">
-                                <div class="container xl:max-w-4xl mx-auto px-4">
-                                    <header class="section-header">
-                                        <p class="eyebrow">Questions, answered</p>
-                                        <h2>Everything you <span class="auth-title-accent">need to know</span></h2>
-                                    </header>
-                                    <div class="faq-list">
-                                        <details>
-                                            <summary>Who is {{ app_name }} for?</summary>
-                                            <p>{{ app_name }} is designed for tax preparers, staff members, and administrators who manage client returns and compliance work.</p>
-                                        </details>
-                                        <details>
-                                            <summary>Can my staff work from the same case information?</summary>
-                                            <p>Yes. The workspace is designed to give authorized team members a shared view of documents, status, notes, and next actions.</p>
-                                        </details>
-                                        <details>
-                                            <summary>Does it support both individual and business returns?</summary>
-                                            <p>The workflow can organize individual and business tax cases with their supporting documents and filing milestones.</p>
-                                        </details>
-                                        <details>
-                                            <summary>How do I get started?</summary>
-                                            <p>Create an account to open your workspace, then begin by setting up your first client profile.</p>
-                                        </details>
-                                    </div>
-                                </div>
-                            </section>
-                            <section id="contact" class="section contact-section pb-20 bg-white">
-                                <div class="container xl:max-w-4xl mx-auto px-4">
-                                    <div class="contact-panel">
-                                        <header class="section-header">
-                                            <p class="eyebrow">Let’s talk tax operations</p>
-                                            <h2>Ready for a better <span>filing season?</span></h2>
-                                            <p>Create your workspace or tell us how your firm manages tax work today.</p>
-                                        </header>
-                                        <form id="contact-form">
-                                            <div class="grid md:grid-cols-2 gap-5">
-                                                <label>
-                                                    Full name<input id="contact-name" type="text" placeholder="Jordan Miller"></label><label>Work email<input id="contact-email" type="email" placeholder="jordan@firm.com">
-                                                    </label>
-                                                <label>Phone number
-                                                    <div class="phone-fields mt-2">
-                                                        <div class="country-picker" id="contact-country-picker">
-                                                            <button type="button" class="country-picker-toggle" id="contact-country-picker-toggle" aria-haspopup="listbox" aria-expanded="false">
-                                                                <span class="country-flag" id="contact-selected-country-flag" aria-hidden="true">🌐</span>
-                                                                <span class="country-picker-code" id="contact-selected-country-code"></span>
-                                                                <svg class="country-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6" />
-                                                                </svg>
-                                                            </button>
-                                                            <div class="country-picker-menu" id="contact-country-picker-menu" hidden>
-                                                                <input type="search" class="country-search" id="contact-country-search" placeholder="Search country" aria-label="Search country">
-                                                                <div class="country-options" id="contact-country-options" role="listbox" aria-label="Countries"></div>
-                                                            </div>
-                                                            <input name="country_code" id="contact-country_code" type="hidden">
-                                                        </div>
-                                                        <input name="phone_local" id="contact-phone_local" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="Mobile Number *" class="phone-number-input" minlength="10" maxlength="10" pattern="[0-9]{10}" title="Enter exactly 10 digits after the country code" />
-                                                        <input name="phone" id="contact-phone" type="hidden" />
-                                                    </div>
-                                                </label>
-                                                </div>
-                                                <label class="block mt-5">
-                                                    Message<textarea id="contact-msg"
-          rows="5"
-          placeholder="Tell us about your tax workflow..."></textarea></label><button class="action-primary mt-6" type="submit">Send inquiry</button>
-                                                <p id="contact-success" class="hidden success-message">Thanks. A member of our tax operations team will be in touch.</p>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </section>
-                            </main>
-                            <footer class="site-footer">
-                                <div class="container xl:max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-5">
-                                    <a class="brand-mark" href="/">{{ app_name }}</a>
-                                    <p>© 2026 {{ app_name }}. Tax preparation workflow and compliance operations.</p>
-                                    <div><a href="/auth/login">Portal login</a><a href="/auth/register">Get started</a></div>
-                                </div>
-                            </footer>
-                            <a class="back-top" href="#hero" aria-label="Back to top">↑</a>
+                        </label>
+                    </div>
+                    <label class="block mt-5">
+                        Message<textarea
+                            id="contact-msg"
+                            rows="5"
+                            placeholder="Tell us about your tax workflow..."
+                        ></textarea></label
+                    ><button class="action-primary mt-6" type="submit">Send inquiry</button>
+                    <p id="contact-success" class="hidden success-message">
+                        Thanks. A member of our tax operations team will be in touch.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div class="container xl:max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-5">
+        <a class="brand-mark" href="/">{{ app_name }}</a>
+        <p>© 2026 {{ app_name }}. Tax preparation workflow and compliance operations.</p>
+        <div><a href="/auth/login">Portal login</a><a href="/auth/register">Get started</a></div>
+    </div>
+</footer>
+<a class="back-top" href="#hero" aria-label="Back to top">↑</a>
+{% endblock %} {% block scripts %}
+<script src="/static/js/landing.js" defer></script>
 {% endblock %}
-{% block scripts %}<script src="/static/js/landing.js" defer></script>{% endblock %}

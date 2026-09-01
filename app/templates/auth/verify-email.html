@@ -1,40 +1,45 @@
-{% extends "base.html" %}
-
-{% block title %}Verify Email - {{ app_name }}{% endblock %}
-
-{% block head %}
+{% extends "base.html" %} {% block title %}Verify Email - {{ app_name }}{% endblock %} {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}" />
-{% endblock %}
-
-{% block body_class %}auth-page{% endblock %}
-
-{% block content %}
-<button type="button" id="auth-theme-toggle" class="auth-theme-toggle" aria-label="Switch to dark theme" title="Switch to dark theme">
-  <svg class="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-  <svg class="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path></svg>
+{% endblock %} {% block body_class %}auth-page{% endblock %} {% block content %}
+<button
+    type="button"
+    id="auth-theme-toggle"
+    class="auth-theme-toggle"
+    aria-label="Switch to dark theme"
+    title="Switch to dark theme"
+>
+    <svg class="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <path
+            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+        ></path>
+    </svg>
+    <svg class="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path>
+    </svg>
 </button>
 <div class="auth-card fade-in">
-  <div class="auth-header">
-    <div class="brand-icon brand-icon--lg btn-primary mx-auto mb-4">UT</div>
-    <h1 class="auth-header__title">Email <span class="gradient-text-blue">Verification</span></h1>
-  </div>
-
-  <div class="glass-strong rounded-2xl overflow-hidden mb-6">
-    <div class="p-8 text-center space-y-4">
-      {% if error %}
-      <div class="alert alert--error">{{ error }}</div>
-      <p class="auth-header__subtitle">Request a new verification link below.</p>
-      <form method="POST" action="/auth/resend-verification" class="space-y-4 mt-4">
-        <input name="email" type="email" placeholder="Your email" class="form-input" required />
-        <button type="submit" class="btn-submit btn-primary">Resend Verification Email</button>
-      </form>
-      {% else %}
-      <div class="alert alert--success">Your email has been verified! You can now log in.</div>
-      <a href="/auth/login" class="btn-submit btn-primary block mt-4 text-center">Go to Login</a>
-      {% endif %}
+    <div class="auth-header">
+        <div class="brand-icon brand-icon--lg btn-primary mx-auto mb-4">UT</div>
+        <h1 class="auth-header__title">Email <span class="gradient-text-blue">Verification</span></h1>
     </div>
-  </div>
-</div>
-{% endblock %}
 
-{% block scripts %}<script src="{{ url_for('static', path='/js/auth.js') }}"></script>{% endblock %}
+    <div class="glass-strong rounded-2xl overflow-hidden mb-6">
+        <div class="p-8 text-center space-y-4">
+            {% if error %}
+            <div class="alert alert--error">{{ error }}</div>
+            <p class="auth-header__subtitle">Request a new verification link below.</p>
+            <form method="POST" action="/auth/resend-verification" class="space-y-4 mt-4">
+                <input name="email" type="email" placeholder="Your email" class="form-input" required />
+                <button type="submit" class="btn-submit btn-primary">Resend Verification Email</button>
+            </form>
+            {% else %}
+            <div class="alert alert--success">Your email has been verified! You can now log in.</div>
+            <a href="/auth/login" class="btn-submit btn-primary block mt-4 text-center">Go to Login</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
+{% endblock %}

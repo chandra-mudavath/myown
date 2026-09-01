@@ -40,15 +40,17 @@
     height: calc(100vh - var(--site-header-h, 84px));
     padding: 18px 16px;
     border-right: 1px solid var(--line, #d8e5e8);
-    background: rgba(255, 255, 255, .97);
+    background: rgba(255, 255, 255, 0.97);
     box-shadow: 0 0 0 rgba(0, 0, 0, 0);
     transform: translateX(-100%);
-    transition: transform .25s ease, box-shadow .25s ease;
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
 }
 
 .dashboard-sidebar.open {
     transform: translateX(0);
-    box-shadow: 12px 0 30px rgba(23, 50, 77, .14);
+    box-shadow: 12px 0 30px rgba(23, 50, 77, 0.14);
 }
 
 .dashboard-sidebar .brand {
@@ -71,7 +73,9 @@
     gap: 12px;
     padding: 11px 12px;
     color: var(--muted, #64788b);
-    font: 600 .84rem 'DM Sans', sans-serif;
+    font:
+        600 0.84rem "DM Sans",
+        sans-serif;
     text-decoration: none;
     border: 0;
     background: transparent;
@@ -97,7 +101,7 @@
     display: inline-flex;
     width: 20px;
     justify-content: center;
-    font-size: .95rem;
+    font-size: 0.95rem;
     flex-shrink: 0;
 }
 
@@ -152,7 +156,7 @@
     right: 0;
     bottom: 0;
     z-index: 19;
-    background: rgba(23, 50, 77, .35);
+    background: rgba(23, 50, 77, 0.35);
 }
 
 .sidebar-overlay:not([hidden]) {
@@ -188,8 +192,10 @@
     --auth-shadow: 0 24px 60px rgba(15, 118, 110, 0.12);
     background: var(--auth-paper);
     color: var(--auth-ink);
-    font-family: 'Roboto Slab', Georgia, serif;
-    transition: background .25s ease, color .25s ease;
+    font-family: "Roboto Slab", Georgia, serif;
+    transition:
+        background 0.25s ease,
+        color 0.25s ease;
 }
 
 .auth-page.dark-theme {
@@ -197,7 +203,7 @@
     --auth-surface: rgba(13, 29, 43, 0.92);
     --auth-ink: #f1faf8;
     --auth-muted: #a8bfbb;
-    --auth-line: rgba(148, 163, 184, .24);
+    --auth-line: rgba(148, 163, 184, 0.24);
     --auth-primary: #2dd4bf;
     --auth-primary-dark: #14b8a6;
     --auth-input: #0b1c2b;
@@ -217,12 +223,14 @@
     position: absolute;
     right: 1.5rem;
     top: 1.5rem;
-    transition: background .2s ease, border-color .2s ease;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
     width: 2.5rem;
 }
 
 .auth-theme-toggle:hover {
-    background: rgba(15, 118, 110, .08);
+    background: rgba(15, 118, 110, 0.08);
     border-color: var(--auth-primary);
 }
 
@@ -602,9 +610,12 @@
 .auth-page .glass-strong {
     background: var(--auth-surface);
     border: 1px solid var(--auth-line);
-    border-radius: .5rem;
+    border-radius: 0.5rem;
     box-shadow: var(--auth-shadow);
-    transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+    transition:
+        background 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
 }
 
 .auth-page .btn-primary {
@@ -621,14 +632,14 @@
 }
 
 .auth-page .alert--error {
-    background: rgba(220, 38, 38, .09);
-    border-color: rgba(220, 38, 38, .25);
+    background: rgba(220, 38, 38, 0.09);
+    border-color: rgba(220, 38, 38, 0.25);
     color: #dc2626;
 }
 
 .auth-page .alert--success {
-    background: rgba(22, 163, 74, .09);
-    border-color: rgba(22, 163, 74, .25);
+    background: rgba(22, 163, 74, 0.09);
+    border-color: rgba(22, 163, 74, 0.25);
     color: #15803d;
 }
 

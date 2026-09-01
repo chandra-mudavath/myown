@@ -24,7 +24,7 @@ from app.services.client_profile import (
     update_personal,
 )
 
-router = APIRouter(prefix="/profile", tags=["client-profile"])
+router = APIRouter(prefix="/client", tags=["client-profile"])
 
 
 def _client_or_404(db: Session, account_id: str) -> Client:
@@ -36,11 +36,11 @@ def _client_or_404(db: Session, account_id: str) -> Client:
     return client
 
 
-@router.get("", response_class=HTMLResponse, name="client_profile")
+@router.get("/profile", response_class=HTMLResponse, name="client_profile")
 def profile_page(request: Request, account: ClientAccount, db: Session = Depends(get_db)):
     client = _client_or_404(db, account.id)
     return templates.TemplateResponse(
-        "profile/index.html",
+        "client/profile/index.html",
         {"request": request, "account": account, "profile": serialize_profile(client, account), "app_name": settings.APP_NAME},
     )
 

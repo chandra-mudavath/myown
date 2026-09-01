@@ -10,7 +10,7 @@ from app.models.staff import Staff
 router = APIRouter(prefix="/staff", tags=["staff"])
 
 
-@router.get("/dashboard", response_class=HTMLResponse)
+@router.get("/dashboard", response_class=HTMLResponse, name="staff_dashboard")
 def staff_dashboard(request: Request, account: StaffAccount, db: Session = Depends(get_db)):
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     return templates.TemplateResponse(

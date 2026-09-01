@@ -10,7 +10,7 @@ from app.models.admin import Admin
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-@router.get("/dashboard", response_class=HTMLResponse)
+@router.get("/dashboard", response_class=HTMLResponse, name="admin_dashboard")
 def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depends(get_db)):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
     return templates.TemplateResponse(

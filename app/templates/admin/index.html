@@ -1,418 +1,838 @@
-{% extends "base.html" %}
-
-{% block title %}Admin Dashboard - UrTax{% endblock %}
-
-{% block styles %}
+{% extends "base.html" %} {% block title %}Admin Dashboard - UrTax{% endblock %} {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}" />
-{% endblock %}
-
-{% block body_class %}admin-page{% endblock %}
-
-{% block content %}
+{% endblock %} {% block body_class %}admin-page{% endblock %} {% block content %}
 
 <!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar fixed left-0 top-0 h-screen flex flex-col py-6 px-4 overflow-y-auto z-30">
-  <!-- Logo -->
-  <div class="flex items-center gap-3 mb-8 px-2">
-    <div class="w-9 h-9 rounded-xl btn-primary flex items-center justify-center text-white font-black text-sm">SA</div>
-    <div>
-      <span class="font-black text-brand-900 text-lg">Ur<span class="gradient-text-blue">Tax</span></span>
-      <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mt-0.5">Admin Console</div>
+    <!-- Logo -->
+    <div class="flex items-center gap-3 mb-8 px-2">
+        <div class="w-9 h-9 rounded-xl btn-primary flex items-center justify-center text-white font-black text-sm">
+            SA
+        </div>
+        <div>
+            <span class="font-black text-brand-900 text-lg">Ur<span class="gradient-text-blue">Tax</span></span>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 font-bold mt-0.5">Admin Console</div>
+        </div>
     </div>
-  </div>
 
-  <!-- Nav -->
-  <nav class="space-y-1 flex-1">
-    <div onclick="showSection('overview')" class="nav-item active" id="nav-overview">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Overview
+    <!-- Nav -->
+    <nav class="space-y-1 flex-1">
+        <div onclick="showSection('overview')" class="nav-item active" id="nav-overview">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            Overview
+        </div>
+        <div onclick="showSection('cases')" class="nav-item" id="nav-cases">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+            </svg>
+            Tax Cases
+            <span class="badge badge-blue ml-auto">247</span>
+        </div>
+        <div onclick="showSection('staff')" class="nav-item" id="nav-staff">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+            </svg>
+            Staff Members
+            <span class="badge badge-green ml-auto">12</span>
+        </div>
+        <div onclick="showSection('clients')" class="nav-item" id="nav-clients">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
+            </svg>
+            Clients
+            <span class="badge badge-yellow ml-auto">89</span>
+        </div>
+        <div onclick="showSection('audit')" class="nav-item" id="nav-audit">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+            </svg>
+            Audit Trail
+        </div>
+        <div onclick="showSection('config')" class="nav-item" id="nav-config">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <circle cx="12" cy="12" r="3" />
+            </svg>
+            Configuration
+        </div>
+    </nav>
+
+    <div class="mt-6 pt-6 border-t border-blue-100">
+        <div class="flex items-center gap-3 px-2 mb-4">
+            <div class="avatar bg-gradient-to-br from-brand-600 to-brand-800 text-white">
+                {{ admin.first_name[0].upper() }}{% if admin.last_name %}{{ admin.last_name[0].upper() }}{% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-bold text-brand-900 truncate">
+                    {{ admin.first_name }} {% if admin.last_name %}{{ admin.last_name }}{% endif %}
+                </p>
+                <p class="text-[11px] text-slate-500 truncate">System Administrator</p>
+            </div>
+            <span class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></span>
+        </div>
+        <form action="/auth/logout" method="POST" class="w-full">
+            <button
+                type="submit"
+                class="nav-item text-red-600 hover:text-red-700 hover:bg-red-50 w-full text-left bg-transparent border-none cursor-pointer text-[13px] font-semibold"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                    />
+                </svg>
+                Sign Out
+            </button>
+        </form>
     </div>
-    <div onclick="showSection('cases')" class="nav-item" id="nav-cases">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      Tax Cases
-      <span class="badge badge-blue ml-auto">247</span>
-    </div>
-    <div onclick="showSection('staff')" class="nav-item" id="nav-staff">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-      Staff Members
-      <span class="badge badge-green ml-auto">12</span>
-    </div>
-    <div onclick="showSection('clients')" class="nav-item" id="nav-clients">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-      Clients
-      <span class="badge badge-yellow ml-auto">89</span>
-    </div>
-    <div onclick="showSection('audit')" class="nav-item" id="nav-audit">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-      Audit Trail
-    </div>
-    <div onclick="showSection('config')" class="nav-item" id="nav-config">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
-      Configuration
-    </div>
-  </nav>
-  
-  <div class="mt-6 pt-6 border-t border-blue-100">
-    <div class="flex items-center gap-3 px-2 mb-4">
-      <div class="avatar bg-gradient-to-br from-brand-600 to-brand-800 text-white">{{ admin.first_name[0].upper() }}{% if admin.last_name %}{{ admin.last_name[0].upper() }}{% endif %}</div>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-bold text-brand-900 truncate">{{ admin.first_name }} {% if admin.last_name %}{{ admin.last_name }}{% endif %}</p>
-        <p class="text-[11px] text-slate-500 truncate">System Administrator</p>
-      </div>
-      <span class="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></span>
-    </div>
-    <form action="/auth/logout" method="POST" class="w-full">
-      <button type="submit" class="nav-item text-red-600 hover:text-red-700 hover:bg-red-50 w-full text-left bg-transparent border-none cursor-pointer text-[13px] font-semibold">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-        Sign Out
-      </button>
-    </form>
-  </div>
 </aside>
 
 <!-- ═══ MAIN CONTENT ═══ -->
 <main class="ml-[260px] flex-1 min-h-screen p-8">
-
-  <!-- Top bar -->
-  <div class="flex items-center justify-between mb-8">
-    <div>
-      <h1 class="text-2xl font-black text-brand-900" id="pageTitle">Admin Overview</h1>
-      <p class="text-sm text-slate-500 mt-0.5" id="pageSubtitle">FY 2025 · Real-time Dashboard · Last updated just now</p>
-    </div>
-    <div class="flex items-center gap-3">
-      <div class="glass rounded-xl px-4 py-2 flex items-center gap-2 text-xs text-slate-600 font-semibold shadow-sm">
-        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-        System Healthy
-      </div>
-      <button class="btn-primary text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Export Report
-      </button>
-    </div>
-  </div>
-
-  <!-- ─── OVERVIEW SECTION ─── -->
-  <div id="section-overview" class="section active">
-    <!-- KPI Row -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-      <div class="card p-5">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Active Cases</p>
-          <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
-            <svg class="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          </div>
+    <!-- Top bar -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-black text-brand-900" id="pageTitle">Admin Overview</h1>
+            <p class="text-sm text-slate-500 mt-0.5" id="pageSubtitle">
+                FY 2025 · Real-time Dashboard · Last updated just now
+            </p>
         </div>
-        <p class="text-3xl font-black text-brand-900">247</p>
-        <p class="stat-up mt-2">↑ 18% from last month</p>
-      </div>
-      <div class="card p-5">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Cases Filed</p>
-          <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center">
-            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
+        <div class="flex items-center gap-3">
+            <div
+                class="glass rounded-xl px-4 py-2 flex items-center gap-2 text-xs text-slate-600 font-semibold shadow-sm"
+            >
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                System Healthy
+            </div>
+            <button class="btn-primary text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                </svg>
+                Export Report
+            </button>
         </div>
-        <p class="text-3xl font-black text-brand-900">189</p>
-        <p class="stat-up mt-2">↑ 24% from last month</p>
-      </div>
-      <div class="card p-5">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Revenue (FY25)</p>
-          <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center">
-            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
-        </div>
-        <p class="text-3xl font-black text-brand-900">$2.1M</p>
-        <p class="stat-up mt-2">↑ 31% year-over-year</p>
-      </div>
-      <div class="card p-5">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Avg. Processing</p>
-          <div class="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center">
-            <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/></svg>
-          </div>
-        </div>
-        <p class="text-3xl font-black text-brand-900">4.2d</p>
-        <p class="stat-up mt-2">↓ 0.8 days faster</p>
-      </div>
     </div>
 
-    <!-- Pipeline + Recent Activity -->
-    <div class="grid lg:grid-cols-3 gap-6 mb-8">
-      <!-- Pipeline Bar -->
-      <div class="lg:col-span-2 card p-6">
+    <!-- ─── OVERVIEW SECTION ─── -->
+    <div id="section-overview" class="section active">
+        <!-- KPI Row -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+            <div class="card p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Active Cases</p>
+                    <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-black text-brand-900">247</p>
+                <p class="stat-up mt-2">↑ 18% from last month</p>
+            </div>
+            <div class="card p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Cases Filed</p>
+                    <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-black text-brand-900">189</p>
+                <p class="stat-up mt-2">↑ 24% from last month</p>
+            </div>
+            <div class="card p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Revenue (FY25)</p>
+                    <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-black text-brand-900">$2.1M</p>
+                <p class="stat-up mt-2">↑ 31% year-over-year</p>
+            </div>
+            <div class="card p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-wider">Avg. Processing</p>
+                    <div class="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center">
+                        <svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2" />
+                        </svg>
+                    </div>
+                </div>
+                <p class="text-3xl font-black text-brand-900">4.2d</p>
+                <p class="stat-up mt-2">↓ 0.8 days faster</p>
+            </div>
+        </div>
+
+        <!-- Pipeline + Recent Activity -->
+        <div class="grid lg:grid-cols-3 gap-6 mb-8">
+            <!-- Pipeline Bar -->
+            <div class="lg:col-span-2 card p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-base font-bold text-brand-900">Pipeline Stage Distribution</h2>
+                    <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full"
+                        >247 Active Cases</span
+                    >
+                </div>
+                <div class="space-y-5">
+                    <div>
+                        <div class="flex justify-between text-xs mb-2 font-medium">
+                            <span class="text-slate-600">Doc Collection</span
+                            ><span class="text-blue-600 font-bold">72 cases</span>
+                        </div>
+                        <div class="h-2.5 bg-blue-50 rounded-full">
+                            <div class="h-2.5 bg-blue-500 rounded-full bar-fill bar-29"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-2 font-medium">
+                            <span class="text-slate-600">Preparation</span
+                            ><span class="text-violet-600 font-bold">65 cases</span>
+                        </div>
+                        <div class="h-2.5 bg-violet-50 rounded-full">
+                            <div class="h-2.5 bg-violet-500 rounded-full bar-fill bar-26"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-2 font-medium">
+                            <span class="text-slate-600">Review</span
+                            ><span class="text-amber-600 font-bold">48 cases</span>
+                        </div>
+                        <div class="h-2.5 bg-amber-50 rounded-full">
+                            <div class="h-2.5 bg-amber-500 rounded-full bar-fill bar-19"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-2 font-medium">
+                            <span class="text-slate-600">Tax Filer</span
+                            ><span class="text-orange-600 font-bold">32 cases</span>
+                        </div>
+                        <div class="h-2.5 bg-orange-50 rounded-full">
+                            <div class="h-2.5 bg-orange-500 rounded-full bar-fill bar-13"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-2 font-medium">
+                            <span class="text-slate-600">Acknowledger</span
+                            ><span class="text-teal-600 font-bold">18 cases</span>
+                        </div>
+                        <div class="h-2.5 bg-teal-50 rounded-full">
+                            <div class="h-2.5 bg-teal-500 rounded-full bar-fill bar-7"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-2 font-medium">
+                            <span class="text-slate-600">Payment</span
+                            ><span class="text-emerald-600 font-bold">12 cases</span>
+                        </div>
+                        <div class="h-2.5 bg-emerald-50 rounded-full">
+                            <div class="h-2.5 bg-emerald-500 rounded-full bar-fill bar-5"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="space-y-4">
+                <div class="card p-5">
+                    <p class="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Closed This Month</p>
+                    <p class="text-2xl font-black text-brand-900">43</p>
+                    <div class="mt-3 h-1.5 bg-emerald-50 rounded-full">
+                        <div class="h-1.5 bg-emerald-500 rounded-full bar-73"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 font-medium mt-2">73% of monthly target</p>
+                </div>
+                <div class="card p-5">
+                    <p class="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Pending Billing</p>
+                    <p class="text-2xl font-black text-amber-600">$184,300</p>
+                    <p class="text-xs text-slate-500 font-medium mt-2">12 invoices outstanding</p>
+                </div>
+                <div class="card p-5">
+                    <p class="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Active Staff</p>
+                    <p class="text-2xl font-black text-brand-900">
+                        12 <span class="text-sm text-slate-400 font-normal">/ 15</span>
+                    </p>
+                    <p class="text-xs text-slate-500 font-medium mt-2">3 on leave</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-base font-bold text-brand-900">Recent Case Activity</h2>
+                <button
+                    onclick="showSection('cases')"
+                    class="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+                >
+                    View all cases →
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-blue-100">
+                            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                                Case ID
+                            </th>
+                            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                                Client
+                            </th>
+                            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                                Assigned To
+                            </th>
+                            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                                Stage
+                            </th>
+                            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                                Updated
+                            </th>
+                            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                                Action
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-blue-50">
+                        <tr class="audit-row">
+                            <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0891</td>
+                            <td class="py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="avatar w-7 h-7 bg-blue-100 text-brand-700 text-xs">JD</div>
+                                    <span class="text-brand-900 text-xs font-bold">James Donaldson</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-xs font-medium text-slate-600">Priya S.</td>
+                            <td class="py-3"><span class="badge badge-yellow">Review</span></td>
+                            <td class="py-3 text-xs font-medium text-slate-500">2h ago</td>
+                            <td class="py-3">
+                                <button class="text-xs font-semibold text-brand-600 hover:underline">View</button>
+                            </td>
+                        </tr>
+                        <tr class="audit-row">
+                            <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0890</td>
+                            <td class="py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="avatar w-7 h-7 bg-violet-100 text-violet-700 text-xs">RM</div>
+                                    <span class="text-brand-900 text-xs font-bold">Rachel Monroe</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-xs font-medium text-slate-600">Marcus J.</td>
+                            <td class="py-3"><span class="badge badge-orange">Tax Filer</span></td>
+                            <td class="py-3 text-xs font-medium text-slate-500">3h ago</td>
+                            <td class="py-3">
+                                <button class="text-xs font-semibold text-brand-600 hover:underline">View</button>
+                            </td>
+                        </tr>
+                        <tr class="audit-row">
+                            <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0889</td>
+                            <td class="py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="avatar w-7 h-7 bg-teal-100 text-teal-700 text-xs">BK</div>
+                                    <span class="text-brand-900 text-xs font-bold">Brian Kowalski</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-xs font-medium text-slate-600">Robert H.</td>
+                            <td class="py-3"><span class="badge badge-green">Payment</span></td>
+                            <td class="py-3 text-xs font-medium text-slate-500">5h ago</td>
+                            <td class="py-3">
+                                <button class="text-xs font-semibold text-brand-600 hover:underline">View</button>
+                            </td>
+                        </tr>
+                        <tr class="audit-row">
+                            <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0888</td>
+                            <td class="py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="avatar w-7 h-7 bg-rose-100 text-rose-700 text-xs">SA</div>
+                                    <span class="text-brand-900 text-xs font-bold">Sofia Alvarez</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-xs font-medium text-slate-600">Priya S.</td>
+                            <td class="py-3"><span class="badge badge-blue">Doc Collect</span></td>
+                            <td class="py-3 text-xs font-medium text-slate-500">Yesterday</td>
+                            <td class="py-3">
+                                <button class="text-xs font-semibold text-brand-600 hover:underline">View</button>
+                            </td>
+                        </tr>
+                        <tr class="audit-row">
+                            <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0887</td>
+                            <td class="py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="avatar w-7 h-7 bg-orange-100 text-orange-700 text-xs">TP</div>
+                                    <span class="text-brand-900 text-xs font-bold">Thomas Park</span>
+                                </div>
+                            </td>
+                            <td class="py-3 text-xs font-medium text-slate-600">Sarah K.</td>
+                            <td class="py-3"><span class="badge badge-purple">Preparation</span></td>
+                            <td class="py-3 text-xs font-medium text-slate-500">Yesterday</td>
+                            <td class="py-3">
+                                <button class="text-xs font-semibold text-brand-600 hover:underline">View</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── CASES SECTION ─── -->
+    <div id="section-cases" class="section">
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-base font-bold text-brand-900">Pipeline Stage Distribution</h2>
-          <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">247 Active Cases</span>
+            <div class="flex items-center gap-3">
+                <input
+                    type="text"
+                    placeholder="Search cases…"
+                    class="glass rounded-xl px-4 py-2.5 text-sm text-brand-900 placeholder-slate-400 focus:outline-none focus:border-brand-400"
+                />
+                <select class="glass rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 focus:outline-none">
+                    <option>All Stages</option>
+                    <option>Doc Collection</option>
+                    <option>Preparation</option>
+                    <option>Review</option>
+                    <option>Tax Filer</option>
+                    <option>Acknowledger</option>
+                    <option>Payment</option>
+                </select>
+            </div>
+            <button class="btn-primary text-xs font-bold px-4 py-2.5 rounded-xl">+ New Case</button>
         </div>
-        <div class="space-y-5">
-          <div>
-            <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Doc Collection</span><span class="text-blue-600 font-bold">72 cases</span></div>
-            <div class="h-2.5 bg-blue-50 rounded-full"><div class="h-2.5 bg-blue-500 rounded-full bar-fill bar-29"></div></div>
-          </div>
-          <div>
-            <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Preparation</span><span class="text-violet-600 font-bold">65 cases</span></div>
-            <div class="h-2.5 bg-violet-50 rounded-full"><div class="h-2.5 bg-violet-500 rounded-full bar-fill bar-26"></div></div>
-          </div>
-          <div>
-            <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Review</span><span class="text-amber-600 font-bold">48 cases</span></div>
-            <div class="h-2.5 bg-amber-50 rounded-full"><div class="h-2.5 bg-amber-500 rounded-full bar-fill bar-19"></div></div>
-          </div>
-          <div>
-            <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Tax Filer</span><span class="text-orange-600 font-bold">32 cases</span></div>
-            <div class="h-2.5 bg-orange-50 rounded-full"><div class="h-2.5 bg-orange-500 rounded-full bar-fill bar-13"></div></div>
-          </div>
-          <div>
-            <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Acknowledger</span><span class="text-teal-600 font-bold">18 cases</span></div>
-            <div class="h-2.5 bg-teal-50 rounded-full"><div class="h-2.5 bg-teal-500 rounded-full bar-fill bar-7"></div></div>
-          </div>
-          <div>
-            <div class="flex justify-between text-xs mb-2 font-medium"><span class="text-slate-600">Payment</span><span class="text-emerald-600 font-bold">12 cases</span></div>
-            <div class="h-2.5 bg-emerald-50 rounded-full"><div class="h-2.5 bg-emerald-500 rounded-full bar-fill bar-5"></div></div>
-          </div>
+        <div class="card p-6">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-blue-100">
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Case ID
+                        </th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Client Name
+                        </th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Tax Year
+                        </th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Assigned Staff
+                        </th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Stage</th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Days Open
+                        </th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-blue-50">
+                    <tr class="audit-row">
+                        <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0891</td>
+                        <td class="py-3 text-brand-900 font-bold text-xs">James Donaldson</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">2024</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">Priya S.</td>
+                        <td class="py-3"><span class="badge badge-yellow">Review</span></td>
+                        <td class="py-3 text-xs font-medium text-slate-600">6</td>
+                        <td class="py-3 flex gap-3">
+                            <button class="text-xs font-semibold text-brand-600 hover:underline">View</button
+                            ><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button>
+                        </td>
+                    </tr>
+                    <tr class="audit-row">
+                        <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0890</td>
+                        <td class="py-3 text-brand-900 font-bold text-xs">Rachel Monroe</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">2024</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">Marcus J.</td>
+                        <td class="py-3"><span class="badge badge-orange">Tax Filer</span></td>
+                        <td class="py-3 text-xs font-medium text-slate-600">9</td>
+                        <td class="py-3 flex gap-3">
+                            <button class="text-xs font-semibold text-brand-600 hover:underline">View</button
+                            ><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button>
+                        </td>
+                    </tr>
+                    <tr class="audit-row">
+                        <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0889</td>
+                        <td class="py-3 text-brand-900 font-bold text-xs">Brian Kowalski</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">2024</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">Robert H.</td>
+                        <td class="py-3"><span class="badge badge-green">Payment</span></td>
+                        <td class="py-3 text-xs font-medium text-slate-600">12</td>
+                        <td class="py-3 flex gap-3">
+                            <button class="text-xs font-semibold text-brand-600 hover:underline">View</button
+                            ><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button>
+                        </td>
+                    </tr>
+                    <tr class="audit-row">
+                        <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0888</td>
+                        <td class="py-3 text-brand-900 font-bold text-xs">Sofia Alvarez</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">2024</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">Priya S.</td>
+                        <td class="py-3"><span class="badge badge-blue">Doc Collect</span></td>
+                        <td class="py-3 text-xs font-medium text-slate-600">2</td>
+                        <td class="py-3 flex gap-3">
+                            <button class="text-xs font-semibold text-brand-600 hover:underline">View</button
+                            ><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button>
+                        </td>
+                    </tr>
+                    <tr class="audit-row">
+                        <td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0887</td>
+                        <td class="py-3 text-brand-900 font-bold text-xs">Thomas Park</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">2024</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">Sarah K.</td>
+                        <td class="py-3"><span class="badge badge-purple">Preparation</span></td>
+                        <td class="py-3 text-xs font-medium text-slate-600">4</td>
+                        <td class="py-3 flex gap-3">
+                            <button class="text-xs font-semibold text-brand-600 hover:underline">View</button
+                            ><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-      </div>
-
-      <!-- Quick Stats -->
-      <div class="space-y-4">
-        <div class="card p-5">
-          <p class="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Closed This Month</p>
-          <p class="text-2xl font-black text-brand-900">43</p>
-          <div class="mt-3 h-1.5 bg-emerald-50 rounded-full"><div class="h-1.5 bg-emerald-500 rounded-full bar-73"></div></div>
-          <p class="text-xs text-slate-500 font-medium mt-2">73% of monthly target</p>
-        </div>
-        <div class="card p-5">
-          <p class="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Pending Billing</p>
-          <p class="text-2xl font-black text-amber-600">$184,300</p>
-          <p class="text-xs text-slate-500 font-medium mt-2">12 invoices outstanding</p>
-        </div>
-        <div class="card p-5">
-          <p class="text-xs text-slate-500 mb-1 font-bold uppercase tracking-wider">Active Staff</p>
-          <p class="text-2xl font-black text-brand-900">12 <span class="text-sm text-slate-400 font-normal">/ 15</span></p>
-          <p class="text-xs text-slate-500 font-medium mt-2">3 on leave</p>
-        </div>
-      </div>
     </div>
 
-    <!-- Recent Activity -->
-    <div class="card p-6">
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="text-base font-bold text-brand-900">Recent Case Activity</h2>
-        <button onclick="showSection('cases')" class="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors">View all cases →</button>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-blue-100">
-              <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Case ID</th>
-              <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Client</th>
-              <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Assigned To</th>
-              <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Stage</th>
-              <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Updated</th>
-              <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-blue-50">
-            <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0891</td><td class="py-3"><div class="flex items-center gap-2"><div class="avatar w-7 h-7 bg-blue-100 text-brand-700 text-xs">JD</div><span class="text-brand-900 text-xs font-bold">James Donaldson</span></div></td><td class="py-3 text-xs font-medium text-slate-600">Priya S.</td><td class="py-3"><span class="badge badge-yellow">Review</span></td><td class="py-3 text-xs font-medium text-slate-500">2h ago</td><td class="py-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button></td></tr>
-            <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0890</td><td class="py-3"><div class="flex items-center gap-2"><div class="avatar w-7 h-7 bg-violet-100 text-violet-700 text-xs">RM</div><span class="text-brand-900 text-xs font-bold">Rachel Monroe</span></div></td><td class="py-3 text-xs font-medium text-slate-600">Marcus J.</td><td class="py-3"><span class="badge badge-orange">Tax Filer</span></td><td class="py-3 text-xs font-medium text-slate-500">3h ago</td><td class="py-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button></td></tr>
-            <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0889</td><td class="py-3"><div class="flex items-center gap-2"><div class="avatar w-7 h-7 bg-teal-100 text-teal-700 text-xs">BK</div><span class="text-brand-900 text-xs font-bold">Brian Kowalski</span></div></td><td class="py-3 text-xs font-medium text-slate-600">Robert H.</td><td class="py-3"><span class="badge badge-green">Payment</span></td><td class="py-3 text-xs font-medium text-slate-500">5h ago</td><td class="py-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button></td></tr>
-            <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0888</td><td class="py-3"><div class="flex items-center gap-2"><div class="avatar w-7 h-7 bg-rose-100 text-rose-700 text-xs">SA</div><span class="text-brand-900 text-xs font-bold">Sofia Alvarez</span></div></td><td class="py-3 text-xs font-medium text-slate-600">Priya S.</td><td class="py-3"><span class="badge badge-blue">Doc Collect</span></td><td class="py-3 text-xs font-medium text-slate-500">Yesterday</td><td class="py-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button></td></tr>
-            <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0887</td><td class="py-3"><div class="flex items-center gap-2"><div class="avatar w-7 h-7 bg-orange-100 text-orange-700 text-xs">TP</div><span class="text-brand-900 text-xs font-bold">Thomas Park</span></div></td><td class="py-3 text-xs font-medium text-slate-600">Sarah K.</td><td class="py-3"><span class="badge badge-purple">Preparation</span></td><td class="py-3 text-xs font-medium text-slate-500">Yesterday</td><td class="py-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button></td></tr>
-          </tbody>
-        </table>
-      </div>
+    <!-- ─── STAFF SECTION ─── -->
+    <div id="section-staff" class="section">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div class="card p-5 flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="avatar w-12 h-12 text-base bg-gradient-to-br from-brand-600 to-brand-800 text-white">
+                        PS
+                    </div>
+                    <div>
+                        <p class="text-brand-900 font-bold">Priya Sharma</p>
+                        <p class="text-xs text-slate-500">Senior Tax Preparer</p>
+                    </div>
+                    <span class="ml-auto w-2 h-2 bg-emerald-500 rounded-full"></span>
+                </div>
+                <div class="flex gap-3 text-center">
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-brand-900">18</p>
+                        <p class="text-xs font-medium text-slate-500">Cases</p>
+                    </div>
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-emerald-600">94%</p>
+                        <p class="text-xs font-medium text-slate-500">On-Time</p>
+                    </div>
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-amber-600">3.8d</p>
+                        <p class="text-xs font-medium text-slate-500">Avg.</p>
+                    </div>
+                </div>
+                <div class="flex gap-1.5 flex-wrap">
+                    <span class="badge badge-blue">Doc Collect</span><span class="badge badge-purple">Preparation</span
+                    ><span class="badge badge-yellow">Review</span>
+                </div>
+            </div>
+            <div class="card p-5 flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="avatar w-12 h-12 text-base bg-gradient-to-br from-teal-600 to-teal-800 text-white">
+                        RH
+                    </div>
+                    <div>
+                        <p class="text-brand-900 font-bold">Robert Haines</p>
+                        <p class="text-xs text-slate-500">Compliance Officer</p>
+                    </div>
+                    <span class="ml-auto w-2 h-2 bg-emerald-500 rounded-full"></span>
+                </div>
+                <div class="flex gap-3 text-center">
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-brand-900">14</p>
+                        <p class="text-xs font-medium text-slate-500">Cases</p>
+                    </div>
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-emerald-600">98%</p>
+                        <p class="text-xs font-medium text-slate-500">On-Time</p>
+                    </div>
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-amber-600">4.1d</p>
+                        <p class="text-xs font-medium text-slate-500">Avg.</p>
+                    </div>
+                </div>
+                <div class="flex gap-1.5 flex-wrap">
+                    <span class="badge badge-yellow">Review</span><span class="badge badge-teal">Acknowledger</span>
+                </div>
+            </div>
+            <div class="card p-5 flex flex-col gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="avatar w-12 h-12 text-base bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+                        SK
+                    </div>
+                    <div>
+                        <p class="text-brand-900 font-bold">Sarah Kim</p>
+                        <p class="text-xs text-slate-500">Tax Associate</p>
+                    </div>
+                    <span class="ml-auto w-2 h-2 bg-amber-500 rounded-full"></span>
+                </div>
+                <div class="flex gap-3 text-center">
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-brand-900">9</p>
+                        <p class="text-xs font-medium text-slate-500">Cases</p>
+                    </div>
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-amber-500">87%</p>
+                        <p class="text-xs font-medium text-slate-500">On-Time</p>
+                    </div>
+                    <div class="flex-1 bg-slate-50 rounded-xl p-3">
+                        <p class="text-lg font-black text-amber-600">5.2d</p>
+                        <p class="text-xs font-medium text-slate-500">Avg.</p>
+                    </div>
+                </div>
+                <div class="flex gap-1.5 flex-wrap">
+                    <span class="badge badge-blue">Doc Collect</span><span class="badge badge-purple">Preparation</span>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- ─── CASES SECTION ─── -->
-  <div id="section-cases" class="section">
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-3">
-        <input type="text" placeholder="Search cases…" class="glass rounded-xl px-4 py-2.5 text-sm text-brand-900 placeholder-slate-400 focus:outline-none focus:border-brand-400"/>
-        <select class="glass rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 focus:outline-none">
-          <option>All Stages</option>
-          <option>Doc Collection</option>
-          <option>Preparation</option>
-          <option>Review</option>
-          <option>Tax Filer</option>
-          <option>Acknowledger</option>
-          <option>Payment</option>
-        </select>
-      </div>
-      <button class="btn-primary text-xs font-bold px-4 py-2.5 rounded-xl">+ New Case</button>
+    <!-- ─── AUDIT TRAIL SECTION ─── -->
+    <div id="section-audit" class="section">
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="font-bold text-brand-900">Immutable Audit Trail</h2>
+                <span
+                    class="text-xs font-bold text-brand-700 bg-brand-50 px-3 py-1.5 rounded-full border border-brand-100"
+                    >Append-only · Tamper-proof</span
+                >
+            </div>
+            <div class="space-y-0">
+                <div class="audit-row py-4 border-b border-blue-50 flex items-start gap-4">
+                    <span class="text-xs font-mono font-medium text-slate-500 w-36 flex-shrink-0 pt-0.5"
+                        >2025-08-03 09:41</span
+                    >
+                    <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div class="flex-1">
+                        <p class="text-xs text-brand-900 font-bold">
+                            Case <span class="font-mono text-brand-600">#TX-2025-0891</span> moved →
+                            <span class="text-amber-600">Review</span>
+                        </p>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">By Priya Sharma · IP 192.168.1.12</p>
+                    </div>
+                </div>
+                <div class="audit-row py-4 border-b border-blue-50 flex items-start gap-4">
+                    <span class="text-xs font-mono font-medium text-slate-500 w-36 flex-shrink-0 pt-0.5"
+                        >2025-08-03 09:17</span
+                    >
+                    <div class="w-2 h-2 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div class="flex-1">
+                        <p class="text-xs text-brand-900 font-bold">
+                            Document <span class="font-mono text-brand-600">W2_JDonaldson_2024.pdf</span> downloaded via
+                            Signed URL
+                        </p>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">
+                            By Priya Sharma · URL expired after 5 min
+                        </p>
+                    </div>
+                </div>
+                <div class="audit-row py-4 border-b border-blue-50 flex items-start gap-4">
+                    <span class="text-xs font-mono font-medium text-slate-500 w-36 flex-shrink-0 pt-0.5"
+                        >2025-08-03 08:55</span
+                    >
+                    <div class="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div class="flex-1">
+                        <p class="text-xs text-brand-900 font-bold">
+                            Case <span class="font-mono text-brand-600">#TX-2025-0890</span> moved →
+                            <span class="text-orange-600">Tax Filer</span>
+                        </p>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">By Marcus Admin · Review approved</p>
+                    </div>
+                </div>
+                <div class="audit-row py-4 border-b border-blue-50 flex items-start gap-4">
+                    <span class="text-xs font-mono font-medium text-slate-500 w-36 flex-shrink-0 pt-0.5"
+                        >2025-08-03 07:30</span
+                    >
+                    <div class="w-2 h-2 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                    <div class="flex-1">
+                        <p class="text-xs text-brand-900 font-bold">
+                            Login attempt failed for <span class="text-red-600">unknown@hacker.com</span>
+                        </p>
+                        <p class="text-xs text-slate-500 font-medium mt-0.5">
+                            IP 84.22.108.1 · Brute-force lock engaged after 5 attempts
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card p-6">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-blue-100">
-            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Case ID</th>
-            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Client Name</th>
-            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Tax Year</th>
-            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Assigned Staff</th>
-            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Stage</th>
-            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Days Open</th>
-            <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-blue-50">
-          <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0891</td><td class="py-3 text-brand-900 font-bold text-xs">James Donaldson</td><td class="py-3 text-xs font-medium text-slate-600">2024</td><td class="py-3 text-xs font-medium text-slate-600">Priya S.</td><td class="py-3"><span class="badge badge-yellow">Review</span></td><td class="py-3 text-xs font-medium text-slate-600">6</td><td class="py-3 flex gap-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button></td></tr>
-          <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0890</td><td class="py-3 text-brand-900 font-bold text-xs">Rachel Monroe</td><td class="py-3 text-xs font-medium text-slate-600">2024</td><td class="py-3 text-xs font-medium text-slate-600">Marcus J.</td><td class="py-3"><span class="badge badge-orange">Tax Filer</span></td><td class="py-3 text-xs font-medium text-slate-600">9</td><td class="py-3 flex gap-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button></td></tr>
-          <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0889</td><td class="py-3 text-brand-900 font-bold text-xs">Brian Kowalski</td><td class="py-3 text-xs font-medium text-slate-600">2024</td><td class="py-3 text-xs font-medium text-slate-600">Robert H.</td><td class="py-3"><span class="badge badge-green">Payment</span></td><td class="py-3 text-xs font-medium text-slate-600">12</td><td class="py-3 flex gap-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button></td></tr>
-          <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0888</td><td class="py-3 text-brand-900 font-bold text-xs">Sofia Alvarez</td><td class="py-3 text-xs font-medium text-slate-600">2024</td><td class="py-3 text-xs font-medium text-slate-600">Priya S.</td><td class="py-3"><span class="badge badge-blue">Doc Collect</span></td><td class="py-3 text-xs font-medium text-slate-600">2</td><td class="py-3 flex gap-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button></td></tr>
-          <tr class="audit-row"><td class="py-3 font-mono text-xs font-medium text-slate-500">#TX-2025-0887</td><td class="py-3 text-brand-900 font-bold text-xs">Thomas Park</td><td class="py-3 text-xs font-medium text-slate-600">2024</td><td class="py-3 text-xs font-medium text-slate-600">Sarah K.</td><td class="py-3"><span class="badge badge-purple">Preparation</span></td><td class="py-3 text-xs font-medium text-slate-600">4</td><td class="py-3 flex gap-3"><button class="text-xs font-semibold text-brand-600 hover:underline">View</button><button class="text-xs font-semibold text-slate-500 hover:text-brand-600">Reassign</button></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
 
-  <!-- ─── STAFF SECTION ─── -->
-  <div id="section-staff" class="section">
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-      <div class="card p-5 flex flex-col gap-4">
-        <div class="flex items-center gap-3">
-          <div class="avatar w-12 h-12 text-base bg-gradient-to-br from-brand-600 to-brand-800 text-white">PS</div>
-          <div><p class="text-brand-900 font-bold">Priya Sharma</p><p class="text-xs text-slate-500">Senior Tax Preparer</p></div>
-          <span class="ml-auto w-2 h-2 bg-emerald-500 rounded-full"></span>
+    <!-- ─── CLIENTS SECTION ─── -->
+    <div id="section-clients" class="section">
+        <div class="card p-6">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="font-bold text-brand-900">Client Accounts</h2>
+                <button class="btn-primary text-xs font-bold px-4 py-2 rounded-xl">+ Add Client</button>
+            </div>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-blue-100">
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Client</th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Company
+                        </th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Open Cases
+                        </th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">
+                            Total Filed
+                        </th>
+                        <th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-blue-50">
+                    <tr class="audit-row">
+                        <td class="py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="avatar w-7 h-7 bg-blue-100 text-brand-700 text-xs">JD</div>
+                                <span class="text-brand-900 font-bold text-xs">James Donaldson</span>
+                            </div>
+                        </td>
+                        <td class="py-3 text-xs font-medium text-slate-600">Donaldson LLC</td>
+                        <td class="py-3 text-xs font-bold text-brand-900">2</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">7</td>
+                        <td class="py-3"><span class="badge badge-yellow">Active</span></td>
+                    </tr>
+                    <tr class="audit-row">
+                        <td class="py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="avatar w-7 h-7 bg-violet-100 text-violet-700 text-xs">RM</div>
+                                <span class="text-brand-900 font-bold text-xs">Rachel Monroe</span>
+                            </div>
+                        </td>
+                        <td class="py-3 text-xs font-medium text-slate-600">Monroe Consulting</td>
+                        <td class="py-3 text-xs font-bold text-brand-900">1</td>
+                        <td class="py-3 text-xs font-medium text-slate-600">3</td>
+                        <td class="py-3"><span class="badge badge-orange">Filing</span></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-        <div class="flex gap-3 text-center">
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-brand-900">18</p><p class="text-xs font-medium text-slate-500">Cases</p></div>
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-emerald-600">94%</p><p class="text-xs font-medium text-slate-500">On-Time</p></div>
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-amber-600">3.8d</p><p class="text-xs font-medium text-slate-500">Avg.</p></div>
-        </div>
-        <div class="flex gap-1.5 flex-wrap"><span class="badge badge-blue">Doc Collect</span><span class="badge badge-purple">Preparation</span><span class="badge badge-yellow">Review</span></div>
-      </div>
-      <div class="card p-5 flex flex-col gap-4">
-        <div class="flex items-center gap-3">
-          <div class="avatar w-12 h-12 text-base bg-gradient-to-br from-teal-600 to-teal-800 text-white">RH</div>
-          <div><p class="text-brand-900 font-bold">Robert Haines</p><p class="text-xs text-slate-500">Compliance Officer</p></div>
-          <span class="ml-auto w-2 h-2 bg-emerald-500 rounded-full"></span>
-        </div>
-        <div class="flex gap-3 text-center">
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-brand-900">14</p><p class="text-xs font-medium text-slate-500">Cases</p></div>
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-emerald-600">98%</p><p class="text-xs font-medium text-slate-500">On-Time</p></div>
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-amber-600">4.1d</p><p class="text-xs font-medium text-slate-500">Avg.</p></div>
-        </div>
-        <div class="flex gap-1.5 flex-wrap"><span class="badge badge-yellow">Review</span><span class="badge badge-teal">Acknowledger</span></div>
-      </div>
-      <div class="card p-5 flex flex-col gap-4">
-        <div class="flex items-center gap-3">
-          <div class="avatar w-12 h-12 text-base bg-gradient-to-br from-amber-500 to-orange-600 text-white">SK</div>
-          <div><p class="text-brand-900 font-bold">Sarah Kim</p><p class="text-xs text-slate-500">Tax Associate</p></div>
-          <span class="ml-auto w-2 h-2 bg-amber-500 rounded-full"></span>
-        </div>
-        <div class="flex gap-3 text-center">
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-brand-900">9</p><p class="text-xs font-medium text-slate-500">Cases</p></div>
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-amber-500">87%</p><p class="text-xs font-medium text-slate-500">On-Time</p></div>
-          <div class="flex-1 bg-slate-50 rounded-xl p-3"><p class="text-lg font-black text-amber-600">5.2d</p><p class="text-xs font-medium text-slate-500">Avg.</p></div>
-        </div>
-        <div class="flex gap-1.5 flex-wrap"><span class="badge badge-blue">Doc Collect</span><span class="badge badge-purple">Preparation</span></div>
-      </div>
     </div>
-  </div>
 
-  <!-- ─── AUDIT TRAIL SECTION ─── -->
-  <div id="section-audit" class="section">
-    <div class="card p-6">
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="font-bold text-brand-900">Immutable Audit Trail</h2>
-        <span class="text-xs font-bold text-brand-700 bg-brand-50 px-3 py-1.5 rounded-full border border-brand-100">Append-only · Tamper-proof</span>
-      </div>
-      <div class="space-y-0">
-        <div class="audit-row py-4 border-b border-blue-50 flex items-start gap-4">
-          <span class="text-xs font-mono font-medium text-slate-500 w-36 flex-shrink-0 pt-0.5">2025-08-03 09:41</span>
-          <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
-          <div class="flex-1">
-            <p class="text-xs text-brand-900 font-bold">Case <span class="font-mono text-brand-600">#TX-2025-0891</span> moved → <span class="text-amber-600">Review</span></p>
-            <p class="text-xs text-slate-500 font-medium mt-0.5">By Priya Sharma · IP 192.168.1.12</p>
-          </div>
+    <!-- ─── CONFIG SECTION ─── -->
+    <div id="section-config" class="section">
+        <div class="grid lg:grid-cols-2 gap-5">
+            <div class="card p-6 space-y-4">
+                <h2 class="font-bold text-brand-900 mb-4">System Configuration</h2>
+                <div class="flex items-center justify-between py-3 border-b border-blue-50">
+                    <div>
+                        <p class="text-sm text-brand-900 font-bold">MFA Enforcement</p>
+                        <p class="text-xs font-medium text-slate-500">Require TOTP for all staff & admin</p>
+                    </div>
+                    <div class="w-10 h-6 bg-brand-600 rounded-full relative cursor-pointer">
+                        <div class="w-4 h-4 bg-white rounded-full absolute right-1 top-1"></div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between py-3 border-b border-blue-50">
+                    <div>
+                        <p class="text-sm text-brand-900 font-bold">Signed URL Expiry</p>
+                        <p class="text-xs font-medium text-slate-500">Time-limited document access</p>
+                    </div>
+                    <span class="badge badge-yellow">5 minutes</span>
+                </div>
+                <div class="flex items-center justify-between py-3 border-b border-blue-50">
+                    <div>
+                        <p class="text-sm text-brand-900 font-bold">Brute-Force Lock</p>
+                        <p class="text-xs font-medium text-slate-500">Block after N failed attempts</p>
+                    </div>
+                    <span class="badge badge-red">5 attempts</span>
+                </div>
+            </div>
+            <div class="card p-6">
+                <h2 class="font-bold text-brand-900 mb-4">Storage & Infrastructure</h2>
+                <div class="space-y-4">
+                    <div class="bg-slate-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-sm"
+                        >
+                            ☁️
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm text-brand-900 font-bold">Secure Object Storage</p>
+                            <p class="text-xs font-medium text-slate-500">Private isolated bucket</p>
+                        </div>
+                        <span class="badge badge-green">Connected</span>
+                    </div>
+                    <div class="bg-slate-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center text-violet-600 text-sm"
+                        >
+                            🗄️
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm text-brand-900 font-bold">Primary Relational DB</p>
+                            <p class="text-xs font-medium text-slate-500">Strict ACID compliance</p>
+                        </div>
+                        <span class="badge badge-green">Healthy</span>
+                    </div>
+                    <div class="bg-slate-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 text-sm"
+                        >
+                            🔐
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm text-brand-900 font-bold">TOTP Auth Provider</p>
+                            <p class="text-xs font-medium text-slate-500">RFC 6238 compliant</p>
+                        </div>
+                        <span class="badge badge-green">Enforced</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="audit-row py-4 border-b border-blue-50 flex items-start gap-4">
-          <span class="text-xs font-mono font-medium text-slate-500 w-36 flex-shrink-0 pt-0.5">2025-08-03 09:17</span>
-          <div class="w-2 h-2 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0"></div>
-          <div class="flex-1">
-            <p class="text-xs text-brand-900 font-bold">Document <span class="font-mono text-brand-600">W2_JDonaldson_2024.pdf</span> downloaded via Signed URL</p>
-            <p class="text-xs text-slate-500 font-medium mt-0.5">By Priya Sharma · URL expired after 5 min</p>
-          </div>
-        </div>
-        <div class="audit-row py-4 border-b border-blue-50 flex items-start gap-4">
-          <span class="text-xs font-mono font-medium text-slate-500 w-36 flex-shrink-0 pt-0.5">2025-08-03 08:55</span>
-          <div class="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
-          <div class="flex-1">
-            <p class="text-xs text-brand-900 font-bold">Case <span class="font-mono text-brand-600">#TX-2025-0890</span> moved → <span class="text-orange-600">Tax Filer</span></p>
-            <p class="text-xs text-slate-500 font-medium mt-0.5">By Marcus Admin · Review approved</p>
-          </div>
-        </div>
-        <div class="audit-row py-4 border-b border-blue-50 flex items-start gap-4">
-          <span class="text-xs font-mono font-medium text-slate-500 w-36 flex-shrink-0 pt-0.5">2025-08-03 07:30</span>
-          <div class="w-2 h-2 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
-          <div class="flex-1">
-            <p class="text-xs text-brand-900 font-bold">Login attempt failed for <span class="text-red-600">unknown@hacker.com</span></p>
-            <p class="text-xs text-slate-500 font-medium mt-0.5">IP 84.22.108.1 · Brute-force lock engaged after 5 attempts</p>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
-
-  <!-- ─── CLIENTS SECTION ─── -->
-  <div id="section-clients" class="section">
-    <div class="card p-6">
-      <div class="flex justify-between items-center mb-5"><h2 class="font-bold text-brand-900">Client Accounts</h2><button class="btn-primary text-xs font-bold px-4 py-2 rounded-xl">+ Add Client</button></div>
-      <table class="w-full text-sm">
-        <thead><tr class="border-b border-blue-100"><th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Client</th><th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Company</th><th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Open Cases</th><th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Total Filed</th><th class="text-left text-xs text-slate-500 font-bold uppercase tracking-wider pb-3">Status</th></tr></thead>
-        <tbody class="divide-y divide-blue-50">
-          <tr class="audit-row"><td class="py-3"><div class="flex items-center gap-2"><div class="avatar w-7 h-7 bg-blue-100 text-brand-700 text-xs">JD</div><span class="text-brand-900 font-bold text-xs">James Donaldson</span></div></td><td class="py-3 text-xs font-medium text-slate-600">Donaldson LLC</td><td class="py-3 text-xs font-bold text-brand-900">2</td><td class="py-3 text-xs font-medium text-slate-600">7</td><td class="py-3"><span class="badge badge-yellow">Active</span></td></tr>
-          <tr class="audit-row"><td class="py-3"><div class="flex items-center gap-2"><div class="avatar w-7 h-7 bg-violet-100 text-violet-700 text-xs">RM</div><span class="text-brand-900 font-bold text-xs">Rachel Monroe</span></div></td><td class="py-3 text-xs font-medium text-slate-600">Monroe Consulting</td><td class="py-3 text-xs font-bold text-brand-900">1</td><td class="py-3 text-xs font-medium text-slate-600">3</td><td class="py-3"><span class="badge badge-orange">Filing</span></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ─── CONFIG SECTION ─── -->
-  <div id="section-config" class="section">
-    <div class="grid lg:grid-cols-2 gap-5">
-      <div class="card p-6 space-y-4">
-        <h2 class="font-bold text-brand-900 mb-4">System Configuration</h2>
-        <div class="flex items-center justify-between py-3 border-b border-blue-50">
-          <div><p class="text-sm text-brand-900 font-bold">MFA Enforcement</p><p class="text-xs font-medium text-slate-500">Require TOTP for all staff & admin</p></div>
-          <div class="w-10 h-6 bg-brand-600 rounded-full relative cursor-pointer"><div class="w-4 h-4 bg-white rounded-full absolute right-1 top-1"></div></div>
-        </div>
-        <div class="flex items-center justify-between py-3 border-b border-blue-50">
-          <div><p class="text-sm text-brand-900 font-bold">Signed URL Expiry</p><p class="text-xs font-medium text-slate-500">Time-limited document access</p></div>
-          <span class="badge badge-yellow">5 minutes</span>
-        </div>
-        <div class="flex items-center justify-between py-3 border-b border-blue-50">
-          <div><p class="text-sm text-brand-900 font-bold">Brute-Force Lock</p><p class="text-xs font-medium text-slate-500">Block after N failed attempts</p></div>
-          <span class="badge badge-red">5 attempts</span>
-        </div>
-      </div>
-      <div class="card p-6">
-        <h2 class="font-bold text-brand-900 mb-4">Storage & Infrastructure</h2>
-        <div class="space-y-4">
-          <div class="bg-slate-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-sm">☁️</div>
-            <div class="flex-1"><p class="text-sm text-brand-900 font-bold">Secure Object Storage</p><p class="text-xs font-medium text-slate-500">Private isolated bucket</p></div>
-            <span class="badge badge-green">Connected</span>
-          </div>
-          <div class="bg-slate-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
-            <div class="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center text-violet-600 text-sm">🗄️</div>
-            <div class="flex-1"><p class="text-sm text-brand-900 font-bold">Primary Relational DB</p><p class="text-xs font-medium text-slate-500">Strict ACID compliance</p></div>
-            <span class="badge badge-green">Healthy</span>
-          </div>
-          <div class="bg-slate-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
-            <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 text-sm">🔐</div>
-            <div class="flex-1"><p class="text-sm text-brand-900 font-bold">TOTP Auth Provider</p><p class="text-xs font-medium text-slate-500">RFC 6238 compliant</p></div>
-            <span class="badge badge-green">Enforced</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </main>
 
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script src="{{ url_for('static', path='/js/admin.js') }}"></script>
 {% endblock %}

@@ -202,7 +202,7 @@ def refresh(
 
 # ── Forgot password ───────────────────────────────────────────────────────────
 
-@router.post("/forgot-password", response_class=HTMLResponse)
+@router.post("/forgot-password")
 def forgot_password(
     request: Request,
     email: str = Form(...),
@@ -211,11 +211,23 @@ def forgot_password(
     account = auth_service.get_account_by_email(db, email)
     if account and account.is_active:
         raw_token = auth_service.create_password_reset_token(db, account)
-        # TODO: send email
-        print(f"[DEV] Reset password -> http://127.0.0.1:8000/auth/reset-password?token={raw_token}")
+        
+        # --- Original Email Logic (Commented out until email is configured) ---
+        # # TODO: send email
+        # print(f"[DEV] Reset password -> http://127.0.0.1:8000/auth/reset-password?token={raw_token}")
+        # msg = "If an account with that email exists, a reset link has been sent."
+        # return templates.TemplateResponse("auth/forgot-password.html", _ctx(request, msg=msg))
+        # ----------------------------------------------------------------------
 
-    msg = "If an account with that email exists, a reset link has been sent."
-    return templates.TemplateResponse("auth/forgot-password.html", _ctx(request, msg=msg))
+        # Directly redirect to the reset password page for development
+        url = request.url_for("reset_password_page").include_query_params(token=raw_token)
+        return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
+
+    # If the account doesn't exist or is inactive, show an error message
+    return templates.TemplateResponse(
+        "auth/forgot-password.html",
+        _ctx(request, error="No active account found with that email address.")
+    )
 
 
 # ── Reset password ────────────────────────────────────────────────────────────
@@ -237,7 +249,12 @@ def reset_password(
     if not success:
         return templates.TemplateResponse("auth/reset-password.html", {**ctx, "error": "Invalid or expired reset token."})
 
-    return RedirectResponse(url=request.url_for("login_page").include_query_params(reset=1), status_code=status.HTTP_303_SEE_OTHER)
+    msg = "Password updated successfully! Redirecting to login..."
+    login_url = str(request.url_for("login_page").include_query_params(reset=1))
+    return templates.TemplateResponse(
+        "auth/reset-password.html",
+        {**ctx, "msg": msg, "redirect_url": login_url}
+    )
 
 
 # ── Resend verification ───────────────────────────────────────────────────────

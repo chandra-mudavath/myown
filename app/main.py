@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import auth, dashboard, profile, staff, admin
+from app.api.client import client as client_routes
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.templates import templates
@@ -22,7 +23,7 @@ app = FastAPI(
 
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request: Request, exc: RequestValidationError):
-    if request.url.path.startswith("/profile/api"):
+    if request.url.path.startswith("/client/profile/api"):
         field = exc.errors()[0].get("loc", ["profile"])[-1]
         messages = {
             "first_name": "Please enter your first name.",
@@ -52,7 +53,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 @app.exception_handler(HTTPException)
 async def http_error_handler(request: Request, exc: HTTPException):
     accepts_html = "text/html" in request.headers.get("accept", "")
-    protected_page = request.url.path in {"/profile", "/dashboard"}
+    protected_page = request.url.path in {"/client/profile", "/client/dashboard", "/staff/dashboard", "/admin/dashboard"}
     if exc.status_code == 401 and accepts_html and protected_page:
         return templates.TemplateResponse(
             "errors/unauthorized.html",
@@ -65,6 +66,7 @@ async def http_error_handler(request: Request, exc: HTTPException):
 app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(profile.router)
+app.include_router(client_routes.router)
 app.include_router(staff.router)
 app.include_router(admin.router)
 
