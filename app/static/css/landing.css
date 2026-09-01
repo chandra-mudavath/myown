@@ -107,6 +107,10 @@
         display: none !important;
     }
 
+    .landing-page .navbar:not(.mobile-open) {
+        display: none !important;
+    }
+
     .landing-page .main-nav {
         position: relative;
     }
