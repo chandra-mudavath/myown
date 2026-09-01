@@ -19,8 +19,8 @@
 
         <script src="{{ url_for('static', path='/js/tailwind-config.js') }}"></script>
 
-        <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}" />
-        <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}?v=1.2" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=1.2" />
         {% block styles %}{% endblock %} {% block head %}{% endblock %}
     </head>
     <body class="{% block body_class %}{% endblock %}">
