@@ -155,6 +155,9 @@ def client_dashboard(
         "payment_pending": 0,
     }
 
+    # Active filing exists if there is a filing that is not 'complete'
+    has_active_filing = filing_record is not None and filing_record.status != "complete"
+
     dashboard = {
         "app_name": settings.APP_NAME,
         "display_name": display_name,
@@ -168,6 +171,7 @@ def client_dashboard(
         "summary": summary,
         "actions": [],
         "activities": [],
+        "has_active_filing": has_active_filing,
     }
     return templates.TemplateResponse(
         "client/dashboard/index.html",

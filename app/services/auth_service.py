@@ -27,7 +27,14 @@ from app.models.auth import (
     AuthRefreshToken,
 )
 from app.models.client import Client
+from app.models.staff import Staff, StaffRole
+from app.models.admin import Admin
 from app.schemas.auth import RegisterRequest
+
+# Internal staff domain
+_INTERNAL_DOMAIN = "urtax.com"
+_ADMIN_SUFFIXES = (".admin", ".info")   # e.g. chandra.n.admin@urtax.com
+_HR_SUFFIX = ".hr"                       # e.g. chandra.n.hr@urtax.com
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -44,6 +51,16 @@ def _next_client_number(db: Session) -> str:
     return f"CLI-{(count + 1):08d}"
 
 
+def _next_staff_number(db: Session) -> str:
+    count = db.query(Staff).count()
+    return f"STF-{(count + 1):08d}"
+
+
+def _next_admin_number(db: Session) -> str:
+    count = db.query(Admin).count()
+    return f"ADM-{(count + 1):08d}"
+
+
 def _next_account_number(db: Session, account_type: AccountType) -> str:
     prefix = {"CLIENT": "CLT", "STAFF": "STF", "ADMIN": "ADM"}[account_type.value]
     count = db.query(AuthAccount).filter(AuthAccount.account_type == account_type).count()
@@ -58,21 +75,44 @@ def get_account_by_email(db: Session, email: str) -> Optional[AuthAccount]:
 
 # ── Registration ──────────────────────────────────────────────────────────────
 
-def register_client(db: Session, data: RegisterRequest) -> tuple[AuthAccount, Client, str]:
+def register_by_email_domain(db: Session, data: RegisterRequest) -> tuple[AuthAccount, object]:
     """
-    Create AuthAccount + Client in a single transaction.
-    Returns (account, client, raw_email_verification_token).
+    Inspect the email domain/suffix and create the correct account type:
+      - Non-@urtax.com  → Client  (is_verified=True, no email check needed)
+      - @urtax.com + .admin/.info suffix → Admin  (is_verified=False, requires email verification)
+      - @urtax.com + .hr suffix           → Staff[HR]  (is_verified=False)
+      - @urtax.com (plain)                → Staff[INITIATOR]  (is_verified=False)
+    Returns (account, profile_record).
     """
+    email_lower = data.email.lower().strip()
+    local_part, domain = (email_lower.rsplit("@", 1) + [""])[:2]
+
+    if domain != _INTERNAL_DOMAIN:
+        return _register_client(db, data, email_lower)
+
+    # Internal @urtax.com domain
+    if any(local_part.endswith(s) for s in _ADMIN_SUFFIXES):
+        return _register_admin(db, data, email_lower)
+
+    if local_part.endswith(_HR_SUFFIX):
+        return _register_staff(db, data, email_lower, StaffRole.HR)
+
+    # Plain staff — default role: INITIATOR
+    return _register_staff(db, data, email_lower, StaffRole.INITIATOR)
+
+
+def _register_client(db: Session, data: RegisterRequest, email: str) -> tuple[AuthAccount, Client]:
+    """Create a Client account. Verified immediately — no email check needed."""
     account = AuthAccount(
         account_number=_next_account_number(db, AccountType.CLIENT),
-        email=data.email.lower().strip(),
+        email=email,
         password_hash=hash_password(data.password),
         account_type=AccountType.CLIENT,
         is_active=True,
-        is_verified=False,
+        is_verified=True,  # Clients can log in immediately
     )
     db.add(account)
-    db.flush()  # get account.id without committing
+    db.flush()
 
     client = Client(
         client_number=_next_client_number(db),
@@ -82,14 +122,78 @@ def register_client(db: Session, data: RegisterRequest) -> tuple[AuthAccount, Cl
         phone=data.phone,
     )
     db.add(client)
-
-    raw_token, token_record = _create_email_verification_token(db, account)
-    db.add(token_record)
-
     db.commit()
     db.refresh(account)
     db.refresh(client)
+    return account, client
 
+
+def _register_staff(db: Session, data: RegisterRequest, email: str, role: StaffRole) -> tuple[AuthAccount, Staff]:
+    """Create a Staff account. Temporarily verified immediately until company email is set up."""
+    account = AuthAccount(
+        account_number=_next_account_number(db, AccountType.STAFF),
+        email=email,
+        password_hash=hash_password(data.password),
+        account_type=AccountType.STAFF,
+        is_active=True,
+        # is_verified=False,  # TODO: Re-enable when company domain email is configured
+        is_verified=True,  # Temporarily allow direct login until company email is set up
+    )
+    db.add(account)
+    db.flush()
+
+    staff = Staff(
+        staff_number=_next_staff_number(db),
+        account_id=account.id,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        phone=data.phone,
+        role=role,
+    )
+    db.add(staff)
+    db.commit()
+    db.refresh(account)
+    db.refresh(staff)
+    return account, staff
+
+
+def _register_admin(db: Session, data: RegisterRequest, email: str) -> tuple[AuthAccount, Admin]:
+    """Create an Admin account. Temporarily verified immediately until company email is set up."""
+    account = AuthAccount(
+        account_number=_next_account_number(db, AccountType.ADMIN),
+        email=email,
+        password_hash=hash_password(data.password),
+        account_type=AccountType.ADMIN,
+        is_active=True,
+        # is_verified=False,  # TODO: Re-enable when company domain email is configured
+        is_verified=True,  # Temporarily allow direct login until company email is set up
+    )
+    db.add(account)
+    db.flush()
+
+    admin = Admin(
+        admin_number=_next_admin_number(db),
+        account_id=account.id,
+        first_name=data.first_name,
+        last_name=data.last_name,
+    )
+    db.add(admin)
+    db.commit()
+    db.refresh(account)
+    db.refresh(admin)
+    return account, admin
+
+
+def register_client(db: Session, data: RegisterRequest) -> tuple[AuthAccount, Client, str]:
+    """
+    Legacy function kept for backwards compatibility.
+    Create AuthAccount + Client in a single transaction.
+    Returns (account, client, raw_email_verification_token).
+    """
+    account, client = _register_client(db, data, data.email.lower().strip())
+    raw_token, token_record = _create_email_verification_token(db, account)
+    db.add(token_record)
+    db.commit()
     return account, client, raw_token
 
 

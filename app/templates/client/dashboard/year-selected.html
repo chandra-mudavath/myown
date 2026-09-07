@@ -1,0 +1,78 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Tax Year {{ tax_year }} Selected - {{ app_name }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}" />
+{% endblock %}
+
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<div class="auth-card fade-in" style="text-align:center; max-width: 420px;">
+    <div class="auth-header">
+        <div class="brand-icon brand-icon--lg btn-primary mx-auto mb-4" style="font-size:2rem;">&#10003;</div>
+        <h1 class="auth-header__title">
+            Tax Year <span class="auth-title-accent">{{ tax_year }}</span> Selected
+        </h1>
+        <p class="auth-header__subtitle">
+            Taking you to your dashboard&hellip;
+        </p>
+    </div>
+
+    <div class="glass-strong rounded-2xl p-8 mb-4" style="display:flex; flex-direction:column; align-items:center; gap:1.2rem;">
+        <div class="year-countdown" id="year-countdown" aria-live="polite">
+            <svg viewBox="0 0 64 64" width="64" height="64">
+                <circle class="countdown-track" cx="32" cy="32" r="28" />
+                <circle class="countdown-ring" cx="32" cy="32" r="28" id="countdown-ring" />
+            </svg>
+            <span class="countdown-num" id="countdown-num">3</span>
+        </div>
+        <p style="color: var(--ink-secondary, #6b7280); font-size:0.875rem;">
+            Redirecting in <strong id="countdown-text">3</strong> seconds&hellip;
+        </p>
+        <a href="{{ url_for('client_dashboard') }}" class="btn-submit btn-primary" style="margin-top:0.5rem;">
+            Go to Dashboard Now
+        </a>
+    </div>
+</div>
+
+<style>
+.year-countdown { position: relative; width: 64px; height: 64px; }
+.countdown-track { fill: none; stroke: var(--landing-nav-border, #e5e7eb); stroke-width: 5; }
+.countdown-ring {
+    fill: none; stroke: var(--landing-accent, #0d9488); stroke-width: 5;
+    stroke-linecap: round; stroke-dasharray: 176; stroke-dashoffset: 0;
+    transform: rotate(-90deg); transform-origin: 50% 50%;
+    transition: stroke-dashoffset 1s linear;
+}
+.countdown-num {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; font-weight: 700; color: var(--landing-accent, #0d9488);
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
+<script>
+(function () {
+    const circumference = 176;
+    const ring = document.getElementById('countdown-ring');
+    const numEl = document.getElementById('countdown-num');
+    const textEl = document.getElementById('countdown-text');
+    let remaining = 3;
+    if (ring) ring.style.strokeDashoffset = 0;
+    const interval = setInterval(function () {
+        remaining -= 1;
+        if (numEl) numEl.textContent = remaining;
+        if (textEl) textEl.textContent = remaining;
+        if (ring) ring.style.strokeDashoffset = circumference * (1 - remaining / 3);
+        if (remaining <= 0) {
+            clearInterval(interval);
+            window.location.href = "{{ url_for('client_dashboard') }}";
+        }
+    }, 1000);
+})();
+</script>
+{% endblock %}

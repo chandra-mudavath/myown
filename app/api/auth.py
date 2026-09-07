@@ -101,7 +101,6 @@ def register(
             password_confirmation=password_confirmation,
         )
     except Exception as e:
-        # Extract the first validation error message
         try:
             import json
             errors = json.loads(e.json())
@@ -113,13 +112,22 @@ def register(
     if auth_service.get_account_by_email(db, data.email):
         return templates.TemplateResponse("auth/register.html", _ctx(request, error="An account with this email already exists."))
 
-    _, _, raw_token = auth_service.register_client(db, data)
+    account, _ = auth_service.register_by_email_domain(db, data)
 
-    # TODO: send email with verification link
-    # email_service.send_verification(data.email, raw_token)
-    # print(f"[DEV] Verify email -> http://127.0.0.1:8000/auth/verify-email?token={raw_token}")
+    # Clients are verified immediately — send them straight to login
+    if account.is_verified:
+        return RedirectResponse(
+            url=request.url_for("login_page").include_query_params(registered=1),
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
 
-    return RedirectResponse(url=request.url_for("login_page").include_query_params(registered=1), status_code=status.HTTP_303_SEE_OTHER)
+    # Staff / Admin — account created but email verification is required
+    # Show a pending message on the register page
+    msg = (
+        "Account created! Since you\'re using an internal @urtax.com address, "
+        "your account needs to be verified by an administrator before you can log in."
+    )
+    return templates.TemplateResponse("auth/register.html", _ctx(request, msg=msg))
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
@@ -145,11 +153,15 @@ def login(
         error = reasons.get(failure, "Invalid email or password.")
         return templates.TemplateResponse("auth/login.html", _ctx(request, error=error))
 
-    # TODO: Re-enable email verification check when email sending is configured
-    # if not account.is_verified:
+    # Internal @urtax.com accounts (Staff/Admin) require email verification
+    # TODO: Re-enable when company domain email is configured
+    # if not account.is_verified and account.account_type != AccountType.CLIENT:
     #     return templates.TemplateResponse(
     #         "auth/login.html",
-    #         _ctx(request, error="Please verify your email before logging in.", show_resend=True, email=username),
+    #         _ctx(
+    #             request,
+    #             error="Your account is pending verification. Please contact an administrator to activate your account.",
+    #         ),
     #     )
 
     access_token, raw_refresh = auth_service.issue_tokens(db, account)

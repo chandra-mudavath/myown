@@ -40,7 +40,7 @@
     height: calc(100vh - var(--site-header-h, 84px));
     padding: 18px 16px;
     border-right: 1px solid var(--line, #d8e5e8);
-    background: rgba(255, 255, 255, 0.97);
+    background: var(--surface);
     box-shadow: 0 0 0 rgba(0, 0, 0, 0);
     transform: translateX(-100%);
     transition:
@@ -50,7 +50,22 @@
 
 .dashboard-sidebar.open {
     transform: translateX(0);
-    box-shadow: 12px 0 30px rgba(23, 50, 77, 0.14);
+    box-shadow: none;
+}
+
+/* Push main content when sidebar is open (desktop only) */
+.dashboard-shell,
+.profile-shell {
+    transition: margin-left 0.25s ease, width 0.25s ease;
+}
+
+@media (min-width: 768px) {
+    body.sidebar-open .dashboard-shell,
+    body.sidebar-open .profile-shell {
+        margin-left: 280px; /* 250px sidebar width + 30px gap */
+        width: calc(100% - 310px); /* 280px left + 30px right gap to prevent overflow */
+        max-width: 1120px;
+    }
 }
 
 .dashboard-sidebar .brand {
@@ -112,8 +127,36 @@
 }
 
 .sidebar-nav-item--logout:hover {
-    background: #fdf1ef;
-    color: #a65348;
+    background: rgba(166, 83, 72, 0.1);
+    color: var(--coral);
+}
+
+/* Disabled state for nav items (e.g., New Filing when active filing exists) */
+.sidebar-nav-item--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--sidebar-ink, inherit);
+}
+
+.sidebar-disabled-badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: #f59e0b22;
+    color: #b45309;
+    border: 1px solid #f59e0b55;
+    border-radius: 6px;
+    padding: 1px 6px;
+    text-transform: uppercase;
 }
 
 .sidebar-toggle {
@@ -551,15 +594,15 @@
 }
 
 .alert--error {
-    background: #fef2f2;
-    color: #dc2626;
-    border-color: #fecaca;
+    background: rgba(189, 95, 82, 0.1);
+    color: var(--coral);
+    border-color: rgba(189, 95, 82, 0.2);
 }
 
 .alert--success {
-    background: #f0fdf4;
-    color: #16a34a;
-    border-color: #bbf7d0;
+    background: rgba(43, 139, 99, 0.1);
+    color: var(--green);
+    border-color: rgba(43, 139, 99, 0.2);
 }
 
 /* --- Auth Page Wrapper --- */

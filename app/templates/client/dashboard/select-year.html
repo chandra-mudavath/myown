@@ -41,10 +41,27 @@
           {% endfor %}
         </select>
       </div>
+      <p id="year-preview" style="display:none; color:#2563eb; font-weight:500; font-size:0.95rem; text-align:center; margin-top:0.25rem;"></p>
       <button type="submit" class="btn-submit btn-primary">Continue</button>
     </form>
   </div>
 </div>
 {% endblock %}
 
-{% block scripts %}<script src="{{ url_for('static', path='/js/auth.js') }}"></script>{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
+<script>
+    const yearSelect = document.getElementById('tax_year');
+    const yearPreview = document.getElementById('year-preview');
+    if (yearSelect && yearPreview) {
+        yearSelect.addEventListener('change', function () {
+            if (this.value) {
+                yearPreview.textContent = 'Your selected year is ' + this.value;
+                yearPreview.style.display = 'block';
+            } else {
+                yearPreview.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

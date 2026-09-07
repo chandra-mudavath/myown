@@ -1,33 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const landingPage = document.querySelector(".landing-page");
-    const savedTheme = window.localStorage.getItem("landing-theme");
     document.body.classList.add("loaded-success");
-
-    const applyTheme = (theme) => {
-        const isDark = theme === "dark";
-        document.body.classList.remove("dark-theme", "light-theme");
-        document.body.classList.add(isDark ? "dark-theme" : "light-theme");
-        landingPage?.classList.remove("dark-theme", "light-theme");
-        landingPage?.classList.add(isDark ? "dark-theme" : "light-theme");
-
-        const themeToggle = document.getElementById("theme-toggle");
-        if (!themeToggle) return;
-        themeToggle.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
-        themeToggle.setAttribute("title", isDark ? "Switch to light theme" : "Switch to dark theme");
-        themeToggle.setAttribute("data-theme", isDark ? "dark" : "light");
-        themeToggle.setAttribute("aria-pressed", String(isDark));
-    };
-
-    applyTheme(savedTheme === "dark" ? "dark" : "light");
-
-    const themeToggle = document.getElementById("theme-toggle");
-    if (themeToggle) {
-        themeToggle.addEventListener("click", () => {
-            const nextTheme = document.body.classList.contains("dark-theme") ? "light" : "dark";
-            applyTheme(nextTheme);
-            window.localStorage.setItem("landing-theme", nextTheme);
-        });
-    }
 
     const heroCaption = document.querySelector(".hero-art span");
     if (heroCaption) {
@@ -58,6 +30,62 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 115);
     });
 
+    const revealTargets = [...document.querySelectorAll(".landing-page .section")];
+    if (revealTargets.length && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const revealDirections = ["top", "right", "bottom", "left"];
+        revealTargets.forEach((section, index) => {
+            if (section.id === "hero") return;
+            section.dataset.scrollReveal = revealDirections[(index - 1) % revealDirections.length];
+            [...section.children].forEach((child, childIndex) => {
+                child.classList.add("scroll-reveal-child");
+                child.style.setProperty("--reveal-delay", `${childIndex * 90}ms`);
+            });
+        });
+
+        const revealObserver = new IntersectionObserver(
+            (entries, observer) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    entry.target.classList.add("is-scroll-visible");
+                    entry.target.querySelectorAll(".scroll-reveal-child").forEach((child) => {
+                        child.classList.add("is-scroll-visible");
+                    });
+                    observer.unobserve(entry.target);
+                });
+            },
+            { threshold: 0.14, rootMargin: "0px 0px -8%" }
+        );
+
+        revealTargets.forEach((section) => {
+            if (section.id !== "hero") revealObserver.observe(section);
+        });
+    }
+
+    const workflowContent = document.querySelector("[data-workflow]");
+    if (workflowContent) {
+        const workflowSteps = [...workflowContent.querySelectorAll(".workflow-step")];
+        const showWorkflow = () => {
+            workflowContent.classList.add("is-workflow-visible");
+            workflowSteps.forEach((step, index) => {
+                window.setTimeout(() => step.classList.add("is-workflow-visible"), index * 140);
+            });
+        };
+
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            showWorkflow();
+        } else {
+            const workflowObserver = new IntersectionObserver(
+                ([entry], observer) => {
+                    if (!entry.isIntersecting) return;
+                    showWorkflow();
+                    observer.disconnect();
+                },
+                { threshold: 0.2 }
+            );
+            workflowObserver.observe(workflowContent);
+        }
+    }
+
     const menuButton = document.querySelector(".menu-mobile");
     const menu = document.getElementById("landing-menu");
     if (menuButton && menu) {
@@ -74,6 +102,37 @@ document.addEventListener("DOMContentLoaded", () => {
                 menu.classList.add("hidden");
                 menu.classList.remove("mobile-open");
                 menuButton.setAttribute("aria-expanded", "false");
+            });
+        });
+    }
+
+    const servicesAccordion = document.querySelector("[data-services-accordion]");
+    if (servicesAccordion) {
+        const serviceItems = [...servicesAccordion.querySelectorAll("[data-service-item]")];
+
+        const setServiceState = (item, isOpen) => {
+            const trigger = item.querySelector(".service-trigger");
+            const panel = item.querySelector(".service-panel");
+            const toggle = item.querySelector(".service-toggle");
+            if (!trigger || !panel || !toggle) return;
+
+            item.classList.toggle("is-open", isOpen);
+            trigger.setAttribute("aria-expanded", String(isOpen));
+            toggle.textContent = isOpen ? "−" : "+";
+
+            if (isOpen) {
+                panel.hidden = false;
+            } else {
+                window.setTimeout(() => {
+                    if (!item.classList.contains("is-open")) panel.hidden = true;
+                }, 600);
+            }
+        };
+
+        serviceItems.forEach((item) => {
+            item.querySelector(".service-trigger")?.addEventListener("click", () => {
+                const shouldOpen = !item.classList.contains("is-open");
+                serviceItems.forEach((serviceItem) => setServiceState(serviceItem, shouldOpen && serviceItem === item));
             });
         });
     }

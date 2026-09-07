@@ -1,0 +1,18 @@
+<div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
+<aside class="dashboard-sidebar staff-sidebar" id="dashboard-sidebar">
+    <div class="staff-sidebar-heading"><span class="staff-brand-mark" aria-hidden="true">UT</span><span>{{ app_name }}</span></div>
+    <nav class="sidebar-nav" aria-label="Staff navigation">
+        <a class="sidebar-nav-item active" href="/staff/dashboard"><span class="sidebar-nav-icon" aria-hidden="true">&#9635;</span> Dashboard</a>
+        <div class="sidebar-group">
+            <span class="sidebar-nav-label"><span class="sidebar-nav-icon" aria-hidden="true">&#128194;</span> Cases</span>
+            <a class="sidebar-nav-item sidebar-nav-item--nested" href="/staff/cases/my">My Cases</a>
+            <a class="sidebar-nav-item sidebar-nav-item--nested" href="/staff/cases">All Cases</a>
+        </div>
+        <a class="sidebar-nav-item" href="/staff/clients"><span class="sidebar-nav-icon" aria-hidden="true">&#128101;</span> Clients</a>
+        <a class="sidebar-nav-item" href="/staff/notifications"><span class="sidebar-nav-icon" aria-hidden="true">&#128276;</span> Notifications</a>
+    </nav>
+    <div class="sidebar-footer">
+        <a class="sidebar-nav-item" href="/staff/profile"><span class="sidebar-nav-icon" aria-hidden="true">&#128100;</span> Profile</a>
+        <form action="/auth/logout" method="post"><button type="submit" class="sidebar-nav-item sidebar-nav-item--logout"><span class="sidebar-nav-icon" aria-hidden="true">&#8630;</span> Logout</button></form>
+    </div>
+</aside>

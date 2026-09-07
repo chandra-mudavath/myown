@@ -18,9 +18,17 @@
         />
 
         <script src="{{ url_for('static', path='/js/tailwind-config.js') }}"></script>
+        
+        <!-- Theme check before render to prevent flash -->
+        <script>
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        </script>
 
-        <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}?v=1.2" />
-        <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=1.2" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/theme.css') }}?v=1.8" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}?v=1.7" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=1.4" />
         {% block styles %}{% endblock %} {% block head %}{% endblock %}
     </head>
     <body class="{% block body_class %}{% endblock %}">

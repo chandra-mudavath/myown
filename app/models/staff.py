@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -17,6 +18,15 @@ def _uuid() -> str:
     return str(uuid.uuid4())
 
 
+class StaffRole(str, enum.Enum):
+    INITIATOR = "INITIATOR"
+    PREPARER = "PREPARER"
+    REVIEWER = "REVIEWER"
+    MANAGER = "MANAGER"
+    HR = "HR"
+    ADMIN = "ADMIN"  # Reserved; can be removed later if not needed
+
+
 class Staff(Base):
     """Business entity representing employee details."""
     __tablename__ = "staff"
@@ -28,6 +38,7 @@ class Staff(Base):
     last_name: Mapped[str | None] = mapped_column(String(15), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     job_title: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g., Senior Tax Preparer
+    role: Mapped[StaffRole] = mapped_column(Enum(StaffRole), nullable=False, default=StaffRole.INITIATOR)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

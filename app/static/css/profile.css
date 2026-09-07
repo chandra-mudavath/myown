@@ -1,13 +1,3 @@
-:root {
-    --ink: #17324d;
-    --muted: #64788b;
-    --line: #d8e5e8;
-    --teal: #087f79;
-    --teal-soft: #edf6f4;
-    --gold: #e4ad50;
-    --white: #fff;
-    --site-header-h: 84px;
-}
 * {
     box-sizing: border-box;
 }
@@ -15,8 +5,8 @@ body {
     margin: 0;
     min-width: 320px;
     color: var(--ink);
-    background: linear-gradient(135deg, #edf5f2, #f8f5ed 54%, #edf3f7);
-    font-family: "DM Sans", sans-serif;
+    background: var(--bg-gradient);
+    font-family: var(--font-body);
 }
 body::before {
     content: "";
@@ -24,18 +14,22 @@ body::before {
     inset: 0;
     pointer-events: none;
     opacity: 0.25;
-    background-image: radial-gradient(#cbdedb 0.7px, transparent 0.7px);
+    background-image: radial-gradient(var(--bg-dot-color) 0.7px, transparent 0.7px);
     background-size: 18px 18px;
 }
 .site-header {
-    position: relative;
-    z-index: 1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 20px clamp(20px, 5vw, 72px);
     border-bottom: 1px solid rgba(23, 50, 77, 0.1);
-    background: rgba(255, 255, 255, 0.75);
+    background: var(--surface);
+    backdrop-filter: blur(8px);
 }
 .site-header-left {
     display: flex;
@@ -75,7 +69,7 @@ body::before {
     z-index: 1;
     width: min(1040px, calc(100% - 40px));
     margin: 0 auto;
-    padding: 42px 0 80px;
+    padding: calc(var(--site-header-h, 84px) + 42px) 0 80px;
 }
 .back-link {
     color: var(--teal);
@@ -108,7 +102,7 @@ body::before {
 }
 .panel {
     border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.87);
+    background: var(--surface);
     box-shadow: 0 12px 30px rgba(23, 50, 77, 0.05);
     padding: 28px;
 }
@@ -152,7 +146,7 @@ body::before {
     height: 10px;
     margin: 12px 0 10px;
     overflow: hidden;
-    background: #e4eeee;
+    background: var(--brand-soft);
     border-radius: 99px;
 }
 .progress-track span {
@@ -216,7 +210,7 @@ textarea {
     border-radius: 2px;
     padding: 0 12px;
     color: var(--ink);
-    background: #fff;
+    background: var(--surface);
     font:
         500 0.88rem "DM Sans",
         sans-serif;
@@ -231,7 +225,7 @@ textarea {
 }
 input:disabled {
     color: #3d5366;
-    background: #f7faf9;
+    background: var(--surface-soft);
     border-color: transparent;
 }
 input:focus-visible,
@@ -242,7 +236,7 @@ textarea:focus-visible {
     border-color: var(--teal);
 }
 input[readonly] {
-    background: #f2f6f5;
+    background: var(--surface-soft);
     color: var(--muted);
 }
 small {
@@ -264,7 +258,7 @@ small {
 }
 .profile-section.editing input:disabled {
     color: var(--ink);
-    background: #fff;
+    background: var(--surface);
     border-color: #cbdcdf;
 }
 .new-filing-form {
@@ -272,7 +266,7 @@ small {
 }
 .filing-section {
     border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.72);
+    background: var(--surface);
 }
 .filing-section + .filing-section {
     margin-top: 12px;
@@ -409,7 +403,7 @@ small {
     min-height: 72px;
     border: 1px solid var(--line);
     padding: 13px;
-    background: rgba(255, 255, 255, 0.72);
+    background: var(--surface);
     cursor: pointer;
 }
 .income-category:hover,
@@ -555,7 +549,7 @@ small {
 .message.error {
     border-color: #e5b9ad;
     color: #8a4437;
-    background: #fff3ef;
+    background: rgba(189, 95, 82, 0.08);
 }
 
 /* Document Categories */
@@ -571,7 +565,7 @@ small {
     gap: 6px;
     padding: 16px;
     border: 1px solid var(--line);
-    background: rgba(255, 255, 255, 0.72);
+    background: var(--surface);
 }
 .document-category-card p {
     margin: 0 0 8px;
@@ -584,7 +578,7 @@ small {
     display: flex;
     flex-direction: column;
     border: 1px solid var(--line);
-    background: #fff;
+    background: var(--surface);
 }
 .review-summary-item {
     display: flex;
@@ -665,4 +659,44 @@ small {
     .edit-button {
         min-height: 38px;
     }
+}
+
+/* ════════════════════════════════════════
+   DARK THEME OVERRIDES — profile.css
+════════════════════════════════════════ */
+html[data-theme=dark] .profile-header,
+html[data-theme=dark] .site-header {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html[data-theme=dark] .profile-card,
+html[data-theme=dark] .section-card,
+html[data-theme=dark] .info-block {
+  background: var(--surface);
+  border-color: var(--line);
+}
+html[data-theme=dark] .info-field input,
+html[data-theme=dark] .info-field select,
+html[data-theme=dark] .info-field textarea {
+  background: var(--surface-soft);
+  border-color: var(--line);
+  color: var(--ink);
+}
+html[data-theme=dark] .avatar-ring {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+}
+html[data-theme=dark] .tab-item.active,
+html[data-theme=dark] .nav-tab.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+html[data-theme=dark] .message {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+html[data-theme=dark] .danger-zone {
+  border-color: rgba(189, 95, 82, 0.3);
+  background: rgba(189, 95, 82, 0.05);
 }

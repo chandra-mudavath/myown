@@ -74,3 +74,18 @@ app.include_router(admin.router)
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "app_name": settings.APP_NAME})
+
+
+@app.get("/about-us", response_class=HTMLResponse, include_in_schema=False)
+def about_us(request: Request):
+    return templates.TemplateResponse("about.html", {"request": request, "app_name": settings.APP_NAME})
+
+
+@app.get("/services", response_class=HTMLResponse, include_in_schema=False)
+def services(request: Request):
+    return templates.TemplateResponse("services.html", {"request": request, "app_name": settings.APP_NAME})
+
+
+@app.get("/terms-and-conditions", response_class=HTMLResponse, include_in_schema=False)
+def terms_and_conditions(request: Request):
+    return templates.TemplateResponse("terms.html", {"request": request, "app_name": settings.APP_NAME})

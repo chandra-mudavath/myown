@@ -17,3 +17,31 @@ window.api = {
     get: (url) => window.api.request("GET", url),
     post: (url, body) => window.api.request("POST", url, body),
 };
+
+// Global Theme Toggle
+document.addEventListener("DOMContentLoaded", () => {
+    const applyTheme = (theme) => {
+        const isDark = theme === "dark";
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+
+        // Update all theme toggle buttons on the page
+        document.querySelectorAll(".theme-toggle").forEach(btn => {
+            btn.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
+            btn.setAttribute("title", isDark ? "Switch to light theme" : "Switch to dark theme");
+            btn.setAttribute("data-theme", isDark ? "dark" : "light");
+            btn.setAttribute("aria-pressed", String(isDark));
+        });
+    };
+
+    // Initial sync with localStorage
+    const savedTheme = window.localStorage.getItem("theme");
+    applyTheme(savedTheme === "dark" ? "dark" : "light");
+
+    document.querySelectorAll(".theme-toggle").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            applyTheme(nextTheme);
+            window.localStorage.setItem("theme", nextTheme);
+        });
+    });
+});

@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Services | {{ app_name }}{% endblock %}
+{% block meta_desc %}Explore UrTax tax preparation, planning, compliance, international tax, and IRS notice support services.{% endblock %}
+{% block body_class %}landing-page services-page{% endblock %}
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet" />
+{% endblock %}
+{% block content %}
+{% include "partials/landing_header.html" %}
+<main id="content">
+    <section id="services" class="section py-16 md:py-20 bg-white">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header services-intro">
+                <p class="eyebrow">Our services</p>
+                <h2>Expertise that <span>works for you</span></h2>
+                <p>Focused tax and accounting support for individuals, businesses, and growing organizations.</p>
+            </header>
+            <div class="services-accordion" data-services-accordion>
+                <article class="service-item is-open" data-service-item data-reveal="center">
+                    <button class="service-trigger" type="button" aria-expanded="true" aria-controls="service-panel-01">
+                        <span class="service-number">01</span><span class="service-name">Individual Tax Preparation</span><span class="service-toggle" aria-hidden="true">−</span>
+                    </button>
+                    <div class="service-panel" id="service-panel-01">
+                        <div class="service-media"><img src="{{ url_for('static', path='/img/Services/individual_tax.jpg') }}" alt="Tax professional preparing an individual return" /></div>
+                        <div class="service-content">
+                            <h2>INDIVIDUAL TAX <span>PREPARATION</span></h2>
+                            <p><strong>Accurate, organized tax preparation for individuals and families.</strong></p>
+                            <p>Preparing a US tax return can become complicated when you have multiple income sources, deductions, credits, investments, self-employment income, or other tax considerations.</p>
+                            <p>UrTax helps individuals organize their tax information, prepare applicable federal and state tax returns, review the information for completeness, and move through the filing process with greater confidence.</p>
+                            <ul>
+                                <li>Individual federal tax return preparation</li>
+                                <li>Applicable state tax return preparation</li>
+                                <li>W-2 and 1099 income reporting</li>
+                                <li>Self-employment income reporting</li>
+                                <li>Deductions and tax credits</li>
+                                <li>Investment and other income reporting</li>
+                                <li>Tax documentation review</li>
+                                <li>Electronic filing support</li>
+                            </ul>
+                            <a class="action-primary" href="/auth/register">START YOUR TAX FILING &rarr;</a>
+                        </div>
+                    </div>
+                </article>
+                <article class="service-item" data-service-item data-reveal="left">
+                    <button class="service-trigger" type="button" aria-expanded="false" aria-controls="service-panel-02">
+                        <span class="service-number">02</span><span class="service-name">Business Tax Preparation</span><span class="service-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="service-panel" id="service-panel-02" hidden>
+                        <div class="service-media"><img src="{{ url_for('static', path='/img/Services/business_tax.jpg') }}" alt="Tax professional supporting a business return" /></div>
+                        <div class="service-content">
+                            <h2>BUSINESS TAX <span>PREPARATION</span></h2>
+                            <p><strong>Professional tax preparation and filing support for businesses and business owners.</strong></p>
+                            <p>Business tax filing involves more than reporting revenue. Income, expenses, deductions, business structure, owner information, and applicable federal and state requirements can all affect the tax return.</p>
+                            <p>UrTax helps business owners organize their financial and tax information and prepare the applicable business tax returns while keeping the filing process structured and clear.</p>
+                            <ul>
+                                <li>Business tax return preparation</li>
+                                <li>Business income and expense reporting</li>
+                                <li>Business deductions</li>
+                                <li>Business owner tax information</li>
+                                <li>Federal business tax filing</li>
+                                <li>Applicable state tax filing</li>
+                                <li>Supporting documentation review</li>
+                                <li>Electronic filing support</li>
+                            </ul>
+                            <a class="action-primary" href="/auth/register">GET BUSINESS TAX SUPPORT &rarr;</a>
+                        </div>
+                    </div>
+                </article>
+                <article class="service-item" data-service-item data-reveal="right">
+                    <button class="service-trigger" type="button" aria-expanded="false" aria-controls="service-panel-03">
+                        <span class="service-number">03</span><span class="service-name">Tax Planning &amp; Compliance</span><span class="service-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="service-panel" id="service-panel-03" hidden>
+                        <div class="service-media"><img src="{{ url_for('static', path='/img/Services/tax_planning.jpg') }}" alt="Tax professionals reviewing tax planning documents" /></div>
+                        <div class="service-content">
+                            <h2>TAX PLANNING &amp; <span>COMPLIANCE</span></h2>
+                            <p><strong>Plan ahead, understand your obligations, and stay prepared for your US tax responsibilities.</strong></p>
+                            <p>Tax planning should not begin only when a tax return is due. Understanding your potential tax obligations throughout the year can help you make better-informed financial decisions.</p>
+                            <p>UrTax provides tax planning and compliance support based on your individual or business circumstances, helping you understand applicable requirements and prepare for upcoming tax responsibilities.</p>
+                            <ul>
+                                <li>Individual tax planning</li>
+                                <li>Business tax planning</li>
+                                <li>Tax compliance support</li>
+                                <li>Review of tax situations</li>
+                                <li>Federal tax compliance</li>
+                                <li>State tax considerations</li>
+                                <li>Understanding tax obligations</li>
+                                <li>Year-round tax guidance</li>
+                            </ul>
+                            <a class="action-primary" href="/auth/register">TALK TO A TAX PROFESSIONAL &rarr;</a>
+                        </div>
+                    </div>
+                </article>
+                <article class="service-item" data-service-item data-reveal="bottom">
+                    <button class="service-trigger" type="button" aria-expanded="false" aria-controls="service-panel-04">
+                        <span class="service-number">04</span><span class="service-name">International &amp; Non-Resident Tax</span><span class="service-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="service-panel" id="service-panel-04" hidden>
+                        <div class="service-media"><img src="{{ url_for('static', path='/img/Services/internation_non_resident1.jpg') }}" alt="International tax professional reviewing documents" /></div>
+                        <div class="service-content">
+                            <h2>INTERNATIONAL &amp; NON-RESIDENT <span>TAX</span></h2>
+                            <p><strong>US tax support for non-residents and individuals with international tax situations.</strong></p>
+                            <p>US tax requirements can become more complex when you live outside the United States, earn US-source income, or have financial and tax connections across multiple countries.</p>
+                            <p>UrTax helps international taxpayers and non-residents understand their potential US tax filing responsibilities and organize the information required for applicable US tax returns.</p>
+                            <ul>
+                                <li>Non-resident US tax situations</li>
+                                <li>US-source income</li>
+                                <li>International taxpayers</li>
+                                <li>Individuals living outside the United States</li>
+                                <li>Cross-border tax considerations</li>
+                                <li>Required tax documentation</li>
+                                <li>US federal filing support</li>
+                                <li>International tax information review</li>
+                            </ul>
+                            <a class="action-primary" href="/auth/register">DISCUSS YOUR TAX SITUATION &rarr;</a>
+                        </div>
+                    </div>
+                </article>
+                <article class="service-item" data-service-item data-reveal="radial">
+                    <button class="service-trigger" type="button" aria-expanded="false" aria-controls="service-panel-05">
+                        <span class="service-number">05</span><span class="service-name">IRS &amp; Tax Notice Support</span><span class="service-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="service-panel" id="service-panel-05" hidden>
+                        <div class="service-media"><img src="{{ url_for('static', path='/img/Services/irs_amendment.jpg') }}" alt="Professional reviewing an IRS tax notice" /></div>
+                        <div class="service-content">
+                            <h2>IRS &amp; TAX NOTICE <span>SUPPORT</span></h2>
+                            <p><strong>Professional assistance when you receive an IRS or state tax notice.</strong></p>
+                            <p>Receiving a tax notice can be confusing and stressful, especially when you are unsure what the notice means or what action is required.</p>
+                            <p>UrTax can help review the notice, understand the issue, examine relevant tax information, organize supporting documentation, and determine appropriate next steps based on the situation.</p>
+                            <ul>
+                                <li>IRS notice review</li>
+                                <li>State tax notice review</li>
+                                <li>Understanding tax correspondence</li>
+                                <li>Review of previously filed returns</li>
+                                <li>Supporting document organization</li>
+                                <li>Response preparation and guidance</li>
+                                <li>Tax information review</li>
+                                <li>Follow-up support</li>
+                            </ul>
+                            <a class="action-primary" href="/auth/register">GET NOTICE ASSISTANCE &rarr;</a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+</main>
+{% include "partials/landing_footer.html" %}
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/landing.js" defer></script>
+{% endblock %}

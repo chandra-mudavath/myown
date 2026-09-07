@@ -1,0 +1,190 @@
+/* ════════════════════════════════════════
+   GLOBAL DESIGN TOKENS  — theme.css
+   Change ONE value here -> reflects everywhere
+════════════════════════════════════════ */
+
+/* ── Brand Colors ─────────────────────── */
+:root {
+    /* Primary brand */
+    --brand:          #087f79;
+    --brand-dark:     #115e59;
+    --brand-soft:     #edf6f4;
+
+    /* Text */
+    --ink:            #17324d;
+    --muted:          #64788b;
+
+    /* Surface / Background */
+    --bg-gradient:    linear-gradient(135deg, #edf5f2 0%, #f8f5ed 54%, #edf3f7 100%);
+    --bg-dot-color:   #cbdedb;
+    --surface:        rgba(255, 255, 255, 0.90);
+    --surface-soft:   rgba(247, 250, 249, 0.80);
+    --line:           #d8e5e8;
+
+    /* Status colors */
+    --green:          #2b8b63;
+    --amber:          #b87916;
+    --coral:          #bd5f52;
+    --blue:           #2969a8;
+
+    /* Typography */
+    --font-body:      "DM Sans", sans-serif;
+    --font-heading:   "Space Grotesk", sans-serif;
+    --font-mono:      "JetBrains Mono", monospace;
+    --font-size-base: 1rem;
+    --font-size-sm:   0.875rem;
+    --font-size-lg:   1.125rem;
+    --line-height:    1.6;
+
+    /* Layout */
+    --site-header-h:  84px;
+    --radius:         6px;
+    --radius-lg:      12px;
+
+    /* Legacy aliases — used by dashboard.css, profile.css, staff.css */
+    --teal:              var(--brand);
+    --teal-dark:         var(--brand-dark);
+    --teal-soft:         var(--brand-soft);
+    --nav-border:        rgba(23, 50, 77, 0.1);
+    --card-bg:           var(--surface);
+    --card-border:       var(--line);
+    --input-bg:          var(--surface-soft);
+    --input-border:      var(--line);
+
+    /* Shared / Auth mappings */
+    --auth-surface:      var(--surface);
+    --auth-ink:          var(--ink);
+    --auth-muted:        var(--muted);
+    --auth-line:         var(--line);
+    --auth-primary:      var(--brand);
+    --auth-primary-dark: var(--brand-dark);
+    --auth-input:        var(--surface-soft);
+    --auth-shadow:       0 10px 30px rgba(0, 0, 0, 0.05);
+    --auth-paper:        var(--bg-gradient);
+}
+
+/* ── Dark Theme Override ──────────────── */
+html[data-theme="dark"] {
+    --ink:            #e2e8f0;
+    --muted:          #94a3b8;
+    --bg-gradient:    linear-gradient(135deg, #0b1120 0%, #111827 54%, #0d1a2e 100%);
+    --bg-dot-color:   #1e3a5f;
+    --surface:        #1e293b;
+    --surface-soft:   #0f172a;
+    --line:           rgba(148, 163, 184, 0.2);
+    --brand-soft:     rgba(8, 127, 121, 0.15);
+}
+
+
+/* ── Global Body Styles (applies to ALL pages) ── */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+}
+
+body {
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--font-body);
+}
+
+/* ── Global Theme Toggle Button ──────────────── */
+.theme-toggle {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    color: var(--brand);
+    display: flex;
+    height: 2.4rem;
+    justify-content: center;
+    padding: 0;
+    position: relative;
+    width: 2.4rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.theme-toggle:hover {
+    background: var(--brand-soft);
+    border-color: var(--brand);
+}
+
+.theme-icon {
+    height: 1.05rem;
+    width: 1.05rem;
+}
+
+.theme-icon-sun {
+    display: block;
+}
+
+.theme-icon-sun circle,
+.theme-icon-sun path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+.theme-icon-moon {
+    display: none;
+}
+
+.theme-icon-moon path {
+    stroke: currentColor;
+    stroke-width: 1.8;
+}
+
+html[data-theme=dark] .theme-icon-sun {
+    display: none;
+}
+
+html[data-theme=dark] .theme-icon-moon {
+    display: block;
+}
+
+/* ════════════════════════════════════════
+   GLOBAL LAYOUT TRANSPARENT RESET
+   All layout containers are transparent by default.
+   The body gradient shows through everywhere.
+   Only specific cards/panels add their own surface bg.
+════════════════════════════════════════ */
+section,
+main,
+article,
+aside,
+header,
+footer,
+nav {
+    background: transparent;
+}
+
+/* ── Shared status badge colors ──── */
+.status-complete {
+    color: var(--green);
+    background: rgba(43, 139, 99, 0.12);
+}
+
+.status-in_progress {
+    color: var(--amber);
+    background: rgba(184, 121, 22, 0.12);
+}
+
+.status-not_started {
+    color: var(--muted);
+    background: rgba(100, 120, 139, 0.10);
+}
+
+.status-not_applicable {
+    color: var(--muted);
+    background: transparent;
+    font-style: italic;
+}
+
+.status-pending {
+    color: var(--blue);
+    background: rgba(41, 105, 168, 0.12);
+}

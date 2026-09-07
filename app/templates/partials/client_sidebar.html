@@ -5,9 +5,16 @@
         <a class="sidebar-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/client/dashboard">
             <span class="sidebar-nav-icon" aria-hidden="true">&#9635;</span> Dashboard
         </a>
-        <a class="sidebar-nav-item" href="#">
+        {% if has_active_filing %}
+        <span class="sidebar-nav-item sidebar-nav-item--disabled" title="You already have an active filing for this year" aria-disabled="true">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> New Filing
+            <span class="sidebar-disabled-badge">Active</span>
+        </span>
+        {% else %}
+        <a class="sidebar-nav-item" href="{{ url_for('new_filing_page') }}">
             <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> New Filing
         </a>
+        {% endif %}
         <a class="sidebar-nav-item" href="#">
             <span class="sidebar-nav-icon" aria-hidden="true">&#128194;</span> My Tax Filings
         </a>

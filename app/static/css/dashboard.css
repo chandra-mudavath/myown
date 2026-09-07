@@ -1,45 +1,25 @@
-:root {
-  --ink: #17324d;
-  --muted: #64788b;
-  --line: #d8e5e8;
-  --white: #fff;
-  --teal: #087f79;
-  --teal-soft: #edf6f4;
-  --blue: #2969a8;
-  --green: #2b8b63;
-  --amber: #b87916;
-  --coral: #bd5f52;
-  --site-header-h: 84px;
-}
 * {
   box-sizing: border-box;
 }
-body {
-  margin: 0;
-  min-width: 320px;
-  background: linear-gradient(135deg, #edf5f2 0%, #f8f5ed 54%, #edf3f7 100%);
-  color: var(--ink);
-  font-family: "DM Sans", sans-serif;
-}
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.28;
-  background-image: radial-gradient(#cbdedb 0.7px, transparent 0.7px);
-  background-size: 18px 18px;
-}
+/* Body styles handled globally by theme.css */
 .site-header {
-  position: relative;
-  z-index: 1;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
   padding: 22px clamp(20px, 5vw, 72px);
   border-bottom: 1px solid rgba(23, 50, 77, 0.1);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+}
+.dashboard-main {
+  /* Push content below the fixed header */
+  padding-top: var(--site-header-h, 84px);
 }
 .site-header-left {
   display: flex;
@@ -83,7 +63,7 @@ body::before {
 }
 .account-menu-button:hover,
 .account-menu-button[aria-expanded="true"] {
-  background: #edf3f2;
+  background: var(--surface-soft);
 }
 .account-menu-button:focus-visible {
   outline: 3px solid #e4ad50;
@@ -129,7 +109,7 @@ body::before {
   min-width: 160px;
   padding: 6px;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--surface);
   box-shadow: 0 8px 18px rgba(23, 50, 77, 0.1);
 }
 .account-menu-action {
@@ -231,7 +211,7 @@ dt {
   padding: 19px;
   border: 1px solid var(--line);
   border-top: 4px solid currentColor;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--surface);
 }
 .summary-card span {
   color: var(--muted);
@@ -268,7 +248,7 @@ dt {
 .panel {
   padding: 27px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.84);
+  background: var(--surface);
   box-shadow: 0 12px 30px rgba(23, 50, 77, 0.05);
 }
 .panel-heading {
@@ -282,7 +262,7 @@ dt {
   padding: 6px 10px;
   border: 1px solid #e6c887;
   color: #8b611a;
-  background: #fff8e8;
+  background: rgba(184, 121, 22, 0.1);
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -334,7 +314,7 @@ dt {
   box-shadow: 0 6px 16px rgba(8, 127, 121, 0.23);
 }
 .button-secondary {
-  background: #edf6f4;
+  background: var(--brand-soft);
   border-color: #b9d8d3;
   color: var(--teal);
 }
@@ -359,7 +339,7 @@ dt {
   padding: 0 8px;
 }
 .button-quiet:hover {
-  background: #edf3f2;
+  background: var(--surface-soft);
 }
 .progress-list {
   list-style: none;
@@ -391,7 +371,7 @@ dt {
   place-items: center;
   width: 17px;
   height: 17px;
-  background: #fff;
+  background: var(--surface);
   font-size: 1.12rem;
 }
 .progress-step.done {
@@ -428,7 +408,7 @@ dt {
   height: 42px;
   border: 1px solid #b9d8d3;
   color: var(--teal);
-  background: #edf6f4;
+  background: var(--brand-soft);
   font: 700 0.75rem "Space Grotesk", sans-serif;
 }
 .empty-state h3 {
@@ -643,7 +623,7 @@ dt {
     color: #fff;
 }
 .progress-step.in_progress .step-num {
-    background: #fef3d4;
+    background: rgba(184, 121, 22, 0.12);
     color: var(--amber);
     border: 1px solid #f5d97a;
 }
@@ -664,8 +644,57 @@ dt {
     padding: 2px 8px;
     border-radius: 99px;
 }
-.status-complete      { color: var(--green);  background: #ebf7f2; }
-.status-in_progress   { color: var(--amber);  background: #fef3d4; }
-.status-not_started   { color: var(--muted);  background: #f1f4f5; }
+.status-complete      { color: var(--green);  background: rgba(43,  139, 99,  0.12); }
+.status-in_progress   { color: var(--amber);  background: rgba(184, 121, 22,  0.12); }
+.status-not_started   { color: var(--muted);  background: rgba(100, 120, 139, 0.10); }
 .status-not_applicable{ color: var(--muted);  background: transparent; font-style: italic; }
-.status-pending       { color: var(--blue);   background: #ebf0fa; }
+.status-pending       { color: var(--blue);   background: rgba(41,  105, 168, 0.12); }
+
+/* ════════════════════════════════════════
+   DARK THEME OVERRIDES — dashboard.css
+   Overrides hardcoded colors for dark mode
+════════════════════════════════════════ */
+html[data-theme=dark] .site-header {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom-color: rgba(148, 163, 184, 0.1);
+}
+html[data-theme=dark] .filing-card,
+html[data-theme=dark] .dash-card,
+html[data-theme=dark] .account-menu {
+  background: var(--surface);
+  border-color: var(--line);
+}
+html[data-theme=dark] .account-menu-button:hover,
+html[data-theme=dark] .account-menu-button[aria-expanded=true] {
+  background: var(--surface-soft);
+}
+html[data-theme=dark] .extension-badge {
+  background: rgba(184, 121, 22, 0.18);
+  border-color: rgba(184, 121, 22, 0.35);
+  color: #f0c060;
+}
+html[data-theme=dark] .button-secondary {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+html[data-theme=dark] .empty-action {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+html[data-theme=dark] .button-quiet:hover {
+  background: var(--surface-soft);
+}
+html[data-theme=dark] .danger-link {
+  color: var(--coral);
+}
+html[data-theme=dark] .step-num {
+  background: var(--surface);
+  border-color: var(--line);
+}
+html[data-theme=dark] .progress-step.in_progress .step-num {
+  background: rgba(184, 121, 22, 0.2);
+  color: #f0c060;
+  border-color: rgba(184, 121, 22, 0.4);
+}
