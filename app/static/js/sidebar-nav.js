@@ -37,8 +37,8 @@ if (sidebarToggle && dashboardSidebar && sidebarOverlay) {
         if (event.key === "Escape") closeSidebar();
     });
 
-    // On mobile: close sidebar after clicking a nav item
-    dashboardSidebar.querySelectorAll(".sidebar-nav-item").forEach((item) => {
+    // On mobile: close sidebar after clicking a nav link (ignoring dropdown toggle buttons)
+    dashboardSidebar.querySelectorAll("a.sidebar-nav-item").forEach((item) => {
         item.addEventListener("click", () => {
             if (isMobile()) closeSidebar();
         });

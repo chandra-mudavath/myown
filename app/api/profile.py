@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request, status
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, File, UploadFile, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -23,6 +23,7 @@ from app.services.client_profile import (
     update_contact,
     update_personal,
 )
+from app.services.storage_service import save_profile_picture
 
 router = APIRouter(prefix="/client", tags=["client-profile"])
 
@@ -88,4 +89,17 @@ def email_change_request(data: EmailChangeRequest, account: ClientAccount, db: S
 
         raise HTTPException(status.HTTP_409_CONFLICT, "This email address is already associated with another account.")
     return {"message": "Email verification is currently unavailable. Your current email address was not changed."}
+
+
+@router.post("/api/avatar")
+def upload_avatar(
+    account: ClientAccount,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    client = _client_or_404(db, account.id)
+    avatar_url = save_profile_picture(file, client.id, "client")
+    client.profile_picture = avatar_url
+    db.commit()
+    return {"message": "Profile picture updated successfully!", "avatar_url": avatar_url}
 

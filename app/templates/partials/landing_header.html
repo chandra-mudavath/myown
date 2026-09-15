@@ -8,12 +8,20 @@
                 <ul id="landing-menu"
                     class="navbar bg-white lg:bg-transparent w-full lg:w-auto hidden lg:flex flex-col lg:flex-row items-center text-sm font-bold order-3 lg:order-2">
                     <li><a href="/#hero">Home</a></li>
-                    <li><a class="{% if request.url.path == '/services' %}active{% endif %}" href="/services">Services</a></li>
+                    <li class="services-nav-item">
+                        <a class="{% if request.url.path == '/services' %}active{% endif %}" href="/services">Services</a>
+                        <ul class="services-nav-dropdown" aria-label="All services">
+                            <li><a href="/services#service-01">Individual Tax Preparation</a></li>
+                            <li><a href="/services#service-02">Business Tax Preparation</a></li>
+                            <li><a href="/services#service-03">Tax Planning &amp; Compliance</a></li>
+                            <li><a href="/services#service-04">International &amp; Non-Resident Tax</a></li>
+                            <li><a href="/services#service-05">IRS &amp; Tax Notice Support</a></li>
+                        </ul>
+                    </li>
                     <li><a href="/#workflow">Workflow</a></li>
                     <li><a class="{% if request.url.path == '/about-us' %}active{% endif %}" href="/about-us">About us</a></li>
                     <li><a href="/#team">Our team</a></li>
                     <li><a href="/#testimonials">Stories</a></li>
-                    <li><a href="/#pricing">Plans</a></li>
                     <li><a href="/#faq">FAQ</a></li>
                     <li class="mobile-actions block lg:hidden w-full pt-3 mt-2 border-t border-gray-200">
                         <div class="flex flex-col gap-2 px-4 pb-2">

@@ -20,8 +20,15 @@ maintain compliance records.{% endblock %} {% block body_class %}landing-page{% 
                     <li>
                         <a class="active" href="#hero">Home</a>
                     </li>
-                    <li>
+                    <li class="services-nav-item">
                         <a href="/services">Services</a>
+                        <ul class="services-nav-dropdown" aria-label="All services">
+                            <li><a href="/services#service-01">Individual Tax Preparation</a></li>
+                            <li><a href="/services#service-02">Business Tax Preparation</a></li>
+                            <li><a href="/services#service-03">Tax Planning &amp; Compliance</a></li>
+                            <li><a href="/services#service-04">International &amp; Non-Resident Tax</a></li>
+                            <li><a href="/services#service-05">IRS &amp; Tax Notice Support</a></li>
+                        </ul>
                     </li>
                     <li><a href="#workflow">Workflow</a></li>
                     <li><a href="/about-us">About us</a></li>
@@ -95,7 +102,7 @@ maintain compliance records.{% endblock %} {% block body_class %}landing-page{% 
     </div>
 </section>
 <main id="content">
-    <section id="hero" class="section hero-section relative z-0 pt-4 pb-16 md:pt-8 md:pb-20">
+    <!-- <section id="hero" class="section hero-section relative z-0 pt-4 pb-16 md:pt-8 md:pb-20">
         <div class="container xl:max-w-6xl mx-auto px-4">
             <div class="hero-tailone-layout">
                 <div class="hero-preview-column">
@@ -133,7 +140,7 @@ maintain compliance records.{% endblock %} {% block body_class %}landing-page{% 
                 </div>
             </div>
         </div>
-    </section>
+    </section> -->
     <section id="workflow" class="section workflow-section py-20">
         <div class="container xl:max-w-6xl mx-auto px-4">
             <div class="workflow-layout">

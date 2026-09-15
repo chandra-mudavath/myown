@@ -30,6 +30,8 @@ if (toggleBtn && passwordInput) {
         const isText = passwordInput.type === "text";
         passwordInput.type = isText ? "password" : "text";
         toggleBtn.setAttribute("aria-label", isText ? "Show password" : "Hide password");
+        toggleBtn.setAttribute("title", isText ? "Show password" : "Hide password");
+        toggleBtn.classList.toggle("is-visible", !isText);
     });
 }
 

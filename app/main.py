@@ -48,17 +48,29 @@ def create_tables():
 
 # Static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/storage", StaticFiles(directory="storage"), name="storage")
 
 
 @app.exception_handler(HTTPException)
 async def http_error_handler(request: Request, exc: HTTPException):
     accepts_html = "text/html" in request.headers.get("accept", "")
-    protected_page = request.url.path in {"/client/profile", "/client/dashboard", "/staff/dashboard", "/admin/dashboard"}
-    if exc.status_code == 401 and accepts_html and protected_page:
+    is_browser_route = not request.url.path.startswith("/api/") and not request.url.path.endswith("/api")
+    if exc.status_code in (401, 403) and accepts_html and is_browser_route:
+        login_url = "/auth/login"
+        if request.url.path.startswith("/staff"):
+            login_url = "/auth/login?role=staff"
+        elif request.url.path.startswith("/admin"):
+            login_url = "/auth/login?role=admin"
+
         return templates.TemplateResponse(
             "errors/unauthorized.html",
-            {"request": request, "message": "Please sign in to access this page."},
-            status_code=401,
+            {
+                "request": request,
+                "message": exc.detail or "Access restricted. Please authenticate with appropriate privileges.",
+                "login_url": login_url,
+                "status_code": exc.status_code
+            },
+            status_code=exc.status_code,
         )
     return await http_exception_handler(request, exc)
 

@@ -72,8 +72,19 @@ class TaxFiling(Base):
     is_amended_return: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     # Meta
+    case_number: Mapped[str | None] = mapped_column(String(30), unique=True, index=True, nullable=True)  # e.g., FLI_0000001
     status: Mapped[str] = mapped_column(String(50), default="pending_review", nullable=False)
+
+    def get_case_id(self, db: Session | None = None) -> str:
+        """Returns readable FLI_xxxxxxx sequence ID, fallback to FLI_ prefix using UUID prefix or DB count."""
+        if self.case_number:
+            return self.case_number
+        if db:
+            count = db.query(TaxFiling).filter(TaxFiling.created_at <= self.created_at).count()
+            return f"FLI_{count:07d}"
+        return f"FLI_{self.id[:7].upper()}"
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 
     client: Mapped["app.models.client.Client"] = relationship("Client", foreign_keys=[client_id])
+    documents: Mapped[list["app.models.filing_document.FilingDocument"]] = relationship("FilingDocument", back_populates="filing", cascade="all, delete-orphan")

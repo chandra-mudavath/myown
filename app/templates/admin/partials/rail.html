@@ -1,0 +1,44 @@
+<aside class="admin-rail">
+    <section class="admin-rail-section">
+        <span class="admin-kicker">Quick Actions</span>
+        <h2>Shortcuts</h2>
+        <div class="quick-actions" style="margin-top: 14px;">
+            <button type="button" class="quick-action-btn" id="rail-btn-new-client">
+                <b>+</b> New Client
+            </button>
+            <button type="button" class="quick-action-btn" id="rail-btn-new-staff">
+                <b>+</b> New Staff
+            </button>
+            <button type="button" class="quick-action-btn" id="rail-btn-new-filing">
+                <b>+</b> New Filing
+            </button>
+            <button type="button" class="quick-action-btn" id="rail-btn-upload-doc">
+                <b>&#8682;</b> Upload Documents
+            </button>
+        </div>
+    </section>
+
+    <section class="admin-rail-section recent-section">
+        <span class="admin-kicker">Live Feed</span>
+        <h2>System Activity</h2>
+        <ul class="admin-activity" style="margin-top: 14px;">
+            {% set act_items = activity if (activity is defined and activity) else activity_list if (activity_list is defined and activity_list) else [] %}
+            {% if act_items %}
+                {% for item in act_items %}
+                <li>
+                    <span class="activity-dot {{ item.tone if item.tone else 'teal' }}"></span>
+                    <div>
+                        <strong>{{ item.name }}</strong>
+                        <p>{{ item.description }}</p>
+                        <time>{{ item.time }}</time>
+                    </div>
+                </li>
+                {% endfor %}
+            {% else %}
+                <li style="padding: 1rem 0; color: var(--muted); font-size: 0.8rem; grid-template-columns: 1fr;">
+                    No recent activity recorded.
+                </li>
+            {% endif %}
+        </ul>
+    </section>
+</aside>

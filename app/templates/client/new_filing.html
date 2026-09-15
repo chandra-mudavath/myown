@@ -42,7 +42,7 @@
                 </div>
             </div>
 
-            <form action="{{ url_for('submit_new_filing') }}" method="post" class="profile-form new-filing-form" data-filing-accordion>
+            <form action="{{ url_for('submit_new_filing') }}" method="post" enctype="multipart/form-data" class="profile-form new-filing-form" data-filing-accordion>
                 <section class="filing-section is-open" data-filing-section>
                     <button class="filing-section-header" type="button" aria-expanded="true" aria-controls="basic-information-panel">
                         <span class="filing-section-number">01</span>
@@ -269,37 +269,92 @@
                         <span class="filing-section-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="filing-section-content" id="documents-panel" hidden>
-                        <p class="section-helper">Please upload the requested documents based on your previous selections. (Document upload functionality will be enabled soon).</p>
+                        <p class="section-helper">Please upload the requested supporting documents for your tax filing.</p>
                         
                         <div class="document-categories">
-                            <div class="document-category-card">
+                            <div class="document-category-card" data-category="Personal">
                                 <strong>Identity Documents</strong>
                                 <p>Provide a copy of your ID, Passport, or Driver's License.</p>
-                                <button class="button button-secondary" type="button" disabled>Upload Documents</button>
+                                <input type="file" name="files_Personal" class="doc-file-input" id="file-personal" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-personal').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-personal">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-personal" style="display: none; margin-top: 0.5rem;">
+                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
+                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                    </div>
+                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-personal" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
                             </div>
                             
-                            <div class="document-category-card">
+                            <div class="document-category-card" data-category="Income">
                                 <strong>Income Documents</strong>
                                 <p>Provide W-2s, 1099s, or other income statements.</p>
-                                <button class="button button-secondary" type="button" disabled>Upload Documents</button>
+                                <input type="file" name="files_Income" class="doc-file-input" id="file-income" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-income').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-income">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-income" style="display: none; margin-top: 0.5rem;">
+                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
+                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                    </div>
+                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-income" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
                             </div>
                             
-                            <div class="document-category-card">
+                            <div class="document-category-card" data-category="Other">
                                 <strong>Previous Tax Returns</strong>
                                 <p>Provide a copy of your most recent tax return.</p>
-                                <button class="button button-secondary" type="button" disabled>Upload Documents</button>
+                                <input type="file" name="files_Other" class="doc-file-input" id="file-previous" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-previous').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-previous">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-previous" style="display: none; margin-top: 0.5rem;">
+                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
+                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                    </div>
+                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-previous" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
                             </div>
                             
-                            <div class="document-category-card">
+                            <div class="document-category-card" data-category="Deductions">
                                 <strong>Deduction Supporting Documents</strong>
                                 <p>Provide receipts, 1098s, or charitable donation statements.</p>
-                                <button class="button button-secondary" type="button" disabled>Upload Documents</button>
+                                <input type="file" name="files_Deductions" class="doc-file-input" id="file-deductions" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-deductions').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-deductions">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-deductions" style="display: none; margin-top: 0.5rem;">
+                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
+                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                    </div>
+                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-deductions" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
                             </div>
                             
-                            <div class="document-category-card">
+                            <div class="document-category-card" data-category="Other">
                                 <strong>Other Supporting Documents</strong>
                                 <p>Any other documents relevant to your tax situation.</p>
-                                <button class="button button-secondary" type="button" disabled>Upload Documents</button>
+                                <input type="file" name="files_Other_Extra" class="doc-file-input" id="file-other" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-other').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-other">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-other" style="display: none; margin-top: 0.5rem;">
+                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
+                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                    </div>
+                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-other" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
                             </div>
                         </div>
 

@@ -11,8 +11,8 @@
 {% block content %}
 <main class="message-card" aria-labelledby="access-title">
   <div class="message-mark" aria-hidden="true">UT</div>
-  <h1 id="access-title">Sign-in required</h1>
-  <p>{{ message }} Your account must be authenticated before you can view client information.</p>
-  <a href="/auth/login">Go to sign in</a>
+  <h1 id="access-title">{% if status_code == 403 %}Access Denied (403){% else %}Sign-in Required (401){% endif %}</h1>
+  <p>{{ message or 'Your account must be authenticated with proper role privileges to access this area.' }}</p>
+  <a href="{{ login_url or '/auth/login' }}">Go to Sign In</a>
 </main>
 {% endblock %}

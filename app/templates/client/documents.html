@@ -1,0 +1,657 @@
+{% extends "base.html" %}
+
+{% block title %}My Documents - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=2" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=2" />
+<style>
+.documents-container {
+    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.documents-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.documents-title-wrap h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--ink-primary, #0f172a);
+    margin: 0 0 0.25rem 0;
+}
+
+.documents-title-wrap p {
+    font-size: 0.875rem;
+    color: var(--ink-secondary, #64748b);
+    margin: 0;
+}
+
+/* Drag & Drop Upload Zone */
+.dropzone-area {
+    background: var(--bg-card, #ffffff);
+    border: 2px dashed #93c5fd;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dropzone-area:hover, .dropzone-area.dragover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+.search-box-wrap {
+    position: relative;
+    width: 280px;
+}
+
+.search-box-wrap input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    font-size: 0.875rem;
+    border: 1px solid var(--line, #cbd5e1);
+    border-radius: 8px;
+    background-color: var(--bg-card, #ffffff);
+    color: var(--ink-primary, #0f172a);
+}
+
+.search-box-wrap .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-secondary, #94a3b8);
+    font-size: 0.875rem;
+    pointer-events: none;
+}
+
+.filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--ink-primary, #1e293b);
+}
+
+.filter-item select {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.875rem;
+    border: 1px solid var(--line, #cbd5e1);
+    border-radius: 8px;
+    background-color: var(--bg-surface, #f8fafc);
+    color: var(--ink-primary, #0f172a);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Toggle View Switcher */
+.view-toggle-btns {
+    display: flex;
+    background: var(--bg-surface, #f1f5f9);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--line, #e2e8f0);
+}
+
+.view-btn {
+    border: none;
+    background: transparent;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+    color: var(--ink-secondary, #64748b);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.15s ease;
+}
+
+.view-btn.active {
+    background: var(--bg-card, #ffffff);
+    color: #2563eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Category Folder Grid */
+.folder-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.folder-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.folder-card:hover {
+    border-color: #2563eb;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+    transform: translateY(-2px);
+}
+
+.folder-card.active-folder {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+/* Document Grid Cards View */
+.doc-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+}
+
+.doc-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 12px;
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+
+.doc-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
+
+.doc-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    margin-bottom: 0.85rem;
+}
+
+.doc-card-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.doc-card-meta {
+    overflow: hidden;
+}
+
+.doc-card-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ink-primary, #0f172a);
+    margin: 0 0 0.25rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.doc-card-sub {
+    font-size: 0.75rem;
+    color: var(--ink-secondary, #64748b);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.status-pending_review {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.status-accepted {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+/* Modal styles for quick upload */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-card, #ffffff);
+    padding: 1.5rem;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set active_nav = 'documents' %}
+{% include "partials/client_sidebar.html" %}
+
+<div class="dashboard-main">
+    <header class="site-header">
+        <div class="site-header-left">
+            {% include "partials/sidebar_toggle.html" %}
+            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
+                <span class="brand-mark" aria-hidden="true">UT</span>
+                <span>{{ app_name }}</span>
+            </a>
+        </div>
+        <div class="account-menu-wrap" style="display: flex; align-items: center; gap: 1rem;">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
+                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+            </button>
+            <form class="header-logout" action="/auth/logout" method="post">
+                <button class="logout-button" type="submit">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="dashboard-shell">
+        <div class="documents-container">
+            <!-- Header Section -->
+            <div class="documents-header">
+                <div class="documents-title-wrap">
+                    <h1>My Documents</h1>
+                    <p>All your uploaded tax files &amp; supporting records for {{ selected_year }}</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="search-box-wrap">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="docSearchInput" placeholder="Search documents..." onkeyup="filterDocuments()" />
+                    </div>
+                    {% if current_filing_id %}
+                    <button class="button button-primary" type="button" onclick="openUploadModal()" style="border-radius: 8px;">
+                        + Upload
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if current_filing_id %}
+            <!-- Quick Drag & Drop Upload Zone -->
+            <div class="dropzone-area" onclick="openUploadModal()">
+                <div style="font-size: 1.8rem; margin-bottom: 0.25rem;">📄 Drag &amp; Drop or Click to Upload</div>
+                <p style="margin: 0; font-size: 0.85rem; color: var(--ink-secondary);">Support PDF, PNG, JPG, CSV, DOCX (Max 10MB per file)</p>
+            </div>
+            {% endif %}
+
+            <!-- Category Folders Grid (Option 1 Header Cards) -->
+            <div class="folder-grid">
+                {% set category_labels = {
+                    'Personal': 'Personal Info',
+                    'Income': 'Income',
+                    'Employment': 'Employment',
+                    'Investments': 'Investments',
+                    'Deductions': 'Deductions',
+                    'Credits': 'Credits',
+                    'Foreign_Information': 'Foreign Info',
+                    'Dependents': 'Dependents',
+                    'Other': 'Other Docs'
+                } %}
+                {% for cat_key, cat_name in category_labels.items() %}
+                    {% set cat_docs = documents_by_category.get(cat_key, []) %}
+                    <div class="folder-card" data-cat-filter="{{ cat_key }}" onclick="selectCategoryFolder('{{ cat_key }}')">
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="font-size: 1.2rem;">📁</span>
+                            <span style="font-weight: 700; font-size: 0.875rem;">{{ cat_name }}</span>
+                        </div>
+                        <span style="font-size: 0.75rem; background: var(--bg-surface, #f1f5f9); padding: 0.2rem 0.5rem; border-radius: 12px; font-weight: 600; color: var(--ink-secondary);">
+                            {{ cat_docs|length }}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Filter Controls & View Switcher Bar -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <div class="filter-item">
+                        <label for="taxYearSelect">Tax Year:</label>
+                        <select id="taxYearSelect" onchange="changeYearFilter(this.value)">
+                            {% for yr in available_years %}
+                            <option value="{{ yr }}" {% if yr == selected_year %}selected{% endif %}>{{ yr }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-item">
+                        <label for="categorySelect">Category:</label>
+                        <select id="categorySelect" onchange="filterDocuments()">
+                            <option value="All">All Categories</option>
+                            <option value="Personal">Personal Information</option>
+                            <option value="Income">Income</option>
+                            <option value="Employment">Employment</option>
+                            <option value="Investments">Investments</option>
+                            <option value="Deductions">Deductions</option>
+                            <option value="Credits">Credits</option>
+                            <option value="Foreign_Information">Foreign Information</option>
+                            <option value="Dependents">Dependents</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Layout Switcher: Grid View vs Tree View -->
+                <div class="view-toggle-btns">
+                    <button class="view-btn active" id="btnGridView" onclick="switchView('grid')">
+                        <span>🞌</span> Grid
+                    </button>
+                    <button class="view-btn" id="btnTreeView" onclick="switchView('tree')">
+                        <span>☰</span> List
+                    </button>
+                </div>
+            </div>
+
+            <!-- View Container 1: Document Cards Grid (Option 1 Cards View) -->
+            <div id="gridDisplayContainer" class="doc-cards-grid">
+                {% set has_any_doc = false %}
+                {% for cat_key, cat_docs in documents_by_category.items() %}
+                    {% for doc in cat_docs %}
+                        {% set has_any_doc = true %}
+                        <div class="doc-card document-item-element" data-category="{{ doc.category }}" data-filename="{{ doc.original_filename | lower }}">
+                            <div class="doc-card-top">
+                                <div class="doc-card-icon">
+                                    {% if '.pdf' in doc.original_filename.lower() %}📄{% elif '.png' in doc.original_filename.lower() or '.jpg' in doc.original_filename.lower() %}🖼️{% else %}📝{% endif %}
+                                </div>
+                                <div class="doc-card-meta">
+                                    <h3 class="doc-card-title" title="{{ doc.original_filename }}">{{ doc.original_filename }}</h3>
+                                    <div class="doc-card-sub">
+                                        <span>📁 {{ doc.category }}</span>
+                                        <span>•</span>
+                                        <span>{{ (doc.file_size / 1024) | round(1) }} KB</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; padding-top: 0.75rem; border-top: 1px solid var(--line, #f1f5f9);">
+                                <span class="status-badge status-{{ doc.status }}">
+                                    {{ doc.status.replace('_', ' ') }}
+                                </span>
+                                <div style="display: flex; gap: 0.4rem;">
+                                    <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" class="file-btn" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;">View</a>
+                                    <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" download class="file-btn file-btn-primary" style="padding: 0.3rem 0.6rem; font-size: 0.78rem;">Download</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+
+                {% if not has_any_doc %}
+                <div class="empty-docs-notice" style="grid-column: 1 / -1; background: #fff; padding: 3rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <p style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">No documents found for {{ selected_year }}</p>
+                    <p style="font-size: 0.875rem; color: #64748b;">Upload documents above or start a new filing for this tax year.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- View Container 2: Category Tree View (Legacy Tree) -->
+            <div id="treeDisplayContainer" class="documents-section-card" style="display: none;">
+                <h2 class="documents-section-title">{{ selected_year }} Tax Documents</h2>
+
+                {% for cat_key, cat_name in category_labels.items() %}
+                    {% set cat_docs = documents_by_category.get(cat_key, []) %}
+                    {% if cat_docs %}
+                        <div class="category-group" data-category="{{ cat_key }}">
+                            <div class="category-header">
+                                <div class="category-header-title">
+                                    <span>📁</span>
+                                    <span>{{ cat_name }}</span>
+                                </div>
+                                <span class="category-doc-count">{{ cat_docs|length }} document{% if cat_docs|length != 1 %}s{% endif %}</span>
+                            </div>
+                            <ul class="document-file-list" style="list-style: none; padding-left: 1.5rem; margin: 0;">
+                                {% for doc in cat_docs %}
+                                <li class="document-file-item document-item-element" data-category="{{ doc.category }}" data-filename="{{ doc.original_filename | lower }}" style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
+                                    <div class="file-info" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem;">
+                                        <span>└── 📄</span>
+                                        <span><strong>{{ doc.original_filename }}</strong></span>
+                                        <small style="color:var(--ink-secondary);">(v{{ doc.version }})</small>
+                                    </div>
+                                    <div class="file-actions" style="display: flex; gap: 0.5rem;">
+                                        <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" class="file-btn">View</a>
+                                        <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" download class="file-btn file-btn-primary">Download</a>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+                {% set has_docs = false %}
+                {% for cat_key, cat_name in category_labels.items() %}
+                    {% set cat_docs = documents_by_category.get(cat_key, []) %}
+                    {% if cat_docs %}
+                        {% set has_docs = true %}
+                        <div class="category-group" data-category="{{ cat_key }}">
+                            <div class="category-header">
+                                <div class="category-header-title">
+                                    <span>📁</span>
+                                    <span>{{ cat_name }}</span>
+                                </div>
+                                <span class="category-doc-count">{{ cat_docs|length }} document{% if cat_docs|length != 1 %}s{% endif %}</span>
+                            </div>
+                            <ul class="document-file-list">
+                                {% for doc in cat_docs %}
+                                <li class="document-file-item" data-filename="{{ doc.original_filename | lower }}">
+                                    <div class="file-info">
+                                        <span>└── 📄</span>
+                                        <span><strong>{{ doc.original_filename }}</strong></span>
+                                        {% if doc.version > 1 %}<small style="color:var(--ink-secondary);">(v{{ doc.version }})</small>{% endif %}
+                                    </div>
+                                    <div class="file-actions">
+                                        <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" class="file-btn">View</a>
+                                        <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" download class="file-btn file-btn-primary">Download</a>
+                                    </div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                {% if not has_docs %}
+                <div class="empty-docs-notice">
+                    <p style="font-size: 1.1rem; font-weight: 500; margin-bottom: 0.5rem;">No documents found for {{ selected_year }}</p>
+                    <p style="font-size: 0.875rem;">Upload documents above or start a new filing for this tax year.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+
+{% if current_filing_id %}
+<!-- Quick Upload Modal -->
+<div id="uploadModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3 style="margin-top:0; font-size: 1.25rem;">Upload Document</h3>
+        <form id="quickUploadForm" onsubmit="handleQuickUpload(event)">
+            <input type="hidden" name="filing_id" value="{{ current_filing_id }}" />
+            
+            <div style="margin-bottom: 1rem;">
+                <label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Category</label>
+                <select name="category" required style="width:100%; padding:0.5rem; border:1px solid #cbd5e1; border-radius:6px;">
+                    <option value="Personal">Personal Information</option>
+                    <option value="Income">Income</option>
+                    <option value="Employment">Employment</option>
+                    <option value="Investments">Investments</option>
+                    <option value="Deductions">Deductions</option>
+                    <option value="Credits">Credits</option>
+                    <option value="Foreign_Information">Foreign Information</option>
+                    <option value="Dependents">Dependents</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display:block; font-size:0.875rem; font-weight:500; margin-bottom:0.25rem;">Select File(s)</label>
+                <input type="file" name="files" multiple required style="width:100%;" />
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                <button type="button" class="button button-secondary" onclick="closeUploadModal()">Cancel</button>
+                <button type="submit" class="button button-primary">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function filterDocuments() {
+    const searchQuery = document.getElementById('docSearchInput').value.toLowerCase();
+    const selectedCategory = document.getElementById('categorySelect').value;
+    
+    // Filter grid card items
+    const allDocItems = document.querySelectorAll('.document-item-element');
+    allDocItems.forEach(item => {
+        const itemCat = item.getAttribute('data-category');
+        const fileName = item.getAttribute('data-filename');
+        const matchesCat = (selectedCategory === 'All' || itemCat === selectedCategory);
+        const matchesSearch = fileName.includes(searchQuery);
+
+        if (matchesCat && matchesSearch) {
+            item.style.display = item.classList.contains('doc-card') ? 'flex' : 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    // Update active state on top folder cards
+    const folderCards = document.querySelectorAll('.folder-card');
+    folderCards.forEach(card => {
+        const folderCat = card.getAttribute('data-cat-filter');
+        if (folderCat === selectedCategory) {
+            card.classList.add('active-folder');
+        } else {
+            card.classList.remove('active-folder');
+        }
+    });
+}
+
+function selectCategoryFolder(categoryKey) {
+    const categorySelect = document.getElementById('categorySelect');
+    if (categorySelect.value === categoryKey) {
+        categorySelect.value = 'All';
+    } else {
+        categorySelect.value = categoryKey;
+    }
+    filterDocuments();
+}
+
+function switchView(viewType) {
+    const gridContainer = document.getElementById('gridDisplayContainer');
+    const treeContainer = document.getElementById('treeDisplayContainer');
+    const btnGrid = document.getElementById('btnGridView');
+    const btnTree = document.getElementById('btnTreeView');
+
+    if (viewType === 'grid') {
+        gridContainer.style.display = 'grid';
+        treeContainer.style.display = 'none';
+        btnGrid.classList.add('active');
+        btnTree.classList.remove('active');
+    } else {
+        gridContainer.style.display = 'none';
+        treeContainer.style.display = 'block';
+        btnTree.classList.add('active');
+        btnGrid.classList.remove('active');
+    }
+}
+
+function changeYearFilter(year) {
+    document.cookie = "tax_year=" + year + "; path=/; max-age=" + (180 * 86400);
+    window.location.reload();
+}
+
+function openUploadModal() {
+    document.getElementById('uploadModal').style.display = 'flex';
+}
+
+function closeUploadModal() {
+    document.getElementById('uploadModal').style.display = 'none';
+}
+
+async function handleQuickUpload(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    const filingId = formData.get('filing_id');
+
+    try {
+        const response = await fetch(`/client/filings/${filingId}/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('Upload failed. Please check file type and size.');
+        }
+    } catch (err) {
+        alert('An error occurred during upload.');
+    }
+}
+</script>
+{% endblock %}

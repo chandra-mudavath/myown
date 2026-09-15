@@ -50,6 +50,16 @@ def register_page(request: Request):
     return templates.TemplateResponse("auth/register.html", _ctx(request))
 
 
+@router.get("/staff/register", response_class=HTMLResponse, name="staff_register_page")
+def staff_register_page(request: Request):
+    return templates.TemplateResponse("auth/register.html", _ctx(request, signup_role="staff"))
+
+
+@router.get("/admin/register", response_class=HTMLResponse, name="admin_register_page")
+def admin_register_page(request: Request):
+    return templates.TemplateResponse("auth/register.html", _ctx(request, signup_role="admin"))
+
+
 @router.get("/forgot-password", response_class=HTMLResponse)
 def forgot_password_page(request: Request):
     return templates.TemplateResponse("auth/forgot-password.html", _ctx(request))
@@ -85,18 +95,20 @@ def register(
     first_name: str = Form(...),
     last_name: str = Form(None),
     email: str = Form(...),
-    country_code: str = Form(...),
-    phone_local: str = Form(...),
+    country_code: str = Form(""),
+    phone_local: str = Form(""),
     password: str = Form(...),
     password_confirmation: str = Form(...),
+    signup_role: str = Form("client"),
     db: Session = Depends(get_db),
 ):
     try:
+        phone = f"{country_code}{phone_local}" if country_code and phone_local else None
         data = RegisterRequest(
             first_name=first_name,
             last_name=last_name,
             email=email,
-            phone=f"{country_code}{phone_local}",
+            phone=phone,
             password=password,
             password_confirmation=password_confirmation,
         )
@@ -107,10 +119,10 @@ def register(
             msg = errors[0]["msg"].replace("Value error, ", "")
         except Exception:
             msg = str(e)
-        return templates.TemplateResponse("auth/register.html", _ctx(request, error=msg))
+        return templates.TemplateResponse("auth/register.html", _ctx(request, error=msg, signup_role=signup_role))
 
     if auth_service.get_account_by_email(db, data.email):
-        return templates.TemplateResponse("auth/register.html", _ctx(request, error="An account with this email already exists."))
+        return templates.TemplateResponse("auth/register.html", _ctx(request, error="An account with this email already exists.", signup_role=signup_role))
 
     account, _ = auth_service.register_by_email_domain(db, data)
 
@@ -127,18 +139,19 @@ def register(
         "Account created! Since you\'re using an internal @urtax.com address, "
         "your account needs to be verified by an administrator before you can log in."
     )
-    return templates.TemplateResponse("auth/register.html", _ctx(request, msg=msg))
+    return templates.TemplateResponse("auth/register.html", _ctx(request, msg=msg, signup_role=signup_role))
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
-@router.post("/login", response_class=HTMLResponse)
-def login(
+def _login(
     request: Request,
     response: Response,
     username: str = Form(...),   # OAuth2 convention; used as email
     password: str = Form(...),
     db: Session = Depends(get_db),
+    expected_type: AccountType | None = None,
+    login_role: str = "client",
 ):
     ip = request.client.host if request.client else None
     ua = request.headers.get("user-agent")
@@ -151,7 +164,15 @@ def login(
             "account_inactive": "Your account has been deactivated.",
         }
         error = reasons.get(failure, "Invalid email or password.")
-        return templates.TemplateResponse("auth/login.html", _ctx(request, error=error))
+        return templates.TemplateResponse("auth/login.html", _ctx(request, error=error, login_role=login_role))
+
+    if expected_type is not None and account.account_type != expected_type:
+        role_name = expected_type.value.title()
+        return templates.TemplateResponse(
+            "auth/login.html",
+            _ctx(request, login_role=login_role, error=f"This login is for {role_name.lower()} accounts only."),
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
 
     # Internal @urtax.com accounts (Staff/Admin) require email verification
     # TODO: Re-enable when company domain email is configured
@@ -175,6 +196,17 @@ def login(
     resp.set_cookie("access_token", access_token, max_age=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60, **_COOKIE_OPTS)
     resp.set_cookie("refresh_token", raw_refresh, max_age=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400, **_COOKIE_OPTS)
     return resp
+
+
+@router.post("/login", response_class=HTMLResponse, name="login")
+def login(
+    request: Request,
+    response: Response,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    return _login(request, response, username, password, db)
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Case {{ case_number }} - Admin - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}?v=4.0" />
+{% endblock %}
+
+{% block body_class %}admin-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set admin_name = admin.first_name if admin and admin.first_name else 'Administrator' %}
+{% set admin_last_name = admin.last_name if admin and admin.last_name else '' %}
+{% set initials = (admin_name[0] ~ (admin_last_name[0] if admin_last_name else '')) | upper %}
+
+<div class="admin-layout">
+    {% include "admin/partials/sidebar.html" %}
+
+    <main class="admin-main">
+        <header class="admin-header">
+            <div class="admin-header-brand">
+                <span class="admin-mark">UT</span>
+                <span>{{ app_name }} / Admin / Cases / {{ case_number }}</span>
+            </div>
+            <div class="admin-header-actions">
+                <div class="account-menu-wrap" style="position: relative;">
+                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu" style="background: transparent; border: 0; padding: 0; cursor: pointer;">
+                        {% if admin and admin.profile_picture %}
+                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                        {% else %}
+                        <span class="admin-avatar" title="{{ admin_name }} {{ admin_last_name }}">{{ initials }}</span>
+                        {% endif %}
+                    </button>
+                    <div class="account-menu admin-account-menu" hidden style="position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.25rem; flex-direction: column; gap: 0.2rem;">
+                        {% if admin and admin.profile_picture %}
+                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
+                        {% endif %}
+                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap; cursor: pointer;" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
+                    </div>
+                </div>
+                <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
+                    <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                    <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+                    <span class="sr-only">Switch theme</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="admin-welcome" style="padding-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    {% if client %}
+                    <a href="/admin/clients/{{ client.id }}" style="color: var(--brand, #2563eb); text-decoration: none; font-size: 0.875rem; font-weight: 600;">← Back to Client Details</a>
+                    {% else %}
+                    <a href="/admin/clients" style="color: var(--brand, #2563eb); text-decoration: none; font-size: 0.875rem; font-weight: 600;">← Back to Clients</a>
+                    {% endif %}
+                    <h1 style="margin-top: 0.5rem;">Filing Case: {{ case_number }}</h1>
+                    <p style="margin-top: 0.25rem; color: var(--muted);">Tax Year {{ filing.tax_year }} | Status: <strong style="text-transform: capitalize;">{{ filing.status.replace('_', ' ') }}</strong></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filing Details & Documents Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-top: 1rem;">
+            <!-- Case Overview Card -->
+            <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.5rem;">
+                <h3 style="margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--line); padding-bottom: 0.75rem;">Filing Summary</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.9rem; margin-top: 1rem;">
+                    <div><strong>Case ID:</strong> {{ case_number }}</div>
+                    <div><strong>Client:</strong> {% if client %}<a href="/admin/clients/{{ client.id }}" style="color: var(--brand, #2563eb); text-decoration: underline;">{{ client.first_name }} {{ client.last_name or '' }}</a>{% else %}{{ filing.first_name }} {{ filing.last_name }}{% endif %}</div>
+                    <div><strong>Tax Year:</strong> {{ filing.tax_year }}</div>
+                    <div><strong>Filing Type:</strong> {{ filing.filing_type or 'Federal & State' }}</div>
+                    <div><strong>Status:</strong> {{ filing.status.replace('_', ' ').title() }}</div>
+                    <div><strong>Created At:</strong> {{ filing.created_at.strftime('%Y-%m-%d %H:%M') if filing.created_at else 'N/A' }}</div>
+                </div>
+            </div>
+
+            <!-- Documents Card -->
+            <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.5rem;">
+                <h3 style="margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--line); padding-bottom: 0.75rem;">Associated Filing Documents</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; text-align: left; font-size: 0.875rem;">
+                    <thead>
+                        <tr style="background: var(--surface-soft); border-bottom: 1px solid var(--line); color: var(--muted);">
+                            <th style="padding: 0.75rem 1rem;">Document Name</th>
+                            <th style="padding: 0.75rem 1rem;">Document Type</th>
+                            <th style="padding: 0.75rem 1rem;">Uploaded Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if documents %}
+                        {% for doc in documents %}
+                        <tr style="border-bottom: 1px solid var(--line);">
+                            <td style="padding: 0.85rem 1rem; font-weight: 600;">📄 {{ doc.original_filename }}</td>
+                            <td style="padding: 0.85rem 1rem;">{{ doc.document_type or 'General' }}</td>
+                            <td style="padding: 0.85rem 1rem;">{{ doc.created_at.strftime('%Y-%m-%d') if doc.created_at else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="3" style="padding: 1.5rem; text-align: center; color: var(--muted);">No documents uploaded for this filing case yet.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    {% include "admin/partials/rail.html" %}
+</div>
+
+{% include "admin/partials/modals.html" %}
+<script src="{{ url_for('static', path='/js/admin.js') }}?v=3.0"></script>
+{% endblock %}

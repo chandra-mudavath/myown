@@ -74,16 +74,66 @@ _STATUS_LABEL = {
 
 
 @router.get("/years", response_class=HTMLResponse, name="select_year_page")
-def select_year_page(request: Request, account: ClientAccount):
+def select_year_page(
+    request: Request,
+    account: ClientAccount,
+    db: Session = Depends(get_db),
+):
+    client = db.query(Client).filter(Client.account_id == account.id).first()
+    current_year = datetime.now(timezone.utc).year
+    previous_filings: list[dict] = []
+
+    if client:
+        filings = (
+            db.query(TaxFiling)
+            .filter(TaxFiling.client_id == client.id, TaxFiling.tax_year < current_year)
+            .order_by(TaxFiling.tax_year.desc(), TaxFiling.created_at.desc())
+            .all()
+        )
+        seen_years: set[int] = set()
+        for filing in filings:
+            if filing.tax_year in seen_years:
+                continue
+            seen_years.add(filing.tax_year)
+            previous_filings.append(
+                {
+                    "year": filing.tax_year,
+                    "filing_type": filing.filing_type,
+                    "status": _STATUS_LABEL.get(filing.status, filing.status),
+                    "filed_date": f"{filing.created_at:%B} {filing.created_at.day}, {filing.created_at:%Y}",
+                }
+            )
+
     return templates.TemplateResponse(
         "client/dashboard/select-year.html",
-        {"request": request, "app_name": settings.APP_NAME, "years": _available_tax_years()},
+        {
+            "request": request,
+            "app_name": settings.APP_NAME,
+            "years": _available_tax_years(),
+            "previous_filings": previous_filings,
+        },
     )
 
 
 @router.post("/years")
-def select_year_submit(request: Request, account: ClientAccount, tax_year: int = Form(...)):
-    if tax_year not in _available_tax_years():
+def select_year_submit(
+    request: Request,
+    account: ClientAccount,
+    tax_year: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    client = db.query(Client).filter(Client.account_id == account.id).first()
+    filed_years = set()
+    if client:
+        filed_years = {
+            year
+            for (year,) in db.query(TaxFiling.tax_year)
+            .filter(TaxFiling.client_id == client.id)
+            .distinct()
+            .all()
+        }
+
+    if tax_year not in _available_tax_years() and tax_year not in filed_years:
         return RedirectResponse(url=request.url_for("select_year_page"), status_code=status.HTTP_303_SEE_OTHER)
 
     resp = RedirectResponse(url=request.url_for("client_dashboard"), status_code=status.HTTP_303_SEE_OTHER)
@@ -133,7 +183,7 @@ def client_dashboard(
         filing_updated = f"{filing_record.updated_at:%B} {filing_record.updated_at.day}, {filing_record.updated_at:%Y}"
         filing_data = {
             "id": filing_record.id,
-            "case_id": filing_record.id[:8].upper(),
+            "case_id": filing_record.get_case_id(db),
             "tax_year": filing_record.tax_year,
             "filing_type": filing_record.filing_type,
             "status": _STATUS_LABEL.get(filing_record.status, filing_record.status),

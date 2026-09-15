@@ -23,9 +23,12 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"
 
-    # Upload
+    # Upload & Storage
     UPLOAD_DIR: str = "uploads"
+    STORAGE_DIR: str = "storage"
+    CLIENT_DOCUMENTS_DIR: str = "storage/client_documents"
     MAX_UPLOAD_SIZE_MB: int = 10
+    ALLOWED_EXTENSIONS: list[str] = [".pdf", ".png", ".jpg", ".jpeg", ".csv", ".docx", ".xlsx", ".txt"]
 
 
 settings = Settings()

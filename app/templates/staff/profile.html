@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Staff Profile - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=2" />
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set active_nav = 'profile' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+
+{% include "partials/staff_sidebar.html" %}
+
+<div class="staff-main">
+    {% include "partials/staff_header.html" %}
+
+    <main class="staff-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <p class="eyebrow">Account Settings</p>
+                <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0 0 0.25rem 0; color: var(--ink-primary);">
+                    Staff Profile
+                </h1>
+            </div>
+        </div>
+
+        <section class="staff-panel" style="padding: 1.5rem; max-width: 600px;">
+            <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--line, #e2e8f0); padding-bottom: 1.25rem;">
+                <div style="position: relative; width: 64px; height: 64px;">
+                    {% if staff.profile_picture %}
+                    <img id="staff-avatar-preview" src="{{ staff.profile_picture }}" alt="Profile Picture" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                    {% else %}
+                    <div id="staff-avatar-initials" class="staff-avatar" style="width: 64px; height: 64px; font-size: 1.5rem;">{{ initials }}</div>
+                    <img id="staff-avatar-preview" src="" alt="Profile Picture" style="display: none; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                    {% endif %}
+                    <label for="staff-avatar-input" title="Upload Profile Picture" style="position: absolute; bottom: -2px; right: -2px; background: var(--brand, #2563eb); color: white; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 0.65rem; border: 2px solid white;">📷</label>
+                    <input type="file" id="staff-avatar-input" accept="image/*" style="display: none;" />
+                </div>
+                <div>
+                    <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0 0 0.2rem 0;">{{ first_name }} {{ last_name }}</h2>
+                    <span style="font-size: 0.85rem; color: var(--ink-secondary);">{{ staff.job_title or 'Tax Preparer' }}</span>
+                </div>
+            </div>
+
+            <dl style="display: grid; grid-template-columns: 140px 1fr; gap: 0.75rem; font-size: 0.875rem;">
+                <dt style="color: var(--ink-secondary);">Staff Number:</dt>
+                <dd style="font-weight: 700;">{{ staff.staff_number if staff else 'STF-00000001' }}</dd>
+                <dt style="color: var(--ink-secondary);">Email Address:</dt>
+                <dd style="font-weight: 600;">{{ account.email }}</dd>
+                <dt style="color: var(--ink-secondary);">Role:</dt>
+                <dd style="font-weight: 600;">{{ staff.role.value if staff and staff.role else 'INITIATOR' }}</dd>
+            </dl>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const avatarInput = document.getElementById("staff-avatar-input");
+    const avatarPreview = document.getElementById("staff-avatar-preview");
+    const initialsDiv = document.getElementById("staff-avatar-initials");
+    if (avatarInput) {
+        avatarInput.addEventListener("change", async function() {
+            if (!this.files || !this.files[0]) return;
+            const formData = new FormData();
+            formData.append("file", this.files[0]);
+            try {
+                const res = await fetch("/staff/profile/avatar", { method: "POST", body: formData });
+                const data = await res.json();
+                if (res.ok && data.avatar_url) {
+                    if (avatarPreview) {
+                        avatarPreview.src = data.avatar_url;
+                        avatarPreview.style.display = "block";
+                    }
+                    if (initialsDiv) initialsDiv.style.display = "none";
+                    alert("Profile picture updated!");
+                } else {
+                    alert(data.detail || "Failed to update profile picture.");
+                }
+            } catch (err) {
+                alert("Error uploading profile picture.");
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -38,8 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
     applyTheme(savedTheme === "dark" ? "dark" : "light");
 
     document.querySelectorAll(".theme-toggle").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
             applyTheme(nextTheme);
             window.localStorage.setItem("theme", nextTheme);
         });

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Client Details - {{ client.first_name }} {{ client.last_name }} - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=2" />
+<style>
+.client-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.5rem;
+}
+@media (max-width: 992px) {
+    .client-detail-grid { grid-template-columns: 1fr; }
+}
+.detail-card {
+    background: var(--bg-card, #ffffff);
+    border: 1px solid var(--line, #e2e8f0);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+.detail-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: var(--ink-primary, #0f172a);
+    border-bottom: 1px solid var(--line, #f1f5f9);
+    padding-bottom: 0.5rem;
+}
+.detail-dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.6rem 1rem;
+    font-size: 0.875rem;
+    margin: 0;
+}
+.detail-dl dt {
+    color: var(--ink-secondary, #64748b);
+    font-weight: 500;
+}
+.detail-dl dd {
+    margin: 0;
+    font-weight: 600;
+    color: var(--ink-primary, #0f172a);
+    word-break: break-word;
+}
+</style>
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+{% set active_nav = 'clients' %}
+
+{% include "partials/staff_sidebar.html" %}
+
+<div class="staff-main">
+    {% include "partials/staff_header.html" %}
+
+    <main class="staff-content">
+        <!-- Top Banner -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <a href="/staff/cases/my" style="font-size: 0.85rem; color: #2563eb; text-decoration: none; font-weight: 600;">← Back to Cases List</a>
+                <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0.25rem 0 0 0; color: var(--ink-primary);">
+                    Client Profile — {{ client.first_name }} {{ client.last_name }}
+                </h1>
+                <p style="margin: 0.25rem 0 0 0; color: var(--ink-secondary); font-size: 0.9rem;">
+                    Client ID: <strong>{{ client.client_number }}</strong>
+                </p>
+            </div>
+            <div>
+                <a href="/staff/clients" class="button button-secondary" style="font-size: 0.85rem;">
+                    👥 Client Directory
+                </a>
+            </div>
+        </div>
+
+        <div class="client-detail-grid">
+            <!-- Left Column: Personal Info & Contact -->
+            <div>
+                <div class="detail-card">
+                    <h3>👤 Personal & Contact Details</h3>
+                    <dl class="detail-dl">
+                        <dt>Full Name:</dt>
+                        <dd>{{ client.first_name }} {{ client.last_name }}</dd>
+                        <dt>Phone:</dt>
+                        <dd>{{ client.phone or 'N/A' }}</dd>
+                        <dt>Date of Birth:</dt>
+                        <dd>{{ client.date_of_birth.strftime('%b %d, %Y') if client.date_of_birth else 'N/A' }}</dd>
+                        <dt>Client Number:</dt>
+                        <dd>{{ client.client_number }}</dd>
+                    </dl>
+                </div>
+
+                <div class="detail-card">
+                    <h3>📍 Address Details</h3>
+                    <dl class="detail-dl">
+                        <dt>Street Address:</dt>
+                        <dd>{{ client.address_line_1 or 'N/A' }}</dd>
+                        {% if client.address_line_2 %}
+                        <dt>Address Line 2:</dt>
+                        <dd>{{ client.address_line_2 }}</dd>
+                        {% endif %}
+                        <dt>City:</dt>
+                        <dd>{{ client.city or 'N/A' }}</dd>
+                        <dt>State / Province:</dt>
+                        <dd>{{ client.state_province or 'N/A' }}</dd>
+                        <dt>Postal Code:</dt>
+                        <dd>{{ client.postal_code or 'N/A' }}</dd>
+                        <dt>Country:</dt>
+                        <dd>{{ client.country or 'N/A' }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Right Column: Tax Filings History -->
+            <div>
+                <section class="staff-panel" style="padding: 0; overflow: hidden;">
+                    <div style="padding: 1.25rem; border-bottom: 1px solid var(--line, #e2e8f0); background: var(--bg-surface, #f8fafc);">
+                        <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">Tax Filings History ({{ filings | length }})</h3>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                        <thead>
+                            <tr style="background: var(--bg-surface, #f8fafc); border-bottom: 1px solid var(--line, #e2e8f0); color: var(--ink-secondary);">
+                                <th style="padding: 0.85rem 1.25rem; font-weight: 700;">Case ID</th>
+                                <th style="padding: 0.85rem 1.25rem; font-weight: 700;">Tax Year</th>
+                                <th style="padding: 0.85rem 1.25rem; font-weight: 700;">Filing Type</th>
+                                <th style="padding: 0.85rem 1.25rem; font-weight: 700;">Status</th>
+                                <th style="padding: 0.85rem 1.25rem; font-weight: 700;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if filings %}
+                            {% for f in filings %}
+                            <tr style="border-bottom: 1px solid var(--line, #f1f5f9);">
+                                <td style="padding: 1rem 1.25rem; font-weight: 700; color: #2563eb;">{{ f.case_number or f.id[:8].upper() }}</td>
+                                <td style="padding: 1rem 1.25rem;">{{ f.tax_year }}</td>
+                                <td style="padding: 1rem 1.25rem;">{{ f.filing_type | capitalize }}</td>
+                                <td style="padding: 1rem 1.25rem;"><span class="status-pill">{{ f.status.replace('_', ' ').title() }}</span></td>
+                                <td style="padding: 1rem 1.25rem;">
+                                    <a href="/staff/cases/{{ f.id }}" class="button button-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">Review Case →</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="5" style="padding: 2rem; text-align: center; color: var(--ink-secondary);">
+                                    No tax filings submitted by this client yet.
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

@@ -39,6 +39,7 @@ class Staff(Base):
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     job_title: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g., Senior Tax Preparer
     role: Mapped[StaffRole] = mapped_column(Enum(StaffRole), nullable=False, default=StaffRole.INITIATOR)
+    profile_picture: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

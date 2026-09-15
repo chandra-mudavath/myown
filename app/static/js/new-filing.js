@@ -71,7 +71,6 @@ if (filingForm) {
 
     function saveSection(section) {
         const fields = getSectionFields(section).filter((field) => !field.disabled);
-        const invalidField = fields.find((field) => !field.checkValidity());
         const status = section.querySelector(".filing-section-status");
         const actions = section.querySelector(".section-actions");
         let message = actions.querySelector(".section-save-message");
@@ -83,15 +82,30 @@ if (filingForm) {
             actions.prepend(message);
         }
 
-        if (invalidField) {
+        // Check if all fields (or required fields) in the section are filled and valid
+        const requiredFields = fields.filter((field) => field.required);
+        const invalidRequiredField = requiredFields.find((field) => !field.checkValidity() || field.value.trim() === "");
+
+        // Check if any required field is missed/invalid
+        if (invalidRequiredField) {
             status.textContent = "In Progress";
             status.className = "filing-section-status status-in-progress";
-            message.textContent = "Complete the highlighted required field.";
+            message.textContent = "Please fill in all required fields marked with *.";
             message.className = "section-save-message is-error";
-            invalidField.reportValidity();
+            invalidRequiredField.reportValidity();
             return;
         }
 
+        // Special section validation checks
+        if (section.dataset.incomeSection !== undefined && !fields.some((field) => field.checked)) {
+            status.textContent = "In Progress";
+            status.className = "filing-section-status status-in-progress";
+            message.textContent = "Select at least one income category to complete this section.";
+            message.className = "section-save-message is-error";
+            return;
+        }
+
+        // Save valid field values
         fields.forEach((field) => {
             const storageFieldKey = getStorageFieldKey(field);
             if (field.type === "checkbox") {
@@ -107,18 +121,11 @@ if (filingForm) {
             // The form remains usable if browser storage is unavailable.
         }
 
+        // Mark as Complete only when all validations pass
         status.textContent = "Complete";
         status.className = "filing-section-status status-complete";
-        message.textContent = "Saved for this filing.";
+        message.textContent = "Section completed and saved.";
         message.className = "section-save-message is-success";
-
-        if (section.dataset.incomeSection !== undefined && !fields.some((field) => field.checked)) {
-            status.textContent = "Not Started";
-            status.className = "filing-section-status status-not-started";
-            message.textContent = "Select at least one income category to continue.";
-            message.className = "section-save-message is-error";
-            return;
-        }
 
         const nextSection = sections[sections.indexOf(section) + 1];
         if (nextSection && !nextSection.hidden) openSection(nextSection);
@@ -214,4 +221,24 @@ if (filingForm) {
 
     while (dependentCount > dependentList.children.length) addDependent();
     dependentSection.querySelector("[data-add-dependent]").addEventListener("click", () => addDependent());
+
+    const docInputs = document.querySelectorAll(".doc-file-input");
+    docInputs.forEach((input) => {
+        input.addEventListener("change", (e) => {
+            const card = e.target.closest(".document-category-card");
+            if (!card) return;
+            const countLabel = card.querySelector(".file-count-label");
+            const fileList = card.querySelector(".file-list");
+            const files = Array.from(e.target.files);
+
+            if (files.length === 0) {
+                countLabel.textContent = "No files selected";
+                fileList.innerHTML = "";
+                return;
+            }
+
+            countLabel.textContent = `${files.length} file(s) selected`;
+            fileList.innerHTML = files.map((file) => `<li>${file.name} (${(file.size / 1024).toFixed(1)} KB)</li>`).join("");
+        });
+    });
 }

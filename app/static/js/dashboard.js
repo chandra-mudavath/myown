@@ -2,7 +2,8 @@ const accountMenuButton = document.querySelector(".account-menu-button");
 const accountMenu = document.getElementById("account-menu");
 
 if (accountMenuButton && accountMenu) {
-    accountMenuButton.addEventListener("click", () => {
+    accountMenuButton.addEventListener("click", (event) => {
+        event.stopPropagation();
         const isOpen = accountMenuButton.getAttribute("aria-expanded") === "true";
         accountMenuButton.setAttribute("aria-expanded", String(!isOpen));
         accountMenu.hidden = isOpen;
@@ -23,7 +24,12 @@ if (accountMenuButton && accountMenu) {
         }
     });
 
-    accountMenu.addEventListener("click", (event) => event.stopPropagation());
+    accountMenu.addEventListener("click", (event) => {
+        if (event.target.closest("a")) {
+            accountMenuButton.setAttribute("aria-expanded", "false");
+            accountMenu.hidden = true;
+        }
+    });
 }
 
 let uploadedFiles = [];

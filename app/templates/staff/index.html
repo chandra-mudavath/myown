@@ -6,38 +6,16 @@
 {% block body_class %}staff-page{% endblock %}
 {% block content %}
 {% set app_name = app_name or 'UrTax' %}
+{% set active_nav = 'dashboard' %}
 {% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
 {% set last_name = staff.last_name if staff and staff.last_name else '' %}
 {% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
-{% set dashboard_counts = {'my_cases': 24, 'new_cases': 8, 'info_pending': 5, 'docs_pending': 7} %}
-{% set recent_activity = [
-    {'case_id': 'CASE_000124', 'description': 'Document uploaded by John S.', 'time': '10:32 AM', 'tone': 'blue'},
-    {'case_id': 'CASE_000121', 'description': 'Case assigned to you', 'time': '09:48 AM', 'tone': 'teal'},
-    {'case_id': 'CASE_000119', 'description': 'Information requested', 'time': '09:15 AM', 'tone': 'amber'},
-    {'case_id': 'CASE_000115', 'description': 'Case moved to Review', 'time': 'Yesterday', 'tone': 'coral'}
-] %}
+{% set counts = dashboard_counts if (dashboard_counts is defined and dashboard_counts) else {'my_cases': 0, 'new_cases': 0, 'info_pending': 0, 'docs_pending': 0} %}
+{% set activity_items = recent_activity if (recent_activity is defined and recent_activity) else [] %}
 
 {% include "partials/staff_sidebar.html" %}
 <div class="staff-main">
-    <header class="staff-header">
-        <div class="staff-header-left">
-            {% include "partials/sidebar_toggle.html" %}
-            <a class="staff-brand" href="/staff/dashboard" aria-label="{{ app_name }} staff dashboard">
-                <span class="staff-brand-mark" aria-hidden="true">UT</span><span>{{ app_name }}</span>
-            </a>
-        </div>
-        <div class="staff-header-actions">
-            <a class="icon-button notification-button" href="/staff/notifications" aria-label="View notifications" title="Notifications">
-                <span aria-hidden="true">&#128276;</span><span class="notification-badge">3</span>
-            </a>
-            <span class="staff-avatar" aria-label="{{ first_name }} {{ last_name }}" title="{{ first_name }} {{ last_name }}">{{ initials }}</span>
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme" aria-pressed="false">
-                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
-                <span class="sr-only">Switch theme</span>
-            </button>
-        </div>
-    </header>
+    {% include "partials/staff_header.html" %}
 
     <main class="staff-content">
         <section class="staff-welcome" aria-labelledby="staff-page-title">
@@ -50,12 +28,12 @@
             <div class="staff-stat-grid">
                 {% for label, key, destination, tone in [
                     ('My Cases', 'my_cases', '/staff/cases/my', 'teal'),
-                    ('New Cases', 'new_cases', '/staff/cases/new', 'blue'),
-                    ('Info Pending', 'info_pending', '/staff/cases?filter=info-pending', 'amber'),
-                    ('Docs Pending', 'docs_pending', '/staff/cases?filter=docs-pending', 'coral')
+                    ('New Cases', 'new_cases', '/staff/cases?stage=pending_review', 'blue'),
+                    ('Info Pending', 'info_pending', '/staff/cases?stage=info_pending', 'amber'),
+                    ('Docs Pending', 'docs_pending', '/staff/cases?stage=docs_pending', 'coral')
                 ] %}
                 <a class="staff-stat-card {{ tone }}" href="{{ destination }}">
-                    <span class="stat-label">{{ label }}</span><strong>{{ dashboard_counts[key] }}</strong>
+                    <span class="stat-label">{{ label }}</span><strong>{{ counts[key] }}</strong>
                     <span class="stat-link">View cases <span aria-hidden="true">&#8594;</span></span>
                 </a>
                 {% endfor %}
@@ -64,13 +42,22 @@
         <section class="staff-panel" aria-labelledby="activity-title">
             <div class="panel-heading"><div><p class="eyebrow">Latest updates</p><h2 id="activity-title">Recent activity</h2></div><a class="text-link" href="/staff/notifications">View all</a></div>
             <ol class="activity-list">
-                {% for activity in recent_activity %}
+                {% if activity_items %}
+                {% for activity in activity_items %}
                 <li class="activity-item">
                     <span class="activity-dot {{ activity.tone }}" aria-hidden="true"></span>
-                    <div class="activity-copy"><a class="case-link" href="/staff/cases/{{ activity.case_id }}">{{ activity.case_id }}</a><span>{{ activity.description }}</span></div>
+                    <div class="activity-copy">
+                        <a class="case-link" href="/staff/cases/{{ activity.id }}">{{ activity.case_id }}</a>
+                        <span>{{ activity.description }}</span>
+                    </div>
                     <time>{{ activity.time }}</time>
                 </li>
                 {% endfor %}
+                {% else %}
+                <li class="activity-item" style="padding: 1rem 0; color: var(--ink-secondary);">
+                    No recent activity recorded yet.
+                </li>
+                {% endif %}
             </ol>
         </section>
     </main>

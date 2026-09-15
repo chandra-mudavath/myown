@@ -1,0 +1,81 @@
+<header class="staff-header">
+    <div class="staff-header-left">
+        {% include "partials/sidebar_toggle.html" %}
+        <a class="staff-brand" href="/staff/dashboard" aria-label="{{ app_name or 'UrTax' }} staff dashboard">
+            <span class="staff-brand-mark" aria-hidden="true">UT</span>
+            <span>{{ app_name or 'UrTax' }}</span>
+        </a>
+    </div>
+    <div class="staff-header-actions" style="display: flex; align-items: center; gap: 1rem; position: relative;">
+        <!-- Notification Icon -->
+        <a class="icon-button notification-button" href="/staff/notifications" aria-label="View notifications" title="Notifications">
+            <span aria-hidden="true">&#128276;</span><span class="notification-badge">3</span>
+        </a>
+
+        <!-- Avatar Circle with Dropdown -->
+        <div class="account-menu-wrap" style="position: relative;">
+            <button
+                class="account-menu-button staff-avatar-btn"
+                id="staff-avatar-btn"
+                type="button"
+                aria-expanded="false"
+                aria-controls="staff-account-menu"
+                aria-label="Open staff menu"
+                style="background: transparent; border: 0; padding: 0; cursor: pointer;"
+            >
+                {% if staff and staff.profile_picture %}
+                <img src="{{ staff.profile_picture }}" alt="{{ first_name }}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                {% else %}
+                <span class="staff-avatar" aria-label="{{ first_name }} {{ last_name }}" title="{{ first_name }} {{ last_name }}">{{ initials }}</span>
+                {% endif %}
+            </button>
+            <div class="account-menu staff-account-menu" id="staff-account-menu" hidden style="position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.25rem; flex-direction: column; gap: 0.2rem;">
+                {% if staff and staff.profile_picture %}
+                <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ staff.profile_picture }}')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="View Profile Picture">
+                    <span aria-hidden="true">&#128065;</span> View
+                </a>
+                {% endif %}
+                <a class="account-menu-action" href="/staff/profile" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="Edit Profile Picture">
+                    <span aria-hidden="true">&#9998;</span> Edit
+                </a>
+            </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme" aria-pressed="false">
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+            <span class="sr-only">Switch theme</span>
+        </button>
+    </div>
+</header>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const avatarBtn = document.getElementById("staff-avatar-btn");
+    const accountMenu = document.getElementById("staff-account-menu");
+
+    if (avatarBtn && accountMenu) {
+        avatarBtn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            const isOpen = avatarBtn.getAttribute("aria-expanded") === "true";
+            avatarBtn.setAttribute("aria-expanded", String(!isOpen));
+            accountMenu.hidden = isOpen;
+        });
+
+        document.addEventListener("click", function(e) {
+            if (!avatarBtn.contains(e.target) && !accountMenu.contains(e.target)) {
+                avatarBtn.setAttribute("aria-expanded", "false");
+                accountMenu.hidden = true;
+            }
+        });
+
+        accountMenu.addEventListener("click", function(e) {
+            if (e.target.closest("a")) {
+                avatarBtn.setAttribute("aria-expanded", "false");
+                accountMenu.hidden = true;
+            }
+        });
+    }
+});
+</script>

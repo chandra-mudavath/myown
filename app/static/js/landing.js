@@ -110,6 +110,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (servicesAccordion) {
         const serviceItems = [...servicesAccordion.querySelectorAll("[data-service-item]")];
 
+        const serviceFromHash = () => {
+            const item = document.getElementById(window.location.hash.slice(1));
+            return item?.matches("[data-service-item]") ? item : null;
+        };
+
         const setServiceState = (item, isOpen) => {
             const trigger = item.querySelector(".service-trigger");
             const panel = item.querySelector(".service-panel");
@@ -134,6 +139,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 const shouldOpen = !item.classList.contains("is-open");
                 serviceItems.forEach((serviceItem) => setServiceState(serviceItem, shouldOpen && serviceItem === item));
             });
+        });
+
+        const hashItem = serviceFromHash();
+        if (hashItem) {
+            serviceItems.forEach((item) => setServiceState(item, item === hashItem));
+            window.requestAnimationFrame(() => hashItem.scrollIntoView({ behavior: "smooth", block: "start" }));
+        }
+
+        window.addEventListener("hashchange", () => {
+            const item = serviceFromHash();
+            if (!item) return;
+            serviceItems.forEach((serviceItem) => setServiceState(serviceItem, serviceItem === item));
+            item.scrollIntoView({ behavior: "smooth", block: "start" });
         });
     }
 

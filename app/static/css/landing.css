@@ -92,6 +92,51 @@
     position: relative;
 }
 
+.landing-page .services-nav-dropdown {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--landing-nav-border);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.14);
+    left: 50%;
+    list-style: none;
+    margin: 0;
+    min-width: 18rem;
+    opacity: 0;
+    padding: 0.5rem;
+    pointer-events: none;
+    position: absolute;
+    top: calc(100% - 0.4rem);
+    transform: translate(-50%, -0.5rem);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    visibility: hidden;
+    z-index: 60;
+}
+
+.landing-page .services-nav-item:hover .services-nav-dropdown,
+.landing-page .services-nav-item:focus-within .services-nav-dropdown {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+    visibility: visible;
+}
+
+.landing-page .services-nav-dropdown a {
+    color: var(--landing-nav-link);
+    display: block;
+    font-size: 0.78rem;
+    padding: 0.65rem 0.75rem;
+    white-space: nowrap;
+}
+
+.landing-page .services-nav-dropdown a:hover,
+.landing-page .services-nav-dropdown a:focus-visible {
+    background: var(--landing-toggle-bg);
+    color: var(--landing-primary);
+}
+
+.landing-page.services-page .brand-mark {
+    font-family: "Roboto Slab", Georgia, serif;
+}
+
 @media (max-width: 1023.98px) {
     .landing-page .nav-actions .login-link,
     .landing-page .nav-actions .signup-link {
@@ -133,6 +178,10 @@
     }
 
     .landing-page .navbar.mobile-open > li > a.active::before {
+        display: none;
+    }
+
+    .landing-page .services-nav-dropdown {
         display: none;
     }
 
@@ -1272,16 +1321,6 @@
     width: 100%;
 }
 
-.landing-page .workflow-step:nth-of-type(even) .workflow-step-copy {
-    grid-column: 3;
-    grid-row: 1;
-}
-
-.landing-page .workflow-step:nth-of-type(even) img {
-    grid-column: 2;
-    grid-row: 1;
-}
-
 .landing-page .workflow-step strong {
     color: var(--landing-ink);
     display: block;
@@ -1334,12 +1373,6 @@
 
     .landing-page .workflow-step {
         grid-template-columns: 2rem minmax(0, 1fr);
-    }
-
-    .landing-page .workflow-step:nth-of-type(even) .workflow-step-copy,
-    .landing-page .workflow-step:nth-of-type(even) img {
-        grid-column: auto;
-        grid-row: auto;
     }
 
     .landing-page .workflow-step img {

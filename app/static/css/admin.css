@@ -3,6 +3,7 @@
 .admin-layout { display: grid; grid-template-columns: var(--admin-sidebar) minmax(0, 1fr) var(--admin-rail); min-height: 100vh; }
 .admin-sidebar, .admin-rail { background: var(--surface); }
 .admin-sidebar { display: flex; flex-direction: column; min-height: 100vh; padding: 28px 18px 20px; border-right: 1px solid var(--line); }
+.admin-rail { padding: 32px 20px; border-left: 1px solid var(--line); }
 .admin-brand, .admin-header-brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-family: var(--font-heading); }
 .admin-brand { padding: 0 10px 24px; border-bottom: 1px solid var(--line); font-size: 1.12rem; }
 .admin-brand span, .admin-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--radius); color: #fff; background: var(--brand); font-size: .72rem; font-weight: 800; }
@@ -56,14 +57,101 @@
 .admin-rail { padding: 32px 20px; border-left: 1px solid var(--line); }
 .admin-rail-section h2 { margin-bottom: 18px; }
 .quick-actions { display: grid; gap: 8px; }
-.quick-actions a { display: flex; align-items: center; gap: 10px; padding: 11px 10px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); background: var(--surface-soft); font-size: .75rem; font-weight: 700; text-decoration: none; }
-.quick-actions a:hover { color: var(--brand); border-color: var(--brand); }
+.quick-actions a, .quick-actions button.quick-action-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 10px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); background: var(--surface-soft); font-size: .75rem; font-weight: 700; text-decoration: none; cursor: pointer; text-align: left; }
+.quick-actions a:hover, .quick-actions button.quick-action-btn:hover { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
 .quick-actions b { color: var(--brand); font-size: 1.05rem; }
 .recent-section { margin-top: 48px; }
 .admin-activity { list-style: none; margin: 0; padding: 0; }
 .admin-activity li { display: grid; grid-template-columns: 10px 1fr; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
 .activity-dot { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: currentColor; }.activity-dot.blue { color: var(--blue); }.activity-dot.teal { color: var(--brand); }.activity-dot.amber { color: var(--amber); }
 .admin-activity strong { color: var(--ink); font-size: .78rem; }.admin-activity p { margin: 3px 0; color: var(--muted); font-size: .73rem; }.admin-activity time { color: var(--muted); font-size: .67rem; }
+
+/* ── Dark Theme Overrides for Admin Portal ──────────────── */
+html[data-theme="dark"] .admin-page,
+html[data-theme="dark"] .admin-layout,
+html[data-theme="dark"] body {
+    background: var(--bg-gradient) !important;
+    color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .admin-sidebar,
+html[data-theme="dark"] .admin-rail,
+html[data-theme="dark"] .admin-stat-card,
+html[data-theme="dark"] .progress-panel,
+html[data-theme="dark"] .business-grid > div {
+    background: var(--surface) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="dark"] table,
+html[data-theme="dark"] tr,
+html[data-theme="dark"] td,
+html[data-theme="dark"] th {
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+}
+
+html[data-theme="dark"] thead tr {
+    background: var(--surface-soft) !important;
+    color: var(--muted) !important;
+}
+
+html[data-theme="dark"] input[type="text"],
+html[data-theme="dark"] input[type="email"],
+html[data-theme="dark"] input[type="select"],
+html[data-theme="dark"] select {
+    background: var(--surface) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .quick-actions a,
+html[data-theme="dark"] .quick-actions button.quick-action-btn,
+html[data-theme="dark"] .admin-period {
+    background: var(--surface-soft) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .quick-actions a:hover,
+html[data-theme="dark"] .quick-actions button.quick-action-btn:hover {
+    background: var(--brand-soft) !important;
+    border-color: var(--brand) !important;
+    color: var(--brand) !important;
+}
+
+html[data-theme="dark"] .account-menu {
+    background: var(--surface) !important;
+    border-color: var(--line) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+html[data-theme="dark"] .account-menu-action {
+    background: var(--surface-soft) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .modal-box {
+    background: var(--surface) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .modal-header h3,
+html[data-theme="dark"] .modal-form-group label {
+    color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .modal-form-group input,
+html[data-theme="dark"] .modal-form-group select {
+    background: var(--surface-soft) !important;
+    border-color: var(--line) !important;
+    color: var(--ink) !important;
+}
+
 @media (max-width: 1100px) { .admin-layout { grid-template-columns: 210px minmax(0, 1fr); }.admin-rail { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; padding: 22px 0 50px; border-top: 1px solid var(--line); border-left: 0; }.recent-section { margin-top: 0; }.admin-main { grid-column: 2; }.admin-sidebar { grid-row: 1 / span 2; } }
 @media (max-width: 760px) { .admin-layout { display: block; }.admin-sidebar { min-height: auto; padding: 16px; }.admin-profile { display: flex; align-items: center; gap: 12px; padding: 16px 0; text-align: left; }.admin-photo { width: 46px; height: 46px; margin: 0; border-width: 3px; font-size: .85rem; }.admin-profile h2 { font-size: .86rem; }.admin-profile p { margin-top: 2px; }.admin-nav { display: grid; grid-template-columns: repeat(2, 1fr); padding: 14px 0; }.admin-nav-item { padding: 8px; }.admin-logout { display: none; }.admin-main { padding: 0 16px 35px; }.admin-header { min-height: 64px; }.admin-header-brand span:last-child { display: none; }.admin-welcome { padding: 30px 0 20px; }.admin-stat-grid, .business-grid { grid-template-columns: repeat(2, 1fr); }.admin-rail { display: block; padding: 0 16px 35px; }.recent-section { margin-top: 35px; } }
 @media (max-width: 420px) { .admin-stat-grid, .business-grid { grid-template-columns: 1fr; }.admin-nav { grid-template-columns: 1fr 1fr; }.admin-stat-card { min-height: 120px; } }

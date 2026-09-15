@@ -5,23 +5,19 @@
         <a class="sidebar-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/client/dashboard">
             <span class="sidebar-nav-icon" aria-hidden="true">&#9635;</span> Dashboard
         </a>
-        {% if has_active_filing %}
-        <span class="sidebar-nav-item sidebar-nav-item--disabled" title="You already have an active filing for this year" aria-disabled="true">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> New Filing
-            <span class="sidebar-disabled-badge">Active</span>
-        </span>
-        {% else %}
+        {% set has_active_filing = has_active_filing if has_active_filing is defined else (dashboard.has_active_filing if dashboard is defined and dashboard.has_active_filing is defined else false) %}
+        {% if not has_active_filing and not (dashboard is defined and dashboard.filing) %}
         <a class="sidebar-nav-item" href="{{ url_for('new_filing_page') }}">
             <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> New Filing
         </a>
         {% endif %}
-        <a class="sidebar-nav-item" href="#">
+        <a class="sidebar-nav-item{% if active_nav == 'filings' %} active{% endif %}" href="/client/filings">
             <span class="sidebar-nav-icon" aria-hidden="true">&#128194;</span> My Tax Filings
         </a>
-        <a class="sidebar-nav-item" href="#">
+        <a class="sidebar-nav-item{% if active_nav == 'documents' %} active{% endif %}" href="/client/documents">
             <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> Documents
         </a>
-        <a class="sidebar-nav-item" href="#">
+        <a class="sidebar-nav-item{% if active_nav == 'all_documents' %} active{% endif %}" href="/client/documents">
             <span class="sidebar-nav-icon" aria-hidden="true">&#128193;</span> All documents
         </a>
         <a class="sidebar-nav-item" href="#">
