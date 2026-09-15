@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = '3e0224cd65e9'
@@ -49,10 +48,10 @@ def upgrade() -> None:
     sa.Column('spouse_phone', sa.String(length=25), nullable=True),
     sa.Column('spouse_country_of_citizenship', sa.String(length=80), nullable=True),
     sa.Column('spouse_us_tax_residency_status', sa.String(length=50), nullable=True),
-    sa.Column('dependents', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('income_categories', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('deductions_credits', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('special_situations', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('dependents', sa.JSON(), nullable=False),
+    sa.Column('income_categories', sa.JSON(), nullable=False),
+    sa.Column('deductions_credits', sa.JSON(), nullable=False),
+    sa.Column('special_situations', sa.JSON(), nullable=False),
     sa.Column('has_previous_return_copy', sa.String(length=10), nullable=True),
     sa.Column('received_irs_notice', sa.String(length=10), nullable=True),
     sa.Column('unresolved_tax_issues', sa.String(length=10), nullable=True),

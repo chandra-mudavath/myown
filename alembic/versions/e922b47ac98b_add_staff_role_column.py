@@ -31,7 +31,7 @@ def upgrade() -> None:
     op.execute("UPDATE staff SET role = 'INITIATOR' WHERE role IS NULL")
 
     # 4. Now enforce NOT NULL
-    op.alter_column('staff', 'role', nullable=False)
+    op.alter_column('staff', 'role', existing_type=staffrole_enum, nullable=False)
 
 
 def downgrade() -> None:

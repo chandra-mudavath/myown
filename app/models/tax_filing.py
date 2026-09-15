@@ -4,8 +4,7 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import Any
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -59,11 +58,11 @@ class TaxFiling(Base):
     spouse_country_of_citizenship: Mapped[str | None] = mapped_column(String(80), nullable=True)
     spouse_us_tax_residency_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
-    # 04, 05, 06, 08 - Dynamic Sections (JSONB)
-    dependents: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)
-    income_categories: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
-    deductions_credits: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
-    special_situations: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    # 04, 05, 06, 08 - Dynamic Sections (JSON)
+    dependents: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list, nullable=False)
+    income_categories: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    deductions_credits: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    special_situations: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
 
     # 07 - Previous Tax Information
     has_previous_return_copy: Mapped[str | None] = mapped_column(String(10), nullable=True)
