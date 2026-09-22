@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}F-Bar (FinCEN 114) - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
+{% endblock %}
+
+{% block content %}
+{% set active_nav = 'fbar' %}
+{% include "partials/client_sidebar.html" %}
+
+<div class="dashboard-main">
+    <header class="site-header">
+        <div class="site-header-left">
+            {% include "partials/sidebar_toggle.html" %}
+            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
+                <span class="brand-mark" aria-hidden="true">UT</span>
+                <span>{{ app_name }}</span>
+            </a>
+        </div>
+        <div class="account-menu-wrap client-header-actions">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
+                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+            </button>
+            <form class="header-logout" action="/auth/logout" method="post">
+                <button class="logout-button" type="submit">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="dashboard-shell">
+        <div class="documents-container">
+            <div class="documents-header">
+                <div>
+                    <h1>F-Bar (FinCEN Form 114)</h1>
+                    <p>Report Foreign Bank &amp; Financial Accounts exceeding $10,000 in aggregate value at any time during {{ selected_year }}</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Foreign Accounts</p>
+                        <h2>Foreign Financial Account Details</h2>
+                    </div>
+                </div>
+                <form action="#" method="post" onsubmit="alert('Foreign bank account details saved!'); return false;" class="form-grid">
+                    <div class="field-group">
+                        <label for="bank_institution_name" class="field-label">Foreign Financial Institution Name</label>
+                        <input type="text" id="bank_institution_name" name="bank_institution_name" class="field-input" placeholder="e.g. State Bank of India, HDFC Bank, HSBC" />
+                    </div>
+                    <div class="field-group">
+                        <label for="foreign_account_number" class="field-label">Foreign Account Number</label>
+                        <input type="text" id="foreign_account_number" name="foreign_account_number" class="field-input" placeholder="Account number or IBAN" />
+                    </div>
+                    <div class="field-group">
+                        <label for="foreign_country" class="field-label">Country</label>
+                        <input type="text" id="foreign_country" name="foreign_country" class="field-input" placeholder="e.g. India, United Kingdom, Canada" />
+                    </div>
+                    <div class="field-group">
+                        <label for="max_balance_usd" class="field-label">Maximum Account Balance in USD during {{ selected_year }}</label>
+                        <input type="number" step="0.01" id="max_balance_usd" name="max_balance_usd" class="field-input" placeholder="e.g. 15000.00" />
+                    </div>
+                    <div class="field-actions">
+                        <button type="submit" class="button button-primary">Save Foreign Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

@@ -5,33 +5,33 @@
 
 /* ── Brand Colors ─────────────────────── */
 :root {
-    /* ── Theme: Teal Professional ── */
+    /* ── Theme 2: Midnight Navy ── */
 
     /* Primary brand */
-    --brand:          #087f79;
-    --brand-dark:     #115e59;
-    --brand-soft:     #edf6f4;
+    --brand:          #2563eb;
+    --brand-dark:     #1d4ed8;
+    --brand-soft:     #eff6ff;
 
     /* Text */
-    --ink:            #17324d;
-    --muted:          #4f6475;
+    --ink:            #0f172a;
+    --muted:          #475569;
 
     /* Surface / Background */
-    --bg-gradient:    linear-gradient(135deg, #edf5f2 0%, #f8f5ed 54%, #edf3f7 100%);
-    --bg-dot-color:   #cbdedb;
-    --surface:        rgba(255, 255, 255, 0.92);
-    --surface-soft:   rgba(247, 250, 249, 0.85);
-    --line:           #d8e5e8;
+    --bg-gradient:    linear-gradient(135deg, #f0f4ff 0%, #f8faff 54%, #eef2ff 100%);
+    --bg-dot-color:   #c7d2fe;
+    --surface:        rgba(255, 255, 255, 0.94);
+    --surface-soft:   rgba(248, 250, 252, 0.88);
+    --line:           #e2e8f0;
 
     /* Status colors */
-    --green:          #2b8b63;
-    --amber:          #b87916;
-    --coral:          #bd5f52;
-    --blue:           #2969a8;
+    --green:          #16a34a;
+    --amber:          #d97706;
+    --coral:          #dc2626;
+    --blue:           #2563eb;
 
     /* Typography */
-    --font-body:      "DM Sans", "Inter", sans-serif;
-    --font-heading:   "Space Grotesk", "DM Sans", sans-serif;
+    --font-body:      "Inter", "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-heading:   "Inter", "Space Grotesk", sans-serif;
     --font-mono:      "JetBrains Mono", monospace;
     --font-size-base: 1rem;
     --font-size-sm:   0.875rem;
@@ -47,7 +47,7 @@
     --teal:              var(--brand);
     --teal-dark:         var(--brand-dark);
     --teal-soft:         var(--brand-soft);
-    --nav-border:        rgba(23, 50, 77, 0.1);
+    --nav-border:        rgba(15, 23, 42, 0.08);
     --card-bg:           var(--surface);
     --card-border:       var(--line);
     --input-bg:          var(--surface-soft);
@@ -61,20 +61,20 @@
     --auth-primary:      var(--brand);
     --auth-primary-dark: var(--brand-dark);
     --auth-input:        var(--surface-soft);
-    --auth-shadow:       0 10px 30px rgba(0, 0, 0, 0.06);
+    --auth-shadow:       0 10px 30px rgba(15, 23, 42, 0.06);
     --auth-paper:        var(--bg-gradient);
 }
 
 /* ── Dark Theme Override ──────────────── */
 html[data-theme="dark"] {
-    --ink:            #e2e8f0;
+    --ink:            #f1f5f9;
     --muted:          #94a3b8;
-    --bg-gradient:    linear-gradient(135deg, #0b1120 0%, #111827 54%, #0d1a2e 100%);
-    --bg-dot-color:   #1e3a5f;
-    --surface:        rgba(30, 41, 59, 0.95);
-    --surface-soft:   rgba(15, 23, 42, 0.95);
-    --line:           rgba(148, 163, 184, 0.2);
-    --brand-soft:     rgba(8, 127, 121, 0.18);
+    --bg-gradient:    linear-gradient(135deg, #070d1a 0%, #0a1124 54%, #0b152d 100%);
+    --bg-dot-color:   #1e293b;
+    --surface:        rgba(15, 23, 42, 0.94);
+    --surface-soft:   rgba(10, 15, 30, 0.94);
+    --line:           rgba(148, 163, 184, 0.16);
+    --brand-soft:     rgba(37, 99, 235, 0.18);
 }
 
 

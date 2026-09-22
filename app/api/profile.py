@@ -38,12 +38,14 @@ def _client_or_404(db: Session, account_id: str) -> Client:
 
 
 @router.get("/profile", response_class=HTMLResponse, name="client_profile")
+@router.get("/personal-info", response_class=HTMLResponse, name="client_personal_info")
 def profile_page(request: Request, account: ClientAccount, db: Session = Depends(get_db)):
     client = _client_or_404(db, account.id)
     return templates.TemplateResponse(
         "client/profile/index.html",
-        {"request": request, "account": account, "profile": serialize_profile(client, account), "app_name": settings.APP_NAME},
+        {"request": request, "account": account, "profile": serialize_profile(client, account), "app_name": settings.APP_NAME, "active_nav": "personal_info"},
     )
+
 
 
 @router.get("/api")

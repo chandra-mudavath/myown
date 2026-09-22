@@ -472,3 +472,91 @@ async def download_client_document(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
     return FileResponse(path=doc.file_path, filename=doc.original_filename, media_type=doc.mime_type)
+
+
+def _render_client_section(template_name: str, request: Request, account: ClientAccount, db: Session, tax_year: str | None, active_nav: str):
+    from app.api.dashboard import _available_tax_years
+    available_years = _available_tax_years()
+    if not tax_year or not tax_year.isdigit() or int(tax_year) not in available_years:
+        selected_year = available_years[0]
+    else:
+        selected_year = int(tax_year)
+
+    client = db.query(Client).filter(Client.account_id == account.id).first()
+    has_active_filing = False
+    if client:
+        has_active_filing = db.query(TaxFiling).filter(TaxFiling.client_id == client.id).first() is not None
+
+    return templates.TemplateResponse(
+        template_name,
+        {
+            "request": request,
+            "app_name": settings.APP_NAME,
+            "available_years": available_years,
+            "selected_year": selected_year,
+            "has_active_filing": has_active_filing,
+            "active_nav": active_nav,
+        },
+    )
+
+
+@router.get("/tax-notes", response_class=HTMLResponse, name="client_tax_notes")
+async def client_tax_notes(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/tax_notes.html", request, account, db, tax_year, "tax_notes")
+
+
+@router.get("/tax-summary", response_class=HTMLResponse, name="client_tax_summary")
+async def client_tax_summary(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/tax_summary.html", request, account, db, tax_year, "tax_summary")
+
+
+@router.get("/bank-details", response_class=HTMLResponse, name="client_bank_details")
+async def client_bank_details(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/bank_details.html", request, account, db, tax_year, "bank_details")
+
+
+@router.get("/review-documents", response_class=HTMLResponse, name="client_review_documents")
+async def client_review_documents(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/review_documents.html", request, account, db, tax_year, "review_documents")
+
+
+@router.get("/efile-authorization", response_class=HTMLResponse, name="client_efile_authorization")
+async def client_efile_authorization(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/efile_authorization.html", request, account, db, tax_year, "efile_authorization")
+
+
+@router.get("/final-documents", response_class=HTMLResponse, name="client_final_documents")
+async def client_final_documents(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/final_documents.html", request, account, db, tax_year, "final_documents")
+
+
+@router.get("/update-stage", response_class=HTMLResponse, name="client_update_stage")
+async def client_update_stage(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/update_stage.html", request, account, db, tax_year, "update_stage")
+
+
+@router.get("/update-contact", response_class=HTMLResponse, name="client_update_contact")
+async def client_update_contact(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/update_contact.html", request, account, db, tax_year, "update_contact")
+
+
+@router.get("/refund-request", response_class=HTMLResponse, name="client_refund_request")
+async def client_refund_request(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/refund_request.html", request, account, db, tax_year, "refund_request")
+
+
+@router.get("/fbar", response_class=HTMLResponse, name="client_fbar")
+async def client_fbar(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/fbar.html", request, account, db, tax_year, "fbar")
+
+
+@router.get("/referrals", response_class=HTMLResponse, name="client_referrals")
+async def client_referrals(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/referrals.html", request, account, db, tax_year, "referrals")
+
+
+@router.get("/summary-records", response_class=HTMLResponse, name="client_summary_records")
+async def client_summary_records(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/summary_records.html", request, account, db, tax_year, "summary_records")
+
+

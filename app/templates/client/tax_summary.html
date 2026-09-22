@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Tax Summary - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
+{% endblock %}
+
+{% block content %}
+{% set active_nav = 'tax_summary' %}
+{% include "partials/client_sidebar.html" %}
+
+<div class="dashboard-main">
+    <header class="site-header">
+        <div class="site-header-left">
+            {% include "partials/sidebar_toggle.html" %}
+            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
+                <span class="brand-mark" aria-hidden="true">UT</span>
+                <span>{{ app_name }}</span>
+            </a>
+        </div>
+        <div class="account-menu-wrap client-header-actions">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
+                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+            </button>
+            <form class="header-logout" action="/auth/logout" method="post">
+                <button class="logout-button" type="submit">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="dashboard-shell">
+        <div class="documents-container">
+            <div class="documents-header">
+                <div>
+                    <h1>Tax Summary {{ selected_year }}</h1>
+                    <p>Overview of reported income, tax deductions, credits, and calculated refund / tax due</p>
+                </div>
+            </div>
+
+            <div class="metrics-row client-metrics-row mb-6">
+                <div class="metric-card client-metric-card">
+                    <div class="client-metric-left">
+                        <div class="client-metric-icon blue">💰</div>
+                        <div>
+                            <span class="client-metric-label">GROSS INCOME</span>
+                            <strong class="client-metric-value">$0.00</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card client-metric-card">
+                    <div class="client-metric-left">
+                        <div class="client-metric-icon green">📉</div>
+                        <div>
+                            <span class="client-metric-label">TOTAL DEDUCTIONS</span>
+                            <strong class="client-metric-value">$0.00</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card client-metric-card">
+                    <div class="client-metric-left">
+                        <div class="client-metric-icon amber">💵</div>
+                        <div>
+                            <span class="client-metric-label">TAX LIABILITY</span>
+                            <strong class="client-metric-value">$0.00</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="metric-card client-metric-card">
+                    <div class="client-metric-left">
+                        <div class="client-metric-icon green">🎉</div>
+                        <div>
+                            <span class="client-metric-label">ESTIMATED REFUND</span>
+                            <strong class="client-metric-value">$0.00</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Breakdown</p>
+                        <h2>Detailed Calculation Breakdown</h2>
+                    </div>
+                </div>
+                <div class="empty-state compact">
+                    <span class="empty-icon">📊</span>
+                    <p>Tax calculations will be populated here once your return is processed by your tax professional.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

@@ -51,15 +51,15 @@
 
     <main class="dashboard-shell">
         <!-- Hero Banner with Gradient Matching Attachment -->
-        <section class="welcome-panel gradient-hero-banner client-hero-banner" aria-labelledby="page-title">
-            <div class="client-hero-content">
-                <p class="client-hero-eyebrow">
+        <section class="welcome-panel gradient-hero-banner" aria-labelledby="page-title" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #ea580c 100%); color: #ffffff; padding: 2rem 2.25rem; border-radius: 18px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.25); flex-wrap: wrap; gap: 1.5rem;">
+            <div style="flex: 1; min-width: 280px;">
+                <p style="text-transform: uppercase; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; opacity: 0.9; margin: 0 0 0.5rem 0; color: rgba(255, 255, 255, 0.9);">
                     WEDNESDAY, 9 SEPTEMBER
                 </p>
-                <h1 id="page-title" class="client-hero-title">
+                <h1 id="page-title" style="font-size: 2.1rem; font-weight: 800; margin: 0 0 0.6rem 0; letter-spacing: -0.02em; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     GOOD EVENING, {{ dashboard.display_name | upper }}!
                 </h1>
-                <p class="client-hero-desc">
+                <p style="margin: 0; font-size: 0.95rem; opacity: 0.92; font-weight: 400; color: rgba(255, 255, 255, 0.95);">
                     {% if dashboard.filing %}
                     You have 1 active tax filing in progress for tax year <strong>{{ dashboard.tax_year }}</strong>.
                     {% else %}
@@ -68,18 +68,19 @@
                 </p>
             </div>
 
-            <div class="client-hero-actions">
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem;">
                 {% if not dashboard.filing %}
-                <a href="{{ url_for('new_filing_page') }}" class="button client-hero-btn">
+                <a href="{{ url_for('new_filing_page') }}" class="button" style="background-color: #ffffff; color: #2563eb; font-weight: 700; border-radius: 30px; padding: 0.75rem 1.6rem; font-size: 0.9rem; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.15s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
                     + New Filing
                 </a>
                 {% else %}
-                <div class="client-hero-badge">
+                <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px); padding: 0.75rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 0.85rem; color: #ffffff;">
                     <span>Filing ID: <strong>{{ dashboard.filing.case_id }}</strong></span>
                 </div>
                 {% endif %}
             </div>
         </section>
+
 
         <!-- Metric Cards Row Matching Attachment -->
         <div class="metrics-row client-metrics-row">

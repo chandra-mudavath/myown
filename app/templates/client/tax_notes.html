@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Tax Notes - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
+{% endblock %}
+
+{% block content %}
+{% set active_nav = 'tax_notes' %}
+{% include "partials/client_sidebar.html" %}
+
+<div class="dashboard-main">
+    <header class="site-header">
+        <div class="site-header-left">
+            {% include "partials/sidebar_toggle.html" %}
+            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
+                <span class="brand-mark" aria-hidden="true">UT</span>
+                <span>{{ app_name }}</span>
+            </a>
+        </div>
+        <div class="account-menu-wrap client-header-actions">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
+                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+            </button>
+            <form class="header-logout" action="/auth/logout" method="post">
+                <button class="logout-button" type="submit">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="dashboard-shell">
+        <div class="documents-container">
+            <div class="documents-header">
+                <div>
+                    <h1>Tax Notes &amp; Advisor Remarks</h1>
+                    <p>Important instructions, advisor notes, and client communication for Tax Year {{ selected_year }}</p>
+                </div>
+            </div>
+
+            <div class="panel mb-6">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Advisor Notes</p>
+                        <h2>CPA &amp; Preparer Remarks</h2>
+                    </div>
+                </div>
+                <div class="p-4 rounded-xl bg-surface-variant border border-line">
+                    <p class="text-sm muted mb-2">📌 Note from Assigned Preparer (Updated recently):</p>
+                    <p>Please make sure all W-2s, 1099-INT, and foreign bank account balances are uploaded under the Documents section before finalizing your return.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Client Notes</p>
+                        <h2>Add a Note for Your Tax Team</h2>
+                    </div>
+                </div>
+                <form action="#" method="post" onsubmit="alert('Tax note saved successfully!'); return false;" class="form-grid">
+                    <div class="field-group">
+                        <label for="tax_note_text" class="field-label">Note / Special Instructions</label>
+                        <textarea id="tax_note_text" name="tax_note_text" rows="4" class="field-input" placeholder="Enter any additional details, income sources, or tax considerations for your preparer..."></textarea>
+                    </div>
+                    <div class="field-actions">
+                        <button type="submit" class="button button-primary">Save Tax Note</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

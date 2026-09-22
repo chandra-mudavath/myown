@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}E-File Authorization Form - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
+{% endblock %}
+
+{% block content %}
+{% set active_nav = 'efile_authorization' %}
+{% include "partials/client_sidebar.html" %}
+
+<div class="dashboard-main">
+    <header class="site-header">
+        <div class="site-header-left">
+            {% include "partials/sidebar_toggle.html" %}
+            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
+                <span class="brand-mark" aria-hidden="true">UT</span>
+                <span>{{ app_name }}</span>
+            </a>
+        </div>
+        <div class="account-menu-wrap client-header-actions">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
+                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+            </button>
+            <form class="header-logout" action="/auth/logout" method="post">
+                <button class="logout-button" type="submit">Logout</button>
+            </form>
+        </div>
+    </header>
+
+    <main class="dashboard-shell">
+        <div class="documents-container">
+            <div class="documents-header">
+                <div>
+                    <h1>E-File Authorization Form</h1>
+                    <p>IRS Form 8879 - IRS e-file Signature Authorization for Tax Year {{ selected_year }}</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Form 8879</p>
+                        <h2>Electronic Signature Authorization</h2>
+                    </div>
+                </div>
+                <form action="#" method="post" onsubmit="alert('Form 8879 Authorization submitted successfully!'); return false;" class="form-grid">
+                    <div class="field-group">
+                        <label for="taxpayer_pin" class="field-label">5-Digit Taxpayer Self-Select PIN</label>
+                        <input type="password" id="taxpayer_pin" name="taxpayer_pin" maxlength="5" class="field-input" placeholder="5-digit PIN" />
+                    </div>
+                    <div class="field-group">
+                        <label for="spouse_pin" class="field-label">Spouse 5-Digit PIN (if filing jointly)</label>
+                        <input type="password" id="spouse_pin" name="spouse_pin" maxlength="5" class="field-input" placeholder="Optional Spouse PIN" />
+                    </div>
+                    <div class="field-group flex gap-2 items-center">
+                        <input type="checkbox" id="consent_efile" name="consent_efile" required />
+                        <label for="consent_efile" class="field-label cursor-pointer mb-0">I authorize UrTax to transmit my Federal &amp; State tax return electronically to the IRS and State tax authorities.</label>
+                    </div>
+                    <div class="field-actions">
+                        <button type="submit" class="button button-primary">Sign &amp; Authorize E-File</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

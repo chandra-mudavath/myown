@@ -5,29 +5,47 @@
         <a class="sidebar-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/client/dashboard">
             <span class="sidebar-nav-icon" aria-hidden="true">&#9635;</span> Dashboard
         </a>
-        {% set has_active_filing = has_active_filing if has_active_filing is defined else (dashboard.has_active_filing if dashboard is defined and dashboard.has_active_filing is defined else false) %}
-        {% if not has_active_filing and not (dashboard is defined and dashboard.filing) %}
-        <a class="sidebar-nav-item" href="{{ url_for('new_filing_page') }}">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> New Filing
+        <a class="sidebar-nav-item{% if active_nav == 'personal_info' or active_nav == 'profile' %} active{% endif %}" href="/client/personal-info">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128100;</span> Personal Info
         </a>
-        {% endif %}
-        <a class="sidebar-nav-item{% if active_nav == 'filings' %} active{% endif %}" href="/client/filings">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128194;</span> My Tax Filings
+        <a class="sidebar-nav-item{% if active_nav == 'tax_notes' %} active{% endif %}" href="/client/tax-notes">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128221;</span> Tax Notes
         </a>
-        <a class="sidebar-nav-item{% if active_nav == 'documents' %} active{% endif %}" href="/client/documents">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> Documents
+        <a class="sidebar-nav-item{% if active_nav == 'tax_summary' %} active{% endif %}" href="/client/tax-summary">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128196;</span> Tax Summary
         </a>
-        <a class="sidebar-nav-item{% if active_nav == 'all_documents' %} active{% endif %}" href="/client/documents">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128193;</span> All documents
+        <a class="sidebar-nav-item{% if active_nav == 'bank_details' %} active{% endif %}" href="/client/bank-details">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#127974;</span> Bank Details
         </a>
-        <a class="sidebar-nav-item" href="#">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128179;</span> Invoices &amp; payments
+        <a class="sidebar-nav-item{% if active_nav == 'documents' or active_nav == 'all_documents' %} active{% endif %}" href="/client/documents">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128193;</span> Documents
         </a>
-        <a class="sidebar-nav-item" href="#">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128276;</span> Notifications
+        <a class="sidebar-nav-item{% if active_nav == 'review_documents' %} active{% endif %}" href="/client/review-documents">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128065;</span> Review Documents
         </a>
-        <a class="sidebar-nav-item{% if active_nav == 'profile' %} active{% endif %}" href="/client/profile">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128100;</span> Profile
+        <a class="sidebar-nav-item{% if active_nav == 'efile_authorization' %} active{% endif %}" href="/client/efile-authorization">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#9997;</span> E-File Authorization Form
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'final_documents' %} active{% endif %}" href="/client/final-documents">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128229;</span> Final Documents
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'update_stage' %} active{% endif %}" href="/client/update-stage">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128260;</span> Update Stage
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'update_contact' %} active{% endif %}" href="/client/update-contact">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128222;</span> Update Email/mobile
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'refund_request' %} active{% endif %}" href="/client/refund-request">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128176;</span> Refund Request
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'fbar' %} active{% endif %}" href="/client/fbar">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#127758;</span> F-Bar
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'referrals' %} active{% endif %}" href="/client/referrals">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#129309;</span> Referrals
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'summary_records' %} active{% endif %}" href="/client/summary-records">
+            <span class="sidebar-nav-icon" aria-hidden="true">&#128202;</span> Summary Records
         </a>
     </nav>
     <form class="sidebar-logout" action="/auth/logout" method="post">
@@ -36,3 +54,4 @@
         </button>
     </form>
 </aside>
+

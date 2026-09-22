@@ -4,9 +4,10 @@
 // Shared auth theme
 const authPage = document.querySelector(".auth-page");
 const authThemeToggle = document.getElementById("auth-theme-toggle");
-const savedAuthTheme = window.localStorage.getItem("landing-theme");
+const savedAuthTheme = window.localStorage.getItem("theme");
 
 const applyAuthTheme = (isDark) => {
+    document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
     authPage?.classList.toggle("dark-theme", isDark);
     document.body.classList.toggle("dark-theme", isDark);
     authThemeToggle?.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
@@ -16,9 +17,9 @@ const applyAuthTheme = (isDark) => {
 applyAuthTheme(savedAuthTheme === "dark");
 
 authThemeToggle?.addEventListener("click", () => {
-    const isDark = !authPage?.classList.contains("dark-theme");
+    const isDark = document.documentElement.getAttribute("data-theme") !== "dark";
     applyAuthTheme(isDark);
-    window.localStorage.setItem("landing-theme", isDark ? "dark" : "light");
+    window.localStorage.setItem("theme", isDark ? "dark" : "light");
 });
 
 // ── Password visibility toggle ──────────────────────────────────
