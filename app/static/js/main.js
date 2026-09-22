@@ -37,13 +37,47 @@ document.addEventListener("DOMContentLoaded", () => {
     const savedTheme = window.localStorage.getItem("theme");
     applyTheme(savedTheme === "dark" ? "dark" : "light");
 
-    document.querySelectorAll(".theme-toggle").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            e.preventDefault();
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            applyTheme(nextTheme);
-            window.localStorage.setItem("theme", nextTheme);
+        document.querySelectorAll(".theme-toggle").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                applyTheme(nextTheme);
+                window.localStorage.setItem("theme", nextTheme);
+            });
         });
+
+        // Dynamic footer year
+        const footerYear = document.getElementById("footer-year");
+        if (footerYear) {
+            footerYear.textContent = new Date().getFullYear();
+        }
     });
-});
+
+    // Global avatar lightbox handlers
+    window.openAvatarModal = function(imageUrl) {
+        const modal = document.getElementById("avatar-lightbox-modal");
+        const img = document.getElementById("avatar-lightbox-img");
+        if (modal && img && imageUrl) {
+            img.src = imageUrl;
+            modal.classList.add("is-open");
+        }
+    };
+
+    window.closeAvatarModal = function() {
+        const modal = document.getElementById("avatar-lightbox-modal");
+        if (modal) {
+            modal.classList.remove("is-open");
+        }
+    };
+
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") window.closeAvatarModal();
+    });
+
+    document.addEventListener("click", function(e) {
+        const modal = document.getElementById("avatar-lightbox-modal");
+        if (e.target === modal) window.closeAvatarModal();
+    });
+})();
+

@@ -217,3 +217,38 @@ document.querySelectorAll("form, h1, p").forEach((el, i) => {
     el.style.animationDelay = `${i * 60}ms`;
     el.classList.add("fade-in");
 });
+
+// ── Tax Year Selection Preview ──────────────────────────────────
+const yearSelect = document.getElementById("tax_year");
+const yearPreview = document.getElementById("year-preview");
+if (yearSelect && yearPreview) {
+    yearSelect.addEventListener("change", function () {
+        if (this.value) {
+            yearPreview.textContent = "Your selected year is " + this.value;
+            yearPreview.style.display = "block";
+        } else {
+            yearPreview.style.display = "none";
+        }
+    });
+}
+
+// ── Tax Year Countdown Redirect ─────────────────────────────────
+const countdownRing = document.getElementById("countdown-ring");
+const countdownNum = document.getElementById("countdown-num");
+const countdownText = document.getElementById("countdown-text");
+if (countdownRing || countdownNum || countdownText) {
+    const circumference = 176;
+    let remaining = 3;
+    if (countdownRing) countdownRing.style.strokeDashoffset = 0;
+    const interval = setInterval(function () {
+        remaining -= 1;
+        if (countdownNum) countdownNum.textContent = remaining;
+        if (countdownText) countdownText.textContent = remaining;
+        if (countdownRing) countdownRing.style.strokeDashoffset = circumference * (1 - remaining / 3);
+        if (remaining <= 0) {
+            clearInterval(interval);
+            window.location.href = "/client/dashboard";
+        }
+    }, 1000);
+}
+

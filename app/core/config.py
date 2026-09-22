@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "UrTax"
     APP_ENV: str = "development"
     DEBUG: bool = True
-    SECRET_KEY: str
+    SECRET_KEY: str = "dev-secret-key-please-change-in-production-32bytes"
     ALLOWED_HOSTS: str = "localhost"
 
     # JWT
@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # Database
-    DATABASE_URL: str
+    # Database (MySQL local dev fallback; PostgreSQL in production via .env)
+    DATABASE_URL: str = "mysql+pymysql://root:password@localhost:3306/myowntax"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
@@ -29,7 +29,6 @@ class Settings(BaseSettings):
             elif v.startswith("postgresql://") and not v.startswith("postgresql+"):
                 return v.replace("postgresql://", "postgresql+psycopg://", 1)
         return v
-
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
     CELERY_BROKER_URL: str = "redis://localhost:6379/1"

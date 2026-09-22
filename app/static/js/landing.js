@@ -134,24 +134,44 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         };
 
+        const navbarHeight = () => document.querySelector(".main-nav")?.offsetHeight ?? 80;
+
+        const scrollToItemIfNeeded = (item) => {
+            const trigger = item.querySelector(".service-trigger");
+            if (!trigger) return;
+            const rect = trigger.getBoundingClientRect();
+            const offset = navbarHeight() + 16;
+            // Only scroll if trigger is above the visible area (hidden behind navbar)
+            if (rect.top < offset) {
+                const top = window.scrollY + rect.top - offset;
+                window.scrollTo({ top, behavior: "smooth" });
+            }
+        };
+
         serviceItems.forEach((item) => {
             item.querySelector(".service-trigger")?.addEventListener("click", () => {
                 const shouldOpen = !item.classList.contains("is-open");
                 serviceItems.forEach((serviceItem) => setServiceState(serviceItem, shouldOpen && serviceItem === item));
+                if (shouldOpen) {
+                    // After transitions complete, check if trigger slipped above navbar
+                    window.setTimeout(() => scrollToItemIfNeeded(item), 650);
+                }
             });
         });
 
         const hashItem = serviceFromHash();
         if (hashItem) {
             serviceItems.forEach((item) => setServiceState(item, item === hashItem));
-            window.requestAnimationFrame(() => hashItem.scrollIntoView({ behavior: "smooth", block: "start" }));
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => scrollToItemIfNeeded(hashItem));
+            });
         }
 
         window.addEventListener("hashchange", () => {
             const item = serviceFromHash();
             if (!item) return;
             serviceItems.forEach((serviceItem) => setServiceState(serviceItem, serviceItem === item));
-            item.scrollIntoView({ behavior: "smooth", block: "start" });
+            window.setTimeout(() => scrollToItemIfNeeded(item), 650);
         });
     }
 

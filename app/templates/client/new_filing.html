@@ -19,7 +19,7 @@
                 <span>{{ app_name or 'UTax' }}</span>
             </a>
         </div>
-        <div class="site-header-right" style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
+        <div class="site-header-right filing-header-right">
             <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme">
                 <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                     <circle cx="12" cy="12" r="4"></circle>
@@ -280,13 +280,13 @@
                                     <button class="button button-secondary" type="button" onclick="document.getElementById('file-personal').click()">Select Files</button>
                                     <span class="file-count-label" id="count-personal">No files selected</span>
                                 </div>
-                                <div class="upload-progress-container" id="progress-personal" style="display: none; margin-top: 0.5rem;">
-                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
-                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                <div class="upload-progress-container" id="progress-personal">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
                                     </div>
-                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                    <span class="progress-text">0%</span>
                                 </div>
-                                <ul class="file-list" id="list-personal" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
+                                <ul class="file-list" id="list-personal"></ul>
                             </div>
                             
                             <div class="document-category-card" data-category="Income">
@@ -297,13 +297,13 @@
                                     <button class="button button-secondary" type="button" onclick="document.getElementById('file-income').click()">Select Files</button>
                                     <span class="file-count-label" id="count-income">No files selected</span>
                                 </div>
-                                <div class="upload-progress-container" id="progress-income" style="display: none; margin-top: 0.5rem;">
-                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
-                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                <div class="upload-progress-container" id="progress-income">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
                                     </div>
-                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                    <span class="progress-text">0%</span>
                                 </div>
-                                <ul class="file-list" id="list-income" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
+                                <ul class="file-list" id="list-income"></ul>
                             </div>
                             
                             <div class="document-category-card" data-category="Other">
@@ -314,13 +314,13 @@
                                     <button class="button button-secondary" type="button" onclick="document.getElementById('file-previous').click()">Select Files</button>
                                     <span class="file-count-label" id="count-previous">No files selected</span>
                                 </div>
-                                <div class="upload-progress-container" id="progress-previous" style="display: none; margin-top: 0.5rem;">
-                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
-                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                <div class="upload-progress-container" id="progress-previous">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
                                     </div>
-                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                    <span class="progress-text">0%</span>
                                 </div>
-                                <ul class="file-list" id="list-previous" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
+                                <ul class="file-list" id="list-previous"></ul>
                             </div>
                             
                             <div class="document-category-card" data-category="Deductions">
@@ -331,13 +331,13 @@
                                     <button class="button button-secondary" type="button" onclick="document.getElementById('file-deductions').click()">Select Files</button>
                                     <span class="file-count-label" id="count-deductions">No files selected</span>
                                 </div>
-                                <div class="upload-progress-container" id="progress-deductions" style="display: none; margin-top: 0.5rem;">
-                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
-                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                <div class="upload-progress-container" id="progress-deductions">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
                                     </div>
-                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                    <span class="progress-text">0%</span>
                                 </div>
-                                <ul class="file-list" id="list-deductions" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
+                                <ul class="file-list" id="list-deductions"></ul>
                             </div>
                             
                             <div class="document-category-card" data-category="Other">
@@ -348,13 +348,13 @@
                                     <button class="button button-secondary" type="button" onclick="document.getElementById('file-other').click()">Select Files</button>
                                     <span class="file-count-label" id="count-other">No files selected</span>
                                 </div>
-                                <div class="upload-progress-container" id="progress-other" style="display: none; margin-top: 0.5rem;">
-                                    <div class="progress-bar-bg" style="width: 100%; background: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;">
-                                        <div class="progress-bar-fill" style="width: 0%; background: #0284c7; height: 100%; transition: width 0.2s;"></div>
+                                <div class="upload-progress-container" id="progress-other">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
                                     </div>
-                                    <span class="progress-text" style="font-size: 0.75rem; color: #64748b;">0%</span>
+                                    <span class="progress-text">0%</span>
                                 </div>
-                                <ul class="file-list" id="list-other" style="margin-top: 0.5rem; padding-left: 1.2rem; font-size: 0.85rem;"></ul>
+                                <ul class="file-list" id="list-other"></ul>
                             </div>
                         </div>
 
@@ -386,11 +386,11 @@
                             <div class="review-summary-item"><span>Documents</span><span class="status-pending">Pending</span></div>
                         </div>
 
-                        <div class="submit-confirmation-message" style="margin-top: 1.5rem; padding: 1rem; background-color: var(--teal-soft); border: 1px solid var(--line); border-radius: 4px; font-size: 0.875rem; color: var(--muted);">
-                            <p style="margin: 0;"><strong>Note:</strong> By submitting this filing, your information will be sent to our team for processing. A tax professional will review your details and may contact you for additional information or documents to finalize your return.</p>
+                        <div class="submit-confirmation-message">
+                            <p><strong>Note:</strong> By submitting this filing, your information will be sent to our team for processing. A tax professional will review your details and may contact you for additional information or documents to finalize your return.</p>
                         </div>
 
-                        <div class="form-actions" style="display: flex; margin-top: 1.5rem; justify-content: flex-end;">
+                        <div class="form-actions form-actions-end">
                             <a class="button button-secondary" href="/client/dashboard">Cancel</a>
                             <button class="button button-primary" type="submit">Submit Filing for Review</button>
                         </div>

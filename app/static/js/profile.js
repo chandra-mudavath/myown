@@ -106,4 +106,26 @@
         button.disabled = false;
         button.textContent = "Request change";
     });
+
+    const avatarInput = document.getElementById("avatar-input");
+    const avatarPreview = document.getElementById("avatar-preview");
+    if (avatarInput) {
+        avatarInput.addEventListener("change", async function () {
+            if (!this.files || !this.files[0]) return;
+            const formData = new FormData();
+            formData.append("file", this.files[0]);
+            try {
+                const res = await fetch("/client/api/avatar", { method: "POST", body: formData });
+                const data = await res.json();
+                if (res.ok && data.avatar_url) {
+                    if (avatarPreview) avatarPreview.src = data.avatar_url;
+                    showMessage("Profile picture updated!", false);
+                } else {
+                    showMessage(data.detail || "Failed to update profile picture.", true);
+                }
+            } catch (err) {
+                showMessage("Error uploading profile picture.", true);
+            }
+        });
+    }
 })();

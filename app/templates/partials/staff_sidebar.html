@@ -13,17 +13,16 @@
                 class="sidebar-nav-item sidebar-dropdown-toggle{% if active_nav in ['my_cases', 'all_cases', 'cases'] %} active{% endif %}" 
                 id="cases-dropdown-btn"
                 aria-expanded="{% if active_nav in ['my_cases', 'all_cases', 'cases'] %}true{% else %}false{% endif %}"
-                style="width: 100%; display: flex; align-items: center; justify-content: space-between; background: transparent; border: 0; cursor: pointer; color: inherit; font: inherit; padding: 0.75rem 1rem;"
             >
-                <span style="display: flex; align-items: center; gap: 0.6rem;">
+                <span class="sidebar-dropdown-label">
                     <span class="sidebar-nav-icon" aria-hidden="true">&#128194;</span> Cases
                 </span>
-                <span class="dropdown-chevron" style="transition: transform 0.2s ease; font-size: 0.75rem;">&#9660;</span>
+                <span class="dropdown-chevron">&#9660;</span>
             </button>
             <div 
                 class="sidebar-dropdown-menu" 
                 id="cases-dropdown-menu" 
-                {% if active_nav not in ['my_cases', 'all_cases', 'cases'] %}hidden style="display: none; padding-left: 1.5rem; flex-direction: column; gap: 0.25rem; margin-top: 0.25rem;"{% else %}style="display: flex; padding-left: 1.5rem; flex-direction: column; gap: 0.25rem; margin-top: 0.25rem;"{% endif %}
+                {% if active_nav not in ['my_cases', 'all_cases', 'cases'] %}hidden{% endif %}
             >
                 <a class="sidebar-nav-item sidebar-nav-item--nested{% if active_nav == 'my_cases' %} active{% endif %}" href="/staff/cases/my">
                     My Cases
@@ -53,46 +52,3 @@
     </div>
 </aside>
 
-<script>
-(function() {
-    function initDropdown() {
-        const casesBtn = document.getElementById("cases-dropdown-btn");
-        const casesMenu = document.getElementById("cases-dropdown-menu");
-
-        if (casesBtn && casesMenu) {
-            // Set initial chevron rotation based on initial expanded state
-            const initialExpanded = casesBtn.getAttribute("aria-expanded") === "true";
-            const chevron = casesBtn.querySelector(".dropdown-chevron");
-            if (chevron) {
-                chevron.style.transform = initialExpanded ? "rotate(180deg)" : "rotate(0deg)";
-            }
-
-            casesBtn.addEventListener("click", function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const isCurrentlyExpanded = casesBtn.getAttribute("aria-expanded") === "true";
-                const newExpandedState = !isCurrentlyExpanded;
-
-                casesBtn.setAttribute("aria-expanded", String(newExpandedState));
-                if (newExpandedState) {
-                    casesMenu.removeAttribute("hidden");
-                    casesMenu.style.display = "flex";
-                } else {
-                    casesMenu.setAttribute("hidden", "");
-                    casesMenu.style.display = "none";
-                }
-
-                if (chevron) {
-                    chevron.style.transform = newExpandedState ? "rotate(180deg)" : "rotate(0deg)";
-                }
-            });
-        }
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initDropdown);
-    } else {
-        initDropdown();
-    }
-})();
-</script>

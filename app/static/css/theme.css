@@ -5,6 +5,8 @@
 
 /* ── Brand Colors ─────────────────────── */
 :root {
+    /* ── Theme: Teal Professional ── */
+
     /* Primary brand */
     --brand:          #087f79;
     --brand-dark:     #115e59;
@@ -12,13 +14,13 @@
 
     /* Text */
     --ink:            #17324d;
-    --muted:          #64788b;
+    --muted:          #4f6475;
 
     /* Surface / Background */
     --bg-gradient:    linear-gradient(135deg, #edf5f2 0%, #f8f5ed 54%, #edf3f7 100%);
     --bg-dot-color:   #cbdedb;
-    --surface:        rgba(255, 255, 255, 0.90);
-    --surface-soft:   rgba(247, 250, 249, 0.80);
+    --surface:        rgba(255, 255, 255, 0.92);
+    --surface-soft:   rgba(247, 250, 249, 0.85);
     --line:           #d8e5e8;
 
     /* Status colors */
@@ -28,13 +30,13 @@
     --blue:           #2969a8;
 
     /* Typography */
-    --font-body:      "DM Sans", sans-serif;
-    --font-heading:   "Space Grotesk", sans-serif;
+    --font-body:      "DM Sans", "Inter", sans-serif;
+    --font-heading:   "Space Grotesk", "DM Sans", sans-serif;
     --font-mono:      "JetBrains Mono", monospace;
     --font-size-base: 1rem;
     --font-size-sm:   0.875rem;
     --font-size-lg:   1.125rem;
-    --line-height:    1.6;
+    --line-height:    1.65;
 
     /* Layout */
     --site-header-h:  84px;
@@ -59,7 +61,7 @@
     --auth-primary:      var(--brand);
     --auth-primary-dark: var(--brand-dark);
     --auth-input:        var(--surface-soft);
-    --auth-shadow:       0 10px 30px rgba(0, 0, 0, 0.05);
+    --auth-shadow:       0 10px 30px rgba(0, 0, 0, 0.06);
     --auth-paper:        var(--bg-gradient);
 }
 
@@ -69,10 +71,10 @@ html[data-theme="dark"] {
     --muted:          #94a3b8;
     --bg-gradient:    linear-gradient(135deg, #0b1120 0%, #111827 54%, #0d1a2e 100%);
     --bg-dot-color:   #1e3a5f;
-    --surface:        #1e293b;
-    --surface-soft:   #0f172a;
+    --surface:        rgba(30, 41, 59, 0.95);
+    --surface-soft:   rgba(15, 23, 42, 0.95);
     --line:           rgba(148, 163, 184, 0.2);
-    --brand-soft:     rgba(8, 127, 121, 0.15);
+    --brand-soft:     rgba(8, 127, 121, 0.18);
 }
 
 

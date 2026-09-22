@@ -66,6 +66,336 @@
 .activity-dot { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: currentColor; }.activity-dot.blue { color: var(--blue); }.activity-dot.teal { color: var(--brand); }.activity-dot.amber { color: var(--amber); }
 .admin-activity strong { color: var(--ink); font-size: .78rem; }.admin-activity p { margin: 3px 0; color: var(--muted); font-size: .73rem; }.admin-activity time { color: var(--muted); font-size: .67rem; }
 
+/* ── Admin Modals ── */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    padding: 1rem;
+}
+.modal-overlay[hidden] { display: none !important; }
+.modal-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    width: 100%; max-width: 520px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1);
+}
+.modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--line);
+}
+.modal-header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--ink); }
+.modal-close-btn {
+    background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--muted);
+    line-height: 1; padding: 0.25rem;
+}
+.modal-body { padding: 1.5rem; }
+.modal-form-group { margin-bottom: 1.1rem; }
+.modal-form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--ink); }
+.modal-form-group input, .modal-form-group select {
+    width: 100%; padding: 0.65rem 0.85rem; border-radius: var(--radius);
+    border: 1px solid var(--line); font-size: 0.9rem;
+    background: var(--surface-soft); color: var(--ink);
+}
+.modal-form-group input:focus, .modal-form-group select:focus {
+    outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.modal-btn-submit {
+    width: 100%; padding: 0.75rem; border-radius: var(--radius); border: none;
+    background: var(--brand); color: white; font-weight: 700; font-size: 0.95rem;
+    cursor: pointer; transition: background 0.2s;
+}
+.modal-btn-submit:hover { background: var(--brand-dark); }
+.success-credentials-box {
+    background: var(--brand-soft); border: 1px solid var(--line); border-radius: 10px;
+    padding: 1.25rem; text-align: center; color: var(--brand-dark);
+}
+.success-credentials-box p { margin: 0.3rem 0; font-size: 0.9rem; }
+.cred-highlight { font-family: monospace; font-size: 1.1rem; font-weight: 700; background: var(--surface); padding: 0.25rem 0.5rem; border-radius: 4px; }
+
+/* ── Admin Avatar & Profile Components ── */
+.admin-avatar-wrapper {
+    position: relative;
+    width: 82px;
+    height: 82px;
+    margin: 0 auto 14px;
+}
+.admin-sidebar-avatar-img {
+    width: 82px;
+    height: 82px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--brand-soft);
+    cursor: pointer;
+    display: block;
+}
+.admin-avatar-upload-label {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: var(--brand);
+    color: #fff;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    border: 2px solid #fff;
+}
+.admin-avatar-btn {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+}
+.admin-header-avatar-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--brand);
+    display: block;
+}
+.account-menu-wrap {
+    position: relative;
+}
+.admin-account-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    width: max-content;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    padding: 0.25rem;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.admin-account-menu:not([hidden]) {
+    display: flex;
+}
+.admin-account-menu .account-menu-action {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    white-space: nowrap;
+    cursor: pointer;
+}
+.admin-account-menu .account-menu-action:hover {
+    background: var(--brand-soft);
+    color: var(--brand);
+}
+
+/* ── Admin Rail & Empty State Helpers ── */
+.admin-rail-spacing {
+    margin-top: 14px;
+}
+.admin-activity-empty {
+    padding: 1rem 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+    grid-template-columns: 1fr;
+}
+
+/* ── Admin Welcome Top Flex Layout ── */
+.admin-page-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+}
+.admin-page-topbar h1 {
+    margin-top: 0.25rem;
+}
+.admin-back-link {
+    color: var(--brand);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+.admin-back-link:hover {
+    text-decoration: underline;
+}
+.admin-btn-action {
+    padding: 0.65rem 1.25rem;
+    width: auto;
+}
+
+/* ── Admin Filter Bar ── */
+.admin-filter-bar {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+.admin-filter-input {
+    flex: 1;
+    min-width: 240px;
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    font-size: 0.875rem;
+    background: var(--surface);
+    color: var(--ink);
+}
+.admin-filter-select {
+    padding: 0.6rem 0.9rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    font-size: 0.875rem;
+    background: var(--surface);
+    color: var(--ink);
+    font-weight: 600;
+}
+.admin-filter-btn {
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+.admin-filter-btn:hover {
+    background: var(--brand-dark);
+}
+.admin-filter-clear {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+.admin-filter-clear:hover {
+    background: var(--surface-soft);
+}
+
+/* ── Admin Table Panel ── */
+.admin-table-panel {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    overflow: hidden;
+}
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.875rem;
+}
+.admin-table thead tr {
+    background: var(--surface-soft);
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+}
+.admin-table th {
+    padding: 0.9rem 1.25rem;
+    font-weight: 700;
+}
+.admin-table tbody tr {
+    border-bottom: 1px solid var(--line);
+}
+.admin-table tbody tr:last-child {
+    border-bottom: 0;
+}
+.admin-table td {
+    padding: 1rem 1.25rem;
+    color: var(--ink);
+}
+.admin-table .link-primary {
+    color: var(--brand);
+    text-decoration: underline;
+    font-weight: 700;
+    text-underline-offset: 2px;
+}
+.admin-table .status-pill-subtle {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    background: var(--surface-soft);
+    color: var(--ink);
+}
+.admin-table .empty-cell {
+    padding: 2.5rem;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* ── Admin Detail Grid & Cards ── */
+.admin-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+@media (max-width: 900px) {
+    .admin-detail-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.admin-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+.admin-card-title {
+    margin-top: 0;
+    font-size: 1.1rem;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 0.75rem;
+    color: var(--ink);
+}
+.admin-card-dl {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+}
+.admin-role-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius);
+    background: var(--surface-soft);
+    font-weight: 700;
+    color: var(--brand);
+}
+.admin-status-active {
+    color: var(--green);
+    font-weight: 700;
+}
+
+
 /* ── Dark Theme Overrides for Admin Portal ──────────────── */
 html[data-theme="dark"] .admin-page,
 html[data-theme="dark"] .admin-layout,

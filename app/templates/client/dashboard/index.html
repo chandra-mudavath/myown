@@ -12,7 +12,7 @@
                 <span>{{ dashboard.app_name }}</span>
             </a>
         </div>
-        <div class="account-menu-wrap" style="display: flex; align-items: center; gap: 1rem;">
+        <div class="account-menu-wrap client-header-actions">
             <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme">
                 <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                     <circle cx="12" cy="12" r="4"></circle>
@@ -31,17 +31,17 @@
                 aria-label="Open account menu"
             >
                 {% if client and client.profile_picture %}
-                <img src="{{ client.profile_picture }}" alt="Avatar" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                <img src="{{ client.profile_picture }}" alt="Avatar" class="client-header-avatar" />
                 {% else %}
                 <span class="account-avatar" aria-hidden="true">{{ dashboard.initials }}</span>
                 {% endif %}
                 <span class="account-details"><span class="account-name">{{ dashboard.display_name }}</span></span>
             </button>
-            <div class="account-menu" id="account-menu" hidden style="position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.25rem; flex-direction: column; gap: 0.2rem;">
+            <div class="account-menu client-account-menu" id="account-menu" hidden>
                 {% if client and client.profile_picture %}
-                <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ client.profile_picture }}')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
+                <a class="account-menu-action client-account-action" href="javascript:void(0)" onclick="openAvatarModal('{{ client.profile_picture }}')" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
                 {% endif %}
-                <a class="account-menu-action" href="/client/profile" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</a>
+                <a class="account-menu-action client-account-action" href="/client/profile" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</a>
             </div>
             <form class="header-logout" action="/auth/logout" method="post">
                 <button class="logout-button" type="submit">Logout</button>
@@ -51,15 +51,15 @@
 
     <main class="dashboard-shell">
         <!-- Hero Banner with Gradient Matching Attachment -->
-        <section class="welcome-panel gradient-hero-banner" aria-labelledby="page-title" style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #ea580c 100%); color: #ffffff; padding: 2rem 2.25rem; border-radius: 18px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.25); flex-wrap: wrap; gap: 1.5rem;">
-            <div style="flex: 1; min-width: 280px;">
-                <p style="text-transform: uppercase; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; opacity: 0.9; margin: 0 0 0.5rem 0; color: rgba(255, 255, 255, 0.9);">
+        <section class="welcome-panel gradient-hero-banner client-hero-banner" aria-labelledby="page-title">
+            <div class="client-hero-content">
+                <p class="client-hero-eyebrow">
                     WEDNESDAY, 9 SEPTEMBER
                 </p>
-                <h1 id="page-title" style="font-size: 2.1rem; font-weight: 800; margin: 0 0 0.6rem 0; letter-spacing: -0.02em; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h1 id="page-title" class="client-hero-title">
                     GOOD EVENING, {{ dashboard.display_name | upper }}!
                 </h1>
-                <p style="margin: 0; font-size: 0.95rem; opacity: 0.92; font-weight: 400; color: rgba(255, 255, 255, 0.95);">
+                <p class="client-hero-desc">
                     {% if dashboard.filing %}
                     You have 1 active tax filing in progress for tax year <strong>{{ dashboard.tax_year }}</strong>.
                     {% else %}
@@ -68,159 +68,162 @@
                 </p>
             </div>
 
-            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem;">
+            <div class="client-hero-actions">
                 {% if not dashboard.filing %}
-                <a href="{{ url_for('new_filing_page') }}" class="button" style="background-color: #ffffff; color: #2563eb; font-weight: 700; border-radius: 30px; padding: 0.75rem 1.6rem; font-size: 0.9rem; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.15s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                <a href="{{ url_for('new_filing_page') }}" class="button client-hero-btn">
                     + New Filing
                 </a>
                 {% else %}
-                <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(8px); padding: 0.75rem 1.25rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 0.85rem; color: #ffffff;">
+                <div class="client-hero-badge">
                     <span>Filing ID: <strong>{{ dashboard.filing.case_id }}</strong></span>
                 </div>
                 {% endif %}
-                <!-- <a href="/client/years" class="button" style="background-color: #ffffff; color: #2563eb; font-weight: 700; border-radius: 30px; padding: 0.75rem 1.6rem; font-size: 0.9rem; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.15s ease;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
-                    Change Year
-                </a> -->
             </div>
         </section>
 
         <!-- Metric Cards Row Matching Attachment -->
-        <div class="metrics-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1.25rem; margin-bottom: 1.5rem;">
+        <div class="metrics-row client-metrics-row">
             <!-- Card 1: Tax Year with Change Option -->
-            <div class="metric-card" style="background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 14px; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <div style="width: 46px; height: 46px; border-radius: 12px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+            <div class="metric-card client-metric-card">
+                <div class="client-metric-left">
+                    <div class="client-metric-icon blue">
                         📖
                     </div>
                     <div>
-                        <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-secondary, #64748b); letter-spacing: 0.05em; display: block; margin-bottom: 0.2rem;">
+                        <span class="client-metric-label">
                             TAX YEAR
                         </span>
-                        <strong style="font-size: 1.4rem; font-weight: 800; color: var(--ink-primary, #0f172a);">
+                        <strong class="client-metric-value">
                             {{ dashboard.tax_year }}
                         </strong>
                     </div>
                 </div>
-                <a href="/client/years" style="font-size: 0.75rem; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 0.35rem 0.65rem; border-radius: 6px; text-decoration: none; border: 1px solid #bfdbfe; transition: all 0.15s ease;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+                <a href="/client/years" class="client-metric-badge-link">
                     Change
                 </a>
             </div>
 
             <!-- Card 2: Filing Status -->
-            <div class="metric-card" style="background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 14px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-                <div style="width: 46px; height: 46px; border-radius: 12px; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
-                    📈
-                </div>
-                <div>
-                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-secondary, #64748b); letter-spacing: 0.05em; display: block; margin-bottom: 0.2rem;">
-                        FILING STATUS
-                    </span>
-                    <strong style="font-size: 1.1rem; font-weight: 800; color: var(--ink-primary, #0f172a);">
-                        {{ dashboard.filing.status if dashboard.filing else "Not Started" }}
-                    </strong>
+            <div class="metric-card client-metric-card">
+                <div class="client-metric-left">
+                    <div class="client-metric-icon green">
+                        📈
+                    </div>
+                    <div>
+                        <span class="client-metric-label">
+                            FILING STATUS
+                        </span>
+                        <strong class="client-metric-value">
+                            {{ dashboard.filing.status if dashboard.filing else "Not Started" }}
+                        </strong>
+                    </div>
                 </div>
             </div>
 
             <!-- Card 3: Filing Type -->
-            <div class="metric-card" style="background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 14px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-                <div style="width: 46px; height: 46px; border-radius: 12px; background: #f0f9ff; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
-                    👤
-                </div>
-                <div>
-                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-secondary, #64748b); letter-spacing: 0.05em; display: block; margin-bottom: 0.2rem;">
-                        FILING TYPE
-                    </span>
-                    <strong style="font-size: 1.2rem; font-weight: 800; color: var(--ink-primary, #0f172a);">
-                        {{ dashboard.filing.filing_type | capitalize if dashboard.filing else "—" }}
-                    </strong>
+            <div class="metric-card client-metric-card">
+                <div class="client-metric-left">
+                    <div class="client-metric-icon blue">
+                        👤
+                    </div>
+                    <div>
+                        <span class="client-metric-label">
+                            FILING TYPE
+                        </span>
+                        <strong class="client-metric-value">
+                            {{ dashboard.filing.filing_type | capitalize if dashboard.filing else "—" }}
+                        </strong>
+                    </div>
                 </div>
             </div>
 
             <!-- Card 4: Progress % -->
-            <div class="metric-card" style="background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 14px; padding: 1.25rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-                <div style="width: 46px; height: 46px; border-radius: 12px; background: #faf5ff; color: #9333ea; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
-                    📅
-                </div>
-                <div>
-                    <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-secondary, #64748b); letter-spacing: 0.05em; display: block; margin-bottom: 0.2rem;">
-                        PROGRESS
-                    </span>
-                    <strong style="font-size: 1.4rem; font-weight: 800; color: var(--ink-primary, #0f172a);">
-                        {{ dashboard.filing.progress_pct if dashboard.filing else 0 }}%
-                    </strong>
+            <div class="metric-card client-metric-card">
+                <div class="client-metric-left">
+                    <div class="client-metric-icon amber">
+                        📅
+                    </div>
+                    <div>
+                        <span class="client-metric-label">
+                            PROGRESS
+                        </span>
+                        <strong class="client-metric-value">
+                            {{ dashboard.filing.progress_pct if dashboard.filing else 0 }}%
+                        </strong>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 1. Active Tax Return Status Pipeline Stepper -->
-        <section class="panel filing-pipeline-section" aria-labelledby="pipeline-title" style="margin-bottom: 1.5rem; padding: 1.5rem;">
-            <div class="panel-heading" style="margin-bottom: 1.25rem;">
+        <section class="panel filing-pipeline-section client-pipeline-card" aria-labelledby="pipeline-title">
+            <div class="panel-heading">
                 <div>
                     <p class="eyebrow">Filing journey</p>
-                    <h2 id="pipeline-title" style="font-size: 1.25rem;">Tax Return Status Tracker</h2>
+                    <h2 id="pipeline-title" class="client-panel-title">Tax Return Status Tracker</h2>
                 </div>
                 <span class="status-pill">{{ dashboard.filing.status if dashboard.filing else "Not Started" }}</span>
             </div>
 
-            <div class="stepper-wrapper" style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; gap: 0.5rem; flex-wrap: wrap;">
+            <div class="stepper-wrapper">
                 <!-- Connecting Line -->
-                <div style="position: absolute; top: 20px; left: 5%; right: 5%; height: 3px; background: var(--line, #e2e8f0); z-index: 1;"></div>
+                <div class="stepper-line"></div>
 
                 <!-- Step 1: Form Submitted -->
-                <div class="stepper-step" style="position: relative; z-index: 2; text-align: center; flex: 1; min-width: 120px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: {% if dashboard.filing %}var(--primary, #0d9488){% else %}var(--line, #e2e8f0){% endif %}; color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem auto; font-weight: 700;">
+                <div class="stepper-step">
+                    <div class="stepper-circle {% if dashboard.filing %}active{% endif %}">
                         {% if dashboard.filing %}✓{% else %}1{% endif %}
                     </div>
-                    <strong style="display: block; font-size: 0.875rem;">1. Form Submitted</strong>
-                    <span style="font-size: 0.75rem; color: var(--ink-secondary);">{% if dashboard.filing %}Completed{% else %}Pending{% endif %}</span>
+                    <strong>1. Form Submitted</strong>
+                    <span>{% if dashboard.filing %}Completed{% else %}Pending{% endif %}</span>
                 </div>
 
                 <!-- Step 2: Document Review -->
-                <div class="stepper-step" style="position: relative; z-index: 2; text-align: center; flex: 1; min-width: 120px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: {% if dashboard.filing %}var(--primary, #0d9488){% else %}var(--bg-surface, #f8fafc){% endif %}; color: {% if dashboard.filing %}#fff{% else %}var(--ink-secondary){% endif %}; border: 2px solid var(--line, #cbd5e1); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem auto; font-weight: 700;">
+                <div class="stepper-step">
+                    <div class="stepper-circle {% if dashboard.filing %}active{% endif %}">
                         2
                     </div>
-                    <strong style="display: block; font-size: 0.875rem;">2. Document Review</strong>
-                    <span style="font-size: 0.75rem; color: var(--ink-secondary);">{% if dashboard.filing %}In Progress{% else %}Upcoming{% endif %}</span>
+                    <strong>2. Document Review</strong>
+                    <span>{% if dashboard.filing %}In Progress{% else %}Upcoming{% endif %}</span>
                 </div>
 
                 <!-- Step 3: Tax Preparation -->
-                <div class="stepper-step" style="position: relative; z-index: 2; text-align: center; flex: 1; min-width: 120px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface, #f8fafc); color: var(--ink-secondary); border: 2px solid var(--line, #cbd5e1); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem auto; font-weight: 700;">
+                <div class="stepper-step">
+                    <div class="stepper-circle">
                         3
                     </div>
-                    <strong style="display: block; font-size: 0.875rem;">3. Tax Preparation</strong>
-                    <span style="font-size: 0.75rem; color: var(--ink-secondary);">Upcoming</span>
+                    <strong>3. Tax Preparation</strong>
+                    <span>Upcoming</span>
                 </div>
 
                 <!-- Step 4: IRS E-File -->
-                <div class="stepper-step" style="position: relative; z-index: 2; text-align: center; flex: 1; min-width: 120px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface, #f8fafc); color: var(--ink-secondary); border: 2px solid var(--line, #cbd5e1); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem auto; font-weight: 700;">
+                <div class="stepper-step">
+                    <div class="stepper-circle">
                         4
                     </div>
-                    <strong style="display: block; font-size: 0.875rem;">4. IRS E-File</strong>
-                    <span style="font-size: 0.75rem; color: var(--ink-secondary);">Upcoming</span>
+                    <strong>4. IRS E-File</strong>
+                    <span>Upcoming</span>
                 </div>
 
                 <!-- Step 5: Completed -->
-                <div class="stepper-step" style="position: relative; z-index: 2; text-align: center; flex: 1; min-width: 120px;">
-                    <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--bg-surface, #f8fafc); color: var(--ink-secondary); border: 2px solid var(--line, #cbd5e1); display: flex; align-items: center; justify-content: center; margin: 0 auto 0.5rem auto; font-weight: 700;">
+                <div class="stepper-step">
+                    <div class="stepper-circle">
                         5
                     </div>
-                    <strong style="display: block; font-size: 0.875rem;">5. Completed</strong>
-                    <span style="font-size: 0.75rem; color: var(--ink-secondary);">Upcoming</span>
+                    <strong>5. Completed</strong>
+                    <span>Upcoming</span>
                 </div>
             </div>
         </section>
 
         <!-- 2. Action Needed & Quick Document Hub Grid -->
-        <div class="content-grid" style="margin-bottom: 1.5rem;">
+        <div class="content-grid client-grid-section">
             <!-- Action Items Card -->
             <section class="panel" aria-labelledby="actions-title">
                 <div class="panel-heading">
                     <div>
                         <p class="eyebrow">Action checklist</p>
-                        <h2 id="actions-title" style="font-size: 1.25rem;">Action Required</h2>
+                        <h2 id="actions-title" class="client-panel-title">Action Required</h2>
                     </div>
                 </div>
                 {% if dashboard.actions %}
@@ -233,9 +236,9 @@
                     {% endfor %}
                 </ul>
                 {% else %}
-                <div class="empty-state compact" style="padding: 1.5rem; text-align: center;">
-                    <span class="empty-icon" aria-hidden="true" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;">✓</span>
-                    <p style="margin: 0; font-size: 0.875rem; color: var(--ink-secondary);">No action required right now. All details are up to date.</p>
+                <div class="empty-state compact client-empty-compact">
+                    <span class="empty-icon client-empty-icon" aria-hidden="true">✓</span>
+                    <p class="client-empty-text">No action required right now. All details are up to date.</p>
                 </div>
                 {% endif %}
             </section>
@@ -245,17 +248,17 @@
                 <div class="panel-heading">
                     <div>
                         <p class="eyebrow">Tax documents</p>
-                        <h2 id="docs-hub-title" style="font-size: 1.25rem;">Quick Document Hub</h2>
+                        <h2 id="docs-hub-title" class="client-panel-title">Quick Document Hub</h2>
                     </div>
-                    <a href="/client/documents" class="button button-secondary" style="font-size: 0.8rem; padding: 0.25rem 0.65rem;">View All</a>
+                    <a href="/client/documents" class="button button-secondary client-btn-sm">View All</a>
                 </div>
-                <div style="padding: 0.5rem 0;">
-                    <p style="font-size: 0.85rem; color: var(--ink-secondary); margin-bottom: 1rem;">Upload and view tax documents for year {{ dashboard.tax_year }}.</p>
-                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-                        <a href="/client/documents" class="button button-primary" style="font-size: 0.85rem;">
+                <div class="client-doc-hub-body">
+                    <p>Upload and view tax documents for year {{ dashboard.tax_year }}.</p>
+                    <div class="client-doc-hub-btns">
+                        <a href="/client/documents" class="button button-primary">
                             + Upload Documents
                         </a>
-                        <a href="/client/documents" class="button button-secondary" style="font-size: 0.85rem;">
+                        <a href="/client/documents" class="button button-secondary">
                             📄 Access Folder
                         </a>
                     </div>

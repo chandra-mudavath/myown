@@ -23,19 +23,19 @@
                 <span>{{ app_name }} / Admin / Work Queue</span>
             </div>
             <div class="admin-header-actions">
-                <div class="account-menu-wrap" style="position: relative;">
-                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu" style="background: transparent; border: 0; padding: 0; cursor: pointer;">
+                <div class="account-menu-wrap">
+                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu">
                         {% if admin and admin.profile_picture %}
-                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" class="admin-header-avatar-img" />
                         {% else %}
                         <span class="admin-avatar" title="{{ admin_name }} {{ admin_last_name }}">{{ initials }}</span>
                         {% endif %}
                     </button>
-                    <div class="account-menu admin-account-menu" hidden style="position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.25rem; flex-direction: column; gap: 0.2rem;">
+                    <div class="account-menu admin-account-menu" hidden>
                         {% if admin and admin.profile_picture %}
-                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
+                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
                         {% endif %}
-                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap; cursor: pointer;" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
+                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
                     </div>
                 </div>
                 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
@@ -46,15 +46,15 @@
             </div>
         </header>
 
-        <section class="admin-welcome" style="padding-bottom: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <section class="admin-welcome">
+            <div class="admin-page-topbar">
                 <div>
                     <span class="admin-kicker">Operations Queue</span>
                     <h1>System Tax Filings Queue</h1>
-                    <p style="margin-top: 0.25rem; color: var(--muted);">View, track, and monitor all client tax filings across all statuses.</p>
+                    <p>View, track, and monitor all client tax filings across all statuses.</p>
                 </div>
                 <div>
-                    <button type="button" id="btn-quick-new-filing" class="modal-btn-submit" style="padding: 0.65rem 1.25rem; width: auto;">
+                    <button type="button" id="btn-quick-new-filing" class="modal-btn-submit admin-btn-action">
                         <b>+</b> Create New Filing
                     </button>
                 </div>
@@ -62,73 +62,73 @@
         </section>
 
         <!-- Search & Filter Bar -->
-        <section class="admin-section" style="margin-top: 0;">
-            <form method="get" action="/admin/cases" style="margin-bottom: 1.25rem;">
-                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <section class="admin-section">
+            <form method="get" action="/admin/cases">
+                <div class="admin-filter-bar">
                     <input 
                         type="text" 
                         name="q" 
                         value="{{ q or '' }}" 
                         placeholder="Search by case ID, client name..." 
-                        style="flex: 1; min-width: 240px; padding: 0.6rem 0.9rem; border-radius: 8px; border: 1px solid var(--line, #cbd5e1); font-size: 0.875rem; background: var(--surface);"
+                        class="admin-filter-input"
                     >
-                    <select name="status" style="padding: 0.6rem 0.9rem; border-radius: 8px; border: 1px solid var(--line, #cbd5e1); font-size: 0.875rem; background: var(--surface); font-weight: 600;">
+                    <select name="status" class="admin-filter-select">
                         <option value="">All Statuses</option>
                         <option value="pending_review" {% if selected_status == 'pending_review' %}selected{% endif %}>Pending Review</option>
                         <option value="in_progress" {% if selected_status == 'in_progress' %}selected{% endif %}>In Progress</option>
                         <option value="payment_pending" {% if selected_status == 'payment_pending' %}selected{% endif %}>Payment Pending</option>
                         <option value="complete" {% if selected_status == 'complete' %}selected{% endif %}>Completed</option>
                     </select>
-                    <button type="submit" style="padding: 0.6rem 1.2rem; border-radius: 8px; border: none; background: var(--brand, #2563eb); color: white; font-weight: 700; font-size: 0.875rem; cursor: pointer;">
+                    <button type="submit" class="admin-filter-btn">
                         Filter
                     </button>
                     {% if q or selected_status %}
-                    <a href="/admin/cases" style="display: inline-flex; align-items: center; padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; font-size: 0.875rem; font-weight: 600;">
+                    <a href="/admin/cases" class="admin-filter-clear">
                         Clear
                     </a>
                     {% endif %}
                 </div>
             </form>
 
-            <div style="border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+            <div class="admin-table-panel">
+                <table class="admin-table">
                     <thead>
-                        <tr style="background: var(--surface-soft, #f8fafc); border-bottom: 1px solid var(--line, #e2e8f0); color: var(--muted);">
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Case ID</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Client Name</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Tax Year</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Filing Type</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Status</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Created Date</th>
+                        <tr>
+                            <th>Case ID</th>
+                            <th>Client Name</th>
+                            <th>Tax Year</th>
+                            <th>Filing Type</th>
+                            <th>Status</th>
+                            <th>Created Date</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if filings %}
                         {% for f in filings %}
-                        <tr style="border-bottom: 1px solid var(--line, #f1f5f9);">
-                            <td style="padding: 1rem 1.25rem; font-weight: 700;">
-                                <a href="/admin/cases/{{ f.id }}" style="color: var(--brand, #2563eb); text-decoration: underline;">
+                        <tr>
+                            <td>
+                                <a href="/admin/cases/{{ f.id }}" class="link-primary">
                                     {{ f.case_id }}
                                 </a>
                             </td>
-                            <td style="padding: 1rem 1.25rem; font-weight: 600;">
-                                <a href="/admin/clients/{{ f.client_id }}" style="color: var(--brand, #2563eb); text-decoration: underline;">
+                            <td>
+                                <a href="/admin/clients/{{ f.client_id }}" class="link-primary">
                                     👤 {{ f.client_name }}
                                 </a>
                             </td>
-                            <td style="padding: 1rem 1.25rem; color: var(--ink);">{{ f.tax_year }}</td>
-                            <td style="padding: 1rem 1.25rem; color: var(--ink);">{{ f.filing_type or 'Federal & State' }}</td>
-                            <td style="padding: 1rem 1.25rem;">
-                                <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; background: var(--surface-soft); color: var(--ink);">
+                            <td>{{ f.tax_year }}</td>
+                            <td>{{ f.filing_type or 'Federal & State' }}</td>
+                            <td>
+                                <span class="status-pill-subtle">
                                     {{ f.status.replace('_', ' ').title() }}
                                 </span>
                             </td>
-                            <td style="padding: 1rem 1.25rem; color: var(--muted);">{{ f.created_at.strftime('%b %d, %Y') if f.created_at else 'N/A' }}</td>
+                            <td>{{ f.created_at.strftime('%b %d, %Y') if f.created_at else 'N/A' }}</td>
                         </tr>
                         {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--muted);">
+                            <td colspan="6" class="empty-cell">
                                 No tax filings found in the queue.
                             </td>
                         </tr>

@@ -700,3 +700,44 @@ html[data-theme=dark] .danger-zone {
   border-color: rgba(189, 95, 82, 0.3);
   background: rgba(189, 95, 82, 0.05);
 }
+
+/* ── Profile header & avatar ── */
+.header-account {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.profile-pic-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.profile-avatar-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--brand);
+  background: var(--surface-soft);
+}
+.profile-avatar-upload-label {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: var(--brand);
+  color: #ffffff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  border: 2px solid var(--surface);
+}
+.profile-overview-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+

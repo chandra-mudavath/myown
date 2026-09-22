@@ -23,19 +23,19 @@
                 <span>{{ app_name }} / Admin / Cases / {{ case_number }}</span>
             </div>
             <div class="admin-header-actions">
-                <div class="account-menu-wrap" style="position: relative;">
-                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu" style="background: transparent; border: 0; padding: 0; cursor: pointer;">
+                <div class="account-menu-wrap">
+                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu">
                         {% if admin and admin.profile_picture %}
-                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" class="admin-header-avatar-img" />
                         {% else %}
                         <span class="admin-avatar" title="{{ admin_name }} {{ admin_last_name }}">{{ initials }}</span>
                         {% endif %}
                     </button>
-                    <div class="account-menu admin-account-menu" hidden style="position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.25rem; flex-direction: column; gap: 0.2rem;">
+                    <div class="account-menu admin-account-menu" hidden>
                         {% if admin and admin.profile_picture %}
-                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
+                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
                         {% endif %}
-                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap; cursor: pointer;" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
+                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
                     </div>
                 </div>
                 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
@@ -46,28 +46,28 @@
             </div>
         </header>
 
-        <section class="admin-welcome" style="padding-bottom: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <section class="admin-welcome">
+            <div class="admin-page-topbar">
                 <div>
                     {% if client %}
-                    <a href="/admin/clients/{{ client.id }}" style="color: var(--brand, #2563eb); text-decoration: none; font-size: 0.875rem; font-weight: 600;">← Back to Client Details</a>
+                    <a href="/admin/clients/{{ client.id }}" class="admin-back-link">← Back to Client Details</a>
                     {% else %}
-                    <a href="/admin/clients" style="color: var(--brand, #2563eb); text-decoration: none; font-size: 0.875rem; font-weight: 600;">← Back to Clients</a>
+                    <a href="/admin/clients" class="admin-back-link">← Back to Clients</a>
                     {% endif %}
-                    <h1 style="margin-top: 0.5rem;">Filing Case: {{ case_number }}</h1>
-                    <p style="margin-top: 0.25rem; color: var(--muted);">Tax Year {{ filing.tax_year }} | Status: <strong style="text-transform: capitalize;">{{ filing.status.replace('_', ' ') }}</strong></p>
+                    <h1>Filing Case: {{ case_number }}</h1>
+                    <p>Tax Year {{ filing.tax_year }} | Status: <strong class="capitalize">{{ filing.status.replace('_', ' ') }}</strong></p>
                 </div>
             </div>
         </section>
 
         <!-- Filing Details & Documents Grid -->
-        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-top: 1rem;">
+        <div class="admin-detail-grid">
             <!-- Case Overview Card -->
-            <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.5rem;">
-                <h3 style="margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--line); padding-bottom: 0.75rem;">Filing Summary</h3>
-                <div style="display: flex; flex-direction: column; gap: 0.85rem; font-size: 0.9rem; margin-top: 1rem;">
+            <div class="admin-card">
+                <h3 class="admin-card-title">Filing Summary</h3>
+                <div class="admin-card-dl">
                     <div><strong>Case ID:</strong> {{ case_number }}</div>
-                    <div><strong>Client:</strong> {% if client %}<a href="/admin/clients/{{ client.id }}" style="color: var(--brand, #2563eb); text-decoration: underline;">{{ client.first_name }} {{ client.last_name or '' }}</a>{% else %}{{ filing.first_name }} {{ filing.last_name }}{% endif %}</div>
+                    <div><strong>Client:</strong> {% if client %}<a href="/admin/clients/{{ client.id }}" class="link-primary">{{ client.first_name }} {{ client.last_name or '' }}</a>{% else %}{{ filing.first_name }} {{ filing.last_name }}{% endif %}</div>
                     <div><strong>Tax Year:</strong> {{ filing.tax_year }}</div>
                     <div><strong>Filing Type:</strong> {{ filing.filing_type or 'Federal & State' }}</div>
                     <div><strong>Status:</strong> {{ filing.status.replace('_', ' ').title() }}</div>
@@ -76,28 +76,28 @@
             </div>
 
             <!-- Documents Card -->
-            <div style="background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.5rem;">
-                <h3 style="margin-top: 0; font-size: 1.1rem; border-bottom: 1px solid var(--line); padding-bottom: 0.75rem;">Associated Filing Documents</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem; text-align: left; font-size: 0.875rem;">
+            <div class="admin-card">
+                <h3 class="admin-card-title">Associated Filing Documents</h3>
+                <table class="admin-table">
                     <thead>
-                        <tr style="background: var(--surface-soft); border-bottom: 1px solid var(--line); color: var(--muted);">
-                            <th style="padding: 0.75rem 1rem;">Document Name</th>
-                            <th style="padding: 0.75rem 1rem;">Document Type</th>
-                            <th style="padding: 0.75rem 1rem;">Uploaded Date</th>
+                        <tr>
+                            <th>Document Name</th>
+                            <th>Document Type</th>
+                            <th>Uploaded Date</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if documents %}
                         {% for doc in documents %}
-                        <tr style="border-bottom: 1px solid var(--line);">
-                            <td style="padding: 0.85rem 1rem; font-weight: 600;">📄 {{ doc.original_filename }}</td>
-                            <td style="padding: 0.85rem 1rem;">{{ doc.document_type or 'General' }}</td>
-                            <td style="padding: 0.85rem 1rem;">{{ doc.created_at.strftime('%Y-%m-%d') if doc.created_at else 'N/A' }}</td>
+                        <tr>
+                            <td>📄 {{ doc.original_filename }}</td>
+                            <td>{{ doc.document_type or 'General' }}</td>
+                            <td>{{ doc.created_at.strftime('%Y-%m-%d') if doc.created_at else 'N/A' }}</td>
                         </tr>
                         {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="3" style="padding: 1.5rem; text-align: center; color: var(--muted);">No documents uploaded for this filing case yet.</td>
+                            <td colspan="3" class="empty-cell">No documents uploaded for this filing case yet.</td>
                         </tr>
                         {% endif %}
                     </tbody>

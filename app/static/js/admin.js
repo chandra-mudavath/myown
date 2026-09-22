@@ -389,10 +389,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (btn) btn.addEventListener("click", bindUploadDocHandler);
     });
 
-    // Admin Avatar Upload Trigger
+    // Admin Avatar Upload Trigger & Header Dropdowns
     const adminAvatarInput = document.getElementById("admin-avatar-input");
     const adminAvatarPreview = document.getElementById("admin-sidebar-preview");
     const adminInitialsSpan = document.getElementById("admin-sidebar-initials");
+    const adminHeaderAvatars = document.querySelectorAll(".admin-header-actions img, .admin-header-actions .admin-avatar");
     if (adminAvatarInput) {
         adminAvatarInput.addEventListener("change", async function() {
             if (!this.files || !this.files[0]) return;
@@ -405,8 +406,25 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (adminAvatarPreview) {
                         adminAvatarPreview.src = data.avatar_url;
                         adminAvatarPreview.style.display = "block";
+                        const link = document.getElementById("admin-sidebar-link");
+                        if (link) {
+                            link.href = "javascript:void(0)";
+                            link.setAttribute("onclick", `openAvatarModal('${data.avatar_url}')`);
+                            link.style.display = "block";
+                        }
                     }
                     if (adminInitialsSpan) adminInitialsSpan.style.display = "none";
+                    adminHeaderAvatars.forEach(el => {
+                        if (el.tagName === "IMG") {
+                            el.src = data.avatar_url;
+                        } else {
+                            const newImg = document.createElement("img");
+                            newImg.src = data.avatar_url;
+                            newImg.alt = "Admin Avatar";
+                            newImg.style.cssText = "width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);";
+                            el.parentNode.replaceChild(newImg, el);
+                        }
+                    });
                     alert("Admin profile picture updated successfully!");
                 } else {
                     alert(data.detail || "Error uploading profile picture.");
@@ -416,4 +434,24 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+
+    // Toggle admin header account dropdown menus
+    document.addEventListener("click", function(e) {
+        const btn = e.target.closest(".admin-avatar-btn");
+        if (btn) {
+            e.stopPropagation();
+            const menu = btn.parentElement.querySelector(".admin-account-menu");
+            if (menu) {
+                const isOpen = btn.getAttribute("aria-expanded") === "true";
+                btn.setAttribute("aria-expanded", String(!isOpen));
+                menu.hidden = isOpen;
+            }
+        } else {
+            document.querySelectorAll(".admin-avatar-btn").forEach(b => {
+                b.setAttribute("aria-expanded", "false");
+                const m = b.parentElement.querySelector(".admin-account-menu");
+                if (m) m.hidden = true;
+            });
+        }
+    });
 });

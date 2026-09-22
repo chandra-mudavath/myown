@@ -3,106 +3,7 @@
 {% block title %}My Tax Filings - {{ app_name }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=2" />
-<style>
-.filing-detail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.25rem;
-    margin-top: 1rem;
-}
-
-.detail-card {
-    background: var(--bg-card, #ffffff);
-    border: 1px solid var(--line, #e2e8f0);
-    border-radius: 12px;
-    padding: 1.25rem;
-}
-
-.detail-card h3 {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-top: 0;
-    margin-bottom: 1rem;
-    color: var(--ink-primary, #0f172a);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    border-bottom: 1px solid var(--line, #f1f5f9);
-    padding-bottom: 0.5rem;
-}
-
-.detail-dl {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.5rem 1rem;
-    font-size: 0.875rem;
-    margin: 0;
-}
-
-.detail-dl dt {
-    color: var(--ink-secondary, #64748b);
-    font-weight: 500;
-}
-
-.detail-dl dd {
-    margin: 0;
-    font-weight: 600;
-    color: var(--ink-primary, #0f172a);
-    word-break: break-word;
-}
-
-.tag-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.tag-item {
-    background: #f1f5f9;
-    color: #334155;
-    padding: 0.25rem 0.6rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.doc-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.doc-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0.75rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 0.85rem;
-}
-
-html[data-theme="dark"] .detail-card {
-    background: var(--bg-card, #1e293b);
-    border-color: var(--line, #334155);
-}
-html[data-theme="dark"] .tag-item {
-    background: #334155;
-    color: #e2e8f0;
-}
-html[data-theme="dark"] .doc-item {
-    background: #0f172a;
-    border-color: #334155;
-}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
 {% endblock %}
 
 {% block content %}
@@ -118,7 +19,7 @@ html[data-theme="dark"] .doc-item {
                 <span>{{ app_name }}</span>
             </a>
         </div>
-        <div class="account-menu-wrap" style="display: flex; align-items: center; gap: 1rem;">
+        <div class="account-menu-wrap client-header-actions">
             <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme">
                 <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                     <circle cx="12" cy="12" r="4"></circle>
@@ -137,17 +38,17 @@ html[data-theme="dark"] .doc-item {
                 aria-label="Open account menu"
             >
                 {% if client and client.profile_picture %}
-                <img src="{{ client.profile_picture }}" alt="{{ display_name }}" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                <img src="{{ client.profile_picture }}" alt="{{ display_name }}" class="client-header-avatar" />
                 {% else %}
                 <span class="account-avatar" aria-hidden="true">{{ initials }}</span>
                 {% endif %}
                 <span class="account-details"><span class="account-name">{{ display_name }}</span></span>
             </button>
-            <div class="account-menu" id="account-menu" hidden style="position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.25rem; flex-direction: column; gap: 0.2rem;">
+            <div class="account-menu client-account-menu" id="account-menu" hidden>
                 {% if client and client.profile_picture %}
-                <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ client.profile_picture }}')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
+                <a class="account-menu-action client-account-action" href="javascript:void(0)" onclick="openAvatarModal('{{ client.profile_picture }}')" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
                 {% endif %}
-                <a class="account-menu-action" href="/client/profile" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</a>
+                <a class="account-menu-action client-account-action" href="/client/profile" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</a>
             </div>
             <form class="header-logout" action="/auth/logout" method="post">
                 <button class="logout-button" type="submit">Logout</button>
@@ -157,41 +58,41 @@ html[data-theme="dark"] .doc-item {
 
     <main class="dashboard-shell">
         <!-- Page Title Banner -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div class="client-topbar">
             <div>
-                <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0 0 0.25rem 0; color: var(--ink-primary);">
+                <h1 class="client-topbar-title">
                     My Tax Filing — Tax Year {{ tax_year }}
                 </h1>
-                <p style="margin: 0; color: var(--ink-secondary); font-size: 0.9rem;">
+                <p class="client-topbar-desc">
                     Detailed view of your submitted tax filing for year {{ tax_year }}.
                 </p>
             </div>
-            <a href="/client/years" class="button button-secondary" style="font-size: 0.85rem;">
+            <a href="/client/years" class="button button-secondary client-btn-sm">
                 📅 Change Tax Year
             </a>
         </div>
 
         {% if filing %}
         <!-- Summary Header Card -->
-        <section class="panel" style="margin-bottom: 1.5rem; padding: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <section class="panel client-filing-summary-card">
+            <div class="client-filing-summary-wrap">
                 <div>
-                    <span style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--ink-secondary); letter-spacing: 0.05em;">CASE ID</span>
-                    <h2 style="font-size: 1.5rem; margin: 0.2rem 0; font-weight: 800; color: #2563eb;">{{ filing.case_id }}</h2>
-                    <span style="font-size: 0.85rem; color: var(--ink-secondary);">Submitted on {{ filing.created_date }}</span>
+                    <span class="client-filing-meta-label">CASE ID</span>
+                    <h2 class="client-filing-case-id">{{ filing.case_id }}</h2>
+                    <span class="client-filing-meta-sub">Submitted on {{ filing.created_date }}</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <div class="client-filing-metrics-row">
                     <div>
-                        <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-secondary); display: block;">Status</span>
-                        <span class="status-pill" style="margin-top: 0.2rem; display: inline-block;">{{ filing.status }}</span>
+                        <span class="client-filing-meta-label">Status</span>
+                        <span class="status-pill">{{ filing.status }}</span>
                     </div>
                     <div>
-                        <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-secondary); display: block;">Filing Type</span>
-                        <strong style="font-size: 1rem; color: var(--ink-primary);">{{ filing.filing_type | capitalize }}</strong>
+                        <span class="client-filing-meta-label">Filing Type</span>
+                        <strong class="client-filing-val">{{ filing.filing_type | capitalize }}</strong>
                     </div>
                     <div>
-                        <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--ink-secondary); display: block;">Progress</span>
-                        <strong style="font-size: 1rem; color: #2563eb;">{{ filing.progress_pct }}%</strong>
+                        <span class="client-filing-meta-label">Progress</span>
+                        <strong class="client-filing-brand-val">{{ filing.progress_pct }}%</strong>
                     </div>
                 </div>
             </div>
@@ -274,7 +175,7 @@ html[data-theme="dark"] .doc-item {
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p style="margin: 0; color: var(--ink-secondary); font-size: 0.875rem;">None reported</p>
+                <p class="client-empty-cell-text">None reported</p>
                 {% endif %}
             </div>
 
@@ -288,7 +189,7 @@ html[data-theme="dark"] .doc-item {
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p style="margin: 0; color: var(--ink-secondary); font-size: 0.875rem;">None reported</p>
+                <p class="client-empty-cell-text">None reported</p>
                 {% endif %}
             </div>
 
@@ -302,7 +203,7 @@ html[data-theme="dark"] .doc-item {
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p style="margin: 0; color: var(--ink-secondary); font-size: 0.875rem;">None reported</p>
+                <p class="client-empty-cell-text">None reported</p>
                 {% endif %}
             </div>
 
@@ -322,7 +223,7 @@ html[data-theme="dark"] .doc-item {
             </div>
 
             <!-- Uploaded Documents -->
-            <div class="detail-card" style="grid-column: 1 / -1;">
+            <div class="detail-card client-full-col">
                 <h3>📄 Uploaded Documents ({{ filing.documents | length }})</h3>
                 {% if filing.documents %}
                 <ul class="doc-list">
@@ -330,28 +231,28 @@ html[data-theme="dark"] .doc-item {
                     <li class="doc-item">
                         <div>
                             <strong>{{ doc.original_filename }}</strong>
-                            <span style="font-size: 0.75rem; color: var(--ink-secondary); margin-left: 0.5rem;">({{ doc.category }})</span>
+                            <span class="client-doc-meta">({{ doc.category }})</span>
                         </div>
-                        <a href="/client/filings/{{ filing.id }}/documents/{{ doc.id }}/download" class="button button-secondary" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">Download</a>
+                        <a href="/client/filings/{{ filing.id }}/documents/{{ doc.id }}/download" class="button button-secondary client-doc-btn-download">Download</a>
                     </li>
                     {% endfor %}
                 </ul>
                 {% else %}
-                <p style="margin: 0; color: var(--ink-secondary); font-size: 0.875rem;">No documents uploaded for this filing. <a href="/client/documents" style="color: #2563eb;">Upload documents here</a>.</p>
+                <p class="client-empty-cell-text">No documents uploaded for this filing. <a href="/client/documents" class="client-doc-link">Upload documents here</a>.</p>
                 {% endif %}
             </div>
         </div>
 
         {% else %}
         <!-- Empty State -->
-        <section class="panel" style="padding: 3rem 1.5rem; text-align: center;">
+        <section class="panel client-empty-panel">
             <div class="empty-state">
-                <span class="empty-icon" aria-hidden="true" style="font-size: 2.5rem; display: block; margin-bottom: 1rem;">📂</span>
-                <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">No Tax Filing Found for {{ tax_year }}</h2>
-                <p style="color: var(--ink-secondary); max-width: 480px; margin: 0 auto 1.5rem auto;">
+                <span class="empty-icon client-empty-icon-lg" aria-hidden="true">📂</span>
+                <h2 class="client-empty-title">No Tax Filing Found for {{ tax_year }}</h2>
+                <p class="client-empty-desc">
                     You have not submitted a tax filing for tax year {{ tax_year }} yet. You can start a new filing or switch to a different tax year.
                 </p>
-                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <div class="client-empty-actions">
                     <a href="{{ url_for('new_filing_page') }}" class="button button-primary">
                         + Start New Filing
                     </a>

@@ -13,23 +13,14 @@
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Roboto+Slab:wght@400;500;600;700;800&display=swap"
+            href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Roboto+Slab:wght@400;500;600;700;800&display=swap"
             rel="stylesheet"
         />
 
         <script src="{{ url_for('static', path='/js/tailwind-config.js') }}"></script>
         
         <!-- Theme check before render to prevent flash -->
-        <script>
-            (function() {
-                var savedTheme = localStorage.getItem('theme');
-                if (savedTheme === 'dark') {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                } else if (savedTheme === 'light') {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                }
-            })();
-        </script>
+        <script src="{{ url_for('static', path='/js/theme-init.js') }}"></script>
 
         <link rel="stylesheet" href="{{ url_for('static', path='/css/theme.css') }}?v=4.0" />
         <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}?v=4.0" />
@@ -40,38 +31,15 @@
         {% block content %}{% endblock %}
 
         <!-- Global Profile Picture Lightbox Popup Modal -->
-        <div id="avatar-lightbox-modal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
-            <div style="position: relative; background: var(--bg-card, #ffffff); border-radius: 16px; padding: 1.5rem; max-width: 90vw; max-height: 90vh; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); text-align: center; border: 1px solid var(--line, #e2e8f0);">
-                <button type="button" onclick="closeAvatarModal()" style="position: absolute; top: -12px; right: -12px; background: #ef4444; color: white; border: 0; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: grid; place-items: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); font-weight: bold;">&times;</button>
-                <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem; font-weight: 700; color: var(--ink-primary, #0f172a);">Profile Picture Preview</h3>
-                <img id="avatar-lightbox-img" src="" alt="Profile Picture Large View" style="max-width: 80vw; max-height: 70vh; width: auto; height: auto; border-radius: 12px; object-fit: contain; border: 2px solid var(--line, #e2e8f0); margin: 0 auto;" />
+        <div id="avatar-lightbox-modal">
+            <div class="avatar-lightbox-inner">
+                <button type="button" onclick="closeAvatarModal()" class="avatar-lightbox-close" aria-label="Close preview">&times;</button>
+                <h3 class="avatar-lightbox-title">Profile Picture Preview</h3>
+                <img id="avatar-lightbox-img" src="" alt="Profile Picture Large View" />
             </div>
         </div>
 
         <script src="{{ url_for('static', path='/js/main.js') }}?v=4.0"></script>
-        <script>
-        function openAvatarModal(imageUrl) {
-            const modal = document.getElementById("avatar-lightbox-modal");
-            const img = document.getElementById("avatar-lightbox-img");
-            if (modal && img && imageUrl) {
-                img.src = imageUrl;
-                modal.style.display = "flex";
-            }
-        }
-        function closeAvatarModal() {
-            const modal = document.getElementById("avatar-lightbox-modal");
-            if (modal) {
-                modal.style.display = "none";
-            }
-        }
-        document.addEventListener("keydown", function(e) {
-            if (e.key === "Escape") closeAvatarModal();
-        });
-        document.addEventListener("click", function(e) {
-            const modal = document.getElementById("avatar-lightbox-modal");
-            if (e.target === modal) closeAvatarModal();
-        });
-        </script>
         {% block scripts %}{% endblock %}
     </body>
 </html>

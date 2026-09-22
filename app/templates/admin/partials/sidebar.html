@@ -3,18 +3,18 @@
         <span>UT</span><strong>{{ app_name }}</strong>
     </a>
     <div class="admin-profile">
-        <div style="position: relative; width: 82px; height: 82px; margin: 0 auto 14px;">
+        <div class="admin-avatar-wrapper">
             {% if admin and admin.profile_picture %}
             <a href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" title="Click to view full size profile picture">
-                <img id="admin-sidebar-preview" src="{{ admin.profile_picture }}" alt="Admin Profile Picture" style="width: 82px; height: 82px; border-radius: 50%; object-fit: cover; border: 4px solid var(--brand-soft); cursor: pointer;" />
+                <img id="admin-sidebar-preview" src="{{ admin.profile_picture }}" alt="Admin Profile Picture" class="admin-sidebar-avatar-img" />
             </a>
             {% else %}
-            <span id="admin-sidebar-initials" class="admin-photo" style="margin: 0;">{{ initials }}</span>
+            <span id="admin-sidebar-initials" class="admin-photo">{{ initials }}</span>
             <a id="admin-sidebar-link" href="javascript:void(0)" onclick="openAvatarModal(document.getElementById('admin-sidebar-preview').src)" style="display: none;">
-                <img id="admin-sidebar-preview" src="" alt="Admin Profile Picture" style="width: 82px; height: 82px; border-radius: 50%; object-fit: cover; border: 4px solid var(--brand-soft); cursor: pointer;" />
+                <img id="admin-sidebar-preview" src="" alt="Admin Profile Picture" class="admin-sidebar-avatar-img" />
             </a>
             {% endif %}
-            <label for="admin-avatar-input" title="Upload Admin Profile Picture" style="position: absolute; bottom: 0; right: 0; background: var(--brand); color: white; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 0.75rem; border: 2px solid white;">📷</label>
+            <label for="admin-avatar-input" title="Upload Admin Profile Picture" class="admin-avatar-upload-label">📷</label>
             <input type="file" id="admin-avatar-input" accept="image/*" style="display: none;" />
         </div>
         <h2>{{ admin_name }} {{ admin_last_name }}</h2>
@@ -55,80 +55,4 @@
     <form class="admin-logout" action="/auth/logout" method="post">
         <button type="submit"><span aria-hidden="true">&#8630;</span>Logout</button>
     </form>
-    <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const adminInput = document.getElementById("admin-avatar-input");
-        const adminPreview = document.getElementById("admin-sidebar-preview");
-        const adminInitials = document.getElementById("admin-sidebar-initials");
-        const adminHeaderAvatars = document.querySelectorAll(".admin-header-actions img, .admin-header-actions .admin-avatar");
-
-        if (adminInput) {
-            adminInput.addEventListener("change", async function() {
-                if (!adminInput.files || !adminInput.files[0]) return;
-                const formData = new FormData();
-                formData.append("file", adminInput.files[0]);
-
-                try {
-                    const res = await fetch("/admin/profile/avatar", {
-                        method: "POST",
-                        body: formData
-                    });
-                    const data = await res.json();
-                    if (res.ok && data.avatar_url) {
-                        if (adminPreview) {
-                            adminPreview.src = data.avatar_url;
-                            adminPreview.style.display = "block";
-                            const link = document.getElementById("admin-sidebar-link");
-                            if (link) {
-                                link.href = "javascript:void(0)";
-                                link.setAttribute("onclick", `openAvatarModal('${data.avatar_url}')`);
-                                link.style.display = "block";
-                            }
-                        }
-                        if (adminInitials) {
-                            adminInitials.style.display = "none";
-                        }
-                        adminHeaderAvatars.forEach(el => {
-                            if (el.tagName === "IMG") {
-                                el.src = data.avatar_url;
-                            } else {
-                                const newImg = document.createElement("img");
-                                newImg.src = data.avatar_url;
-                                newImg.alt = "Admin Avatar";
-                                newImg.style.cssText = "width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);";
-                                el.parentNode.replaceChild(newImg, el);
-                            }
-                        });
-                        alert("Admin profile picture updated successfully!");
-                    } else {
-                        alert(data.detail || "Failed to update profile picture");
-                    }
-                } catch (err) {
-                    console.error("Error uploading avatar:", err);
-                    alert("An error occurred while uploading avatar.");
-                }
-            });
-        }
-
-        // Toggle admin header account dropdown menus
-        document.addEventListener("click", function(e) {
-            const btn = e.target.closest(".admin-avatar-btn");
-            if (btn) {
-                e.stopPropagation();
-                const menu = btn.parentElement.querySelector(".admin-account-menu");
-                if (menu) {
-                    const isOpen = btn.getAttribute("aria-expanded") === "true";
-                    btn.setAttribute("aria-expanded", String(!isOpen));
-                    menu.hidden = isOpen;
-                }
-            } else {
-                document.querySelectorAll(".admin-avatar-btn").forEach(b => {
-                    b.setAttribute("aria-expanded", "false");
-                    const m = b.parentElement.querySelector(".admin-account-menu");
-                    if (m) m.hidden = true;
-                });
-            }
-        });
-    });
-    </script>
-</aside>
+</aside>

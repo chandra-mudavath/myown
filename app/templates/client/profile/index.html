@@ -10,7 +10,7 @@
             ><span class="brand-mark" aria-hidden="true">UT</span><span>UrTax</span></a
         >
     </div>
-    <div class="header-account" style="display: flex; align-items: center; gap: 1rem;">
+    <div class="header-account">
         <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme">
             <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <circle cx="12" cy="12" r="4"></circle>
@@ -42,10 +42,10 @@
         aria-labelledby="overview-title"
         data-profile="{{ profile | tojson | forceescape }}"
     >
-        <div style="display: flex; align-items: center; gap: 1.5rem;">
-            <div class="profile-pic-container" style="position: relative; width: 80px; height: 80px;">
-                <img id="avatar-preview" src="{{ profile.profile_picture or url_for('static', path='/img/default-avatar.png') }}" alt="Profile Picture" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--brand, #2563eb); background: #f1f5f9;" onerror="this.src='https://ui-avatars.com/api/?name={{ profile.first_name }}+{{ profile.last_name }}&background=2563eb&color=fff';" />
-                <label for="avatar-input" title="Upload Profile Picture" style="position: absolute; bottom: 0; right: 0; background: var(--brand, #2563eb); color: white; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 0.75rem; border: 2px solid white;">📷</label>
+        <div class="profile-overview-wrap">
+            <div class="profile-pic-container">
+                <img id="avatar-preview" src="{{ profile.profile_picture or url_for('static', path='/img/default-avatar.png') }}" alt="Profile Picture" class="profile-avatar-img" onerror="this.src='https://ui-avatars.com/api/?name={{ profile.first_name }}+{{ profile.last_name }}&background=2563eb&color=fff';" />
+                <label for="avatar-input" title="Upload Profile Picture" class="profile-avatar-upload-label">📷</label>
                 <input type="file" id="avatar-input" accept="image/*" style="display: none;" />
             </div>
             <div>
@@ -213,29 +213,4 @@
 {% endblock %} {% block scripts %}
 <script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
 <script src="{{ url_for('static', path='/js/profile.js') }}"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const avatarInput = document.getElementById("avatar-input");
-    const avatarPreview = document.getElementById("avatar-preview");
-    if (avatarInput) {
-        avatarInput.addEventListener("change", async function() {
-            if (!this.files || !this.files[0]) return;
-            const formData = new FormData();
-            formData.append("file", this.files[0]);
-            try {
-                const res = await fetch("/client/api/avatar", { method: "POST", body: formData });
-                const data = await res.json();
-                if (res.ok && data.avatar_url) {
-                    avatarPreview.src = data.avatar_url;
-                    alert("Profile picture updated!");
-                } else {
-                    alert(data.detail || "Failed to update profile picture.");
-                }
-            } catch (err) {
-                alert("Error uploading profile picture.");
-            }
-        });
-    }
-});
-</script>
 {% endblock %}

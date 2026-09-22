@@ -23,19 +23,19 @@
                 <span>{{ app_name }} / Admin / Staff</span>
             </div>
             <div class="admin-header-actions">
-                <div class="account-menu-wrap" style="position: relative;">
-                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu" style="background: transparent; border: 0; padding: 0; cursor: pointer;">
+                <div class="account-menu-wrap">
+                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu">
                         {% if admin and admin.profile_picture %}
-                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" class="admin-header-avatar-img" />
                         {% else %}
                         <span class="admin-avatar" title="{{ admin_name }} {{ admin_last_name }}">{{ initials }}</span>
                         {% endif %}
                     </button>
-                    <div class="account-menu admin-account-menu" hidden style="position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.25rem; flex-direction: column; gap: 0.2rem;">
+                    <div class="account-menu admin-account-menu" hidden>
                         {% if admin and admin.profile_picture %}
-                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
+                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
                         {% endif %}
-                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap; cursor: pointer;" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
+                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
                     </div>
                 </div>
                 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
@@ -46,15 +46,15 @@
             </div>
         </header>
 
-        <section class="admin-welcome" style="padding-bottom: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <section class="admin-welcome">
+            <div class="admin-page-topbar">
                 <div>
                     <span class="admin-kicker">Staff Management</span>
                     <h1>Staff Members Directory</h1>
-                    <p style="margin-top: 0.25rem; color: var(--muted);">Manage employees, assign roles, and view staff details.</p>
+                    <p>Manage employees, assign roles, and view staff details.</p>
                 </div>
                 <div>
-                    <button type="button" id="btn-quick-new-staff" class="modal-btn-submit" style="padding: 0.65rem 1.25rem; width: auto;">
+                    <button type="button" id="btn-quick-new-staff" class="modal-btn-submit admin-btn-action">
                         <b>+</b> Add New Staff
                     </button>
                 </div>
@@ -62,64 +62,64 @@
         </section>
 
         <!-- Search Section -->
-        <section class="admin-section" style="margin-top: 0;">
-            <form method="get" action="/admin/staff" style="margin-bottom: 1.25rem;">
-                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <section class="admin-section">
+            <form method="get" action="/admin/staff">
+                <div class="admin-filter-bar">
                     <input 
                         type="text" 
                         name="q" 
                         value="{{ q or '' }}" 
                         placeholder="Search by name, email, staff #..." 
-                        style="flex: 1; min-width: 240px; padding: 0.6rem 0.9rem; border-radius: 8px; border: 1px solid var(--line, #cbd5e1); font-size: 0.875rem; background: var(--surface);"
+                        class="admin-filter-input"
                     >
-                    <button type="submit" style="padding: 0.6rem 1.2rem; border-radius: 8px; border: none; background: var(--brand, #2563eb); color: white; font-weight: 700; font-size: 0.875rem; cursor: pointer;">
+                    <button type="submit" class="admin-filter-btn">
                         Search
                     </button>
                     {% if q %}
-                    <a href="/admin/staff" style="display: inline-flex; align-items: center; padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; font-size: 0.875rem; font-weight: 600;">
+                    <a href="/admin/staff" class="admin-filter-clear">
                         Clear
                     </a>
                     {% endif %}
                 </div>
             </form>
 
-            <div style="border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+            <div class="admin-table-panel">
+                <table class="admin-table">
                     <thead>
-                        <tr style="background: var(--surface-soft, #f8fafc); border-bottom: 1px solid var(--line, #e2e8f0); color: var(--muted);">
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Staff #</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Staff Name</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Email Address</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Role</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Created Date</th>
+                        <tr>
+                            <th>Staff #</th>
+                            <th>Staff Name</th>
+                            <th>Email Address</th>
+                            <th>Role</th>
+                            <th>Created Date</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if staff_list %}
                         {% for s in staff_list %}
-                        <tr style="border-bottom: 1px solid var(--line, #f1f5f9);">
-                            <td style="padding: 1rem 1.25rem; font-weight: 700;">
-                                <a href="/admin/staff/{{ s.id }}" style="color: var(--brand, #2563eb); text-decoration: underline;">
+                        <tr>
+                            <td>
+                                <a href="/admin/staff/{{ s.id }}" class="link-primary">
                                     {{ s.staff_number }}
                                 </a>
                             </td>
-                            <td style="padding: 1rem 1.25rem; font-weight: 600;">
-                                <a href="/admin/staff/{{ s.id }}" style="color: var(--brand, #2563eb); text-decoration: underline;">
+                            <td>
+                                <a href="/admin/staff/{{ s.id }}" class="link-primary">
                                     👔 {{ s.first_name }} {{ s.last_name or '' }}
                                 </a>
                             </td>
-                            <td style="padding: 1rem 1.25rem; color: var(--ink);">{{ s.email }}</td>
-                            <td style="padding: 1rem 1.25rem;">
-                                <span style="display: inline-block; padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; background: var(--surface-soft); color: var(--brand);">
+                            <td>{{ s.email }}</td>
+                            <td>
+                                <span class="admin-role-badge">
                                     {{ s.role.value if s.role else 'INITIATOR' }}
                                 </span>
                             </td>
-                            <td style="padding: 1rem 1.25rem; color: var(--muted);">{{ s.created_at.strftime('%b %d, %Y') if s.created_at else 'N/A' }}</td>
+                            <td>{{ s.created_at.strftime('%b %d, %Y') if s.created_at else 'N/A' }}</td>
                         </tr>
                         {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="5" style="padding: 2.5rem; text-align: center; color: var(--muted);">
+                            <td colspan="5" class="empty-cell">
                                 No staff members found.
                             </td>
                         </tr>

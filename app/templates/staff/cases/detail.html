@@ -2,37 +2,7 @@
 {% block title %}Case Workstation - {{ case.case_id if case else 'Detail' }} - {{ app_name }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=2" />
-<style>
-.workstation-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1.5rem;
-}
-@media (max-width: 992px) {
-    .workstation-grid { grid-template-columns: 1fr; }
-}
-.accordion-box {
-    background: var(--bg-card, #ffffff);
-    border: 1px solid var(--line, #e2e8f0);
-    border-radius: 10px;
-    margin-bottom: 1rem;
-    overflow: hidden;
-}
-.accordion-header {
-    padding: 1rem 1.25rem;
-    font-weight: 700;
-    font-size: 0.95rem;
-    background: var(--bg-surface, #f8fafc);
-    border-bottom: 1px solid var(--line, #e2e8f0);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.accordion-body {
-    padding: 1.25rem;
-}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=3" />
 {% endblock %}
 
 {% block body_class %}staff-page{% endblock %}
@@ -51,16 +21,16 @@
 
     <main class="staff-content">
         <!-- Top Banner -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div class="staff-topbar">
             <div>
-                <a href="/staff/cases/my" style="font-size: 0.85rem; color: #2563eb; text-decoration: none; font-weight: 600;">← Back to My Cases</a>
-                <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0.25rem 0 0 0; color: var(--ink-primary);">
+                <a href="/staff/cases/my" class="staff-back-link">← Back to My Cases</a>
+                <h1>
                     Case {{ case.case_id if case else "CASE-001" }} — {{ case.client_name if case else "John Doe" }}
                 </h1>
             </div>
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <div class="staff-filter-controls">
                 <span class="status-pill">{{ case.stage if case else "Document Review" }}</span>
-                <button class="button button-primary" style="font-size: 0.85rem;">Advance Stage →</button>
+                <button class="button button-primary btn-view-sm">Advance Stage →</button>
             </div>
         </div>
 
@@ -73,7 +43,7 @@
                         <span>👤 01. Personal & Contact Information</span>
                     </div>
                     <div class="accordion-body">
-                        <p style="margin: 0; font-size: 0.875rem; color: var(--ink-secondary);">Client personal details submitted on form.</p>
+                        <p class="accordion-desc">Client personal details submitted on form.</p>
                     </div>
                 </div>
 
@@ -83,7 +53,7 @@
                         <span>💼 02. Income Sources & Categories</span>
                     </div>
                     <div class="accordion-body">
-                        <p style="margin: 0; font-size: 0.875rem; color: var(--ink-secondary);">Income documentation and categories.</p>
+                        <p class="accordion-desc">Income documentation and categories.</p>
                     </div>
                 </div>
 
@@ -93,23 +63,23 @@
                         <span>📄 03. Attached Client Documents</span>
                     </div>
                     <div class="accordion-body">
-                        <p style="margin: 0; font-size: 0.875rem; color: var(--ink-secondary);">Attached tax forms and receipts.</p>
+                        <p class="accordion-desc">Attached tax forms and receipts.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Right Column: Staff Action Sidebar -->
             <div>
-                <div class="staff-panel" style="padding: 1.25rem; margin-bottom: 1.25rem;">
-                    <h3 style="font-size: 1rem; font-weight: 700; margin-top: 0; margin-bottom: 0.75rem;">Staff Assignment</h3>
-                    <p style="font-size: 0.85rem; color: var(--ink-secondary); margin-bottom: 1rem;">Assigned to: <strong>{{ first_name }} {{ last_name }}</strong></p>
-                    <button class="button button-secondary" style="width: 100%; font-size: 0.85rem;">Reassign Case</button>
+                <div class="staff-panel staff-panel-side">
+                    <h3>Staff Assignment</h3>
+                    <p>Assigned to: <strong>{{ first_name }} {{ last_name }}</strong></p>
+                    <button class="button button-secondary staff-btn-full">Reassign Case</button>
                 </div>
 
-                <div class="staff-panel" style="padding: 1.25rem;">
-                    <h3 style="font-size: 1rem; font-weight: 700; margin-top: 0; margin-bottom: 0.75rem;">Request Information</h3>
-                    <textarea placeholder="Type a message to request missing details or files from the client..." style="width: 100%; height: 90px; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--line); font-size: 0.85rem; margin-bottom: 0.75rem;"></textarea>
-                    <button class="button button-primary" style="width: 100%; font-size: 0.85rem;">Send Request to Client</button>
+                <div class="staff-panel staff-panel-side">
+                    <h3>Request Information</h3>
+                    <textarea placeholder="Type a message to request missing details or files from the client..." class="staff-textarea-req"></textarea>
+                    <button class="button button-primary staff-btn-full">Send Request to Client</button>
                 </div>
             </div>
         </div>

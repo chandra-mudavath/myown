@@ -21,57 +21,57 @@
 
     <main class="staff-content">
         <!-- Top Header & Breadcrumb -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div class="staff-topbar">
             <div>
-                <a href="/staff/cases/my" style="font-size: 0.85rem; color: #2563eb; text-decoration: none; font-weight: 600;">← Back to Cases List</a>
-                <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0.25rem 0 0 0; color: var(--ink-primary);">
+                <a href="/staff/cases/my" class="staff-back-link">← Back to Cases List</a>
+                <h1>
                     Case Documents — {{ case.case_id }}
                 </h1>
-                <p style="margin: 0.25rem 0 0 0; color: var(--ink-secondary); font-size: 0.9rem;">
+                <p>
                     Client: <strong>{{ case.client_name }}</strong> | Tax Year: <strong>{{ case.tax_year }}</strong> | Status: <span class="status-pill">{{ case.stage }}</span>
                 </p>
             </div>
             <div>
-                <a href="/staff/cases/{{ case.id }}" class="button button-secondary" style="font-size: 0.85rem;">
+                <a href="/staff/cases/{{ case.id }}" class="button button-secondary btn-view-sm">
                     🔍 Review Full Case
                 </a>
             </div>
         </div>
 
         <!-- Documents Table Panel -->
-        <section class="staff-panel" style="padding: 0; overflow: hidden;">
-            <div style="padding: 1.25rem; border-bottom: 1px solid var(--line, #e2e8f0); background: var(--bg-surface, #f8fafc); display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;">Uploaded Documents ({{ documents | length }})</h2>
+        <section class="staff-panel staff-table-panel">
+            <div class="staff-table-header">
+                <h2>Uploaded Documents ({{ documents | length }})</h2>
             </div>
 
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+            <table class="staff-table">
                 <thead>
-                    <tr style="background: var(--bg-surface, #f8fafc); border-bottom: 1px solid var(--line, #e2e8f0); color: var(--ink-secondary);">
-                        <th style="padding: 0.85rem 1.25rem; font-weight: 700;">#</th>
-                        <th style="padding: 0.85rem 1.25rem; font-weight: 700;">File Name</th>
-                        <th style="padding: 0.85rem 1.25rem; font-weight: 700;">Category</th>
-                        <th style="padding: 0.85rem 1.25rem; font-weight: 700;">File Size</th>
-                        <th style="padding: 0.85rem 1.25rem; font-weight: 700;">Upload Date</th>
-                        <th style="padding: 0.85rem 1.25rem; font-weight: 700;">Action</th>
+                    <tr>
+                        <th>#</th>
+                        <th>File Name</th>
+                        <th>Category</th>
+                        <th>File Size</th>
+                        <th>Upload Date</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% if documents %}
                     {% for doc in documents %}
-                    <tr style="border-bottom: 1px solid var(--line, #f1f5f9);">
-                        <td style="padding: 1rem 1.25rem; color: var(--ink-secondary);">{{ loop.index }}</td>
-                        <td style="padding: 1rem 1.25rem; font-weight: 700; color: var(--ink-primary);">
-                            📄 {{ doc.original_filename }}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <strong>📄 {{ doc.original_filename }}</strong>
                         </td>
-                        <td style="padding: 1rem 1.25rem;">
-                            <span style="background: #f1f5f9; color: #334155; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                        <td>
+                            <span class="category-badge">
                                 {{ doc.category }}
                             </span>
                         </td>
-                        <td style="padding: 1rem 1.25rem;">{{ (doc.file_size / 1024) | round(1) if doc.file_size else 0 }} KB</td>
-                        <td style="padding: 1rem 1.25rem;">{{ doc.uploaded_at.strftime('%b %d, %Y') if doc.uploaded_at else 'N/A' }}</td>
-                        <td style="padding: 1rem 1.25rem;">
-                            <a href="/client/filings/{{ case.id }}/documents/{{ doc.id }}/download" class="button button-secondary" style="font-size: 0.78rem; padding: 0.35rem 0.65rem;">
+                        <td>{{ (doc.file_size / 1024) | round(1) if doc.file_size else 0 }} KB</td>
+                        <td>{{ doc.uploaded_at.strftime('%b %d, %Y') if doc.uploaded_at else 'N/A' }}</td>
+                        <td>
+                            <a href="/client/filings/{{ case.id }}/documents/{{ doc.id }}/download" class="button button-secondary btn-view-sm">
                                 ⬇ Download
                             </a>
                         </td>
@@ -79,7 +79,7 @@
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--ink-secondary);">
+                        <td colspan="6" class="empty-cell">
                             No documents have been uploaded for this filing yet.
                         </td>
                     </tr>

@@ -23,19 +23,19 @@
                 <span>{{ app_name }} / Admin / Clients</span>
             </div>
             <div class="admin-header-actions">
-                <div class="account-menu-wrap" style="position: relative;">
-                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu" style="background: transparent; border: 0; padding: 0; cursor: pointer;">
+                <div class="account-menu-wrap">
+                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu">
                         {% if admin and admin.profile_picture %}
-                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brand, #2563eb);" />
+                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" class="admin-header-avatar-img" />
                         {% else %}
                         <span class="admin-avatar" title="{{ admin_name }} {{ admin_last_name }}">{{ initials }}</span>
                         {% endif %}
                     </button>
-                    <div class="account-menu admin-account-menu" hidden style="position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; background: var(--bg-card, #ffffff); border: 1px solid var(--line, #e2e8f0); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 0.25rem; flex-direction: column; gap: 0.2rem;">
+                    <div class="account-menu admin-account-menu" hidden>
                         {% if admin and admin.profile_picture %}
-                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap;" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
+                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
                         {% endif %}
-                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" style="display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0.5rem; color: var(--ink-primary, #0f172a); text-decoration: none; font-size: 0.75rem; font-weight: 600; border-radius: 4px; background: var(--bg-surface, #f8fafc); border: 1px solid var(--line, #e2e8f0); white-space: nowrap; cursor: pointer;" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
+                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
                     </div>
                 </div>
                 <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
@@ -46,15 +46,15 @@
             </div>
         </header>
 
-        <section class="admin-welcome" style="padding-bottom: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <section class="admin-welcome">
+            <div class="admin-page-topbar">
                 <div>
                     <span class="admin-kicker">Client Management</span>
                     <h1>Registered Clients Directory</h1>
-                    <p style="margin-top: 0.25rem; color: var(--muted);">View and manage all client accounts and their associated profiles.</p>
+                    <p>View and manage all client accounts and their associated profiles.</p>
                 </div>
                 <div>
-                    <button type="button" id="btn-quick-new-client" class="modal-btn-submit" style="padding: 0.65rem 1.25rem; width: auto;">
+                    <button type="button" id="btn-quick-new-client" class="modal-btn-submit admin-btn-action">
                         <b>+</b> Add New Client
                     </button>
                 </div>
@@ -62,54 +62,56 @@
         </section>
 
         <!-- Search & Filter Section -->
-        <section class="admin-section" style="margin-top: 0;">
-            <form method="get" action="/admin/clients" style="margin-bottom: 1.25rem;">
-                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <section class="admin-section">
+            <form method="get" action="/admin/clients">
+                <div class="admin-filter-bar">
                     <input 
                         type="text" 
                         name="q" 
                         value="{{ q or '' }}" 
                         placeholder="Search by name, email, client #..." 
-                        style="flex: 1; min-width: 240px; padding: 0.6rem 0.9rem; border-radius: 8px; border: 1px solid var(--line, #cbd5e1); font-size: 0.875rem; background: var(--surface);"
+                        class="admin-filter-input"
                     >
-                    <button type="submit" style="padding: 0.6rem 1.2rem; border-radius: 8px; border: none; background: var(--brand, #2563eb); color: white; font-weight: 700; font-size: 0.875rem; cursor: pointer;">
+                    <button type="submit" class="admin-filter-btn">
                         Search
                     </button>
                     {% if q %}
-                    <a href="/admin/clients" style="display: inline-flex; align-items: center; padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; font-size: 0.875rem; font-weight: 600;">
+                    <a href="/admin/clients" class="admin-filter-clear">
                         Clear
                     </a>
                     {% endif %}
                 </div>
             </form>
 
-            <div style="border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+            <div class="admin-table-panel">
+                <table class="admin-table">
                     <thead>
-                        <tr style="background: var(--surface-soft, #f8fafc); border-bottom: 1px solid var(--line, #e2e8f0); color: var(--muted);">
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Client #</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Client Name</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Email Address</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Phone</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Total Filings</th>
-                            <th style="padding: 0.9rem 1.25rem; font-weight: 700;">Action</th>
+                        <tr>
+                            <th>Client #</th>
+                            <th>Client Name</th>
+                            <th>Email Address</th>
+                            <th>Phone</th>
+                            <th>Total Filings</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if clients %}
                         {% for c in clients %}
-                        <tr style="border-bottom: 1px solid var(--line, #f1f5f9);">
-                            <td style="padding: 1rem 1.25rem; font-weight: 700; color: var(--ink);">
-                                {{ c.client_number }}
+                        <tr>
+                            <td>
+                                <a href="/admin/clients/{{ c.id }}" class="link-primary">
+                                    {{ c.client_number }}
+                                </a>
                             </td>
-                            <td style="padding: 1rem 1.25rem; font-weight: 600; color: var(--ink);">
-                                👤 {{ c.first_name }} {{ c.last_name or '' }}
+                            <td>
+                                <strong>👤 {{ c.first_name }} {{ c.last_name or '' }}</strong>
                             </td>
-                            <td style="padding: 1rem 1.25rem; color: var(--ink);">{{ c.email }}</td>
-                            <td style="padding: 1rem 1.25rem; color: var(--ink);">{{ c.phone or 'N/A' }}</td>
-                            <td style="padding: 1rem 1.25rem; font-weight: 700; color: var(--ink);">{{ c.filing_count }}</td>
-                            <td style="padding: 1rem 1.25rem;">
-                                <a href="/admin/clients/{{ c.id }}" style="display: inline-block; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--ink); text-decoration: none; font-size: 0.8rem; font-weight: 600;">
+                            <td>{{ c.email }}</td>
+                            <td>{{ c.phone or 'N/A' }}</td>
+                            <td><strong>{{ c.filing_count }}</strong></td>
+                            <td>
+                                <a href="/admin/clients/{{ c.id }}" class="admin-filter-clear">
                                     View Details →
                                 </a>
                             </td>
@@ -117,7 +119,7 @@
                         {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="6" style="padding: 2.5rem; text-align: center; color: var(--muted);">
+                            <td colspan="6" class="empty-cell">
                                 No registered clients found.
                             </td>
                         </tr>

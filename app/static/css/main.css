@@ -4,7 +4,7 @@
 
 /* --- Reset & Focus --- */
 *:focus-visible {
-    outline: 2px solid #0ea5e9;
+    outline: 2px solid var(--brand);
     outline-offset: 2px;
 }
 
@@ -14,16 +14,16 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: var(--surface-soft);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: var(--line);
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: var(--muted);
 }
 
 /* --- Client sidebar navigation (shared across dashboard/profile/etc.) ---
@@ -151,9 +151,9 @@
     font-size: 0.65rem;
     font-weight: 700;
     letter-spacing: 0.04em;
-    background: #f59e0b22;
-    color: #b45309;
-    border: 1px solid #f59e0b55;
+    background: rgba(184, 121, 22, 0.13);
+    color: var(--amber);
+    border: 1px solid rgba(184, 121, 22, 0.33);
     border-radius: 6px;
     padding: 1px 6px;
     text-transform: uppercase;
@@ -186,7 +186,7 @@
 }
 
 .sidebar-toggle:focus-visible {
-    outline: 3px solid #e4ad50;
+    outline: 3px solid var(--amber);
     outline-offset: 3px;
 }
 
@@ -785,49 +785,52 @@
 }
 
 .auth-image-page {
-    align-items: flex-start;
+    align-items: flex-end;
     background:
-        linear-gradient(90deg, rgba(3, 16, 19, 0.58) 0%, rgba(3, 16, 19, 0.28) 48%, rgba(3, 16, 19, 0.08) 100%),
+        linear-gradient(270deg, rgba(3, 16, 19, 0.58) 0%, rgba(3, 16, 19, 0.28) 48%, rgba(3, 16, 19, 0.08) 100%),
         url("/static/img/auth/signin.jpg") center / cover fixed no-repeat;
     justify-content: center;
 }
 
-.auth-image-page .auth-header__title,
-.auth-image-page .auth-header__subtitle {
+.auth-image-page .auth-header .auth-header__title,
+.auth-image-page .auth-header .auth-header__subtitle,
+.auth-register-page .auth-header .auth-header__title,
+.auth-register-page .auth-header .auth-header__subtitle {
     color: #f5fffb;
     text-shadow: 0 2px 18px rgba(0, 0, 0, 0.65);
 }
 
-.auth-image-page .auth-title-accent {
+.auth-image-page .auth-title-accent,
+.auth-register-page .auth-title-accent {
     color: #6ee7b7;
 }
 
 .auth-image-page .auth-card {
-    margin: 0 0 0 6rem;
+    margin: 0 6rem 0 0;
     max-width: 25.8rem;
     width: min(100%, 25.8rem);
 }
 
 .auth-image-page .back-link {
-    bottom: 1.5rem;
-    left: auto;
+    bottom: auto;
+    left: 1.5rem;
     position: fixed;
-    right: 1.5rem;
-    top: auto;
+    right: auto;
+    top: 1.5rem;
     z-index: 20;
 }
 
 /* Keep the registration flow over the open, darker side of the supplied image. */
 .auth-register-page {
-    align-items: flex-start;
+    align-items: flex-end;
     background:
-        linear-gradient(90deg, rgba(3, 16, 19, 0.58) 0%, rgba(3, 16, 19, 0.28) 48%, rgba(3, 16, 19, 0.08) 100%),
+        linear-gradient(270deg, rgba(3, 16, 19, 0.58) 0%, rgba(3, 16, 19, 0.28) 48%, rgba(3, 16, 19, 0.08) 100%),
         url("/static/img/auth/signin.jpg") center / cover fixed no-repeat;
     justify-content: center;
 }
 
 .auth-register-page .auth-card {
-    margin: 0 0 0 6rem;
+    margin: 0 6rem 0 0;
     max-width: 25.8rem;
     min-height: auto;
     padding: 0.75rem 0.25rem 0.5rem;
@@ -835,11 +838,11 @@
 }
 
 .auth-register-page .back-link {
-    bottom: 1.5rem;
-    left: auto;
+    bottom: auto;
+    left: 1.5rem;
     position: fixed;
-    right: 1.5rem;
-    top: auto;
+    right: auto;
+    top: 1.5rem;
     z-index: 20;
 }
 
@@ -973,6 +976,14 @@
     margin-top: 0.5rem;
 }
 
+/* Bottom of form links — always uses the muted token, never inherits the background-image white */
+.auth-form-footer {
+    font-size: 0.875rem;
+    color: var(--auth-muted);
+    margin-top: 0.75rem;
+    text-shadow: none !important;
+}
+
 .auth-title-accent {
     color: var(--auth-primary);
 }
@@ -1098,4 +1109,69 @@
     font-size: 1.5rem;
     color: #fff;
     font-weight: 900;
+}
+
+/* --- Avatar Lightbox Modal --- */
+#avatar-lightbox-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+}
+
+#avatar-lightbox-modal.is-open {
+    display: flex;
+}
+
+.avatar-lightbox-inner {
+    position: relative;
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 1.5rem;
+    max-width: 90vw;
+    max-height: 90vh;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    text-align: center;
+    border: 1px solid var(--line);
+}
+
+.avatar-lightbox-close {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    background: #ef4444;
+    color: white;
+    border: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    font-weight: bold;
+}
+
+.avatar-lightbox-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+#avatar-lightbox-img {
+    max-width: 80vw;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    object-fit: contain;
+    border: 2px solid var(--line);
+    margin: 0 auto;
+    display: block;
 }
