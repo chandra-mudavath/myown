@@ -1,0 +1,93 @@
+{#- Shared shell for every signed-in client page.
+    Child templates set, at top level:
+      active_nav      – sidebar key to highlight
+      page_title      – H1 and <title>
+      page_heading    – optional H1 override; "|" sets the two-tone split
+      page_section    – middle breadcrumb crumb (optional)
+      page_subtitle   – muted line under the title (optional)
+    and fill {% block page %}. Optional blocks: page_actions, page_styles, page_scripts. -#}
+{% extends "base.html" %}
+{% from "client/_icons.html" import ci %}
+
+{% block title %}{{ page_title }} · {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/client.css') }}?v=2.0" />
+{% block page_styles %}{% endblock %}
+{% endblock %}
+
+{% block body_class %}cx-body{% endblock %}
+
+{% block content %}
+<div class="cx-app" data-cx-app>
+    {% include "client/_sidebar.html" %}
+    <div class="cx-overlay" data-cx-overlay hidden></div>
+
+    <div class="cx-main">
+        <header class="cx-topbar">
+            <button type="button" class="cx-iconbtn cx-topbar__menu" data-cx-sidebar-toggle aria-controls="cx-sidebar" aria-expanded="false" aria-label="Toggle navigation">
+                {{ ci("menu") }}
+            </button>
+
+            <div class="cx-topbar__year">
+                {{ ci("calendar") }}
+                <span>Tax year <strong>{{ selected_year }}</strong></span>
+            </div>
+
+            <div class="cx-topbar__right">
+                {% include "partials/theme_toggle.html" %}
+
+                <div class="cx-account">
+                    <button type="button" class="cx-account__btn" data-cx-menu-btn aria-expanded="false" aria-controls="cx-account-menu">
+                        {% if client and client.profile_picture %}
+                        <img src="{{ client.profile_picture }}" alt="" class="cx-avatar" />
+                        {% else %}
+                        <span class="cx-avatar" aria-hidden="true">{{ initials }}</span>
+                        {% endif %}
+                        <span class="cx-account__name">{{ display_name }}</span>
+                        {{ ci("chevron-down", "ci ci--sm") }}
+                    </button>
+                    <div class="cx-menu" id="cx-account-menu" data-cx-menu hidden>
+                        <div class="cx-menu__head">
+                            <strong>{{ display_name }}</strong>
+                            <span>{{ account_email }}</span>
+                        </div>
+                        <a class="cx-menu__item" href="/client/personal-info">{{ ci("user") }} Personal info</a>
+                        <a class="cx-menu__item" href="/client/update-contact">{{ ci("mail") }} Email &amp; mobile</a>
+                        {% if client and client.profile_picture %}
+                        <button type="button" class="cx-menu__item" onclick="openAvatarModal('{{ client.profile_picture }}')">{{ ci("image") }} View photo</button>
+                        {% endif %}
+                        <form action="/auth/logout" method="post">
+                            <button type="submit" class="cx-menu__item cx-menu__item--danger">{{ ci("logout") }} Log out</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="cx-content" id="main">
+            <div class="cx-pagehead">
+                <div class="cx-pagehead__text">
+                    <nav class="cx-crumbs" aria-label="Breadcrumb">
+                        <a href="/client/dashboard">TY-{{ selected_year }}</a>
+                        {% if page_section %}{{ ci("chevron-right", "ci ci--xs") }}<span>{{ page_section }}</span>{% endif %}
+                        {{ ci("chevron-right", "ci ci--xs") }}<span aria-current="page">{{ page_title }}</span>
+                    </nav>
+                    <h1 class="cx-pagehead__title">{{ (page_heading or page_title) | two_tone }}</h1>
+                    {% if page_subtitle %}<p class="cx-pagehead__sub">{{ page_subtitle }}</p>{% endif %}
+                </div>
+                <div class="cx-pagehead__actions">{% block page_actions %}{% endblock %}</div>
+            </div>
+
+            {% block page %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<div class="cx-toast" data-cx-toast role="status" aria-live="polite" hidden></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/client.js') }}?v=1.0"></script>
+{% block page_scripts %}{% endblock %}
+{% endblock %}

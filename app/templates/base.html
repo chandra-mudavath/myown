@@ -23,8 +23,8 @@
         <script src="{{ url_for('static', path='/js/theme-init.js') }}"></script>
 
         <link rel="stylesheet" href="{{ url_for('static', path='/css/theme.css') }}?v=4.0" />
-        <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}?v=4.0" />
-        <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=4.0" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}?v=4.9" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=4.1" />
         {% block styles %}{% endblock %} {% block head %}{% endblock %}
     </head>
     <body class="{% block body_class %}{% endblock %}">
@@ -39,7 +39,7 @@
             </div>
         </div>
 
-        <script src="{{ url_for('static', path='/js/main.js') }}?v=4.0"></script>
+        <script src="{{ url_for('static', path='/js/main.js') }}?v=4.2"></script>
         {% block scripts %}{% endblock %}
     </body>
 </html>

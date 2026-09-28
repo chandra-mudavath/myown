@@ -1,216 +1,276 @@
-{% extends "base.html" %} {% block title %}My Profile - {{ profile.first_name }} {{ profile.last_name }}{% endblock %}
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/profile.css') }}" />
-{% endblock %} {% block content %} {% set active_nav = 'profile' %} {% include "partials/client_sidebar.html" %}
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "personal_info" %}
+{% set page_section = "Personal Info" %}
+{% set page_title = "Taxpayer Details" %}
+{% set page_subtitle = "Keep your details current so your tax team can prepare your return without delays." %}
 
-<header class="site-header">
-    <div class="site-header-left">
-        {% include "partials/sidebar_toggle.html" %}
-        <a class="brand" href="/client/dashboard" aria-label="Return to dashboard"
-            ><span class="brand-mark" aria-hidden="true">UT</span><span>UrTax</span></a
-        >
-    </div>
-    <div class="header-account">
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme">
-            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <circle cx="12" cy="12" r="4"></circle>
-                <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-            </svg>
-            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path>
-            </svg>
-            <span class="sr-only">Switch theme</span>
-        </button>
-        <span>{{ profile.first_name }} {{ profile.last_name }}</span>
-        <form action="/auth/logout" method="post">
-            <button class="button button-quiet" type="submit">Log out</button>
-        </form>
-    </div>
-</header>
+{% block page %}
+<div class="cx-stack">
+    <div id="global-message" class="cx-alert cx-message" role="status" aria-live="polite"></div>
 
-<main class="profile-shell">
-    <div class="page-intro">
-        <a class="back-link" href="/client/dashboard">&larr; Dashboard</a>
-        <p class="eyebrow">Client portal</p>
-        <h1>My profile</h1>
-        <p>Keep your information current so your tax team can process your filing efficiently.</p>
-    </div>
-    <div id="global-message" class="message" role="status" aria-live="polite"></div>
-
-    <section
-        class="overview panel"
-        aria-labelledby="overview-title"
-        data-profile="{{ profile | tojson | forceescape }}"
-    >
-        <div class="profile-overview-wrap">
-            <div class="profile-pic-container">
-                <img id="avatar-preview" src="{{ profile.profile_picture or url_for('static', path='/img/default-avatar.png') }}" alt="Profile Picture" class="profile-avatar-img" onerror="this.src='https://ui-avatars.com/api/?name={{ profile.first_name }}+{{ profile.last_name }}&background=2563eb&color=fff';" />
-                <label for="avatar-input" title="Upload Profile Picture" class="profile-avatar-upload-label">📷</label>
-                <input type="file" id="avatar-input" accept="image/*" style="display: none;" />
+    <section class="cx-card" data-profile="{{ profile | tojson | forceescape }}" aria-labelledby="overview-title">
+        <div class="cx-profile">
+            <div class="cx-profile__pic">
+                <img id="avatar-preview"
+                    src="{{ profile.profile_picture or ('https://ui-avatars.com/api/?name=' ~ (profile.first_name or 'U') ~ '+' ~ (profile.last_name or '') ~ '&background=2563eb&color=fff') }}"
+                    alt="Profile picture" />
+                <label for="avatar-input" class="cx-profile__cam" title="Change profile picture">{{ ci("camera") }}<span class="sr-only">Change profile picture</span></label>
+                <input type="file" id="avatar-input" accept="image/*" hidden />
             </div>
-            <div>
-                <p class="eyebrow">Profile overview</p>
-                <h2 id="overview-title">
-                    {{ profile.first_name }}{% if profile.last_name %} {{ profile.last_name }}{% endif %}
-                </h2>
-                <p class="email-display">{{ profile.email }}</p>
+            <div class="cx-profile__id">
+                <h2 id="overview-title">{{ profile.first_name }}{% if profile.last_name %} {{ profile.last_name }}{% endif %}</h2>
+                <p>{{ profile.email }}</p>
             </div>
-        </div>
-        <div class="completion">
-            <div class="completion-heading">
-                <span>Profile completion</span
-                ><strong id="completion-value">{{ profile.completion_percentage }}%</strong>
+            <div class="cx-profile__done">
+                <div class="cx-profile__done-head"><span>Profile completion</span><strong id="completion-value">{{ profile.completion_percentage }}%</strong></div>
+                <div class="cx-progress"><span id="completion-bar" style="width: {{ profile.completion_percentage }}%"></span></div>
+                <p id="completion-help">{% if profile.missing_fields %}Complete: {{ profile.missing_fields | join(', ') }}.{% else %}Your profile is complete.{% endif %}</p>
             </div>
-            <div class="progress-track">
-                <span id="completion-bar" data-completion="{{ profile.completion_percentage }}"></span>
-            </div>
-            <p id="completion-help">
-                {% if profile.missing_fields %}Complete: {{ profile.missing_fields | join(', ') }}.{% else %}Your
-                profile is complete.{% endif %}
-            </p>
         </div>
     </section>
 
-    <div class="form-grid">
-        <section class="panel profile-section" aria-labelledby="personal-title">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">01</p>
-                    <h2 id="personal-title">Personal information</h2>
+    <div data-cx-tabs data-cx-hash>
+        <div class="cx-tabs__list" role="tablist" aria-label="Personal info sections">
+            <button class="cx-tab" role="tab" aria-selected="true" aria-controls="taxpayer">{{ ci("user") }} Taxpayer details</button>
+            <button class="cx-tab" role="tab" aria-controls="address">{{ ci("dashboard") }} Mailing address</button>
+            <button class="cx-tab" role="tab" aria-controls="contact">{{ ci("phone") }} Contact</button>
+            <button class="cx-tab" role="tab" aria-controls="return-type">{{ ci("globe") }} Type of return</button>
+            <button class="cx-tab" role="tab" aria-controls="dependents">{{ ci("users") }} Dependents</button>
+        </div>
+
+        {# ── Taxpayer ───────────────────────────── #}
+        <section class="cx-panel cx-card profile-section" role="tabpanel" id="taxpayer" aria-labelledby="personal-title">
+            <form data-form="personal" data-endpoint="/client/api/personal">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="personal-title">{{ ci("user") }} Taxpayer <span class="cx-accent">details</span></h2>
+                        <p class="cx-card__sub">Enter your name exactly as it appears on your SSN card.</p>
+                    </div>
+                    <button class="cx-btn cx-btn--soft cx-btn--sm edit-button" type="button">{{ ci("edit") }} Edit</button>
                 </div>
-                <button class="button button-secondary edit-button" type="button" data-edit="personal">Edit</button>
-            </div>
-            <form data-form="personal" data-endpoint="/profile/api/personal">
-                <div class="fields">
-                    <label
-                        >First name <span class="required">Required</span
-                        ><input
-                            name="first_name"
-                            value="{{ profile.first_name }}"
-                            required
-                            maxlength="50"
-                            disabled /></label
-                    ><label
-                        >Last name <span class="optional">Optional</span
-                        ><input name="last_name" value="{{ profile.last_name or '' }}" maxlength="50" disabled /></label
-                    ><label
-                        >Date of birth <span class="optional">Optional</span
-                        ><input
-                            name="date_of_birth"
-                            type="date"
-                            value="{{ profile.date_of_birth or '' }}"
-                            disabled
-                            aria-describedby="dob-hint"
-                        /><small id="dob-hint">You must be at least 18 years old.</small></label
-                    >
+                <div class="cx-card__body">
+                    <div class="cx-form-grid">
+                        <div class="cx-field">
+                            <label class="cx-label" for="pf-first">First name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="pf-first" name="first_name" value="{{ profile.first_name }}" required maxlength="50" disabled />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="pf-last">Last name</label>
+                            <input class="cx-input" id="pf-last" name="last_name" value="{{ profile.last_name or '' }}" maxlength="50" disabled />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="pf-dob">Date of birth</label>
+                            <input class="cx-input" id="pf-dob" name="date_of_birth" type="date" value="{{ profile.date_of_birth or '' }}" disabled aria-describedby="dob-hint" />
+                            <span class="cx-hint" id="dob-hint">You must be at least 18 years old.</span>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="pf-email">Login email</label>
+                            <input class="cx-input" id="pf-email" value="{{ profile.email }}" readonly />
+                            <span class="cx-hint">Change it from the Contact tab.</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-actions">
-                    <button class="button button-quiet cancel-button" type="button">Cancel</button
-                    ><button class="button button-primary save-button" type="submit">Save changes</button>
+                <div class="cx-card__foot cx-editbar">
+                    <button class="cx-btn cx-btn--ghost cancel-button" type="button">Cancel</button>
+                    <button class="cx-btn cx-btn--primary save-button" type="submit">Save changes</button>
                 </div>
             </form>
         </section>
 
-        <section class="panel profile-section" aria-labelledby="address-title">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">02</p>
-                    <h2 id="address-title">Address information</h2>
+        {# ── Address ────────────────────────────── #}
+        <section class="cx-panel cx-card profile-section" role="tabpanel" id="address" aria-labelledby="address-title" hidden>
+            <form data-form="address" data-endpoint="/client/api/address">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="address-title">{{ ci("dashboard") }} Mailing <span class="cx-accent">address</span></h2>
+                        <p class="cx-card__sub">Where the IRS and your tax team can reach you by post.</p>
+                    </div>
+                    <button class="cx-btn cx-btn--soft cx-btn--sm edit-button" type="button">{{ ci("edit") }} Edit</button>
                 </div>
-                <button class="button button-secondary edit-button" type="button" data-edit="address">Edit</button>
-            </div>
-            <form data-form="address" data-endpoint="/profile/api/address">
-                <div class="fields">
-                    <label
-                        >Address line 1 <span class="required">Required</span
-                        ><input
-                            name="address_line_1"
-                            value="{{ profile.address_line_1 or '' }}"
-                            maxlength="120"
-                            disabled /></label
-                    ><label
-                        >Address line 2 <span class="optional">Optional</span
-                        ><input
-                            name="address_line_2"
-                            value="{{ profile.address_line_2 or '' }}"
-                            maxlength="120"
-                            disabled /></label
-                    ><label
-                        >City <span class="required">Required</span
-                        ><input name="city" value="{{ profile.city or '' }}" maxlength="80" disabled /></label
-                    ><label
-                        >State / Province <span class="optional">Where applicable</span
-                        ><input
-                            name="state_province"
-                            value="{{ profile.state_province or '' }}"
-                            maxlength="80"
-                            disabled /></label
-                    ><label
-                        >ZIP / Postal code <span class="required">Required</span
-                        ><input
-                            name="postal_code"
-                            value="{{ profile.postal_code or '' }}"
-                            maxlength="20"
-                            disabled /></label
-                    ><label
-                        >Country <span class="required">Required</span
-                        ><input name="country" value="{{ profile.country or '' }}" maxlength="80" disabled
-                    /></label>
+                <div class="cx-card__body">
+                    <div class="cx-form-grid">
+                        <div class="cx-field cx-span-2">
+                            <label class="cx-label" for="ad-1">Street address<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="ad-1" name="address_line_1" value="{{ profile.address_line_1 or '' }}" maxlength="120" disabled />
+                        </div>
+                        <div class="cx-field cx-span-2">
+                            <label class="cx-label" for="ad-2">Apartment, suite, etc.<span class="cx-opt">Optional</span></label>
+                            <input class="cx-input" id="ad-2" name="address_line_2" value="{{ profile.address_line_2 or '' }}" maxlength="120" disabled />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="ad-city">City<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="ad-city" name="city" value="{{ profile.city or '' }}" maxlength="80" disabled />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="ad-state">State / Province</label>
+                            <input class="cx-input" id="ad-state" name="state_province" value="{{ profile.state_province or '' }}" maxlength="80" disabled />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="ad-zip">ZIP / PIN code<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="ad-zip" name="postal_code" value="{{ profile.postal_code or '' }}" maxlength="20" disabled />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="ad-country">Country<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="ad-country" name="country" value="{{ profile.country or '' }}" maxlength="80" disabled />
+                        </div>
+                    </div>
                 </div>
-                <div class="form-actions">
-                    <button class="button button-quiet cancel-button" type="button">Cancel</button
-                    ><button class="button button-primary save-button" type="submit">Save changes</button>
+                <div class="cx-card__foot cx-editbar">
+                    <button class="cx-btn cx-btn--ghost cancel-button" type="button">Cancel</button>
+                    <button class="cx-btn cx-btn--primary save-button" type="submit">Save changes</button>
                 </div>
             </form>
         </section>
 
-        <section class="panel profile-section" aria-labelledby="contact-title">
-            <div class="section-heading">
-                <div>
-                    <p class="eyebrow">03</p>
-                    <h2 id="contact-title">Contact information</h2>
+        {# ── Contact ────────────────────────────── #}
+        <section class="cx-panel cx-card profile-section" role="tabpanel" id="contact" aria-labelledby="contact-title" hidden>
+            <form data-form="contact" data-endpoint="/client/api/contact">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="contact-title">{{ ci("phone") }} Contact <span class="cx-accent">information</span></h2>
+                        <p class="cx-card__sub">We use these for filing updates and security alerts.</p>
+                    </div>
+                    <button class="cx-btn cx-btn--soft cx-btn--sm edit-button" type="button">{{ ci("edit") }} Edit</button>
                 </div>
-                <button class="button button-secondary edit-button" type="button" data-edit="contact">Edit</button>
-            </div>
-            <form data-form="contact" data-endpoint="/profile/api/contact">
-                <div class="fields">
-                    <label
-                        >Current email address<span class="verified">Verified login email</span
-                        ><input value="{{ profile.email }}" readonly /></label
-                    ><label
-                        >Phone number <span class="required">Required</span
-                        ><input
-                            name="phone"
-                            value="{{ profile.phone }}"
-                            maxlength="25"
-                            disabled
-                            placeholder="+1 555 123 4567"
-                    /></label>
+                <div class="cx-card__body">
+                    <div class="cx-form-grid">
+                        <div class="cx-field">
+                            <label class="cx-label" for="ct-email">Current email <span class="cx-badge cx-badge--complete" style="margin-left:4px;">Verified</span></label>
+                            <input class="cx-input" id="ct-email" value="{{ profile.email }}" readonly />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="ct-phone">Phone number<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="ct-phone" name="phone" value="{{ profile.phone or '' }}" maxlength="25" disabled placeholder="+1 555 123 4567" />
+                        </div>
+                    </div>
                 </div>
-                <div class="form-actions">
-                    <button class="button button-quiet cancel-button" type="button">Cancel</button
-                    ><button class="button button-primary save-button" type="submit">Save phone</button>
+                <div class="cx-card__foot cx-editbar">
+                    <button class="cx-btn cx-btn--ghost cancel-button" type="button">Cancel</button>
+                    <button class="cx-btn cx-btn--primary save-button" type="submit">Save phone</button>
                 </div>
             </form>
-            <div class="email-change">
-                <h3>Request an email change</h3>
-                <p>Your current login email stays active until the new address is verified.</p>
+            <div class="cx-card__body" style="border-top: 1px solid var(--cx-border);">
                 <form id="email-form">
-                    <label for="new-email">New email address</label>
-                    <div class="inline-form">
-                        <input id="new-email" name="email" type="email" required placeholder="you@example.com" /><button
-                            class="button button-secondary"
-                            type="submit"
-                        >
-                            Request change
-                        </button>
+                    <h3 class="cx-legend">Request an email change</h3>
+                    <p class="cx-muted" style="margin: 0 0 0.75rem; font-size: 0.86rem;">Your current login email stays active until the new address is verified.</p>
+                    <label class="sr-only" for="new-email">New email address</label>
+                    <div class="cx-inputgroup">
+                        <input class="cx-input" id="new-email" name="email" type="email" required placeholder="you@example.com" />
+                        <button class="cx-btn cx-btn--soft" type="submit">Request change</button>
                     </div>
                 </form>
             </div>
         </section>
+
+        {# ── Type of return (UI only) ───────────── #}
+        <section class="cx-panel cx-card" role="tabpanel" id="return-type" aria-labelledby="rt-title" hidden>
+            <form data-cx-demo="Residency details saved." data-cx-next="dependents">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="rt-title">{{ ci("globe") }} Visa <span class="cx-accent">&amp; residency</span></h2>
+                        <p class="cx-card__sub">Used to determine whether you file as a resident or non-resident for {{ selected_year }}.</p>
+                    </div>
+                </div>
+                <div class="cx-card__body">
+                    <h3 class="cx-legend">Visa type</h3>
+                    <div class="cx-form-grid">
+                        <div class="cx-field">
+                            <label class="cx-label" for="rt-nat">Taxpayer nationality</label>
+                            <select class="cx-select" id="rt-nat" name="nationality">
+                                <option value="">Select</option>
+                                <option>Indian</option><option>US citizen</option><option>Other</option>
+                            </select>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="rt-count">Number of visas held in {{ selected_year }}<span class="cx-req">*</span></label>
+                            <select class="cx-select" id="rt-count" name="visa_count" required>
+                                <option>1</option><option>2</option><option>3</option>
+                            </select>
+                            <span class="cx-hint">Changed from F1 to H1B during the year? That counts as 2.</span>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="rt-visa">Current visa</label>
+                            <select class="cx-select" id="rt-visa" name="visa_type">
+                                <option value="">Select</option>
+                                <option>H1B</option><option>H4</option><option>L1</option><option>L2</option>
+                                <option>F1</option><option>F1 – OPT</option><option>J1</option><option>Green card</option><option>Other</option>
+                            </select>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="rt-entry">Date of first entry into the US</label>
+                            <input class="cx-input" id="rt-entry" name="first_entry" type="date" />
+                            <span class="cx-hint">The first time you entered the US on a work or student visa.</span>
+                        </div>
+                    </div>
+
+                    <h3 class="cx-legend">Residential status</h3>
+                    <div class="cx-q cx-q--lead" style="counter-increment: none;">
+                        <span class="cx-q__text">Did you stay in the US for at least 183 days in {{ selected_year }}?<small>Counts days present under the substantial presence test.</small></span>
+                        <div class="cx-seg" role="radiogroup">
+                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="yes" /><span>Yes</span></label>
+                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="no" /><span>No</span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="cx-card__foot">
+                    <button class="cx-btn cx-btn--primary" type="submit">Save &amp; continue {{ ci("arrow-right", "ci ci--sm") }}</button>
+                </div>
+            </form>
+        </section>
+
+        {# ── Dependents (UI only) ───────────────── #}
+        <section class="cx-panel cx-card" role="tabpanel" id="dependents" aria-labelledby="dep-title" hidden>
+            <div class="cx-card__head">
+                <div>
+                    <h2 class="cx-card__title" id="dep-title">{{ ci("users") }} Dependent <span class="cx-accent">details</span></h2>
+                    <p class="cx-card__sub">Children or relatives you support who may qualify for credits.</p>
+                </div>
+            </div>
+            <form data-cx-demo="Dependent added.">
+                <div class="cx-card__body">
+                    <div class="cx-form-grid cx-form-grid--3">
+                        <div class="cx-field">
+                            <label class="cx-label" for="dp-first">First name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="dp-first" name="dep_first" required />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="dp-last">Last name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="dp-last" name="dep_last" required />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="dp-rel">Relationship</label>
+                            <select class="cx-select" id="dp-rel" name="dep_rel">
+                                <option>Son</option><option>Daughter</option><option>Parent</option><option>Other</option>
+                            </select>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="dp-dob">Date of birth</label>
+                            <input class="cx-input" id="dp-dob" name="dep_dob" type="date" />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label">ID type</label>
+                            <div class="cx-radios">
+                                <label class="cx-radio"><input type="radio" name="dep_id" value="ssn" checked /> SSN</label>
+                                <label class="cx-radio"><input type="radio" name="dep_id" value="itin" /> ITIN</label>
+                                <label class="cx-radio"><input type="radio" name="dep_id" value="applying" /> Applying</label>
+                            </div>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="dp-months">Months lived with you</label>
+                            <input class="cx-input" id="dp-months" name="dep_months" type="number" min="0" max="12" placeholder="12" />
+                        </div>
+                    </div>
+                </div>
+                <div class="cx-card__foot">
+                    <button class="cx-btn cx-btn--primary" type="submit">{{ ci("plus") }} Add dependent</button>
+                </div>
+            </form>
+        </section>
     </div>
-</main>
-{% endblock %} {% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
-<script src="{{ url_for('static', path='/js/profile.js') }}"></script>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ url_for('static', path='/js/profile.js') }}?v=2"></script>
 {% endblock %}

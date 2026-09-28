@@ -1,80 +1,147 @@
-{% extends "base.html" %}
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci, yes_no %}
+{% set active_nav = "tax_notes" %}
+{% set page_section = "Tax Notes" %}
+{% set page_title = "Tax Notes Sheet" %}
+{% set page_subtitle = "Answer a few quick questions so your preparer knows which income, deductions and documents apply to you." %}
+{% set y = selected_year %}
 
-{% block title %}Tax Notes - {{ app_name }}{% endblock %}
+{% set income_qs = [
+    ("stayed_usa", "Did you stay in the USA during tax year " ~ y ~ "?", ""),
+    ("rental", "Do you own any rental property in the US, India or elsewhere?", ""),
+    ("india_salary", "Did you receive any salary income from India?", "Only if this income is not already included in your W-2."),
+    ("interest", "Did you earn any interest income in the USA or abroad?", "Savings, FDs, NRE/NRO accounts, bonds."),
+    ("dividend", "Did you earn any dividend income in the USA or abroad?", ""),
+    ("distributions", "Did you receive any distributions from HSA, IRA or 401(k) plans?", ""),
+    ("prev_return", "Did you file your previous year's tax return with us?", ""),
+] %}
+{% set expense_qs = [
+    ("student_visa", "Are you a student on an F, M, J or Q visa?", ""),
+    ("tuition", "Did you pay tuition or higher-education expenses at a qualified US institution?", ""),
+    ("edu_loan", "Did you pay interest on an education loan in the US during " ~ y ~ "?", ""),
+    ("mortgage", "Did you pay mortgage interest in the USA during " ~ y ~ "?", ""),
+    ("hsa_ira", "Did you contribute to a Health Savings Account or IRA?", "Out-of-pocket only, not covered by your employer."),
+    ("stock_sales", "Any stock sales or carry-forward losses during the tax year?", ""),
+    ("foreign_mf", "Do you own mutual funds in countries other than the USA?", ""),
+    ("medical", "Did you have out-of-pocket medical expenses during the year?", ""),
+    ("charity", "Did you make charitable contributions in " ~ y ~ "?", ""),
+    ("health_ins", "Were you covered by health insurance?", ""),
+    ("marketplace", "Do you have Marketplace health insurance (Form 1095-A)?", ""),
+] %}
+{% set misc_items = [
+    ("Income documents", "Upload W-2s and any 1099 forms in the Upload Documents section."),
+    ("Partnerships & S-corps", "Upload Schedule K-1, Form 1099-MISC or other income statements."),
+    ("Student loan interest", "Upload Form 1098-E or your lender's statement."),
+    ("Personal property taxes", "Taxes paid on vehicles, boats or mobile homes bought for the first time."),
+    ("Dependent care", "Childcare costs are claimable only if both spouses work and the caregiver has a valid SSN or FEIN."),
+    ("Stock sales", "Upload broker statements (Form 1099-B) for sales in the US, India or elsewhere."),
+    ("Stock options", "Upload grant and exercise statements for RSUs, ESPP or ISOs."),
+    ("Foreign income & taxes", "Upload proof of income earned and taxes paid in another country."),
+    ("Energy-saving purchases", "Hybrid/electric vehicles or home energy equipment. Supporting documents are mandatory."),
+    ("Massachusetts health coverage", "Upload Form 1099-HC if you lived in Massachusetts during the year."),
+] %}
 
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
-{% endblock %}
+{% block page %}
+<div class="cx-stack">
+    <div class="cx-alert">
+        {{ ci("info") }}
+        <p><strong>Tip:</strong> Answer every question with Yes or No. For each Yes, upload the matching document in <a class="cx-link" href="/client/documents">Upload Documents</a>.</p>
+    </div>
 
-{% block content %}
-{% set active_nav = 'tax_notes' %}
-{% include "partials/client_sidebar.html" %}
-
-<div class="dashboard-main">
-    <header class="site-header">
-        <div class="site-header-left">
-            {% include "partials/sidebar_toggle.html" %}
-            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
-                <span class="brand-mark" aria-hidden="true">UT</span>
-                <span>{{ app_name }}</span>
-            </a>
+    <div data-cx-tabs data-cx-hash>
+        <div class="cx-tabs__list" role="tablist" aria-label="Tax notes sheets">
+            <button class="cx-tab" role="tab" aria-selected="true" aria-controls="income"><span class="cx-tab__num">1</span> Income sheet</button>
+            <button class="cx-tab" role="tab" aria-controls="expenses"><span class="cx-tab__num">2</span> Expenses sheet</button>
+            <button class="cx-tab" role="tab" aria-controls="misc"><span class="cx-tab__num">3</span> Misc sheet</button>
         </div>
-        <div class="account-menu-wrap client-header-actions">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
-                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
-            </button>
-            <form class="header-logout" action="/auth/logout" method="post">
-                <button class="logout-button" type="submit">Logout</button>
+
+        <section class="cx-panel cx-card" role="tabpanel" id="income" aria-labelledby="income-title">
+            <form data-cx-demo="Income sheet saved." data-cx-next="expenses">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="income-title">{{ ci("refund") }} Income <span class="cx-accent">sheet</span></h2>
+                        <p class="cx-card__sub">Tell us about your filing status and sources of income.</p>
+                    </div>
+                </div>
+                <div class="cx-card__body">
+                    <h3 class="cx-legend">Filing status</h3>
+                    <div class="cx-q cx-q--lead">
+                        <span class="cx-q__text"><strong>Are you married?</strong><small>As of December 31, {{ y }}.</small></span>
+                        {{ yes_no("married") }}
+                    </div>
+
+                    <h3 class="cx-legend">Income questions</h3>
+                    <ol class="cx-qlist">
+                        {% for key, q, hint in income_qs %}
+                        <li class="cx-q">
+                            <span class="cx-q__text">{{ q }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
+                            {{ yes_no("inc_" ~ key) }}
+                        </li>
+                        {% endfor %}
+                    </ol>
+
+                    <div class="cx-field" style="margin-top: 1rem;">
+                        <label class="cx-label" for="income-other">Anything else we should know?<span class="cx-opt">Optional</span></label>
+                        <textarea class="cx-textarea" id="income-other" name="income_other" placeholder="Please list point-wise: 1. … 2. … 3. …"></textarea>
+                    </div>
+                </div>
+                <div class="cx-card__foot">
+                    <button class="cx-btn cx-btn--primary" type="submit">Save &amp; next {{ ci("arrow-right", "ci ci--sm") }}</button>
+                </div>
             </form>
-        </div>
-    </header>
+        </section>
 
-    <main class="dashboard-shell">
-        <div class="documents-container">
-            <div class="documents-header">
+        <section class="cx-panel cx-card" role="tabpanel" id="expenses" aria-labelledby="exp-title" hidden>
+            <form data-cx-demo="Tax notes submitted to your preparer." data-cx-next="misc">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="exp-title">{{ ci("calculator") }} Expenses <span class="cx-accent">sheet</span></h2>
+                        <p class="cx-card__sub">Deductions and credits you may be eligible for.</p>
+                    </div>
+                </div>
+                <div class="cx-card__body">
+                    <ol class="cx-qlist">
+                        {% for key, q, hint in expense_qs %}
+                        <li class="cx-q">
+                            <span class="cx-q__text">{{ q }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
+                            {{ yes_no("exp_" ~ key) }}
+                        </li>
+                        {% endfor %}
+                    </ol>
+
+                    <div class="cx-field" style="margin: 1rem 0;">
+                        <label class="cx-label" for="exp-other">Anything else we should know?<span class="cx-opt">Optional</span></label>
+                        <textarea class="cx-textarea" id="exp-other" name="expenses_other" placeholder="Please list point-wise: 1. … 2. … 3. …"></textarea>
+                    </div>
+
+                    <label class="cx-check cx-confirm">
+                        <input type="checkbox" name="confirm" required />
+                        <span><strong>I confirm that all income and expense details are correct.</strong><br /><span class="cx-muted">Your preparer will rely on these answers to build your return.</span></span>
+                    </label>
+                </div>
+                <div class="cx-card__foot cx-card__foot--between">
+                    <button class="cx-btn cx-btn--ghost" type="button" data-cx-goto="income">{{ ci("chevron-left", "ci ci--sm") }} Back</button>
+                    <button class="cx-btn cx-btn--primary" type="submit">{{ ci("send", "ci ci--sm") }} Save &amp; submit tax notes</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="cx-panel cx-card" role="tabpanel" id="misc" aria-labelledby="misc-title" hidden>
+            <div class="cx-card__head">
                 <div>
-                    <h1>Tax Notes &amp; Advisor Remarks</h1>
-                    <p>Important instructions, advisor notes, and client communication for Tax Year {{ selected_year }}</p>
+                    <h2 class="cx-card__title" id="misc-title">{{ ci("folder") }} Misc sheet: <span class="cx-accent">documents to upload</span></h2>
+                    <p class="cx-card__sub">If any of these apply to you, upload the relevant document.</p>
                 </div>
+                <a class="cx-btn cx-btn--primary cx-btn--sm" href="/client/documents">{{ ci("upload", "ci ci--sm") }} Upload documents</a>
             </div>
-
-            <div class="panel mb-6">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Advisor Notes</p>
-                        <h2>CPA &amp; Preparer Remarks</h2>
-                    </div>
-                </div>
-                <div class="p-4 rounded-xl bg-surface-variant border border-line">
-                    <p class="text-sm muted mb-2">📌 Note from Assigned Preparer (Updated recently):</p>
-                    <p>Please make sure all W-2s, 1099-INT, and foreign bank account balances are uploaded under the Documents section before finalizing your return.</p>
-                </div>
+            <div class="cx-card__body">
+                <ul class="cx-checklist">
+                    {% for title, text in misc_items %}
+                    <li>{{ ci("file") }}<div><strong>{{ title }}</strong><span>{{ text }}</span></div></li>
+                    {% endfor %}
+                </ul>
             </div>
-
-            <div class="panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Client Notes</p>
-                        <h2>Add a Note for Your Tax Team</h2>
-                    </div>
-                </div>
-                <form action="#" method="post" onsubmit="alert('Tax note saved successfully!'); return false;" class="form-grid">
-                    <div class="field-group">
-                        <label for="tax_note_text" class="field-label">Note / Special Instructions</label>
-                        <textarea id="tax_note_text" name="tax_note_text" rows="4" class="field-input" placeholder="Enter any additional details, income sources, or tax considerations for your preparer..."></textarea>
-                    </div>
-                    <div class="field-actions">
-                        <button type="submit" class="button button-primary">Save Tax Note</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </main>
+        </section>
+    </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
 {% endblock %}

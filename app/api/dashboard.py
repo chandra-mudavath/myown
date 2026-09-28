@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.deps import ClientAccount
 from app.core.templates import templates
 from app.models.client import Client
+from app.models.filing_document import FilingDocument
 from app.models.tax_filing import TaxFiling
 
 router = APIRouter(prefix="/client", tags=["client-dashboard"])
@@ -20,6 +21,61 @@ _YEARS_BACK = 4  # selectable range: current year plus the 4 prior years
 def _available_tax_years() -> list[int]:
     current_year = datetime.now(timezone.utc).year
     return [current_year - offset for offset in range(_YEARS_BACK + 1)]
+
+
+def resolve_tax_year(tax_year: str | None) -> int:
+    """Return the cookie year when it is selectable, else the most recent year."""
+    years = _available_tax_years()
+    if tax_year and tax_year.isdigit() and int(tax_year) in years:
+        return int(tax_year)
+    return years[0]
+
+
+def client_shell_context(db: Session, account, tax_year: str | None) -> dict:
+    """Values the shared client layout needs: identity, avatar and the year switcher."""
+    client = db.query(Client).filter(Client.account_id == account.id).first()
+    display_name = client.first_name if client and client.first_name else account.email.split("@", 1)[0]
+    parts = (client.first_name, client.last_name) if client else (display_name, None)
+    initials = "".join(part[0].upper() for part in parts if part)[:2]
+    return {
+        "app_name": settings.APP_NAME,
+        "client": client,
+        "account_email": account.email,
+        "display_name": display_name,
+        "initials": initials or "U",
+        "available_years": _available_tax_years(),
+        "selected_year": resolve_tax_year(tax_year),
+    }
+
+
+def _merge_status(statuses: list[str]) -> str:
+    """Collapse several section statuses into one stage status."""
+    relevant = [s for s in statuses if s != "not_applicable"]
+    if relevant and all(s == "complete" for s in relevant):
+        return "complete"
+    if any(s in ("complete", "in_progress") for s in relevant):
+        return "in_progress"
+    return "not_started"
+
+
+def build_filing_stages(f: TaxFiling | None, section_statuses: list[dict], has_documents: bool) -> list[dict]:
+    """Client-facing filing journey, in the order the client works through it."""
+    by_num = {s["number"]: s["status"] for s in section_statuses}
+    done = f is not None and f.status == "complete"
+    later = "complete" if done else "not_started"
+    return [
+        {"label": "Personal Information", "url": "/client/personal-info",
+         "status": _merge_status([by_num.get(n, "not_started") for n in ("01", "02", "03", "04")]) if f else "not_started"},
+        {"label": "Tax Notes", "url": "/client/tax-notes",
+         "status": _merge_status([by_num.get(n, "not_started") for n in ("05", "06", "08")]) if f else "not_started"},
+        {"label": "Upload Documents", "url": "/client/documents",
+         "status": "complete" if has_documents else "not_started"},
+        {"label": "Estimated Tax Summary", "url": "/client/tax-summary", "status": later},
+        {"label": "Preparation Charges Paid", "url": "/client/tax-summary#payment", "status": later},
+        {"label": "Tax Return for Review", "url": "/client/review-documents", "status": later},
+        {"label": "E-File Authorization", "url": "/client/efile-authorization", "status": later},
+        {"label": "E-Filing / Paper Filing", "url": "/client/update-stage", "status": later},
+    ]
 
 
 def _section_status(value) -> str:
@@ -120,6 +176,7 @@ def select_year_submit(
     request: Request,
     account: ClientAccount,
     tax_year: int = Form(...),
+    next: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
     client = db.query(Client).filter(Client.account_id == account.id).first()
@@ -136,7 +193,9 @@ def select_year_submit(
     if tax_year not in _available_tax_years() and tax_year not in filed_years:
         return RedirectResponse(url=request.url_for("select_year_page"), status_code=status.HTTP_303_SEE_OTHER)
 
-    resp = RedirectResponse(url=request.url_for("client_dashboard"), status_code=status.HTTP_303_SEE_OTHER)
+    # Year switcher in the sidebar posts the current page so the client stays where they were.
+    target = next if next and next.startswith("/client/") and not next.startswith("//") else str(request.url_for("client_dashboard"))
+    resp = RedirectResponse(url=target, status_code=status.HTTP_303_SEE_OTHER)
     resp.set_cookie(TAX_YEAR_COOKIE, str(tax_year), max_age=180 * 86400, httponly=True, samesite="lax", secure=False)
     return resp
 
@@ -208,6 +267,16 @@ def client_dashboard(
     # Active filing exists if there is a filing that is not 'complete'
     has_active_filing = filing_record is not None and filing_record.status != "complete"
 
+    document_count = (
+        db.query(FilingDocument)
+        .filter(FilingDocument.filing_id == filing_record.id, FilingDocument.is_latest == True)  # noqa: E712
+        .count()
+        if filing_record
+        else 0
+    )
+    filing_stages = build_filing_stages(filing_record, section_statuses, document_count > 0)
+    stages_done = sum(1 for s in filing_stages if s["status"] == "complete")
+
     dashboard = {
         "app_name": settings.APP_NAME,
         "display_name": display_name,
@@ -222,10 +291,19 @@ def client_dashboard(
         "actions": [],
         "activities": [],
         "has_active_filing": has_active_filing,
+        "document_count": document_count,
+        "filing_stages": filing_stages,
+        "stages_done": stages_done,
+        "stages_pct": int(stages_done / len(filing_stages) * 100),
     }
     return templates.TemplateResponse(
         "client/dashboard/index.html",
-        {"request": request, "account": account, "client": client, "dashboard": dashboard},
+        {
+            "request": request,
+            "account": account,
+            "dashboard": dashboard,
+            **client_shell_context(db, account, tax_year),
+        },
     )
 
 

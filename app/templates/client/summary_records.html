@@ -1,62 +1,28 @@
-{% extends "base.html" %}
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "summary_records" %}
+{% set page_section = "Account" %}
+{% set page_title = "Summary Records" %}
+{% set page_subtitle = "An archive of your completed returns and their key figures, year by year." %}
 
-{% block title %}Summary Records - {{ app_name }}{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
-{% endblock %}
-
-{% block content %}
-{% set active_nav = 'summary_records' %}
-{% include "partials/client_sidebar.html" %}
-
-<div class="dashboard-main">
-    <header class="site-header">
-        <div class="site-header-left">
-            {% include "partials/sidebar_toggle.html" %}
-            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
-                <span class="brand-mark" aria-hidden="true">UT</span>
-                <span>{{ app_name }}</span>
-            </a>
+{% block page %}
+<section class="cx-card" aria-labelledby="records-title">
+    <div class="cx-card__head">
+        <div>
+            <h2 class="cx-card__title" id="records-title">{{ ci("archive") }} Filing <span class="cx-accent">history</span></h2>
+            <p class="cx-card__sub">Completed returns appear here after filing.</p>
         </div>
-        <div class="account-menu-wrap client-header-actions">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
-                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
-            </button>
-            <form class="header-logout" action="/auth/logout" method="post">
-                <button class="logout-button" type="submit">Logout</button>
-            </form>
-        </div>
-    </header>
-
-    <main class="dashboard-shell">
-        <div class="documents-container">
-            <div class="documents-header">
-                <div>
-                    <h1>Summary Records &amp; Filing History</h1>
-                    <p>Archive of previous tax filing returns, submission dates, and summary records</p>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Filing History</p>
-                        <h2>Past Tax Year Records</h2>
-                    </div>
-                </div>
-                <div class="empty-state compact">
-                    <span class="empty-icon">📊</span>
-                    <p>Historical filing summary records will appear here as your annual returns are completed.</p>
-                </div>
-            </div>
-        </div>
-    </main>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+        <a class="cx-btn cx-btn--soft cx-btn--sm" href="/client/filings">{{ ci("history", "ci ci--sm") }} My filings</a>
+    </div>
+    <div class="cx-table-wrap">
+        <table class="cx-table">
+            <thead><tr><th>Tax year</th><th>Filing type</th><th>Filed on</th><th>Refund / due</th><th>Status</th></tr></thead>
+        </table>
+    </div>
+    <div class="cx-empty">
+        <span class="cx-empty__icon">{{ ci("archive") }}</span>
+        <h3>No completed <span class="cx-accent">returns yet</span></h3>
+        <p>Once a return is filed and accepted, its summary is saved here so you can reference it in future years.</p>
+    </div>
+</section>
 {% endblock %}

@@ -1,82 +1,98 @@
-{% extends "base.html" %}
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "bank_details" %}
+{% set page_section = "Bank Details" %}
+{% set page_title = "Refund Bank Details" %}
+{% set page_subtitle = "Tell us how you'd like to receive your IRS and state tax refunds." %}
 
-{% block title %}Bank Details - {{ app_name }}{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
-{% endblock %}
-
-{% block content %}
-{% set active_nav = 'bank_details' %}
-{% include "partials/client_sidebar.html" %}
-
-<div class="dashboard-main">
-    <header class="site-header">
-        <div class="site-header-left">
-            {% include "partials/sidebar_toggle.html" %}
-            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
-                <span class="brand-mark" aria-hidden="true">UT</span>
-                <span>{{ app_name }}</span>
-            </a>
-        </div>
-        <div class="account-menu-wrap client-header-actions">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
-                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
-            </button>
-            <form class="header-logout" action="/auth/logout" method="post">
-                <button class="logout-button" type="submit">Logout</button>
-            </form>
-        </div>
-    </header>
-
-    <main class="dashboard-shell">
-        <div class="documents-container">
-            <div class="documents-header">
+{% block page %}
+<div class="cx-grid cx-grid--main">
+    <section class="cx-card" aria-labelledby="bank-title">
+        <form data-cx-demo="Bank details saved.">
+            <div class="cx-card__head">
                 <div>
-                    <h1>Bank Account Details</h1>
-                    <p>Provide your US bank account information for direct deposit of IRS &amp; State tax refunds</p>
+                    <h2 class="cx-card__title" id="bank-title">{{ ci("bank") }} Bank <span class="cx-accent">details</span></h2>
+                    <p class="cx-card__sub">Must be a US bank account in your name (or your spouse's, if filing jointly).</p>
                 </div>
             </div>
+            <div class="cx-card__body">
+                <h3 class="cx-legend">I prefer to receive my tax refund by</h3>
+                <div class="cx-choices">
+                    <label class="cx-choice">
+                        <input type="radio" name="refund_method" value="direct" checked />
+                        <span class="cx-choice__icon">{{ ci("bank") }}</span>
+                        <span><strong>Direct deposit</strong><small>Fastest: usually within 21 days of acceptance</small></span>
+                        <span class="cx-choice__tick">{{ ci("check") }}</span>
+                    </label>
+                    <label class="cx-choice">
+                        <input type="radio" name="refund_method" value="check" />
+                        <span class="cx-choice__icon">{{ ci("mail") }}</span>
+                        <span><strong>Paper check</strong><small>Mailed to your address on file</small></span>
+                        <span class="cx-choice__tick">{{ ci("check") }}</span>
+                    </label>
+                </div>
 
-            <div class="panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Direct Deposit Information</p>
-                        <h2>Refund Bank Account</h2>
+                <div data-cx-show-when="refund_method=direct">
+                    <h3 class="cx-legend" style="margin-top: 1.6rem;">Account information</h3>
+                    <div class="cx-form-grid">
+                        <div class="cx-field">
+                            <label class="cx-label" for="bank_name">Bank name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="bank_name" name="bank_name" required placeholder="e.g. Chase, Bank of America" />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="account_type">Account type<span class="cx-req">*</span></label>
+                            <select class="cx-select" id="account_type" name="account_type" required>
+                                <option value="">Select account type</option>
+                                <option value="checking">Checking</option>
+                                <option value="savings">Savings</option>
+                            </select>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="routing_number">Routing number<span class="cx-req">*</span></label>
+                            <input class="cx-input cx-mono" id="routing_number" name="routing_number" required inputmode="numeric" pattern="\d{9}" maxlength="9" placeholder="9 digits" />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="account_number">Account number<span class="cx-req">*</span></label>
+                            <input class="cx-input cx-mono" id="account_number" name="account_number" required inputmode="numeric" pattern="\d{4,17}" maxlength="17" placeholder="4–17 digits" />
+                        </div>
+                        <div class="cx-field cx-span-2">
+                            <label class="cx-label" for="holder_name">Account holder name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="holder_name" name="holder_name" required value="{{ client.first_name ~ ' ' ~ (client.last_name or '') if client else '' }}" />
+                        </div>
                     </div>
                 </div>
-                <form action="#" method="post" onsubmit="alert('Bank details updated successfully!'); return false;" class="form-grid">
-                    <div class="field-group">
-                        <label for="bank_name" class="field-label">Bank Name</label>
-                        <input type="text" id="bank_name" name="bank_name" class="field-input" placeholder="e.g. Chase, Bank of America, Wells Fargo" />
-                    </div>
-                    <div class="field-group">
-                        <label for="account_type" class="field-label">Account Type</label>
-                        <select id="account_type" name="account_type" class="field-input">
-                            <option value="checking">Checking Account</option>
-                            <option value="savings">Savings Account</option>
-                        </select>
-                    </div>
-                    <div class="field-group">
-                        <label for="routing_number" class="field-label">9-Digit Routing Number (ABA)</label>
-                        <input type="text" id="routing_number" name="routing_number" maxlength="9" class="field-input" placeholder="123456789" />
-                    </div>
-                    <div class="field-group">
-                        <label for="account_number" class="field-label">Account Number</label>
-                        <input type="text" id="account_number" name="account_number" class="field-input" placeholder="Account Number" />
-                    </div>
-                    <div class="field-actions">
-                        <button type="submit" class="button button-primary">Save Bank Details</button>
-                    </div>
-                </form>
+
+                <label class="cx-check cx-confirm" style="margin-top: 1.25rem;">
+                    <input type="checkbox" name="declare" required />
+                    <span>I declare that the bank details provided here are true and correct.</span>
+                </label>
             </div>
+            <div class="cx-card__foot">
+                <a class="cx-btn cx-btn--ghost" href="/client/dashboard">Cancel</a>
+                <button class="cx-btn cx-btn--primary" type="submit">{{ ci("check", "ci ci--sm") }} Save &amp; submit</button>
+            </div>
+        </form>
+    </section>
+
+    <aside class="cx-stack">
+        <section class="cx-card">
+            <div class="cx-card__head cx-card__head--plain">
+                <h2 class="cx-card__title">{{ ci("info") }} Where to <span class="cx-accent">find these numbers</span></h2>
+            </div>
+            <div class="cx-card__body">
+                <div class="cx-cheque" aria-hidden="true">
+                    <div style="display:flex; justify-content:space-between;"><span>YOUR NAME</span><span>No. 1024</span></div>
+                    <div class="cx-cheque__line"></div>
+                    <div class="cx-cheque__line cx-cheque__line--short"></div>
+                    <div class="cx-cheque__micr"><span class="r">⑆123456789⑆</span><span class="a">000123456789⑈</span><span>1024</span></div>
+                </div>
+                <div class="cx-legendkeys"><span class="r">Routing number</span><span class="a">Account number</span></div>
+            </div>
+        </section>
+        <div class="cx-alert cx-alert--warn">
+            {{ ci("alert") }}
+            <p><strong>Double-check the numbers.</strong> A wrong routing or account number sends your refund back to the IRS and delays it by weeks.</p>
         </div>
-    </main>
+    </aside>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
 {% endblock %}

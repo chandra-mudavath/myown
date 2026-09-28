@@ -1,121 +1,106 @@
-{% extends "base.html" %} {% set signup_role = signup_role|default("client") %} {% block title %}Create {{
-signup_role|title }} Account - {{ app_name }}{% endblock %} {% block head %}
+{% extends "auth/_layout.html" %}
+{% from "auth/_icons.html" import icon %}
+{% set signup_role = signup_role|default("client") %}
+{% block title %}Create {{ signup_role|title }} Account - {{ app_name }}{% endblock %}
+{% block head %}
+{{ super() }}
 <link rel="preconnect" href="https://flagcdn.com" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}?v=3.0" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3.0" />
-{% endblock %} {% block body_class %}auth-page auth-register-page{% endblock %} {% block content %}
-<button type="button" id="auth-theme-toggle" class="auth-theme-toggle" aria-label="Switch to dark theme"
-    title="Switch to dark theme">
-    <svg class="theme-icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="4"></circle>
-        <path
-            d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41">
-        </path>
-    </svg>
-    <svg class="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path>
-    </svg>
-</button>
-<!-- Back button -->
-<button type="button" class="back-link back-link--button" onclick="window.location.href='/'">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-    </svg>
-    Back to Home
-</button>
+{% endblock %}
+{% block form_modifier %} au-form--wide{% endblock %}
+{% block auth_heading %}{% if signup_role == "client" %}Create your free <span>{{ app_name }} account</span>{% else %}Request your <span>{{ signup_role }} account</span>{% endif %}{% endblock %}
+{% block auth_form %}
+<form id="register-form" class="au-fields" method="POST" action="/auth/register">
+    <input type="hidden" name="signup_role" value="{{ signup_role }}" />
+    {% if error %}
+    <div class="alert alert--error">{{ error }}</div>
+    {% endif %}
+    {% if msg %}
+    <div class="alert alert--success">{{ msg }}</div>
+    {% endif %}
 
-<div class="auth-card fade-in">
-    <div class="auth-header">
-        <h1 class="auth-header__title">Create a <span class="auth-title-accent">{{ signup_role|title }} account</span>
-        </h1>
-        <p class="auth-header__subtitle">{% if signup_role == "client" %}Get started with your free client portal.{%
-            else %}Request access to the {{ signup_role }} workspace.{% endif %}</p>
+    <div class="au-row">
+        <div class="au-input">
+            <label class="au-sr" for="first_name">First name</label>
+            {{ icon("user") }}
+            <input name="first_name" id="first_name" type="text" placeholder="First name *" class="form-input" required
+                autocomplete="given-name" maxlength="15" pattern="^[A-Za-z]+$"
+                title="Only alphabets allowed, max 15 characters" />
+        </div>
+
+        <div class="au-input">
+            <label class="au-sr" for="last_name">Last name</label>
+            {{ icon("user") }}
+            <input name="last_name" id="last_name" type="text" placeholder="Last name" class="form-input"
+                autocomplete="family-name" maxlength="15" pattern="^[A-Za-z]+$"
+                title="Only alphabets allowed, max 15 characters" />
+        </div>
     </div>
 
-    <div class="glass-strong rounded-2xl overflow-hidden mb-6">
-        <form id="register-form" class="p-8 space-y-5" method="POST" action="/auth/register">
-            <input type="hidden" name="signup_role" value="{{ signup_role }}" />
-            {% if error %}
-            <div class="alert alert--error">{{ error }}</div>
-            {% endif %}
+    <div class="au-input">
+        <label class="au-sr" for="email">Email</label>
+        {{ icon("mail") }}
+        <input name="email" id="email" type="email" placeholder="Enter your email *" class="form-input"
+            autocomplete="email" required />
+    </div>
 
-            <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                    <label class="form-label">First Name</label>
-                    <input name="first_name" id="first_name" type="text" placeholder="John" class="form-input" required
-                        maxlength="15" pattern="^[A-Za-z]+$" title="Only alphabets allowed, max 15 characters" />
-                </div>
-
-                <div class="space-y-1.5">
-                    <label class="form-label">Last Name</label>
-                    <input name="last_name" id="last_name" type="text" placeholder="Doe" class="form-input"
-                        maxlength="15" pattern="^[A-Za-z]+$" title="Only alphabets allowed, max 15 characters" />
-                </div>
-            </div>
-
-            {% if signup_role == "client" %}
-            <div class="space-y-1.5">
-                <div class="phone-fields">
-                    <div class="country-picker" id="country-picker">
-                        <button type="button" class="country-picker-toggle" id="country-picker-toggle"
-                            aria-haspopup="listbox" aria-expanded="false">
-                            <span class="country-flag" id="selected-country-flag" aria-hidden="true">🌐</span>
-                            <span class="country-picker-code" id="selected-country-code"></span>
-                            <svg class="country-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 9l6 6 6-6" />
-                            </svg>
-                        </button>
-                        <div class="country-picker-menu" id="country-picker-menu" hidden>
-                            <input type="search" class="form-input country-search" id="country-search"
-                                placeholder="Search country" aria-label="Search country" />
-                            <div class="country-options" id="country-options" role="listbox" aria-label="Countries">
-                            </div>
-                        </div>
-                        <input name="country_code" id="country_code" type="hidden" required />
-                    </div>
-                    <input name="phone_local" id="phone_local" type="tel" inputmode="numeric"
-                        autocomplete="tel-national" placeholder="Mobile Number *" class="phone-number-input" required
-                        minlength="10" maxlength="10" pattern="[0-9]{10}"
-                        title="Enter exactly 10 digits after the country code" />
-                    <input name="phone" id="phone" type="hidden" />
-                </div>
-            </div>
-            {% endif %}
-
-            <div class="space-y-1.5">
-                <label class="form-label">Email</label>
-                <input name="email" id="email" type="email" placeholder="Email" class="form-input" required />
-            </div>
-
-            <div class="space-y-1.5">
-                <label class="form-label">Password</label>
-                <input name="password" id="password" type="password" placeholder="Min 8 characters" class="form-input"
-                    required minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}"
-                    title="Must contain at least one number, one uppercase and lowercase letter, and one special character, and at least 8 or more characters" />
-            </div>
-
-            <div class="space-y-1.5">
-                <label class="form-label">Confirm Password</label>
-                <input name="password_confirmation" id="password_confirmation" type="password"
-                    placeholder="Re-enter your password" class="form-input" required minlength="8" />
-            </div>
-
-            <button id="submit-btn" type="submit" class="btn-submit btn-primary mt-4">
-                <span id="btn-text">Create account</span>
-                <span id="btn-spinner" class="hidden" aria-hidden="true">…</span>
+    {% if signup_role == "client" %}
+    <div class="phone-fields">
+        <div class="country-picker" id="country-picker">
+            <button type="button" class="country-picker-toggle" id="country-picker-toggle" aria-haspopup="listbox"
+                aria-expanded="false">
+                <span class="country-flag" id="selected-country-flag" aria-hidden="true">🌐</span>
+                <span class="country-picker-code" id="selected-country-code"></span>
+                <svg class="country-picker-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6" />
+                </svg>
             </button>
-
-            <div class="text-center mt-6">
-                <p class="auth-form-footer">
-                    Already have an account?
-                    <a href="/auth/login" class="text-brand-600 font-semibold hover:underline">Sign in</a>
-                </p>
+            <div class="country-picker-menu" id="country-picker-menu" hidden>
+                <input type="search" class="form-input country-search" id="country-search"
+                    placeholder="Search country" aria-label="Search country" />
+                <div class="country-options" id="country-options" role="listbox" aria-label="Countries"></div>
             </div>
-        </form>
+            <input name="country_code" id="country_code" type="hidden" required />
+        </div>
+        <label class="au-sr" for="phone_local">Mobile number</label>
+        <input name="phone_local" id="phone_local" type="tel" inputmode="numeric" autocomplete="tel-national"
+            placeholder="Mobile number *" class="phone-number-input" required minlength="10" maxlength="10"
+            pattern="[0-9]{10}" title="Enter exactly 10 digits after the country code" />
+        <input name="phone" id="phone" type="hidden" />
     </div>
-</div>
-{% endblock %} {% block scripts %}
-<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
+    {% endif %}
+
+    <div class="au-input">
+        <label class="au-sr" for="password">Password</label>
+        {{ icon("lock") }}
+        <input name="password" id="password" type="password" placeholder="Password *" class="form-input"
+            autocomplete="new-password" required minlength="8"
+            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}"
+            title="Must contain at least one number, one uppercase and lowercase letter, and one special character, and at least 8 or more characters" />
+    </div>
+
+    <div class="au-input">
+        <label class="au-sr" for="password_confirmation">Confirm password</label>
+        {{ icon("lock") }}
+        <input name="password_confirmation" id="password_confirmation" type="password"
+            placeholder="Confirm password *" class="form-input" autocomplete="new-password" required
+            minlength="8" />
+    </div>
+
+    <label class="au-check">
+        <input type="checkbox" name="accept_terms" id="accept_terms" value="1" required />
+        <span>I have read &amp; agree to the
+            <a href="/terms-and-conditions" class="au-link" target="_blank" rel="noopener">Terms and Conditions</a></span>
+    </label>
+
+    <button id="submit-btn" type="submit" class="au-btn">
+        {{ icon("send", "au-btn__icon") }}
+        <span id="btn-text">Register</span>
+        <span id="btn-spinner" class="hidden" aria-hidden="true">…</span>
+    </button>
+
+    <p class="au-foot">
+        Already have an account? <a href="/auth/login" class="au-link">Sign in</a>
+    </p>
+</form>
 {% endblock %}

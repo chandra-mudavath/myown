@@ -1,88 +1,40 @@
-{% extends "base.html" %}
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "referrals" %}
+{% set page_section = "Account" %}
+{% set page_title = "Refer & Earn" %}
+{% set page_subtitle = "Share your link with friends and family and earn credits when they file with us." %}
+{% set ref_code = (client.id | string)[:8] | upper if client else "" %}
 
-{% block title %}Referrals - {{ app_name }}{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
-{% endblock %}
-
-{% block content %}
-{% set active_nav = 'referrals' %}
-{% include "partials/client_sidebar.html" %}
-
-<div class="dashboard-main">
-    <header class="site-header">
-        <div class="site-header-left">
-            {% include "partials/sidebar_toggle.html" %}
-            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
-                <span class="brand-mark" aria-hidden="true">UT</span>
-                <span>{{ app_name }}</span>
-            </a>
+{% block page %}
+<div class="cx-stack">
+    <section class="cx-refer" aria-labelledby="refer-title">
+        <h2 id="refer-title">Give friends a smoother tax season</h2>
+        <p>Your friends get expert help with their US return, and you earn a credit on your next filing for every friend who completes one.</p>
+        <label class="sr-only" for="referral_link">Your referral link</label>
+        <div class="cx-inputgroup" style="max-width: 560px;">
+            <input class="cx-input" id="referral_link" readonly value="{{ request.base_url }}auth/register?ref={{ ref_code }}" />
+            <button type="button" class="cx-btn" data-cx-copy="referral_link">{{ ci("copy", "ci ci--sm") }} Copy link</button>
         </div>
-        <div class="account-menu-wrap client-header-actions">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
-                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
-            </button>
-            <form class="header-logout" action="/auth/logout" method="post">
-                <button class="logout-button" type="submit">Logout</button>
-            </form>
+    </section>
+
+    <div class="cx-grid cx-grid--3">
+        <div class="cx-stat"><span class="cx-stat__icon">{{ ci("users") }}</span><div><span class="cx-stat__label">Friends referred</span><strong class="cx-stat__value">0</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--amber">{{ ci("clock") }}</span><div><span class="cx-stat__label">Pending</span><strong class="cx-stat__value">0</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--green">{{ ci("gift") }}</span><div><span class="cx-stat__label">Credits earned</span><strong class="cx-stat__value">$0.00</strong></div></div>
+    </div>
+
+    <section class="cx-card" aria-labelledby="how-title">
+        <div class="cx-card__head cx-card__head--plain">
+            <h2 class="cx-card__title" id="how-title">{{ ci("sparkle") }} How <span class="cx-accent">it works</span></h2>
         </div>
-    </header>
-
-    <main class="dashboard-shell">
-        <div class="documents-container">
-            <div class="documents-header">
-                <div>
-                    <h1>Refer a Friend &amp; Earn Rewards</h1>
-                    <p>Share your unique referral code with friends and family to earn filing discounts and credits</p>
-                </div>
-            </div>
-
-            <div class="metrics-row client-metrics-row mb-6">
-                <div class="metric-card client-metric-card">
-                    <div class="client-metric-left">
-                        <div class="client-metric-icon blue">🤝</div>
-                        <div>
-                            <span class="client-metric-label">TOTAL REFERRALS</span>
-                            <strong class="client-metric-value">0</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="metric-card client-metric-card">
-                    <div class="client-metric-left">
-                        <div class="client-metric-icon green">🎁</div>
-                        <div>
-                            <span class="client-metric-label">REWARDS EARNED</span>
-                            <strong class="client-metric-value">$0.00</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-heading">
-                    <div>
-                        <p class="eyebrow">Your Referral Link</p>
-                        <h2>Share &amp; Earn</h2>
-                    </div>
-                </div>
-                <div class="form-grid">
-                    <div class="field-group">
-                        <label for="referral_link" class="field-label">Your Unique Referral Link</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="referral_link" readonly value="https://urtax.com/auth/register?ref=CLIENT123" class="field-input flex-1" />
-                            <button type="button" class="button button-secondary" onclick="navigator.clipboard.writeText(document.getElementById('referral_link').value); alert('Referral link copied!');">Copy Link</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="cx-card__body">
+            <ol class="cx-howto">
+                <li><span class="cx-stat__icon">{{ ci("share") }}</span><strong>1. Share your link</strong><span>Send it by message, email or social media.</span></li>
+                <li><span class="cx-stat__icon cx-stat__icon--violet">{{ ci("user") }}</span><strong>2. They sign up &amp; file</strong><span>Your friend registers with your link and files their return.</span></li>
+                <li><span class="cx-stat__icon cx-stat__icon--green">{{ ci("gift") }}</span><strong>3. You earn credit</strong><span>The credit is applied to your next preparation fee.</span></li>
+            </ol>
         </div>
-    </main>
+    </section>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
 {% endblock %}

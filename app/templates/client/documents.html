@@ -1,289 +1,189 @@
-{% extends "base.html" %}
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci, status_badge %}
+{% set active_nav = "documents" %}
+{% set page_section = "Documents" %}
+{% set page_title = "Upload Documents" %}
+{% set page_subtitle = "Upload your tax forms and supporting records for " ~ selected_year ~ "." %}
+{% set category_labels = {
+    'Personal': 'Personal',
+    'Income': 'Income (W-2, 1099)',
+    'Employment': 'Employment',
+    'Investments': 'Investments',
+    'Deductions': 'Deductions',
+    'Credits': 'Credits',
+    'Foreign_Information': 'Foreign info',
+    'Dependents': 'Dependents',
+    'Other': 'Other'
+} %}
+{% set ns = namespace(total=0) %}
+{% for docs in documents_by_category.values() %}{% set ns.total = ns.total + docs | length %}{% endfor %}
 
-{% block title %}My Documents - {{ app_name }}{% endblock %}
+{% macro file_icon(name) -%}
+{%- set n = name | lower -%}
+{%- if n.endswith('.pdf') %}<span class="cx-fileicon">{{ ci("file") }}</span>
+{%- elif n.endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')) %}<span class="cx-fileicon cx-fileicon--image">{{ ci("image") }}</span>
+{%- else %}<span class="cx-fileicon cx-fileicon--doc">{{ ci("notes") }}</span>{% endif -%}
+{%- endmacro %}
 
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
-{% endblock %}
-
-{% block content %}
-{% set active_nav = 'documents' %}
-{% include "partials/client_sidebar.html" %}
-
-<div class="dashboard-main">
-    <header class="site-header">
-        <div class="site-header-left">
-            {% include "partials/sidebar_toggle.html" %}
-            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
-                <span class="brand-mark" aria-hidden="true">UT</span>
-                <span>{{ app_name }}</span>
-            </a>
-        </div>
-        <div class="account-menu-wrap client-header-actions">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
-                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
-            </button>
-            <form class="header-logout" action="/auth/logout" method="post">
-                <button class="logout-button" type="submit">Logout</button>
-            </form>
-        </div>
-    </header>
-
-    <main class="dashboard-shell">
-        <div class="documents-container">
-            <!-- Header Section -->
-            <div class="documents-header">
-                <div class="documents-title-wrap">
-                    <h1>My Documents</h1>
-                    <p>All your uploaded tax files &amp; supporting records for {{ selected_year }}</p>
-                </div>
-                <div class="client-docs-header-actions">
-                    <div class="search-box-wrap">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="docSearchInput" placeholder="Search documents..." onkeyup="filterDocuments()" />
-                    </div>
-                    {% if current_filing_id %}
-                    <button class="button button-primary client-docs-upload-btn" type="button" onclick="openUploadModal()">
-                        + Upload
-                    </button>
-                    {% endif %}
-                </div>
-            </div>
-
-            {% if current_filing_id %}
-            <!-- Quick Drag & Drop Upload Zone -->
-            <div class="dropzone-area" onclick="openUploadModal()">
-                <div class="dropzone-body-icon">📄 Drag &amp; Drop or Click to Upload</div>
-                <p class="dropzone-body-text">Support PDF, PNG, JPG, CSV, DOCX (Max 10MB per file)</p>
-            </div>
-            {% endif %}
-
-            <!-- Category Folders Grid (Option 1 Header Cards) -->
-            <div class="folder-grid">
-                {% set category_labels = {
-                    'Personal': 'Personal Info',
-                    'Income': 'Income',
-                    'Employment': 'Employment',
-                    'Investments': 'Investments',
-                    'Deductions': 'Deductions',
-                    'Credits': 'Credits',
-                    'Foreign_Information': 'Foreign Info',
-                    'Dependents': 'Dependents',
-                    'Other': 'Other Docs'
-                } %}
-                {% for cat_key, cat_name in category_labels.items() %}
-                    {% set cat_docs = documents_by_category.get(cat_key, []) %}
-                    <div class="folder-card" data-cat-filter="{{ cat_key }}" onclick="selectCategoryFolder('{{ cat_key }}')">
-                        <div class="folder-card-inner">
-                            <span class="folder-card-emoji">📁</span>
-                            <span class="folder-card-name">{{ cat_name }}</span>
-                        </div>
-                        <span class="folder-card-count">
-                            {{ cat_docs|length }}
-                        </span>
-                    </div>
-                {% endfor %}
-            </div>
-
-            <!-- Filter Controls & View Switcher Bar -->
-            <div class="filter-bar">
-                <div class="filter-group">
-                    <div class="filter-item">
-                        <label for="taxYearSelect">Tax Year:</label>
-                        <select id="taxYearSelect" onchange="changeYearFilter(this.value)">
-                            {% for yr in available_years %}
-                            <option value="{{ yr }}" {% if yr == selected_year %}selected{% endif %}>{{ yr }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="filter-item">
-                        <label for="categorySelect">Category:</label>
-                        <select id="categorySelect" onchange="filterDocuments()">
-                            <option value="All">All Categories</option>
-                            <option value="Personal">Personal Information</option>
-                            <option value="Income">Income</option>
-                            <option value="Employment">Employment</option>
-                            <option value="Investments">Investments</option>
-                            <option value="Deductions">Deductions</option>
-                            <option value="Credits">Credits</option>
-                            <option value="Foreign_Information">Foreign Information</option>
-                            <option value="Dependents">Dependents</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Layout Switcher: Grid View vs Tree View -->
-                <div class="view-toggle-btns">
-                    <button class="view-btn active" id="btnGridView" onclick="switchView('grid')">
-                        <span>🞌</span> Grid
-                    </button>
-                    <button class="view-btn" id="btnTreeView" onclick="switchView('tree')">
-                        <span>☰</span> List
-                    </button>
-                </div>
-            </div>
-
-            <!-- View Container 1: Document Cards Grid (Option 1 Cards View) -->
-            <div id="gridDisplayContainer" class="doc-cards-grid">
-                {% set has_any_doc = false %}
-                {% for cat_key, cat_docs in documents_by_category.items() %}
-                    {% for doc in cat_docs %}
-                        {% set has_any_doc = true %}
-                        <div class="doc-card document-item-element" data-category="{{ doc.category }}" data-filename="{{ doc.original_filename | lower }}">
-                            <div class="doc-card-top">
-                                <div class="doc-card-icon">
-                                    {% if '.pdf' in doc.original_filename.lower() %}📄{% elif '.png' in doc.original_filename.lower() or '.jpg' in doc.original_filename.lower() %}🖼️{% else %}📝{% endif %}
-                                </div>
-                                <div class="doc-card-meta">
-                                    <h3 class="doc-card-title" title="{{ doc.original_filename }}">{{ doc.original_filename }}</h3>
-                                    <div class="doc-card-sub">
-                                        <span>📁 {{ doc.category }}</span>
-                                        <span>•</span>
-                                        <span>{{ (doc.file_size / 1024) | round(1) }} KB</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="doc-card-footer">
-                                <span class="status-badge status-{{ doc.status }}">
-                                    {{ doc.status.replace('_', ' ') }}
-                                </span>
-                                <div class="doc-card-actions">
-                                    <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" class="file-btn file-btn-sm">View</a>
-                                    <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" download class="file-btn file-btn-primary file-btn-sm">Download</a>
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% endfor %}
-
-                {% if not has_any_doc %}
-                <div class="docs-empty-notice">
-                    <p class="docs-empty-notice-title">No documents found for {{ selected_year }}</p>
-                    <p class="docs-empty-notice-sub">Upload documents above or start a new filing for this tax year.</p>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- View Container 2: Category Tree View (Legacy Tree) -->
-            <div id="treeDisplayContainer" class="documents-section-card" style="display:none;">
-                <h2 class="documents-section-title">{{ selected_year }} Tax Documents</h2>
-
-                {% for cat_key, cat_name in category_labels.items() %}
-                    {% set cat_docs = documents_by_category.get(cat_key, []) %}
-                    {% if cat_docs %}
-                        <div class="category-group" data-category="{{ cat_key }}">
-                            <div class="category-header">
-                                <div class="category-header-title">
-                                    <span>📁</span>
-                                    <span>{{ cat_name }}</span>
-                                </div>
-                                <span class="category-doc-count">{{ cat_docs|length }} document{% if cat_docs|length != 1 %}s{% endif %}</span>
-                            </div>
-                            <ul class="document-file-list doc-tree-list">
-                                {% for doc in cat_docs %}
-                                <li class="document-file-item document-item-element doc-tree-item" data-category="{{ doc.category }}" data-filename="{{ doc.original_filename | lower }}">
-                                    <div class="file-info doc-tree-info">
-                                        <span>└── 📄</span>
-                                        <span><strong>{{ doc.original_filename }}</strong></span>
-                                        <small class="doc-tree-version">(v{{ doc.version }})</small>
-                                    </div>
-                                    <div class="file-actions doc-tree-actions">
-                                        <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" class="file-btn">View</a>
-                                        <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" download class="file-btn file-btn-primary">Download</a>
-                                    </div>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-
-                {% set has_docs = false %}
-                {% for cat_key, cat_name in category_labels.items() %}
-                    {% set cat_docs = documents_by_category.get(cat_key, []) %}
-                    {% if cat_docs %}
-                        {% set has_docs = true %}
-                        <div class="category-group" data-category="{{ cat_key }}">
-                            <div class="category-header">
-                                <div class="category-header-title">
-                                    <span>📁</span>
-                                    <span>{{ cat_name }}</span>
-                                </div>
-                                <span class="category-doc-count">{{ cat_docs|length }} document{% if cat_docs|length != 1 %}s{% endif %}</span>
-                            </div>
-                            <ul class="document-file-list">
-                                {% for doc in cat_docs %}
-                                <li class="document-file-item" data-filename="{{ doc.original_filename | lower }}">
-                                    <div class="file-info">
-                                        <span>└── 📄</span>
-                                        <span><strong>{{ doc.original_filename }}</strong></span>
-                                        {% if doc.version > 1 %}<small class="doc-tree-version">(v{{ doc.version }})</small>{% endif %}
-                                    </div>
-                                    <div class="file-actions">
-                                        <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" class="file-btn">View</a>
-                                        <a href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" download class="file-btn file-btn-primary">Download</a>
-                                    </div>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-
-                {% if not has_docs %}
-                <div class="empty-docs-notice">
-                    <p class="docs-empty-notice-title">No documents found for {{ selected_year }}</p>
-                    <p class="docs-empty-notice-sub">Upload documents above or start a new filing for this tax year.</p>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </main>
-</div>
-
-{% if current_filing_id %}
-<!-- Quick Upload Modal -->
-<div id="uploadModal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-        <h3 class="modal-title">Upload Document</h3>
+{% block page %}
+<div class="cx-stack">
+    {% if current_filing_id %}
+    <section class="cx-card" aria-labelledby="upload-title">
         <form id="quickUploadForm" onsubmit="handleQuickUpload(event)">
             <input type="hidden" name="filing_id" value="{{ current_filing_id }}" />
-
-            <div class="modal-form-group">
-                <label class="modal-label">Category</label>
-                <select name="category" required class="modal-select">
-                    <option value="Personal">Personal Information</option>
-                    <option value="Income">Income</option>
-                    <option value="Employment">Employment</option>
-                    <option value="Investments">Investments</option>
-                    <option value="Deductions">Deductions</option>
-                    <option value="Credits">Credits</option>
-                    <option value="Foreign_Information">Foreign Information</option>
-                    <option value="Dependents">Dependents</option>
-                    <option value="Other">Other</option>
-                </select>
+            <div class="cx-card__head">
+                <div>
+                    <h2 class="cx-card__title" id="upload-title">{{ ci("upload") }} Upload <span class="cx-accent">new documents</span></h2>
+                    <p class="cx-card__sub">PDF, PNG, JPG, CSV or DOCX, up to 10 MB each. You can select multiple files.</p>
+                </div>
             </div>
-
-            <div class="modal-form-group-last">
-                <label class="modal-label">Select File(s)</label>
-                <input type="file" name="files" multiple required class="modal-file-input" />
+            <div class="cx-card__body">
+                <div class="cx-grid cx-upload-grid">
+                    <div class="cx-stack">
+                        <div class="cx-field">
+                            <label class="cx-label" for="up-cat">Document type<span class="cx-req">*</span></label>
+                            <select class="cx-select" id="up-cat" name="category" required>
+                                {% for key, label in category_labels.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="up-name">Description<span class="cx-opt">Optional</span></label>
+                            <input class="cx-input" id="up-name" name="document_name" placeholder="e.g. W-2 from Acme Corp" maxlength="120" />
+                        </div>
+                    </div>
+                    <div>
+                        <div class="cx-dropzone" data-cx-dropzone="up-files">
+                            <input type="file" name="files" multiple required aria-label="Choose files" />
+                            <span class="cx-dropzone__icon">{{ ci("upload", "ci ci--lg") }}</span>
+                            <strong>Drag &amp; drop files here, or click to browse</strong>
+                            <span>Only you and your tax team can see these files</span>
+                        </div>
+                        <ul class="cx-filelist" id="up-files"></ul>
+                    </div>
+                </div>
+                <label class="cx-check cx-confirm" style="margin-top: 1rem;">
+                    <input type="checkbox" required />
+                    <span>I have checked the <a class="cx-link" href="/client/tax-notes#misc">document checklist</a> and provided the documents required to file my tax return.</span>
+                </label>
             </div>
-
-            <div class="modal-actions">
-                <button type="button" class="button button-secondary" onclick="closeUploadModal()">Cancel</button>
-                <button type="submit" class="button button-primary">Upload</button>
+            <div class="cx-card__foot">
+                <button type="submit" class="cx-btn cx-btn--primary">{{ ci("upload", "ci ci--sm") }} Upload files</button>
             </div>
         </form>
+    </section>
+    {% else %}
+    <div class="cx-alert cx-alert--warn">
+        {{ ci("alert") }}
+        <p><strong>No filing for {{ selected_year }} yet.</strong> Start a filing to enable uploads for this tax year. <a class="cx-link" href="/client/filings/new">Start filing →</a></p>
     </div>
+    {% endif %}
+
+    <section class="cx-card" aria-labelledby="docs-title">
+        <div class="cx-card__head">
+            <div>
+                <h2 class="cx-card__title" id="docs-title">{{ ci("folder") }} Uploaded <span class="cx-accent">documents</span></h2>
+                <p class="cx-card__sub">{{ ns.total }} file{{ '' if ns.total == 1 else 's' }} for tax year {{ selected_year }}</p>
+            </div>
+            <div class="cx-toolbar">
+                <label class="cx-search">
+                    {{ ci("search") }}
+                    <span class="sr-only">Search documents</span>
+                    <input class="cx-input" type="search" id="docSearchInput" placeholder="Search by file name" oninput="filterDocuments()" />
+                </label>
+                <div class="cx-viewtoggle" role="group" aria-label="View">
+                    <button type="button" id="btnTreeView" class="active" onclick="switchView('tree')" aria-label="List view">{{ ci("list", "ci ci--sm") }}</button>
+                    <button type="button" id="btnGridView" onclick="switchView('grid')" aria-label="Grid view">{{ ci("grid", "ci ci--sm") }}</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="cx-card__body" style="padding-bottom: 0.25rem;">
+            <input type="hidden" id="categorySelect" value="All" />
+            <div class="cx-chips" role="group" aria-label="Filter by category">
+                <button type="button" class="cx-chip folder-card is-active" data-cat-filter="All" onclick="selectCategoryFolder('All')">All <b>{{ ns.total }}</b></button>
+                {% for key, label in category_labels.items() %}
+                {% set n = documents_by_category.get(key, []) | length %}
+                {% if n %}
+                <button type="button" class="cx-chip folder-card" data-cat-filter="{{ key }}" onclick="selectCategoryFolder('{{ key }}')">{{ ci("folder") }} {{ label }} <b>{{ n }}</b></button>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        {% if ns.total %}
+        <div id="treeDisplayContainer" class="cx-table-wrap" style="margin-top: 0.9rem;">
+            <table class="cx-table">
+                <thead>
+                    <tr><th>#</th><th>Document</th><th>Type</th><th>Status</th><th>Uploaded</th><th style="text-align:right;">Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% set row = namespace(i=0) %}
+                    {% for cat_key, cat_docs in documents_by_category.items() %}
+                    {% for doc in cat_docs %}
+                    {% set row.i = row.i + 1 %}
+                    <tr class="document-item-element" data-category="{{ doc.category }}" data-filename="{{ doc.original_filename | lower }}">
+                        <td class="cx-muted">{{ row.i }}</td>
+                        <td>
+                            <div class="cx-table__file">
+                                {{ file_icon(doc.original_filename) }}
+                                <div style="min-width:0;">
+                                    <span title="{{ doc.original_filename }}">{{ doc.original_filename }}</span>
+                                    <div class="cx-muted" style="font-size:0.76rem;font-weight:400;">{{ (doc.file_size / 1024) | round(1) }} KB{% if doc.version > 1 %} · v{{ doc.version }}{% endif %}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ category_labels.get(doc.category, doc.category) }}</td>
+                        <td>{{ status_badge(doc.status) }}</td>
+                        <td class="cx-muted">{{ doc.uploaded_at.strftime('%b %d, %Y') if doc.uploaded_at else '—' }}</td>
+                        <td>
+                            <div class="cx-table__actions">
+                                <a class="cx-btn cx-btn--sm cx-btn--ghost" href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" rel="noopener">{{ ci("eye", "ci ci--sm") }} View</a>
+                                <a class="cx-btn cx-btn--sm cx-btn--soft" href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" download>{{ ci("download", "ci ci--sm") }}</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div id="gridDisplayContainer" class="cx-card__body" hidden>
+            <div class="cx-doccards">
+                {% for cat_key, cat_docs in documents_by_category.items() %}
+                {% for doc in cat_docs %}
+                <article class="cx-doccard document-item-element" data-category="{{ doc.category }}" data-filename="{{ doc.original_filename | lower }}">
+                    <div class="cx-doccard__top">
+                        {{ file_icon(doc.original_filename) }}
+                        <div style="min-width:0;">
+                            <h3 class="cx-doccard__name" title="{{ doc.original_filename }}">{{ doc.original_filename }}</h3>
+                            <span class="cx-doccard__meta">{{ category_labels.get(doc.category, doc.category) }} · {{ (doc.file_size / 1024) | round(1) }} KB</span>
+                        </div>
+                    </div>
+                    <div class="cx-doccard__foot">
+                        {{ status_badge(doc.status) }}
+                        <div class="cx-table__actions">
+                            <a class="cx-btn cx-btn--sm cx-btn--ghost" href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" rel="noopener" aria-label="View">{{ ci("eye", "ci ci--sm") }}</a>
+                            <a class="cx-btn cx-btn--sm cx-btn--soft" href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" download aria-label="Download">{{ ci("download", "ci ci--sm") }}</a>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+        <p id="docsNoMatch" class="cx-muted" style="padding: 1rem 1.35rem; margin: 0;" hidden>No documents match your search.</p>
+        {% else %}
+        <div class="cx-empty">
+            <span class="cx-empty__icon">{{ ci("folder") }}</span>
+            <h3>No documents <span class="cx-accent">uploaded for {{ selected_year }}</span></h3>
+            <p>Uploaded files appear here with their review status, so you can see what your tax team has checked.</p>
+        </div>
+        {% endif %}
+    </section>
 </div>
-{% endif %}
 {% endblock %}
 
-{% block scripts %}
-<script src="{{ url_for('static', path='/js/documents.js') }}?v=1.0"></script>
+{% block page_scripts %}
+<script src="{{ url_for('static', path='/js/documents.js') }}?v=2.0"></script>
 {% endblock %}

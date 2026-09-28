@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exception_handlers import http_exception_handler
@@ -48,6 +50,8 @@ def create_tables():
 
 # Static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# storage/ is git-ignored upload data, so create it on a fresh checkout before mounting
+os.makedirs("storage", exist_ok=True)
 app.mount("/storage", StaticFiles(directory="storage"), name="storage")
 
 
@@ -96,6 +100,11 @@ def about_us(request: Request):
 @app.get("/services", response_class=HTMLResponse, include_in_schema=False)
 def services(request: Request):
     return templates.TemplateResponse("services.html", {"request": request, "app_name": settings.APP_NAME})
+
+
+@app.get("/refer-and-earn", response_class=HTMLResponse, include_in_schema=False)
+def refer_and_earn(request: Request):
+    return templates.TemplateResponse("refer.html", {"request": request, "app_name": settings.APP_NAME})
 
 
 @app.get("/terms-and-conditions", response_class=HTMLResponse, include_in_schema=False)

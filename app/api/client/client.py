@@ -1,9 +1,9 @@
 from typing import List, Optional
-from datetime import datetime, timezone
 from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, File, Request, UploadFile, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
+from app.api.dashboard import client_shell_context, resolve_tax_year
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import ClientAccount
@@ -24,8 +24,7 @@ async def my_filings_page(
     db: Session = Depends(get_db),
     tax_year: str | None = Cookie(None),
 ):
-    current_year = datetime.now(timezone.utc).year
-    selected_year = int(tax_year) if tax_year and tax_year.isdigit() else current_year
+    selected_year = resolve_tax_year(tax_year)
 
     client = db.query(Client).filter(Client.account_id == account.id).first()
     display_name = client.first_name if client else account.email.split("@", 1)[0]
@@ -103,7 +102,7 @@ async def my_filings_page(
         "client/filings.html",
         {
             "request": request,
-            "app_name": settings.APP_NAME,
+            **client_shell_context(db, account, tax_year),
             "tax_year": selected_year,
             "filing": filing_data,
             "display_name": display_name,
@@ -117,13 +116,15 @@ async def new_filing_page(
     request: Request,
     account: ClientAccount,
     db: Session = Depends(get_db),
+    tax_year: str | None = Cookie(None),
 ):
+    shell = client_shell_context(db, account, tax_year)
     return templates.TemplateResponse(
         "client/new_filing.html",
         {
             "request": request,
-            "app_name": settings.APP_NAME,
-            "available_years": [2024, 2025, 2026],
+            **shell,
+            "filing_years": [2024, 2025, 2026],
         },
     )
 
@@ -309,7 +310,7 @@ async def client_documents_page(
         "client/documents.html",
         {
             "request": request,
-            "app_name": settings.APP_NAME,
+            **client_shell_context(db, account, tax_year),
             "available_years": available_years,
             "selected_year": selected_year,
             "documents_by_category": documents_by_category,
@@ -475,26 +476,26 @@ async def download_client_document(
 
 
 def _render_client_section(template_name: str, request: Request, account: ClientAccount, db: Session, tax_year: str | None, active_nav: str):
-    from app.api.dashboard import _available_tax_years
-    available_years = _available_tax_years()
-    if not tax_year or not tax_year.isdigit() or int(tax_year) not in available_years:
-        selected_year = available_years[0]
-    else:
-        selected_year = int(tax_year)
-
-    client = db.query(Client).filter(Client.account_id == account.id).first()
+    shell = client_shell_context(db, account, tax_year)
+    client = shell["client"]
     has_active_filing = False
+    filing = None
     if client:
         has_active_filing = db.query(TaxFiling).filter(TaxFiling.client_id == client.id).first() is not None
+        filing = (
+            db.query(TaxFiling)
+            .filter(TaxFiling.client_id == client.id, TaxFiling.tax_year == shell["selected_year"])
+            .order_by(TaxFiling.created_at.desc())
+            .first()
+        )
 
     return templates.TemplateResponse(
         template_name,
         {
             "request": request,
-            "app_name": settings.APP_NAME,
-            "available_years": available_years,
-            "selected_year": selected_year,
+            **shell,
             "has_active_filing": has_active_filing,
+            "filing": filing,
             "active_nav": active_nav,
         },
     )

@@ -4,9 +4,16 @@
     const globalMessage = document.getElementById("global-message");
     document.getElementById("completion-bar").style.width = `${initialProfile.completion_percentage}%`;
 
+    // FastAPI returns `detail` as a string, or a list of validation errors.
+    function errorText(result, fallback) {
+        if (Array.isArray(result.detail)) return result.detail.map((d) => d.msg).join(" ");
+        return result.detail || fallback;
+    }
+
     function showMessage(message, isError) {
         globalMessage.textContent = message;
-        globalMessage.className = `message visible${isError ? " error" : ""}`;
+        globalMessage.className = `cx-alert cx-message visible ${isError ? "cx-alert--error" : "cx-alert--success"}`;
+        globalMessage.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     function setProfile(profile) {
@@ -68,7 +75,7 @@
                     body: JSON.stringify(payload),
                 });
                 const result = await response.json();
-                if (!response.ok) throw new Error(result.detail || "We could not save your changes. Please try again.");
+                if (!response.ok) throw new Error(errorText(result, "We could not save your changes. Please try again."));
                 setProfile(result.profile);
                 initialProfile = result.profile;
                 section.classList.remove("editing");
@@ -91,13 +98,13 @@
         button.disabled = true;
         button.textContent = "Requesting...";
         try {
-            const response = await fetch("/profile/api/email-request", {
+            const response = await fetch("/client/api/email-request", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: event.target.email.value }),
             });
             const result = await response.json();
-            if (!response.ok) throw new Error(result.detail || "We could not submit your request. Please try again.");
+            if (!response.ok) throw new Error(errorText(result, "We could not submit your request. Please try again."));
             showMessage(result.message, false);
             event.target.reset();
         } catch (error) {

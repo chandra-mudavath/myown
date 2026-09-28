@@ -61,31 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const workflowContent = document.querySelector("[data-workflow]");
-    if (workflowContent) {
-        const workflowSteps = [...workflowContent.querySelectorAll(".workflow-step")];
-        const showWorkflow = () => {
-            workflowContent.classList.add("is-workflow-visible");
-            workflowSteps.forEach((step, index) => {
-                window.setTimeout(() => step.classList.add("is-workflow-visible"), index * 140);
-            });
-        };
-
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-            showWorkflow();
-        } else {
-            const workflowObserver = new IntersectionObserver(
-                ([entry], observer) => {
-                    if (!entry.isIntersecting) return;
-                    showWorkflow();
-                    observer.disconnect();
-                },
-                { threshold: 0.2 }
-            );
-            workflowObserver.observe(workflowContent);
-        }
-    }
-
     const menuButton = document.querySelector(".menu-mobile");
     const menu = document.getElementById("landing-menu");
     if (menuButton && menu) {
@@ -177,6 +152,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const navigation = document.querySelector(".main-nav");
     const backTop = document.querySelector(".back-top");
+    backTop?.addEventListener("click", (event) => {
+        event.preventDefault();
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+    });
     const sections = [...document.querySelectorAll(".section[id]")];
     const links = [...document.querySelectorAll('.navbar a[href^="#"]')];
 

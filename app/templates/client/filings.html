@@ -1,273 +1,148 @@
-{% extends "base.html" %}
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "filings" %}
+{% set page_title = "My Filings" %}
+{% set page_subtitle = "Everything you submitted for tax year " ~ tax_year ~ " in one place." %}
 
-{% block title %}My Tax Filings - {{ app_name }}{% endblock %}
+{% macro kv(label, value) -%}
+<div><dt>{{ label }}</dt><dd>{{ value or "—" }}</dd></div>
+{%- endmacro %}
 
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
+{% macro tags(items) -%}
+{% if items %}
+<div class="cx-chips">{% for it in items %}<span class="cx-chip" style="cursor:default;">{{ it | replace('_', ' ') }}</span>{% endfor %}</div>
+{% else %}<p class="cx-muted" style="margin:0;font-size:0.88rem;">None reported</p>{% endif %}
+{%- endmacro %}
+
+{% block page_actions %}
+{% if filing %}<a class="cx-btn cx-btn--soft" href="/client/documents">{{ ci("upload", "ci ci--sm") }} Upload documents</a>{% endif %}
 {% endblock %}
 
-{% block content %}
-{% set active_nav = 'filings' %}
-{% include "partials/client_sidebar.html" %}
-
-<div class="dashboard-main">
-    <header class="site-header">
-        <div class="site-header-left">
-            {% include "partials/sidebar_toggle.html" %}
-            <a class="brand" href="/client/dashboard" aria-label="{{ app_name }} client dashboard">
-                <span class="brand-mark" aria-hidden="true">UT</span>
-                <span>{{ app_name }}</span>
-            </a>
-        </div>
-        <div class="account-menu-wrap client-header-actions">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark theme" title="Switch theme">
-                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                    <circle cx="12" cy="12" r="4"></circle>
-                    <path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-                </svg>
-                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path>
-                </svg>
-                <span class="sr-only">Switch theme</span>
-            </button>
-            <button
-                class="account-menu-button"
-                type="button"
-                aria-expanded="false"
-                aria-controls="account-menu"
-                aria-label="Open account menu"
-            >
-                {% if client and client.profile_picture %}
-                <img src="{{ client.profile_picture }}" alt="{{ display_name }}" class="client-header-avatar" />
-                {% else %}
-                <span class="account-avatar" aria-hidden="true">{{ initials }}</span>
-                {% endif %}
-                <span class="account-details"><span class="account-name">{{ display_name }}</span></span>
-            </button>
-            <div class="account-menu client-account-menu" id="account-menu" hidden>
-                {% if client and client.profile_picture %}
-                <a class="account-menu-action client-account-action" href="javascript:void(0)" onclick="openAvatarModal('{{ client.profile_picture }}')" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
-                {% endif %}
-                <a class="account-menu-action client-account-action" href="/client/profile" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</a>
-            </div>
-            <form class="header-logout" action="/auth/logout" method="post">
-                <button class="logout-button" type="submit">Logout</button>
-            </form>
-        </div>
-    </header>
-
-    <main class="dashboard-shell">
-        <!-- Page Title Banner -->
-        <div class="client-topbar">
+{% block page %}
+{% if filing %}
+<div class="cx-stack">
+    <section class="cx-card">
+        <div class="cx-card__body" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:center; justify-content:space-between;">
             <div>
-                <h1 class="client-topbar-title">
-                    My Tax Filing — Tax Year {{ tax_year }}
-                </h1>
-                <p class="client-topbar-desc">
-                    Detailed view of your submitted tax filing for year {{ tax_year }}.
-                </p>
+                <span class="cx-stat__label">Case ID</span>
+                <div class="cx-mono" style="font-size:1.3rem; font-weight:700;">{{ filing.case_id }}</div>
+                <span class="cx-muted" style="font-size:0.84rem;">Submitted {{ filing.created_date }}</span>
             </div>
-            <a href="/client/years" class="button button-secondary client-btn-sm">
-                📅 Change Tax Year
-            </a>
+            <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+                <div><span class="cx-stat__label">Status</span><span class="cx-badge cx-badge--in_progress">{{ filing.status }}</span></div>
+                <div><span class="cx-stat__label">Filing type</span><strong>{{ filing.filing_type | replace('_', ' ') | title }}</strong></div>
+                <div style="min-width:180px;"><span class="cx-stat__label">Progress · {{ filing.progress_pct }}%</span><div class="cx-progress" style="margin-top:0.4rem;"><span style="width: {{ filing.progress_pct }}%"></span></div></div>
+            </div>
         </div>
+    </section>
 
-        {% if filing %}
-        <!-- Summary Header Card -->
-        <section class="panel client-filing-summary-card">
-            <div class="client-filing-summary-wrap">
-                <div>
-                    <span class="client-filing-meta-label">CASE ID</span>
-                    <h2 class="client-filing-case-id">{{ filing.case_id }}</h2>
-                    <span class="client-filing-meta-sub">Submitted on {{ filing.created_date }}</span>
-                </div>
-                <div class="client-filing-metrics-row">
-                    <div>
-                        <span class="client-filing-meta-label">Status</span>
-                        <span class="status-pill">{{ filing.status }}</span>
-                    </div>
-                    <div>
-                        <span class="client-filing-meta-label">Filing Type</span>
-                        <strong class="client-filing-val">{{ filing.filing_type | capitalize }}</strong>
-                    </div>
-                    <div>
-                        <span class="client-filing-meta-label">Progress</span>
-                        <strong class="client-filing-brand-val">{{ filing.progress_pct }}%</strong>
-                    </div>
-                </div>
+    <div class="cx-grid cx-grid--2">
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("user") }} Personal <span class="cx-accent">information</span></h2></div>
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    {{ kv("Full name", filing.first_name ~ " " ~ (filing.last_name or "")) }}
+                    {{ kv("Email", filing.email) }}
+                    {{ kv("Phone", filing.phone) }}
+                    {{ kv("Date of birth", filing.date_of_birth) }}
+                    {{ kv("Citizenship", filing.country_of_citizenship) }}
+                    {{ kv("Residence", filing.current_country_of_residence) }}
+                    {{ kv("US tax status", filing.us_tax_residency_status | replace('_', ' ') if filing.us_tax_residency_status) }}
+                    {{ kv("Filing status", filing.filing_status | replace('_', ' ') if filing.filing_status) }}
+                </dl>
             </div>
         </section>
 
-        <!-- Filing Details Breakdown -->
-        <div class="filing-detail-grid">
-            <!-- 01. Basic & Personal Info -->
-            <div class="detail-card">
-                <h3>👤 Personal Information</h3>
-                <dl class="detail-dl">
-                    <dt>Full Name:</dt>
-                    <dd>{{ filing.first_name }} {{ filing.last_name }}</dd>
-                    <dt>Email:</dt>
-                    <dd>{{ filing.email }}</dd>
-                    <dt>Phone:</dt>
-                    <dd>{{ filing.phone or "N/A" }}</dd>
-                    <dt>Date of Birth:</dt>
-                    <dd>{{ filing.date_of_birth or "N/A" }}</dd>
-                    <dt>Citizenship:</dt>
-                    <dd>{{ filing.country_of_citizenship or "N/A" }}</dd>
-                    <dt>Residence:</dt>
-                    <dd>{{ filing.current_country_of_residence or "N/A" }}</dd>
-                    <dt>US Tax Status:</dt>
-                    <dd>{{ filing.us_tax_residency_status or "N/A" }}</dd>
-                    <dt>Filing Status:</dt>
-                    <dd>{{ filing.filing_status or "N/A" }}</dd>
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("dashboard") }} Mailing <span class="cx-accent">address</span></h2></div>
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    {{ kv("Street", filing.address_line_1) }}
+                    {% if filing.address_line_2 %}{{ kv("Line 2", filing.address_line_2) }}{% endif %}
+                    {{ kv("City", filing.city) }}
+                    {{ kv("State / province", filing.state_province) }}
+                    {{ kv("Postal code", filing.postal_code) }}
+                    {{ kv("Country", filing.country) }}
                 </dl>
             </div>
+        </section>
 
-            <!-- Address & Location -->
-            <div class="detail-card">
-                <h3>📍 Address Details</h3>
-                <dl class="detail-dl">
-                    <dt>Street Address:</dt>
-                    <dd>{{ filing.address_line_1 or "N/A" }}</dd>
-                    {% if filing.address_line_2 %}
-                    <dt>Address Line 2:</dt>
-                    <dd>{{ filing.address_line_2 }}</dd>
-                    {% endif %}
-                    <dt>City:</dt>
-                    <dd>{{ filing.city or "N/A" }}</dd>
-                    <dt>State / Province:</dt>
-                    <dd>{{ filing.state_province or "N/A" }}</dd>
-                    <dt>Postal Code:</dt>
-                    <dd>{{ filing.postal_code or "N/A" }}</dd>
-                    <dt>Country:</dt>
-                    <dd>{{ filing.country or "N/A" }}</dd>
+        {% if filing.spouse_first_name or filing.spouse_last_name %}
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("users") }} Spouse <span class="cx-accent">details</span></h2></div>
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    {{ kv("Name", (filing.spouse_first_name or "") ~ " " ~ (filing.spouse_last_name or "")) }}
+                    {{ kv("Email", filing.spouse_email) }}
+                    {{ kv("Phone", filing.spouse_phone) }}
+                    {{ kv("Date of birth", filing.spouse_date_of_birth) }}
+                    {{ kv("Citizenship", filing.spouse_country_of_citizenship) }}
+                    {{ kv("US tax status", filing.spouse_us_tax_residency_status) }}
                 </dl>
-            </div>
-
-            <!-- Spouse Information (if applicable) -->
-            {% if filing.spouse_first_name or filing.spouse_last_name %}
-            <div class="detail-card">
-                <h3>💍 Spouse Information</h3>
-                <dl class="detail-dl">
-                    <dt>Name:</dt>
-                    <dd>{{ filing.spouse_first_name }} {{ filing.spouse_last_name }}</dd>
-                    <dt>Email:</dt>
-                    <dd>{{ filing.spouse_email or "N/A" }}</dd>
-                    <dt>Phone:</dt>
-                    <dd>{{ filing.spouse_phone or "N/A" }}</dd>
-                    <dt>Date of Birth:</dt>
-                    <dd>{{ filing.spouse_date_of_birth or "N/A" }}</dd>
-                    <dt>Citizenship:</dt>
-                    <dd>{{ filing.spouse_country_of_citizenship or "N/A" }}</dd>
-                    <dt>US Tax Status:</dt>
-                    <dd>{{ filing.spouse_us_tax_residency_status or "N/A" }}</dd>
-                </dl>
-            </div>
-            {% endif %}
-
-            <!-- Income Categories -->
-            <div class="detail-card">
-                <h3>💼 Income Sources</h3>
-                {% if filing.income_categories %}
-                <ul class="tag-list">
-                    {% for cat in filing.income_categories %}
-                    <li class="tag-item">{{ cat }}</li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="client-empty-cell-text">None reported</p>
-                {% endif %}
-            </div>
-
-            <!-- Deductions & Credits -->
-            <div class="detail-card">
-                <h3>📝 Deductions & Credits</h3>
-                {% if filing.deductions_credits %}
-                <ul class="tag-list">
-                    {% for ded in filing.deductions_credits %}
-                    <li class="tag-item">{{ ded }}</li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="client-empty-cell-text">None reported</p>
-                {% endif %}
-            </div>
-
-            <!-- Special Situations -->
-            <div class="detail-card">
-                <h3>⚡ Special Situations</h3>
-                {% if filing.special_situations %}
-                <ul class="tag-list">
-                    {% for sit in filing.special_situations %}
-                    <li class="tag-item">{{ sit }}</li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="client-empty-cell-text">None reported</p>
-                {% endif %}
-            </div>
-
-            <!-- Previous Tax & IRS Info -->
-            <div class="detail-card">
-                <h3>🏛️ Tax History & IRS Notices</h3>
-                <dl class="detail-dl">
-                    <dt>Copy of Prev Return:</dt>
-                    <dd>{{ filing.has_previous_return_copy or "N/A" }}</dd>
-                    <dt>Received IRS Notice:</dt>
-                    <dd>{{ filing.received_irs_notice or "N/A" }}</dd>
-                    <dt>Unresolved Tax Issues:</dt>
-                    <dd>{{ filing.unresolved_tax_issues or "N/A" }}</dd>
-                    <dt>Amended Return:</dt>
-                    <dd>{{ filing.is_amended_return or "N/A" }}</dd>
-                </dl>
-            </div>
-
-            <!-- Uploaded Documents -->
-            <div class="detail-card client-full-col">
-                <h3>📄 Uploaded Documents ({{ filing.documents | length }})</h3>
-                {% if filing.documents %}
-                <ul class="doc-list">
-                    {% for doc in filing.documents %}
-                    <li class="doc-item">
-                        <div>
-                            <strong>{{ doc.original_filename }}</strong>
-                            <span class="client-doc-meta">({{ doc.category }})</span>
-                        </div>
-                        <a href="/client/filings/{{ filing.id }}/documents/{{ doc.id }}/download" class="button button-secondary client-doc-btn-download">Download</a>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="client-empty-cell-text">No documents uploaded for this filing. <a href="/client/documents" class="client-doc-link">Upload documents here</a>.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        {% else %}
-        <!-- Empty State -->
-        <section class="panel client-empty-panel">
-            <div class="empty-state">
-                <span class="empty-icon client-empty-icon-lg" aria-hidden="true">📂</span>
-                <h2 class="client-empty-title">No Tax Filing Found for {{ tax_year }}</h2>
-                <p class="client-empty-desc">
-                    You have not submitted a tax filing for tax year {{ tax_year }} yet. You can start a new filing or switch to a different tax year.
-                </p>
-                <div class="client-empty-actions">
-                    <a href="{{ url_for('new_filing_page') }}" class="button button-primary">
-                        + Start New Filing
-                    </a>
-                    <a href="/client/years" class="button button-secondary">
-                        Change Tax Year
-                    </a>
-                </div>
             </div>
         </section>
         {% endif %}
-    </main>
-</div>
-{% endblock %}
 
-{% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
-<script src="{{ url_for('static', path='/js/dashboard.js') }}?v=2"></script>
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("history") }} Tax history <span class="cx-accent">&amp; IRS notices</span></h2></div>
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    {{ kv("Copy of previous return", filing.has_previous_return_copy) }}
+                    {{ kv("Received IRS notice", filing.received_irs_notice) }}
+                    {{ kv("Unresolved tax issues", filing.unresolved_tax_issues) }}
+                    {{ kv("Amended return", filing.is_amended_return) }}
+                </dl>
+            </div>
+        </section>
+
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("refund") }} Income <span class="cx-accent">sources</span></h2></div>
+            <div class="cx-card__body">{{ tags(filing.income_categories) }}</div>
+        </section>
+
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("calculator") }} Deductions <span class="cx-accent">&amp; credits</span></h2></div>
+            <div class="cx-card__body">{{ tags(filing.deductions_credits) }}</div>
+        </section>
+
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("sparkle") }} Special <span class="cx-accent">situations</span></h2></div>
+            <div class="cx-card__body">{{ tags(filing.special_situations) }}</div>
+        </section>
+    </div>
+
+    <section class="cx-card">
+        <div class="cx-card__head">
+            <h2 class="cx-card__title">{{ ci("folder") }} Uploaded <span class="cx-accent">documents ({{ filing.documents | length }})</span></h2>
+            <a class="cx-link" href="/client/documents">Manage</a>
+        </div>
+        {% if filing.documents %}
+        <div class="cx-table-wrap">
+            <table class="cx-table">
+                <tbody>
+                    {% for doc in filing.documents %}
+                    <tr>
+                        <td><div class="cx-table__file"><span class="cx-fileicon">{{ ci("file") }}</span><span>{{ doc.original_filename }}</span></div></td>
+                        <td class="cx-muted">{{ doc.category }}</td>
+                        <td><div class="cx-table__actions"><a class="cx-btn cx-btn--sm cx-btn--soft" href="/client/filings/{{ filing.id }}/documents/{{ doc.id }}/download">{{ ci("download", "ci ci--sm") }} Download</a></div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="cx-card__body"><p class="cx-muted" style="margin:0;">No documents uploaded for this filing. <a class="cx-link" href="/client/documents">Upload documents</a>.</p></div>
+        {% endif %}
+    </section>
+</div>
+{% else %}
+<section class="cx-card">
+    <div class="cx-empty">
+        <span class="cx-empty__icon">{{ ci("folder") }}</span>
+        <h3>No filing <span class="cx-accent">found for {{ tax_year }}</span></h3>
+        <p>You haven't submitted a filing for tax year {{ tax_year }} yet. Start one now, or switch years from the sidebar.</p>
+        <a href="{{ url_for('new_filing_page') }}" class="cx-btn cx-btn--primary">{{ ci("plus", "ci ci--sm") }} Start new filing</a>
+    </div>
+</section>
+{% endif %}
 {% endblock %}

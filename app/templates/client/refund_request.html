@@ -1,88 +1,54 @@
-{% extends "base.html" %}
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "refund_request" %}
+{% set page_section = "Account" %}
+{% set page_title = "Refund Status" %}
+{% set page_subtitle = "Track your federal and state refunds, or raise a question with your tax team." %}
 
-{% block title %}Refund Request - {{ app_name }}{% endblock %}
+{% block page %}
+<div class="cx-stack">
+    <div class="cx-grid cx-grid--3">
+        <div class="cx-stat"><span class="cx-stat__icon">{{ ci("bank") }}</span><div><span class="cx-stat__label">Federal refund</span><strong class="cx-stat__value">Not filed yet</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--violet">{{ ci("dashboard") }}</span><div><span class="cx-stat__label">State refund</span><strong class="cx-stat__value">Not filed yet</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--green">{{ ci("card") }}</span><div><span class="cx-stat__label">Refund method</span><strong class="cx-stat__value"><a class="cx-link" href="/client/bank-details">Set up</a></strong></div></div>
+    </div>
 
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=3" />
-<link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=3" />
-{% endblock %}
-
-{% block content %}
-{% set active_nav = 'refund_request' %}
-{% include "partials/client_sidebar.html" %}
-
-<div class="dashboard-main">
-    <header class="site-header">
-        <div class="site-header-left">
-            {% include "partials/sidebar_toggle.html" %}
-            <a class="brand" href="/client/dashboard" aria-label="Client dashboard">
-                <span class="brand-mark" aria-hidden="true">UT</span>
-                <span>{{ app_name }}</span>
-            </a>
-        </div>
-        <div class="account-menu-wrap client-header-actions">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
-                <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-                <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
-            </button>
-            <form class="header-logout" action="/auth/logout" method="post">
-                <button class="logout-button" type="submit">Logout</button>
-            </form>
-        </div>
-    </header>
-
-    <main class="dashboard-shell">
-        <div class="documents-container">
-            <div class="documents-header">
-                <div>
-                    <h1>Tax Refund Tracker &amp; Request</h1>
-                    <p>Track Federal &amp; State refund status or submit a refund inquiry ticket</p>
-                </div>
-            </div>
-
-            <div class="metrics-row client-metrics-row mb-6">
-                <div class="metric-card client-metric-card">
-                    <div class="client-metric-left">
-                        <div class="client-metric-icon green">🏦</div>
-                        <div>
-                            <span class="client-metric-label">IRS REFUND STATUS</span>
-                            <strong class="client-metric-value">Processing</strong>
-                        </div>
-                    </div>
-                </div>
-                <div class="metric-card client-metric-card">
-                    <div class="client-metric-left">
-                        <div class="client-metric-icon blue">💳</div>
-                        <div>
-                            <span class="client-metric-label">DISBURSEMENT METHOD</span>
-                            <strong class="client-metric-value">Direct Deposit</strong>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-heading">
+    <div class="cx-grid cx-grid--main">
+        <section class="cx-card" aria-labelledby="inq-title">
+            <form data-cx-demo="Refund inquiry submitted.">
+                <div class="cx-card__head">
                     <div>
-                        <p class="eyebrow">Support</p>
-                        <h2>Submit Refund Inquiry Ticket</h2>
+                        <h2 class="cx-card__title" id="inq-title">{{ ci("help") }} Refund <span class="cx-accent">inquiry</span></h2>
+                        <p class="cx-card__sub">Tell us what's happening and we'll look into it.</p>
                     </div>
                 </div>
-                <form action="#" method="post" onsubmit="alert('Refund inquiry submitted!'); return false;" class="form-grid">
-                    <div class="field-group">
-                        <label for="refund_inquiry" class="field-label">Inquiry Message</label>
-                        <textarea id="refund_inquiry" name="refund_inquiry" rows="4" class="field-input" placeholder="Describe your question regarding your IRS or State refund status..."></textarea>
+                <div class="cx-card__body cx-stack">
+                    <div class="cx-field">
+                        <label class="cx-label" for="refund_type">Refund</label>
+                        <select class="cx-select" id="refund_type" name="refund_type">
+                            <option>Federal (IRS)</option><option>State</option><option>Both</option>
+                        </select>
                     </div>
-                    <div class="field-actions">
-                        <button type="submit" class="button button-primary">Submit Inquiry</button>
+                    <div class="cx-field">
+                        <label class="cx-label" for="refund_inquiry">Message<span class="cx-req">*</span></label>
+                        <textarea class="cx-textarea" id="refund_inquiry" name="refund_inquiry" required placeholder="Describe your question about your refund…"></textarea>
                     </div>
-                </form>
-            </div>
-        </div>
-    </main>
-</div>
-{% endblock %}
+                </div>
+                <div class="cx-card__foot">
+                    <button type="submit" class="cx-btn cx-btn--primary">{{ ci("send", "ci ci--sm") }} Submit inquiry</button>
+                </div>
+            </form>
+        </section>
 
-{% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+        <aside class="cx-card">
+            <div class="cx-card__head cx-card__head--plain">
+                <h2 class="cx-card__title">{{ ci("search") }} Check with <span class="cx-accent">the IRS</span></h2>
+            </div>
+            <div class="cx-card__body">
+                <p class="cx-muted" style="margin: 0 0 1rem; font-size: 0.88rem;">Refund status is usually available within 24 hours of e-file acceptance. You'll need your SSN, filing status and exact refund amount.</p>
+                <a class="cx-btn cx-btn--soft cx-btn--block" href="https://www.irs.gov/refunds" target="_blank" rel="noopener">Where's My Refund? {{ ci("arrow-right", "ci ci--sm") }}</a>
+            </div>
+        </aside>
+    </div>
+</div>
 {% endblock %}

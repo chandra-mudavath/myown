@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, UploadFile, Request, status
+from fastapi import APIRouter, Cookie, Depends, File, UploadFile, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 
+from app.api.dashboard import client_shell_context
 from app.core.database import get_db
 from app.core.deps import ClientAccount
 from app.core.templates import templates
@@ -39,11 +40,22 @@ def _client_or_404(db: Session, account_id: str) -> Client:
 
 @router.get("/profile", response_class=HTMLResponse, name="client_profile")
 @router.get("/personal-info", response_class=HTMLResponse, name="client_personal_info")
-def profile_page(request: Request, account: ClientAccount, db: Session = Depends(get_db)):
+def profile_page(
+    request: Request,
+    account: ClientAccount,
+    db: Session = Depends(get_db),
+    tax_year: str | None = Cookie(None),
+):
     client = _client_or_404(db, account.id)
     return templates.TemplateResponse(
         "client/profile/index.html",
-        {"request": request, "account": account, "profile": serialize_profile(client, account), "app_name": settings.APP_NAME, "active_nav": "personal_info"},
+        {
+            "request": request,
+            "account": account,
+            "profile": serialize_profile(client, account),
+            **client_shell_context(db, account, tax_year),
+            "active_nav": "personal_info",
+        },
     )
 
 

@@ -980,6 +980,12 @@
     font-family: var(--font-body);
 }
 
+/* Keep the shared header and footer identical to the other public pages */
+.landing-page.services-page .main-nav,
+.landing-page.services-page .site-footer {
+    font-family: "Roboto Slab", Georgia, serif;
+}
+
 .landing-page.services-page #content {
     padding-top: var(--site-header-h);
 }
@@ -1245,159 +1251,6 @@
 
 .landing-page .workflow-section {
     background: var(--landing-section-alt-bg);
-}
-
-.landing-page .workflow-layout {
-    align-items: center;
-    display: grid;
-    gap: 3rem 4rem;
-    grid-template-columns: minmax(0, 1fr);
-}
-
-.landing-page .workflow-content .section-heading {
-    margin-top: 0.45rem;
-}
-
-.landing-page .workflow-timeline {
-    margin: 2rem 0 0;
-    padding-left: 3rem;
-    position: relative;
-}
-
-.landing-page .workflow-progress {
-    background: var(--landing-primary);
-    height: 0;
-    left: 1rem;
-    opacity: 0.7;
-    position: absolute;
-    top: 1.4rem;
-    transition: height 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
-    width: 2px;
-}
-
-.landing-page .workflow-content.is-workflow-visible .workflow-progress {
-    height: calc(100% - 2.8rem);
-}
-
-.landing-page .workflow-step {
-    align-items: flex-start;
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: 2rem minmax(0, 3fr) minmax(0, 2fr);
-    opacity: 0;
-    padding-bottom: 1.25rem;
-    position: relative;
-    transform: translateY(1rem);
-    transition: opacity 0.55s ease, transform 0.55s ease;
-}
-
-.landing-page .workflow-step:last-child {
-    padding-bottom: 0;
-}
-
-.landing-page .workflow-step.is-workflow-visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.landing-page .workflow-step b {
-    align-items: center;
-    background: var(--landing-primary);
-    border: 4px solid var(--landing-section-alt-bg);
-    border-radius: 50%;
-    color: #fff;
-    display: flex;
-    flex-shrink: 0;
-    font-size: 0.7rem;
-    height: 2rem;
-    justify-content: center;
-    letter-spacing: 0.06em;
-    margin-left: -3rem;
-    position: relative;
-    width: 2rem;
-    z-index: 1;
-}
-
-.landing-page .workflow-step img {
-    border: 1px solid var(--landing-line);
-    height: 7rem;
-    object-fit: cover;
-    width: 100%;
-}
-
-.landing-page .workflow-step strong {
-    color: var(--landing-ink);
-    display: block;
-    font-size: 0.9rem;
-    letter-spacing: 0.06em;
-    margin-top: 0.25rem;
-}
-
-.landing-page .workflow-step p {
-    color: var(--landing-muted);
-    font-size: var(--font-size-sm);
-    line-height: 1.55;
-    margin-top: 0.25rem;
-}
-
-.landing-page .workflow-cta {
-    margin-top: 1.75rem;
-}
-
-.landing-page .workflow-image-panel {
-    background: var(--landing-section-card-bg);
-    min-height: 34rem;
-    overflow: hidden;
-}
-
-.landing-page .workflow-image-panel img {
-    height: 100%;
-    object-fit: cover;
-    width: 100%;
-}
-
-@media (max-width: 900px) {
-    .landing-page .workflow-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 639px) {
-    .landing-page .workflow-timeline {
-        padding-left: 2.5rem;
-    }
-
-    .landing-page .workflow-progress {
-        left: 0.8rem;
-    }
-
-    .landing-page .workflow-step b {
-        margin-left: -2.5rem;
-    }
-
-    .landing-page .workflow-step {
-        grid-template-columns: 2rem minmax(0, 1fr);
-    }
-
-    .landing-page .workflow-step img {
-        grid-column: 2;
-        grid-row: 2;
-        height: 4rem;
-        width: 5.5rem;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .landing-page .workflow-progress {
-        height: calc(100% - 2.8rem);
-        transition: none;
-    }
-
-    .landing-page .workflow-step {
-        opacity: 1;
-        transform: none;
-        transition: none;
-    }
 }
 
 .landing-page .steps {
@@ -1748,6 +1601,10 @@
     margin-bottom: 1.2rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+.landing-page .footer-col h3 span {
+    color: var(--landing-primary);
 }
 
 .landing-page .footer-col ul {
@@ -2448,3 +2305,794 @@ html[data-theme="dark"] .management-card-image {
     margin: 0.75rem 0 0 1.25rem;
 }
 
+/* ── Home: rotating services globe ── */
+.landing-page .services-globe-layout {
+    align-items: center;
+    display: grid;
+    gap: 4rem;
+    grid-template-columns: 1fr 1.1fr;
+}
+
+.landing-page .services-globe {
+    --globe-dot: 37, 99, 235;
+    aspect-ratio: 1;
+    cursor: grab;
+    margin: 0 auto;
+    max-width: 34rem;
+    position: relative;
+    touch-action: pan-y;
+    user-select: none;
+    width: 100%;
+}
+
+.landing-page .services-globe.is-dragging {
+    cursor: grabbing;
+}
+
+.landing-page .services-globe::before {
+    background: radial-gradient(circle, var(--brand-soft) 0%, transparent 62%);
+    border-radius: 50%;
+    content: "";
+    inset: 6%;
+    position: absolute;
+}
+
+.landing-page .services-globe-canvas {
+    height: 100%;
+    inset: 0;
+    position: absolute;
+    width: 100%;
+}
+
+/* Without JS the links show as a simple wrapped list */
+.landing-page .services-globe-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    padding-top: 40%;
+    position: relative;
+}
+
+.landing-page .services-globe.is-ready .services-globe-tags {
+    display: block;
+    inset: 0;
+    padding: 0;
+    position: absolute;
+}
+
+.landing-page .services-globe-tags a {
+    -webkit-user-drag: none;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: 0 8px 20px -10px rgba(15, 23, 42, 0.35);
+    color: var(--brand-dark);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.landing-page .services-globe.is-ready .services-globe-tags a {
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    will-change: transform, opacity;
+}
+
+.landing-page .services-globe-tags a:hover,
+.landing-page .services-globe-tags a:focus-visible {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+    opacity: 1 !important;
+    outline: none;
+}
+
+.landing-page .services-globe-tags a.is-back {
+    pointer-events: none;
+}
+
+.landing-page .services-globe-points {
+    display: grid;
+    gap: 0.7rem;
+    margin: 1.5rem 0 1.2rem;
+}
+
+.landing-page .services-globe-points li {
+    color: var(--landing-ink);
+    font-size: 0.95rem;
+    padding-left: 1.8rem;
+    position: relative;
+}
+
+.landing-page .services-globe-points li::before {
+    background: var(--brand-soft);
+    border-radius: 50%;
+    color: var(--brand);
+    content: "\2713";
+    font-size: 0.7rem;
+    font-weight: 800;
+    height: 1.2rem;
+    left: 0;
+    line-height: 1.2rem;
+    position: absolute;
+    text-align: center;
+    top: 0.15rem;
+    width: 1.2rem;
+}
+
+.landing-page .services-globe-hint {
+    color: var(--landing-muted);
+    font-size: 0.82rem;
+    font-style: italic;
+    margin-bottom: 1.4rem;
+}
+
+html[data-theme=dark] .landing-page .services-globe {
+    --globe-dot: 96, 165, 250;
+}
+
+html[data-theme=dark] .landing-page .services-globe-tags a {
+    color: var(--ink);
+}
+
+html[data-theme=dark] .landing-page .services-globe-points li {
+    color: var(--ink);
+}
+
+@media (max-width: 1023px) {
+    .landing-page .services-globe-layout {
+        gap: 2.5rem;
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 639px) {
+    .landing-page .services-globe-tags a {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.75rem;
+    }
+}
+
+/* ── Home: workflow "live return tracker" ── */
+.landing-page .flow {
+    align-items: start;
+    display: grid;
+    gap: 4rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    margin-top: 3rem;
+}
+
+.landing-page .flow-tracker-wrap {
+    position: sticky;
+    top: calc(var(--site-header-h, 4.5rem) + 2rem);
+}
+
+.landing-page .flow-tracker {
+    --p: 17;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1.5rem;
+    box-shadow: 0 30px 60px -30px rgba(15, 23, 42, 0.35);
+    padding: 1.25rem 1.4rem 1.4rem;
+}
+
+.landing-page .flow-tracker-bar {
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 0.4rem;
+    margin: -0.2rem -1.4rem 1.2rem;
+    padding: 0 1.4rem 0.9rem;
+}
+
+.landing-page .flow-tracker-bar span {
+    border-radius: 50%;
+    height: 0.6rem;
+    width: 0.6rem;
+}
+
+.landing-page .flow-tracker-bar span:nth-child(1) { background: #f87171; }
+.landing-page .flow-tracker-bar span:nth-child(2) { background: #fbbf24; }
+.landing-page .flow-tracker-bar span:nth-child(3) { background: #34d399; }
+
+.landing-page .flow-tracker-bar small {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: auto;
+}
+
+.landing-page .flow-tracker-head {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+}
+
+.landing-page .flow-ring-wrap {
+    flex-shrink: 0;
+    height: 4.5rem;
+    position: relative;
+    width: 4.5rem;
+}
+
+.landing-page .flow-ring {
+    height: 100%;
+    transform: rotate(-90deg);
+    width: 100%;
+}
+
+.landing-page .flow-ring circle {
+    fill: none;
+    stroke-width: 6;
+}
+
+.landing-page .flow-ring-track {
+    stroke: var(--brand-soft);
+}
+
+.landing-page .flow-ring-fill {
+    stroke: var(--brand);
+    stroke-dasharray: 100;
+    stroke-dashoffset: calc(100 - var(--p));
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease;
+}
+
+.landing-page .flow-tracker.is-complete .flow-ring-fill {
+    stroke: var(--green);
+}
+
+.landing-page .flow-ring-wrap b {
+    align-items: center;
+    color: var(--ink);
+    display: flex;
+    font-size: 0.95rem;
+    inset: 0;
+    justify-content: center;
+    position: absolute;
+}
+
+.landing-page .flow-tracker-head small {
+    color: var(--muted);
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.landing-page .flow-tracker-head strong {
+    color: var(--ink);
+    display: block;
+    font-size: 1.2rem;
+    margin: 0.1rem 0 0.35rem;
+}
+
+.landing-page .flow-pill {
+    background: var(--brand-soft);
+    border-radius: 999px;
+    color: var(--brand);
+    display: inline-block;
+    font-size: 0.72rem;
+    font-style: normal;
+    font-weight: 700;
+    padding: 0.2rem 0.65rem;
+}
+
+.landing-page .flow-tracker.is-complete .flow-pill {
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--green);
+}
+
+/* Scenes: one per step, cross-faded */
+.landing-page .flow-scenes {
+    background: var(--surface-soft);
+    border: 1px dashed var(--line);
+    border-radius: 1rem;
+    height: 13.5rem;
+    margin: 1.25rem 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.landing-page .flow-scene {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    inset: 0;
+    justify-content: center;
+    opacity: 0;
+    padding: 1.2rem 1.4rem;
+    position: absolute;
+    transform: translateY(14px);
+    transition: opacity 0.45s ease, transform 0.45s ease, visibility 0.45s;
+    visibility: hidden;
+}
+
+.landing-page .flow-tracker[data-active="1"] [data-scene="1"],
+.landing-page .flow-tracker[data-active="2"] [data-scene="2"],
+.landing-page .flow-tracker[data-active="3"] [data-scene="3"],
+.landing-page .flow-tracker[data-active="4"] [data-scene="4"],
+.landing-page .flow-tracker[data-active="5"] [data-scene="5"],
+.landing-page .flow-tracker[data-active="6"] [data-scene="6"] {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+}
+
+.landing-page .flow-rows p,
+.landing-page .flow-fields p,
+.landing-page .flow-files p {
+    align-items: center;
+    display: flex;
+    font-size: 0.85rem;
+    gap: 0.75rem;
+    justify-content: space-between;
+}
+
+.landing-page .flow-rows p + p {
+    border-top: 1px solid var(--line);
+    margin-top: 0.55rem;
+    padding-top: 0.55rem;
+}
+
+.landing-page .flow-rows span,
+.landing-page .flow-fields span,
+.landing-page .flow-files span {
+    color: var(--muted);
+}
+
+.landing-page .flow-rows b {
+    color: var(--ink);
+}
+
+.landing-page .flow-rows .flow-rows-total b {
+    color: var(--green);
+    font-size: 1.15rem;
+}
+
+.landing-page .flow-chip {
+    align-self: flex-start;
+    background: rgba(22, 163, 74, 0.12);
+    border-radius: 999px;
+    color: var(--green);
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+}
+
+/* Bars that fill when their scene becomes active */
+.landing-page .flow-fields,
+.landing-page .flow-files {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.landing-page .flow-fields span {
+    flex: 0 0 7.5rem;
+}
+
+.landing-page .flow-fields i,
+.landing-page .flow-files i {
+    background: var(--line);
+    border-radius: 999px;
+    flex: 1;
+    height: 0.5rem;
+    overflow: hidden;
+    position: relative;
+}
+
+.landing-page .flow-fields i::after,
+.landing-page .flow-files i::after {
+    background: linear-gradient(90deg, var(--brand), #38bdf8);
+    border-radius: inherit;
+    content: "";
+    inset: 0 auto 0 0;
+    position: absolute;
+    transition: width 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+    width: 0;
+}
+
+.landing-page .flow-tracker[data-active="2"] .flow-fields i::after,
+.landing-page .flow-tracker[data-active="3"] .flow-files i::after {
+    width: var(--w);
+}
+
+.landing-page .flow-fields p:nth-child(2) i::after,
+.landing-page .flow-files p:nth-child(2) i::after { transition-delay: 0.15s; }
+.landing-page .flow-fields p:nth-child(3) i::after,
+.landing-page .flow-files p:nth-child(3) i::after { transition-delay: 0.3s; }
+.landing-page .flow-fields p:nth-child(4) i::after { transition-delay: 0.45s; }
+
+.landing-page .flow-files b {
+    background: var(--brand-soft);
+    border-radius: 0.4rem;
+    color: var(--brand);
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    padding: 0.35rem 0.4rem;
+}
+
+.landing-page .flow-files span {
+    flex: 0 0 9.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.landing-page .flow-checks {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.landing-page .flow-checks li {
+    align-items: center;
+    color: var(--ink);
+    display: flex;
+    font-size: 0.88rem;
+    gap: 0.65rem;
+}
+
+.landing-page .flow-checks li::before {
+    background: var(--green);
+    border-radius: 50%;
+    color: #fff;
+    content: "\2713";
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 800;
+    height: 1.35rem;
+    line-height: 1.35rem;
+    text-align: center;
+    transform: scale(0);
+    transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+    width: 1.35rem;
+}
+
+.landing-page .flow-tracker[data-active="5"] .flow-checks li::before { transform: scale(1); }
+.landing-page .flow-checks li:nth-child(2)::before { transition-delay: 0.2s; }
+.landing-page .flow-checks li:nth-child(3)::before { transition-delay: 0.4s; }
+
+.landing-page .flow-stamp {
+    align-self: center;
+    border: 3px solid var(--green);
+    border-radius: 0.6rem;
+    color: var(--green);
+    font-family: "Roboto Slab", serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+    opacity: 0;
+    padding: 0.35rem 1.1rem 0.45rem;
+    text-align: center;
+    text-transform: uppercase;
+    transform: rotate(-8deg) scale(1.8);
+    transition: transform 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) 0.1s, opacity 0.3s ease 0.1s;
+}
+
+.landing-page .flow-stamp small {
+    display: block;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+}
+
+.landing-page .flow-tracker[data-active="6"] .flow-stamp {
+    opacity: 1;
+    transform: rotate(-8deg) scale(1);
+}
+
+.landing-page .flow-track {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+}
+
+.landing-page .flow-track::before {
+    background: var(--green);
+    content: "";
+    height: 2px;
+    left: 16.66%;
+    opacity: 0.35;
+    position: absolute;
+    right: 16.66%;
+    top: 0.45rem;
+}
+
+.landing-page .flow-track li {
+    align-items: center;
+    flex: 1;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    font-size: 0.75rem;
+    font-weight: 600;
+    gap: 0.35rem;
+    position: relative;
+}
+
+.landing-page .flow-track li::before {
+    background: var(--green);
+    border: 3px solid var(--surface);
+    border-radius: 50%;
+    content: "";
+    height: 1rem;
+    width: 1rem;
+}
+
+/* Stage checklist */
+.landing-page .flow-stages {
+    display: grid;
+    gap: 0.4rem;
+    grid-template-columns: repeat(6, 1fr);
+}
+
+.landing-page .flow-stages button {
+    background: transparent;
+    border: 0;
+    border-top: 3px solid var(--line);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding-top: 0.5rem;
+    transition: border-color 0.3s ease, color 0.3s ease;
+    width: 100%;
+}
+
+.landing-page .flow-stages button.is-done {
+    border-color: var(--brand);
+    color: var(--ink);
+}
+
+.landing-page .flow-stages button.is-current {
+    border-color: var(--brand);
+    color: var(--brand);
+}
+
+.landing-page .flow-tracker.is-complete .flow-stages button {
+    border-color: var(--green);
+}
+
+.landing-page .flow-tracker.is-complete .flow-stages button.is-current {
+    color: var(--green);
+}
+
+.landing-page .flow-stages button:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+}
+
+/* Steps column */
+.landing-page .flow-steps {
+    position: relative;
+}
+
+.landing-page .flow-steps ol {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.landing-page .flow-line {
+    background: var(--line);
+    border-radius: 2px;
+    display: none;
+    position: absolute;
+    width: 2px;
+}
+
+.landing-page .flow-steps.is-ready .flow-line {
+    display: block;
+}
+
+.landing-page .flow-line span {
+    background: linear-gradient(var(--brand), #38bdf8);
+    border-radius: inherit;
+    display: block;
+    height: 0;
+    transition: height 0.5s ease;
+    width: 100%;
+}
+
+.landing-page .flow-step {
+    align-items: start;
+    border: 1px solid transparent;
+    border-radius: 1.25rem;
+    cursor: pointer;
+    display: grid;
+    gap: 1.1rem;
+    grid-template-columns: 3rem 1fr;
+    min-height: 9.5rem;
+    opacity: 0.5;
+    padding: 1.4rem 1.25rem;
+    position: relative;
+    transition: opacity 0.35s ease, background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+.landing-page .flow-step.is-done {
+    opacity: 0.8;
+}
+
+.landing-page .flow-step.is-active {
+    background: var(--surface);
+    border-color: var(--line);
+    box-shadow: 0 20px 40px -24px rgba(37, 99, 235, 0.45);
+    opacity: 1;
+    transform: translateX(6px);
+}
+
+.landing-page .flow-step b {
+    align-items: center;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 50%;
+    color: var(--muted);
+    display: flex;
+    font-size: 0.85rem;
+    height: 3rem;
+    justify-content: center;
+    position: relative;
+    transition: background 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+    width: 3rem;
+    z-index: 1;
+}
+
+.landing-page .flow-step.is-done b {
+    border-color: var(--brand);
+    color: var(--brand);
+}
+
+.landing-page .flow-step.is-active b {
+    background: var(--brand);
+    border-color: var(--brand);
+    box-shadow: 0 0 0 6px var(--brand-soft);
+    color: #fff;
+}
+
+.landing-page .flow-step h3 {
+    color: var(--ink);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0.55rem 0 0.35rem;
+}
+
+.landing-page .flow-step p {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.65;
+}
+
+/* Tablet / phone: tracker becomes a compact sticky progress bar */
+@media (max-width: 1023px) {
+    .landing-page .flow {
+        gap: 1.5rem;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .landing-page .flow-tracker-wrap {
+        top: 0.75rem;
+        z-index: 5;
+    }
+
+    .landing-page .flow-tracker {
+        padding: 0.9rem 1rem;
+    }
+
+    .landing-page .flow-tracker-bar,
+    .landing-page .flow-scenes,
+    .landing-page .flow-tracker-head small,
+    .landing-page .flow-pill {
+        display: none;
+    }
+
+    .landing-page .flow-ring-wrap {
+        height: 3.2rem;
+        width: 3.2rem;
+    }
+
+    .landing-page .flow-ring-wrap b {
+        font-size: 0.75rem;
+    }
+
+    .landing-page .flow-tracker-head strong {
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .landing-page .flow-stages {
+        margin-top: 0.75rem;
+    }
+
+    .landing-page .flow-step {
+        min-height: 0;
+    }
+
+    .landing-page .flow-step.is-active {
+        transform: none;
+    }
+}
+
+@media (max-width: 639px) {
+    .landing-page .flow-stages button {
+        font-size: 0.62rem;
+    }
+
+    .landing-page .flow-step {
+        gap: 0.9rem;
+        grid-template-columns: 2.5rem 1fr;
+        padding: 1.1rem 1rem;
+    }
+
+    .landing-page .flow-step b {
+        height: 2.5rem;
+        width: 2.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-page .flow-scene,
+    .landing-page .flow-step,
+    .landing-page .flow-line span,
+    .landing-page .flow-ring-fill,
+    .landing-page .flow-stamp,
+    .landing-page .flow-checks li::before,
+    .landing-page .flow-fields i::after,
+    .landing-page .flow-files i::after {
+        transition: none;
+    }
+}
+
+/* ── Footer: link lists match the body text, with a tick per item ── */
+.landing-page .site-footer .footer-col ul li a,
+.landing-page .site-footer a.footer-contact-item {
+    color: var(--landing-muted);
+    font-size: 0.9rem;
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+.landing-page .site-footer .footer-col ul li a {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.6rem;
+}
+
+.landing-page .site-footer .footer-col ul li a::before {
+    background: var(--brand-soft);
+    border-radius: 50%;
+    color: var(--brand);
+    content: "\2713";
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    font-weight: 800;
+    height: 1.15rem;
+    line-height: 1.15rem;
+    text-align: center;
+    transition: background 0.2s ease, color 0.2s ease;
+    width: 1.15rem;
+}
+
+.landing-page .site-footer .footer-col ul li a:hover,
+.landing-page .site-footer a.footer-contact-item:hover {
+    color: var(--landing-primary);
+}
+
+.landing-page .site-footer .footer-col ul li a:hover::before {
+    background: var(--brand);
+    color: #fff;
+}
+
+.landing-page .back-top {
+    border-radius: 50%;
+    box-shadow: 0 10px 24px -10px rgba(37, 99, 235, 0.7);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.landing-page .back-top:hover {
+    background: var(--landing-primary-dark);
+    transform: translateY(-3px);
+}
