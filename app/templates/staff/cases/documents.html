@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Case Documents - {{ case.case_id if case else 'Documents' }} - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=2" />
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+{% set active_nav = 'cases' %}
+
+{% include "partials/staff_sidebar.html" %}
+
+<div class="staff-main">
+    {% include "partials/staff_header.html" %}
+
+    <main class="staff-content">
+        <!-- Top Header & Breadcrumb -->
+        <div class="staff-topbar">
+            <div>
+                <a href="/staff/cases/my" class="staff-back-link">← Back to Cases List</a>
+                <h1>
+                    Case Documents — {{ case.case_id }}
+                </h1>
+                <p>
+                    Client: <strong>{{ case.client_name }}</strong> | Tax Year: <strong>{{ case.tax_year }}</strong> | Status: <span class="status-pill">{{ case.stage }}</span>
+                </p>
+            </div>
+            <div>
+                <a href="/staff/cases/{{ case.id }}" class="button button-secondary btn-view-sm">
+                    🔍 Review Full Case
+                </a>
+            </div>
+        </div>
+
+        <!-- Documents Table Panel -->
+        <section class="staff-panel staff-table-panel">
+            <div class="staff-table-header">
+                <h2>Uploaded Documents ({{ documents | length }})</h2>
+            </div>
+
+            <table class="staff-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>File Name</th>
+                        <th>Category</th>
+                        <th>File Size</th>
+                        <th>Upload Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if documents %}
+                    {% for doc in documents %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <strong>📄 {{ doc.original_filename }}</strong>
+                        </td>
+                        <td>
+                            <span class="category-badge">
+                                {{ doc.category }}
+                            </span>
+                        </td>
+                        <td>{{ (doc.file_size / 1024) | round(1) if doc.file_size else 0 }} KB</td>
+                        <td>{{ doc.uploaded_at.strftime('%b %d, %Y') if doc.uploaded_at else 'N/A' }}</td>
+                        <td>
+                            <a href="/client/filings/{{ case.id }}/documents/{{ doc.id }}/download" class="button button-secondary btn-view-sm">
+                                ⬇ Download
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-cell">
+                            No documents have been uploaded for this filing yet.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

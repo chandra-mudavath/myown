@@ -1,0 +1,58 @@
+<aside class="admin-sidebar">
+    <a class="admin-brand" href="/admin/dashboard" aria-label="{{ app_name }} admin dashboard">
+        <span>UT</span><strong>{{ app_name }}</strong>
+    </a>
+    <div class="admin-profile">
+        <div class="admin-avatar-wrapper">
+            {% if admin and admin.profile_picture %}
+            <a href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" title="Click to view full size profile picture">
+                <img id="admin-sidebar-preview" src="{{ admin.profile_picture }}" alt="Admin Profile Picture" class="admin-sidebar-avatar-img" />
+            </a>
+            {% else %}
+            <span id="admin-sidebar-initials" class="admin-photo">{{ initials }}</span>
+            <a id="admin-sidebar-link" href="javascript:void(0)" onclick="openAvatarModal(document.getElementById('admin-sidebar-preview').src)" style="display: none;">
+                <img id="admin-sidebar-preview" src="" alt="Admin Profile Picture" class="admin-sidebar-avatar-img" />
+            </a>
+            {% endif %}
+            <label for="admin-avatar-input" title="Upload Admin Profile Picture" class="admin-avatar-upload-label">📷</label>
+            <input type="file" id="admin-avatar-input" accept="image/*" style="display: none;" />
+        </div>
+        <h2>{{ admin_name }} {{ admin_last_name }}</h2>
+        <p>Administrator</p>
+    </div>
+    <nav class="admin-nav" aria-label="Admin navigation">
+        <a class="admin-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/admin/dashboard">
+            <span aria-hidden="true">&#9635;</span>Dashboard
+        </a>
+        <a class="admin-nav-item{% if active_nav == 'clients' %} active{% endif %}" href="/admin/clients">
+            <span aria-hidden="true">&#128101;</span>Clients
+        </a>
+        <a class="admin-nav-item{% if active_nav == 'staff' %} active{% endif %}" href="/admin/staff">
+            <span aria-hidden="true">&#128100;</span>Staff
+        </a>
+        <a class="admin-nav-item{% if active_nav == 'queue' %} active{% endif %}" href="/admin/cases">
+            <span aria-hidden="true">&#128203;</span>Work Queue
+        </a>
+        <a class="admin-nav-item" href="/admin/dashboard#reports">
+            <span aria-hidden="true">&#128202;</span>Reports
+        </a>
+        <a class="admin-nav-item" href="/admin/dashboard#analytics">
+            <span aria-hidden="true">&#128200;</span>Analytics
+        </a>
+        <a class="admin-nav-item" href="/admin/dashboard#payments">
+            <span aria-hidden="true">&#128176;</span>Payments
+        </a>
+        <a class="admin-nav-item" href="/admin/dashboard#notifications">
+            <span aria-hidden="true">&#128276;</span>Notifications
+        </a>
+        <a class="admin-nav-item" href="/admin/dashboard#settings">
+            <span aria-hidden="true">&#9881;</span>Settings
+        </a>
+        <a class="admin-nav-item" href="/admin/dashboard#profile">
+            <span aria-hidden="true">&#128100;</span>My Profile
+        </a>
+    </nav>
+    <form class="admin-logout" action="/auth/logout" method="post">
+        <button type="submit"><span aria-hidden="true">&#8630;</span>Logout</button>
+    </form>
+</aside>

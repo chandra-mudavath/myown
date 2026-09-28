@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Client Details - {{ client.first_name }} {{ client.last_name }} - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=3" />
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+{% set active_nav = 'clients' %}
+
+{% include "partials/staff_sidebar.html" %}
+
+<div class="staff-main">
+    {% include "partials/staff_header.html" %}
+
+    <main class="staff-content">
+        <!-- Top Banner -->
+        <div class="staff-topbar">
+            <div>
+                <a href="/staff/cases/my" class="staff-back-link">← Back to Cases List</a>
+                <h1>
+                    Client Profile — {{ client.first_name }} {{ client.last_name }}
+                </h1>
+                <p>
+                    Client ID: <strong>{{ client.client_number }}</strong>
+                </p>
+            </div>
+            <div>
+                <a href="/staff/clients" class="button button-secondary btn-view-sm">
+                    👥 Client Directory
+                </a>
+            </div>
+        </div>
+
+        <div class="client-detail-grid">
+            <!-- Left Column: Personal Info & Contact -->
+            <div>
+                <div class="detail-card">
+                    <h3>👤 Personal & Contact Details</h3>
+                    <dl class="detail-dl">
+                        <dt>Full Name:</dt>
+                        <dd>{{ client.first_name }} {{ client.last_name }}</dd>
+                        <dt>Phone:</dt>
+                        <dd>{{ client.phone or 'N/A' }}</dd>
+                        <dt>Date of Birth:</dt>
+                        <dd>{{ client.date_of_birth.strftime('%b %d, %Y') if client.date_of_birth else 'N/A' }}</dd>
+                        <dt>Client Number:</dt>
+                        <dd>{{ client.client_number }}</dd>
+                    </dl>
+                </div>
+
+                <div class="detail-card">
+                    <h3>📍 Address Details</h3>
+                    <dl class="detail-dl">
+                        <dt>Street Address:</dt>
+                        <dd>{{ client.address_line_1 or 'N/A' }}</dd>
+                        {% if client.address_line_2 %}
+                        <dt>Address Line 2:</dt>
+                        <dd>{{ client.address_line_2 }}</dd>
+                        {% endif %}
+                        <dt>City:</dt>
+                        <dd>{{ client.city or 'N/A' }}</dd>
+                        <dt>State / Province:</dt>
+                        <dd>{{ client.state_province or 'N/A' }}</dd>
+                        <dt>Postal Code:</dt>
+                        <dd>{{ client.postal_code or 'N/A' }}</dd>
+                        <dt>Country:</dt>
+                        <dd>{{ client.country or 'N/A' }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Right Column: Tax Filings History -->
+            <div>
+                <section class="staff-panel staff-table-panel">
+                    <div class="staff-table-header">
+                        <h3>Tax Filings History ({{ filings | length }})</h3>
+                    </div>
+
+                    <table class="staff-table">
+                        <thead>
+                            <tr>
+                                <th>Case ID</th>
+                                <th>Tax Year</th>
+                                <th>Filing Type</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if filings %}
+                            {% for f in filings %}
+                            <tr>
+                                <td><a href="/staff/cases/{{ f.id }}" class="case-link">{{ f.case_number or f.id[:8].upper() }}</a></td>
+                                <td>{{ f.tax_year }}</td>
+                                <td>{{ f.filing_type | capitalize }}</td>
+                                <td><span class="status-pill">{{ f.status.replace('_', ' ').title() }}</span></td>
+                                <td>
+                                    <a href="/staff/cases/{{ f.id }}" class="button button-secondary btn-view-sm">Review Case →</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="empty-cell">
+                                    No tax filings submitted by this client yet.
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

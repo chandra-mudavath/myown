@@ -1,0 +1,42 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "final_documents" %}
+{% set page_section = "Review & File" %}
+{% set page_title = "Download Tax Docs" %}
+{% set page_subtitle = "Your filed returns and IRS acceptance receipts, ready to download once processing is complete." %}
+{% set packets = [
+    ("Federal return (Form 1040)", "Complete filed copy with all schedules"),
+    ("State return", "Filed copy for each state you filed in"),
+    ("IRS e-file acceptance", "Confirmation that the IRS accepted your return"),
+    ("FBAR confirmation", "FinCEN BSA e-filing receipt, if applicable"),
+] %}
+
+{% block page %}
+<section class="cx-card" aria-labelledby="final-title">
+    <div class="cx-card__head">
+        <div>
+            <h2 class="cx-card__title" id="final-title">{{ ci("download") }} Final tax <span class="cx-accent">documents: {{ selected_year }}</span></h2>
+            <p class="cx-card__sub">Documents unlock as each one becomes available.</p>
+        </div>
+    </div>
+    <div class="cx-table-wrap">
+        <table class="cx-table">
+            <thead><tr><th>Document</th><th>Status</th><th style="text-align:right;">Download</th></tr></thead>
+            <tbody>
+                {% for title, text in packets %}
+                <tr>
+                    <td>
+                        <div class="cx-table__file">
+                            <span class="cx-fileicon">{{ ci("file") }}</span>
+                            <div><span>{{ title }}</span><div class="cx-muted" style="font-size:0.78rem;font-weight:400;">{{ text }}</div></div>
+                        </div>
+                    </td>
+                    <td><span class="cx-badge">Not available yet</span></td>
+                    <td><div class="cx-table__actions"><button class="cx-btn cx-btn--sm" type="button" disabled>{{ ci("lock", "ci ci--sm") }} Locked</button></div></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

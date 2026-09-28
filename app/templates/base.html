@@ -1,25 +1,45 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="scroll-smooth">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}{{ app_name }} - Secure B2B US Tax Workflow Portal{% endblock %}</title>
-  <meta name="description" content="{% block meta_desc %}{{ app_name }} is a secure, enterprise-grade B2B platform for end-to-end US tax preparation, filing, and compliance management.{% endblock %}" />
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Roboto+Slab:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  
-  <script src="{{ url_for('static', path='/js/tailwind-config.js') }}"></script>
-  
-  <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}" />
-  <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}" />
-  {% block head %}{% endblock %}
-</head>
-<body class="{% block body_class %}{% endblock %}">
-  {% block content %}{% endblock %}
-  
-  {% block scripts %}{% endblock %}
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{% block title %}{{ app_name }} - Secure B2B US Tax Workflow Portal{% endblock %}</title>
+        <meta
+            name="description"
+            content="{% block meta_desc %}{{ app_name }} is a secure, enterprise-grade B2B platform for end-to-end US tax preparation, filing, and compliance management.{% endblock %}"
+        />
+
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&family=Roboto+Slab:wght@400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+
+        <script src="{{ url_for('static', path='/js/tailwind-config.js') }}"></script>
+        
+        <!-- Theme check before render to prevent flash -->
+        <script src="{{ url_for('static', path='/js/theme-init.js') }}"></script>
+
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/theme.css') }}?v=4.0" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/landing.css') }}?v=4.9" />
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}?v=4.1" />
+        {% block styles %}{% endblock %} {% block head %}{% endblock %}
+    </head>
+    <body class="{% block body_class %}{% endblock %}">
+        {% block content %}{% endblock %}
+
+        <!-- Global Profile Picture Lightbox Popup Modal -->
+        <div id="avatar-lightbox-modal">
+            <div class="avatar-lightbox-inner">
+                <button type="button" onclick="closeAvatarModal()" class="avatar-lightbox-close" aria-label="Close preview">&times;</button>
+                <h3 class="avatar-lightbox-title">Profile Picture Preview</h3>
+                <img id="avatar-lightbox-img" src="" alt="Profile Picture Large View" />
+            </div>
+        </div>
+
+        <script src="{{ url_for('static', path='/js/main.js') }}?v=4.2"></script>
+        {% block scripts %}{% endblock %}
+    </body>
 </html>

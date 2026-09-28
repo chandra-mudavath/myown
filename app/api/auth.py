@@ -6,18 +6,29 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+import phonenumbers
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import decode_token
+from app.core.templates import templates
 from app.models.auth import AccountType
 from app.schemas.auth import RegisterRequest
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-templates = Jinja2Templates(directory="app/templates")
+
+
+@router.get("/countries")
+def countries() -> list[dict[str, str | int]]:
+    """Return the supported country regions and their international dial codes."""
+    result = []
+    for region in sorted(phonenumbers.SUPPORTED_REGIONS):
+        dial_code = phonenumbers.country_code_for_region(region)
+        if dial_code:
+            result.append({"region": region, "dial_code": dial_code})
+    return result
 
 _COOKIE_OPTS = dict(httponly=True, samesite="lax", secure=False)  # secure=True in prod
 _CTX = {"app_name": settings.APP_NAME}
@@ -37,6 +48,16 @@ def login_page(request: Request):
 @router.get("/register", response_class=HTMLResponse)
 def register_page(request: Request):
     return templates.TemplateResponse("auth/register.html", _ctx(request))
+
+
+@router.get("/staff/register", response_class=HTMLResponse, name="staff_register_page")
+def staff_register_page(request: Request):
+    return templates.TemplateResponse("auth/register.html", _ctx(request, signup_role="staff"))
+
+
+@router.get("/admin/register", response_class=HTMLResponse, name="admin_register_page")
+def admin_register_page(request: Request):
+    return templates.TemplateResponse("auth/register.html", _ctx(request, signup_role="admin"))
 
 
 @router.get("/forgot-password", response_class=HTMLResponse)
@@ -74,12 +95,15 @@ def register(
     first_name: str = Form(...),
     last_name: str = Form(None),
     email: str = Form(...),
-    phone: str = Form(...),
+    country_code: str = Form(""),
+    phone_local: str = Form(""),
     password: str = Form(...),
     password_confirmation: str = Form(...),
+    signup_role: str = Form("client"),
     db: Session = Depends(get_db),
 ):
     try:
+        phone = f"{country_code}{phone_local}" if country_code and phone_local else None
         data = RegisterRequest(
             first_name=first_name,
             last_name=last_name,
@@ -89,36 +113,45 @@ def register(
             password_confirmation=password_confirmation,
         )
     except Exception as e:
-        # Extract the first validation error message
         try:
             import json
             errors = json.loads(e.json())
             msg = errors[0]["msg"].replace("Value error, ", "")
         except Exception:
             msg = str(e)
-        return templates.TemplateResponse("auth/register.html", _ctx(request, error=msg))
+        return templates.TemplateResponse("auth/register.html", _ctx(request, error=msg, signup_role=signup_role))
 
     if auth_service.get_account_by_email(db, data.email):
-        return templates.TemplateResponse("auth/register.html", _ctx(request, error="An account with this email already exists."))
+        return templates.TemplateResponse("auth/register.html", _ctx(request, error="An account with this email already exists.", signup_role=signup_role))
 
-    _, _, raw_token = auth_service.register_client(db, data)
+    account, _ = auth_service.register_by_email_domain(db, data)
 
-    # TODO: send email with verification link
-    # email_service.send_verification(data.email, raw_token)
-    # print(f"[DEV] Verify email -> http://127.0.0.1:8000/auth/verify-email?token={raw_token}")
+    # Clients are verified immediately — send them straight to login
+    if account.is_verified:
+        return RedirectResponse(
+            url=request.url_for("login_page").include_query_params(registered=1),
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
 
-    return RedirectResponse(url=request.url_for("login_page").include_query_params(registered=1), status_code=status.HTTP_303_SEE_OTHER)
+    # Staff / Admin — account created but email verification is required
+    # Show a pending message on the register page
+    msg = (
+        "Account created! Since you\'re using an internal @urtax.com address, "
+        "your account needs to be verified by an administrator before you can log in."
+    )
+    return templates.TemplateResponse("auth/register.html", _ctx(request, msg=msg, signup_role=signup_role))
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
-@router.post("/login", response_class=HTMLResponse)
-def login(
+def _login(
     request: Request,
     response: Response,
     username: str = Form(...),   # OAuth2 convention; used as email
     password: str = Form(...),
     db: Session = Depends(get_db),
+    expected_type: AccountType | None = None,
+    login_role: str = "client",
 ):
     ip = request.client.host if request.client else None
     ua = request.headers.get("user-agent")
@@ -131,19 +164,31 @@ def login(
             "account_inactive": "Your account has been deactivated.",
         }
         error = reasons.get(failure, "Invalid email or password.")
-        return templates.TemplateResponse("auth/login.html", _ctx(request, error=error))
+        return templates.TemplateResponse("auth/login.html", _ctx(request, error=error, login_role=login_role))
 
-    # TODO: Re-enable email verification check when email sending is configured
-    # if not account.is_verified:
+    if expected_type is not None and account.account_type != expected_type:
+        role_name = expected_type.value.title()
+        return templates.TemplateResponse(
+            "auth/login.html",
+            _ctx(request, login_role=login_role, error=f"This login is for {role_name.lower()} accounts only."),
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    # Internal @urtax.com accounts (Staff/Admin) require email verification
+    # TODO: Re-enable when company domain email is configured
+    # if not account.is_verified and account.account_type != AccountType.CLIENT:
     #     return templates.TemplateResponse(
     #         "auth/login.html",
-    #         _ctx(request, error="Please verify your email before logging in.", show_resend=True, email=username),
+    #         _ctx(
+    #             request,
+    #             error="Your account is pending verification. Please contact an administrator to activate your account.",
+    #         ),
     #     )
 
     access_token, raw_refresh = auth_service.issue_tokens(db, account)
 
     redirect_map = {
-        AccountType.CLIENT: "client_dashboard",
+        AccountType.CLIENT: "select_year_page",
         AccountType.STAFF:  "staff_dashboard",
         AccountType.ADMIN:  "admin_dashboard",
     }
@@ -151,6 +196,17 @@ def login(
     resp.set_cookie("access_token", access_token, max_age=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60, **_COOKIE_OPTS)
     resp.set_cookie("refresh_token", raw_refresh, max_age=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400, **_COOKIE_OPTS)
     return resp
+
+
+@router.post("/login", response_class=HTMLResponse, name="login")
+def login(
+    request: Request,
+    response: Response,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    return _login(request, response, username, password, db)
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────
@@ -190,7 +246,7 @@ def refresh(
 
 # ── Forgot password ───────────────────────────────────────────────────────────
 
-@router.post("/forgot-password", response_class=HTMLResponse)
+@router.post("/forgot-password")
 def forgot_password(
     request: Request,
     email: str = Form(...),
@@ -199,11 +255,23 @@ def forgot_password(
     account = auth_service.get_account_by_email(db, email)
     if account and account.is_active:
         raw_token = auth_service.create_password_reset_token(db, account)
-        # TODO: send email
-        print(f"[DEV] Reset password -> http://127.0.0.1:8000/auth/reset-password?token={raw_token}")
+        
+        # --- Original Email Logic (Commented out until email is configured) ---
+        # # TODO: send email
+        # print(f"[DEV] Reset password -> http://127.0.0.1:8000/auth/reset-password?token={raw_token}")
+        # msg = "If an account with that email exists, a reset link has been sent."
+        # return templates.TemplateResponse("auth/forgot-password.html", _ctx(request, msg=msg))
+        # ----------------------------------------------------------------------
 
-    msg = "If an account with that email exists, a reset link has been sent."
-    return templates.TemplateResponse("auth/forgot-password.html", _ctx(request, msg=msg))
+        # Directly redirect to the reset password page for development
+        url = request.url_for("reset_password_page").include_query_params(token=raw_token)
+        return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
+
+    # If the account doesn't exist or is inactive, show an error message
+    return templates.TemplateResponse(
+        "auth/forgot-password.html",
+        _ctx(request, error="No active account found with that email address.")
+    )
 
 
 # ── Reset password ────────────────────────────────────────────────────────────
@@ -225,7 +293,12 @@ def reset_password(
     if not success:
         return templates.TemplateResponse("auth/reset-password.html", {**ctx, "error": "Invalid or expired reset token."})
 
-    return RedirectResponse(url=request.url_for("login_page").include_query_params(reset=1), status_code=status.HTTP_303_SEE_OTHER)
+    msg = "Password updated successfully! Redirecting to login..."
+    login_url = str(request.url_for("login_page").include_query_params(reset=1))
+    return templates.TemplateResponse(
+        "auth/reset-password.html",
+        {**ctx, "msg": msg, "redirect_url": login_url}
+    )
 
 
 # ── Resend verification ───────────────────────────────────────────────────────

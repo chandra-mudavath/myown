@@ -1,0 +1,50 @@
+<header class="staff-header">
+    <div class="staff-header-left">
+        {% include "partials/sidebar_toggle.html" %}
+        <a class="staff-brand" href="/staff/dashboard" aria-label="{{ app_name or 'UrTax' }} staff dashboard">
+            <span class="staff-brand-mark" aria-hidden="true">UT</span>
+            <span>{{ app_name or 'UrTax' }}</span>
+        </a>
+    </div>
+    <div class="staff-header-actions">
+        <!-- Notification Icon -->
+        <a class="icon-button notification-button" href="/staff/notifications" aria-label="View notifications" title="Notifications">
+            <span aria-hidden="true">&#128276;</span><span class="notification-badge">3</span>
+        </a>
+
+        <!-- Avatar Circle with Dropdown -->
+        <div class="account-menu-wrap">
+            <button
+                class="account-menu-button staff-avatar-btn"
+                id="staff-avatar-btn"
+                type="button"
+                aria-expanded="false"
+                aria-controls="staff-account-menu"
+                aria-label="Open staff menu"
+            >
+                {% if staff and staff.profile_picture %}
+                <img src="{{ staff.profile_picture }}" alt="{{ first_name }}" class="staff-header-avatar-img" />
+                {% else %}
+                <span class="staff-avatar" aria-label="{{ first_name }} {{ last_name }}" title="{{ first_name }} {{ last_name }}">{{ initials }}</span>
+                {% endif %}
+            </button>
+            <div class="account-menu staff-account-menu" id="staff-account-menu" hidden>
+                {% if staff and staff.profile_picture %}
+                <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ staff.profile_picture }}')" title="View Profile Picture">
+                    <span aria-hidden="true">&#128065;</span> View
+                </a>
+                {% endif %}
+                <a class="account-menu-action" href="/staff/profile" title="Edit Profile Picture">
+                    <span aria-hidden="true">&#9998;</span> Edit
+                </a>
+            </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme" aria-pressed="false">
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+            <span class="sr-only">Switch theme</span>
+        </button>
+    </div>
+</header>

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Notifications - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=3" />
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set active_nav = 'notifications' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+
+{% include "partials/staff_sidebar.html" %}
+
+<div class="staff-main">
+    {% include "partials/staff_header.html" %}
+
+    <main class="staff-content">
+        <div class="staff-page-header">
+            <div>
+                <p class="eyebrow">Communication Center</p>
+                <h1 class="staff-page-title">Notifications</h1>
+            </div>
+        </div>
+
+        <section class="staff-panel">
+            <ul class="staff-notifications-list">
+                <li class="staff-notification-item">
+                    <span class="staff-notification-icon">📄</span>
+                    <div class="staff-notification-body">
+                        <strong class="staff-notification-title">Document Uploaded</strong>
+                        <span class="staff-notification-desc">Client uploaded W-2 for tax year 2026.</span>
+                    </div>
+                    <time class="staff-notification-time">10:32 AM</time>
+                </li>
+            </ul>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

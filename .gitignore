@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Uploaded files (avatars, client documents) - runtime data, never commit
+storage/

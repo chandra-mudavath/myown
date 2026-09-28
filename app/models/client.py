@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import Date, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -24,9 +24,17 @@ class Client(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     client_number: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)  # e.g. CLI-00000001
     account_id: Mapped[str] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="CASCADE"), unique=True, nullable=False)
-    first_name: Mapped[str] = mapped_column(String(15), nullable=False)
-    last_name: Mapped[str | None] = mapped_column(String(15), nullable=True)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    first_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    last_name: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    phone: Mapped[str] = mapped_column(String(25), nullable=False)
+    address_line_1: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    address_line_2: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    state_province: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    postal_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    profile_picture: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

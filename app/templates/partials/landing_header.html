@@ -1,0 +1,57 @@
+{# Shared header for all public pages. On the home page, section links stay as bare "#id" anchors
+   so landing.js can smooth-scroll and highlight the active section. #}
+{% set path = request.url.path %}
+{% set on_home = path == '/' %}
+{% set home_prefix = '' if on_home else '/' %}
+<header class="{% if on_home %}absolute lg:fixed{% else %}fixed{% endif %} top-0 left-0 right-0 z-40">
+    <nav class="main-nav">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <div class="nav-shell flex flex-wrap lg:flex-nowrap items-center justify-between">
+                <div class="nav-brand-wrap order-1">
+                    <a class="brand-mark" href="/">{{ app_name }}</a>
+                </div>
+                <ul id="landing-menu"
+                    class="navbar bg-white lg:bg-transparent w-full lg:w-auto hidden lg:flex flex-col lg:flex-row items-center text-sm font-bold order-3 lg:order-2">
+                    <li><a class="{% if on_home %}active{% endif %}" href="{{ '#hero' if on_home else '/' }}">Home</a></li>
+                    <li class="services-nav-item">
+                        <a class="{% if path == '/services' %}active{% endif %}" href="/services">Services</a>
+                        <ul class="services-nav-dropdown" aria-label="All services">
+                            <li><a href="/services#service-01">Individual Tax Preparation</a></li>
+                            <li><a href="/services#service-02">Business Tax Preparation</a></li>
+                            <li><a href="/services#service-03">Tax Planning &amp; Compliance</a></li>
+                            <li><a href="/services#service-04">International &amp; Non-Resident Tax</a></li>
+                            <li><a href="/services#service-05">IRS &amp; Tax Notice Support</a></li>
+                            <li><a href="/services#service-06">ITIN Preparation</a></li>
+                            <li><a href="/services#service-07">Extensions Filing</a></li>
+                            <li><a href="/services#service-08">FBAR &amp; FATCA Filing</a></li>
+                            <li><a href="/services#service-09">Amendment Filing</a></li>
+                            <li><a href="/services#service-10">Advanced Tax Planning</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="{{ home_prefix }}#workflow">Workflow</a></li>
+                    <li><a class="{% if path == '/about-us' %}active{% endif %}" href="/about-us">About us</a></li>
+                    <li><a href="{{ home_prefix }}#team">Our team</a></li>
+                    <li><a href="{{ home_prefix }}#testimonials">Stories</a></li>
+                    <li><a href="{{ home_prefix }}#faq">FAQ</a></li>
+                    <li><a class="{% if path == '/refer-and-earn' %}active{% endif %}" href="/refer-and-earn">Refer &amp; Earn</a></li>
+                    <li class="mobile-actions block lg:hidden w-full pt-3 mt-2 border-t border-gray-200">
+                        <div class="flex flex-col gap-2 px-4 pb-2">
+                            <a class="signup-link w-full text-center" href="/auth/register">Get started</a>
+                            <a class="login-link w-full text-center" href="/auth/login">Log in</a>
+                        </div>
+                    </li>
+                </ul>
+                <div class="nav-actions order-2 lg:order-3">
+                    {% include "partials/theme_toggle.html" %}
+                    <a class="signup-link hidden lg:inline-flex" href="/auth/register">Get started</a>
+                    <a class="login-link hidden lg:inline-flex" href="/auth/login">Log in</a>
+                    <button class="menu-mobile block lg:hidden" type="button" aria-expanded="false" aria-controls="landing-menu">
+                        <span class="sr-only">Open navigation</span>
+                        <svg class="open" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        <svg class="close" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M6 18L18 6" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+</header>

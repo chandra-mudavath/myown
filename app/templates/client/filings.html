@@ -1,0 +1,148 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "filings" %}
+{% set page_title = "My Filings" %}
+{% set page_subtitle = "Everything you submitted for tax year " ~ tax_year ~ " in one place." %}
+
+{% macro kv(label, value) -%}
+<div><dt>{{ label }}</dt><dd>{{ value or "—" }}</dd></div>
+{%- endmacro %}
+
+{% macro tags(items) -%}
+{% if items %}
+<div class="cx-chips">{% for it in items %}<span class="cx-chip" style="cursor:default;">{{ it | replace('_', ' ') }}</span>{% endfor %}</div>
+{% else %}<p class="cx-muted" style="margin:0;font-size:0.88rem;">None reported</p>{% endif %}
+{%- endmacro %}
+
+{% block page_actions %}
+{% if filing %}<a class="cx-btn cx-btn--soft" href="/client/documents">{{ ci("upload", "ci ci--sm") }} Upload documents</a>{% endif %}
+{% endblock %}
+
+{% block page %}
+{% if filing %}
+<div class="cx-stack">
+    <section class="cx-card">
+        <div class="cx-card__body" style="display:flex; flex-wrap:wrap; gap:1.5rem; align-items:center; justify-content:space-between;">
+            <div>
+                <span class="cx-stat__label">Case ID</span>
+                <div class="cx-mono" style="font-size:1.3rem; font-weight:700;">{{ filing.case_id }}</div>
+                <span class="cx-muted" style="font-size:0.84rem;">Submitted {{ filing.created_date }}</span>
+            </div>
+            <div style="display:flex; gap:2rem; flex-wrap:wrap;">
+                <div><span class="cx-stat__label">Status</span><span class="cx-badge cx-badge--in_progress">{{ filing.status }}</span></div>
+                <div><span class="cx-stat__label">Filing type</span><strong>{{ filing.filing_type | replace('_', ' ') | title }}</strong></div>
+                <div style="min-width:180px;"><span class="cx-stat__label">Progress · {{ filing.progress_pct }}%</span><div class="cx-progress" style="margin-top:0.4rem;"><span style="width: {{ filing.progress_pct }}%"></span></div></div>
+            </div>
+        </div>
+    </section>
+
+    <div class="cx-grid cx-grid--2">
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("user") }} Personal <span class="cx-accent">information</span></h2></div>
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    {{ kv("Full name", filing.first_name ~ " " ~ (filing.last_name or "")) }}
+                    {{ kv("Email", filing.email) }}
+                    {{ kv("Phone", filing.phone) }}
+                    {{ kv("Date of birth", filing.date_of_birth) }}
+                    {{ kv("Citizenship", filing.country_of_citizenship) }}
+                    {{ kv("Residence", filing.current_country_of_residence) }}
+                    {{ kv("US tax status", filing.us_tax_residency_status | replace('_', ' ') if filing.us_tax_residency_status) }}
+                    {{ kv("Filing status", filing.filing_status | replace('_', ' ') if filing.filing_status) }}
+                </dl>
+            </div>
+        </section>
+
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("dashboard") }} Mailing <span class="cx-accent">address</span></h2></div>
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    {{ kv("Street", filing.address_line_1) }}
+                    {% if filing.address_line_2 %}{{ kv("Line 2", filing.address_line_2) }}{% endif %}
+                    {{ kv("City", filing.city) }}
+                    {{ kv("State / province", filing.state_province) }}
+                    {{ kv("Postal code", filing.postal_code) }}
+                    {{ kv("Country", filing.country) }}
+                </dl>
+            </div>
+        </section>
+
+        {% if filing.spouse_first_name or filing.spouse_last_name %}
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("users") }} Spouse <span class="cx-accent">details</span></h2></div>
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    {{ kv("Name", (filing.spouse_first_name or "") ~ " " ~ (filing.spouse_last_name or "")) }}
+                    {{ kv("Email", filing.spouse_email) }}
+                    {{ kv("Phone", filing.spouse_phone) }}
+                    {{ kv("Date of birth", filing.spouse_date_of_birth) }}
+                    {{ kv("Citizenship", filing.spouse_country_of_citizenship) }}
+                    {{ kv("US tax status", filing.spouse_us_tax_residency_status) }}
+                </dl>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("history") }} Tax history <span class="cx-accent">&amp; IRS notices</span></h2></div>
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    {{ kv("Copy of previous return", filing.has_previous_return_copy) }}
+                    {{ kv("Received IRS notice", filing.received_irs_notice) }}
+                    {{ kv("Unresolved tax issues", filing.unresolved_tax_issues) }}
+                    {{ kv("Amended return", filing.is_amended_return) }}
+                </dl>
+            </div>
+        </section>
+
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("refund") }} Income <span class="cx-accent">sources</span></h2></div>
+            <div class="cx-card__body">{{ tags(filing.income_categories) }}</div>
+        </section>
+
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("calculator") }} Deductions <span class="cx-accent">&amp; credits</span></h2></div>
+            <div class="cx-card__body">{{ tags(filing.deductions_credits) }}</div>
+        </section>
+
+        <section class="cx-card">
+            <div class="cx-card__head"><h2 class="cx-card__title">{{ ci("sparkle") }} Special <span class="cx-accent">situations</span></h2></div>
+            <div class="cx-card__body">{{ tags(filing.special_situations) }}</div>
+        </section>
+    </div>
+
+    <section class="cx-card">
+        <div class="cx-card__head">
+            <h2 class="cx-card__title">{{ ci("folder") }} Uploaded <span class="cx-accent">documents ({{ filing.documents | length }})</span></h2>
+            <a class="cx-link" href="/client/documents">Manage</a>
+        </div>
+        {% if filing.documents %}
+        <div class="cx-table-wrap">
+            <table class="cx-table">
+                <tbody>
+                    {% for doc in filing.documents %}
+                    <tr>
+                        <td><div class="cx-table__file"><span class="cx-fileicon">{{ ci("file") }}</span><span>{{ doc.original_filename }}</span></div></td>
+                        <td class="cx-muted">{{ doc.category }}</td>
+                        <td><div class="cx-table__actions"><a class="cx-btn cx-btn--sm cx-btn--soft" href="/client/filings/{{ filing.id }}/documents/{{ doc.id }}/download">{{ ci("download", "ci ci--sm") }} Download</a></div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="cx-card__body"><p class="cx-muted" style="margin:0;">No documents uploaded for this filing. <a class="cx-link" href="/client/documents">Upload documents</a>.</p></div>
+        {% endif %}
+    </section>
+</div>
+{% else %}
+<section class="cx-card">
+    <div class="cx-empty">
+        <span class="cx-empty__icon">{{ ci("folder") }}</span>
+        <h3>No filing <span class="cx-accent">found for {{ tax_year }}</span></h3>
+        <p>You haven't submitted a filing for tax year {{ tax_year }} yet. Start one now, or switch years from the sidebar.</p>
+        <a href="{{ url_for('new_filing_page') }}" class="cx-btn cx-btn--primary">{{ ci("plus", "ci ci--sm") }} Start new filing</a>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Client Directory - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=3" />
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set active_nav = 'clients' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+
+{% include "partials/staff_sidebar.html" %}
+
+<div class="staff-main">
+    {% include "partials/staff_header.html" %}
+
+    <main class="staff-content">
+        <div class="staff-page-header">
+            <div>
+                <p class="eyebrow">Client Directory</p>
+                <h1 class="staff-page-title">Registered Clients</h1>
+                <p class="staff-page-desc">Manage client profiles and view their filing histories.</p>
+            </div>
+        </div>
+
+        <section class="staff-panel staff-client-table-panel">
+            <table class="staff-client-table">
+                <thead>
+                    <tr>
+                        <th>Client ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if clients %}
+                    {% for c in clients %}
+                    <tr>
+                        <td>
+                            <a href="/staff/clients/{{ c.id }}" class="client-link">
+                                {{ c.client_number }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="/staff/clients/{{ c.id }}" class="client-link">
+                                👤 {{ c.first_name }} {{ c.last_name }}
+                            </a>
+                        </td>
+                        <td>{{ c.email }}</td>
+                        <td>{{ c.phone or 'N/A' }}</td>
+                        <td>
+                            <a href="/staff/clients/{{ c.id }}" class="button button-secondary btn-view-sm">View Profile</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr class="no-results">
+                        <td colspan="5">No registered clients found.</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

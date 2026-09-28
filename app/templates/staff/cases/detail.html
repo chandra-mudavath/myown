@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Case Workstation - {{ case.case_id if case else 'Detail' }} - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=3" />
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set active_nav = 'cases' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+
+{% include "partials/staff_sidebar.html" %}
+
+<div class="staff-main">
+    {% include "partials/staff_header.html" %}
+
+    <main class="staff-content">
+        <!-- Top Banner -->
+        <div class="staff-topbar">
+            <div>
+                <a href="/staff/cases/my" class="staff-back-link">← Back to My Cases</a>
+                <h1>
+                    Case {{ case.case_id if case else "CASE-001" }} — {{ case.client_name if case else "John Doe" }}
+                </h1>
+            </div>
+            <div class="staff-filter-controls">
+                <span class="status-pill">{{ case.stage if case else "Document Review" }}</span>
+                <button class="button button-primary btn-view-sm">Advance Stage →</button>
+            </div>
+        </div>
+
+        <div class="workstation-grid">
+            <!-- Left Column: Case Form Sections -->
+            <div>
+                <!-- Section 1 -->
+                <div class="accordion-box">
+                    <div class="accordion-header">
+                        <span>👤 01. Personal & Contact Information</span>
+                    </div>
+                    <div class="accordion-body">
+                        <p class="accordion-desc">Client personal details submitted on form.</p>
+                    </div>
+                </div>
+
+                <!-- Section 2 -->
+                <div class="accordion-box">
+                    <div class="accordion-header">
+                        <span>💼 02. Income Sources & Categories</span>
+                    </div>
+                    <div class="accordion-body">
+                        <p class="accordion-desc">Income documentation and categories.</p>
+                    </div>
+                </div>
+
+                <!-- Section 3 -->
+                <div class="accordion-box">
+                    <div class="accordion-header">
+                        <span>📄 03. Attached Client Documents</span>
+                    </div>
+                    <div class="accordion-body">
+                        <p class="accordion-desc">Attached tax forms and receipts.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Staff Action Sidebar -->
+            <div>
+                <div class="staff-panel staff-panel-side">
+                    <h3>Staff Assignment</h3>
+                    <p>Assigned to: <strong>{{ first_name }} {{ last_name }}</strong></p>
+                    <button class="button button-secondary staff-btn-full">Reassign Case</button>
+                </div>
+
+                <div class="staff-panel staff-panel-side">
+                    <h3>Request Information</h3>
+                    <textarea placeholder="Type a message to request missing details or files from the client..." class="staff-textarea-req"></textarea>
+                    <button class="button button-primary staff-btn-full">Send Request to Client</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+{% endblock %}

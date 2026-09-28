@@ -1,0 +1,56 @@
+.error-page {
+    min-width: 320px;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    color: #17324d;
+    background: linear-gradient(135deg, #edf5f2, #f8f5ed 54%, #edf3f7);
+    font-family: "DM Sans", sans-serif;
+}
+.message-card {
+    width: min(100%, 480px);
+    padding: 42px 34px;
+    border: 1px solid #d8e5e8;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 18px 45px rgba(23, 50, 77, 0.08);
+    text-align: center;
+}
+.message-mark {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 22px;
+    color: #fff;
+    background: #087f79;
+    font:
+        700 0.85rem "Space Grotesk",
+        sans-serif;
+}
+.message-card h1 {
+    margin: 0;
+    font:
+        700 1.7rem "Space Grotesk",
+        sans-serif;
+}
+.message-card p {
+    margin: 13px 0 26px;
+    color: #64788b;
+    line-height: 1.55;
+}
+.message-card a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 18px;
+    color: #fff;
+    background: #087f79;
+    font-weight: 700;
+    text-decoration: none;
+}
+.message-card a:focus-visible {
+    outline: 3px solid #e4ad50;
+    outline-offset: 3px;
+}

@@ -1,0 +1,64 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "update_stage" %}
+{% set page_section = "Review & File" %}
+{% set page_title = "Filing Status" %}
+{% set page_subtitle = "See where your return stands and ask your tax team for an update." %}
+{% set flow = [
+    ("Form submitted", "Your filing details were received"),
+    ("Document review", "Your tax team checks your uploads"),
+    ("Tax preparation", "Your return is being prepared"),
+    ("Client review", "You review and sign the draft"),
+    ("IRS e-file", "Return transmitted to the IRS and state"),
+] %}
+{% set reached = 1 if filing else 0 %}
+
+{% block page %}
+<div class="cx-grid cx-grid--main">
+    <section class="cx-card" aria-labelledby="flow-title">
+        <div class="cx-card__head">
+            <div>
+                <h2 class="cx-card__title" id="flow-title">{{ ci("stage") }} Tax <span class="cx-accent">year {{ selected_year }}</span></h2>
+                <p class="cx-card__sub">{% if filing %}Case {{ filing.case_number }}{% else %}No filing started for this year{% endif %}</p>
+            </div>
+            {% if filing %}<span class="cx-badge cx-badge--in_progress">{{ filing.status | replace('_', ' ') | capitalize }}</span>{% endif %}
+        </div>
+        <ol class="cx-stages">
+            {% for title, text in flow %}
+            {% set st = "complete" if loop.index <= reached else "not_started" %}
+            <li class="cx-stage cx-stage--{{ st }}{% if loop.index == reached + 1 %} cx-stage--current{% endif %}" style="grid-template-columns: 34px minmax(0,1fr) auto;">
+                <span class="cx-stage__dot">{% if st == "complete" %}{{ ci("check") }}{% else %}{{ loop.index }}{% endif %}</span>
+                <span class="cx-stage__label">{{ title }}<span class="cx-stage__hint">{{ text }}</span></span>
+                {% if st == "complete" %}<span class="cx-badge cx-badge--complete">Done</span>{% elif loop.index == reached + 1 %}<span class="cx-badge cx-badge--pending">Current</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+        {% if not filing %}
+        <div class="cx-card__foot"><a class="cx-btn cx-btn--primary" href="/client/filings/new">{{ ci("plus", "ci ci--sm") }} Start {{ selected_year }} filing</a></div>
+        {% endif %}
+    </section>
+
+    <section class="cx-card" aria-labelledby="req-title">
+        <form data-cx-demo="Request sent to your tax team.">
+            <div class="cx-card__head cx-card__head--plain">
+                <h2 class="cx-card__title" id="req-title">{{ ci("send") }} Request <span class="cx-accent">an update</span></h2>
+            </div>
+            <div class="cx-card__body cx-stack">
+                <div class="cx-field">
+                    <label class="cx-label" for="request_type">Request type</label>
+                    <select class="cx-select" id="request_type" name="request_type">
+                        <option value="status_check">General status check</option>
+                        <option value="expedite">Request expedited review</option>
+                        <option value="question">Question about my stage</option>
+                    </select>
+                </div>
+                <div class="cx-field">
+                    <label class="cx-label" for="stage_comments">Message<span class="cx-req">*</span></label>
+                    <textarea class="cx-textarea" id="stage_comments" name="stage_comments" required placeholder="Add any details for your tax team…"></textarea>
+                </div>
+                <button type="submit" class="cx-btn cx-btn--primary cx-btn--block">Send request</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

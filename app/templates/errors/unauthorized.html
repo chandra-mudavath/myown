@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Access Required - UrTax{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/errors.css') }}" />
+{% endblock %}
+
+{% block body_class %}error-page{% endblock %}
+
+{% block content %}
+<main class="message-card" aria-labelledby="access-title">
+  <div class="message-mark" aria-hidden="true">UT</div>
+  <h1 id="access-title">{% if status_code == 403 %}Access Denied (403){% else %}Sign-in Required (401){% endif %}</h1>
+  <p>{{ message or 'Your account must be authenticated with proper role privileges to access this area.' }}</p>
+  <a href="{{ login_url or '/auth/login' }}">Go to Sign In</a>
+</main>
+{% endblock %}

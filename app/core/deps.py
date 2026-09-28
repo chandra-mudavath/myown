@@ -47,7 +47,7 @@ def require_client(account: AuthAccount = Depends(require_verified)) -> AuthAcco
 
 
 def require_staff(account: AuthAccount = Depends(require_verified)) -> AuthAccount:
-    if account.account_type not in (AccountType.STAFF, AccountType.ADMIN):
+    if account.account_type != AccountType.STAFF:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Staff only")
     return account
 

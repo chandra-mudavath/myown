@@ -1,0 +1,57 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "efile_authorization" %}
+{% set page_section = "Review & File" %}
+{% set page_title = "E-File Authorization" %}
+{% set page_subtitle = "IRS Form 8879: sign electronically so your tax team can transmit your " ~ selected_year ~ " return." %}
+
+{% block page %}
+<div class="cx-grid cx-grid--main">
+    <section class="cx-card" aria-labelledby="sign-title">
+        <form data-cx-demo="Form 8879 authorization submitted.">
+            <div class="cx-card__head">
+                <div>
+                    <h2 class="cx-card__title" id="sign-title">{{ ci("sign") }} Electronic <span class="cx-accent">signature</span></h2>
+                    <p class="cx-card__sub">Choose any 5 digits (not all zeros) as your self-select PIN.</p>
+                </div>
+                <span class="cx-badge cx-badge--pending">Form 8879</span>
+            </div>
+            <div class="cx-card__body">
+                <div class="cx-form-grid">
+                    <div class="cx-field">
+                        <label class="cx-label" for="taxpayer_pin">Taxpayer PIN<span class="cx-req">*</span></label>
+                        <input class="cx-input cx-mono" type="password" id="taxpayer_pin" name="taxpayer_pin" required inputmode="numeric" pattern="(?!00000)\d{5}" maxlength="5" placeholder="•••••" autocomplete="off" />
+                    </div>
+                    <div class="cx-field">
+                        <label class="cx-label" for="spouse_pin">Spouse PIN<span class="cx-opt">If filing jointly</span></label>
+                        <input class="cx-input cx-mono" type="password" id="spouse_pin" name="spouse_pin" inputmode="numeric" pattern="(?!00000)\d{5}" maxlength="5" placeholder="•••••" autocomplete="off" />
+                    </div>
+                </div>
+                <label class="cx-check cx-confirm" style="margin-top: 1.25rem;">
+                    <input type="checkbox" name="consent_efile" required />
+                    <span>Under penalties of perjury, I declare that I have reviewed my return and it is true, correct and complete. I authorize {{ app_name }} to transmit my federal and state returns electronically.</span>
+                </label>
+            </div>
+            <div class="cx-card__foot">
+                <button type="submit" class="cx-btn cx-btn--primary">{{ ci("sign", "ci ci--sm") }} Sign &amp; authorize</button>
+            </div>
+        </form>
+    </section>
+
+    <aside class="cx-stack">
+        <div class="cx-alert cx-alert--warn">
+            {{ ci("alert") }}
+            <p><strong>Review first.</strong> Sign only after you've checked your draft in <a class="cx-link" href="/client/review-documents">Review Documents</a>.</p>
+        </div>
+        <section class="cx-card">
+            <div class="cx-card__body">
+                <dl class="cx-kv">
+                    <div><dt>Tax year</dt><dd>{{ selected_year }}</dd></div>
+                    <div><dt>Form</dt><dd>8879</dd></div>
+                    <div><dt>Status</dt><dd>Awaiting signature</dd></div>
+                </dl>
+            </div>
+        </section>
+    </aside>
+</div>
+{% endblock %}

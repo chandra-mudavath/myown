@@ -1,0 +1,39 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "review_documents" %}
+{% set page_section = "Review & File" %}
+{% set page_title = "Review Documents" %}
+{% set page_subtitle = "Review the draft return prepared by your tax team before you authorize e-filing." %}
+
+{% block page %}
+<div class="cx-grid cx-grid--main">
+    <section class="cx-card" aria-labelledby="drafts-title">
+        <div class="cx-card__head">
+            <div>
+                <h2 class="cx-card__title" id="drafts-title">{{ ci("eye") }} Drafts awaiting <span class="cx-accent">your review</span></h2>
+                <p class="cx-card__sub">Tax year {{ selected_year }}</p>
+            </div>
+        </div>
+        <div class="cx-empty">
+            <span class="cx-empty__icon">{{ ci("file") }}</span>
+            <h3>Nothing to <span class="cx-accent">review yet</span></h3>
+            <p>When your preparer finishes the draft return, the PDF appears here for you to review, comment on and approve.</p>
+            <a class="cx-btn cx-btn--soft" href="/client/dashboard">{{ ci("stage", "ci ci--sm") }} View filing progress</a>
+        </div>
+    </section>
+
+    <aside class="cx-card">
+        <div class="cx-card__head cx-card__head--plain">
+            <h2 class="cx-card__title">{{ ci("check-circle") }} How <span class="cx-accent">review works</span></h2>
+        </div>
+        <div class="cx-card__body">
+            <ol class="cx-numsteps">
+                <li>Open the draft return and check names, SSNs and bank details.</li>
+                <li>Compare income figures with your W-2s and 1099s.</li>
+                <li>Leave a comment if anything looks wrong, or approve the draft.</li>
+                <li>Sign the <a class="cx-link" href="/client/efile-authorization">e-file authorization</a> so we can file.</li>
+            </ol>
+        </div>
+    </aside>
+</div>
+{% endblock %}

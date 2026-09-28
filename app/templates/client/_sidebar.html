@@ -1,0 +1,78 @@
+{% from "client/_icons.html" import ci %}
+{%- set nav_groups = [
+    ("Overview", [
+        ("dashboard", "/client/dashboard", "dashboard", "Dashboard"),
+        ("filings", "/client/filings", "history", "My Filings"),
+    ]),
+    ("My tax return", [
+        ("personal_info", "/client/personal-info", "user", "Personal Info"),
+        ("tax_notes", "/client/tax-notes", "notes", "Tax Notes"),
+        ("documents", "/client/documents", "upload", "Upload Documents"),
+        ("tax_summary", "/client/tax-summary", "calculator", "Tax Summary"),
+        ("payment", "/client/tax-summary#payment", "card", "Make Payment"),
+        ("bank_details", "/client/bank-details", "bank", "Bank Details"),
+        ("fbar", "/client/fbar", "globe", "FBAR"),
+    ]),
+    ("Review & file", [
+        ("review_documents", "/client/review-documents", "eye", "Review Documents"),
+        ("efile_authorization", "/client/efile-authorization", "sign", "E-File Authorization"),
+        ("final_documents", "/client/final-documents", "download", "Download Tax Docs"),
+        ("update_stage", "/client/update-stage", "stage", "Filing Status"),
+    ]),
+    ("Account", [
+        ("refund_request", "/client/refund-request", "refund", "Refund Status"),
+        ("update_contact", "/client/update-contact", "phone", "Email & Mobile"),
+        ("referrals", "/client/referrals", "gift", "Refer & Earn"),
+        ("summary_records", "/client/summary-records", "archive", "Summary Records"),
+    ]),
+] -%}
+{%- set nav_alias = {"profile": "personal_info", "all_documents": "documents"} -%}
+{%- set current = nav_alias.get(active_nav, active_nav) -%}
+
+<aside class="cx-sidebar" id="cx-sidebar" data-cx-sidebar>
+    <a class="cx-brand" href="/client/dashboard" aria-label="{{ app_name }} dashboard">
+        <span class="cx-brand__mark" aria-hidden="true">UT</span>
+        <span class="cx-brand__name">{{ app_name }}</span>
+    </a>
+
+    <form class="cx-yearpick" method="post" action="/client/years">
+        <input type="hidden" name="next" value="{{ request.url.path }}" />
+        <label for="cx-year-select">Filing year</label>
+        <div class="cx-yearpick__control">
+            {{ ci("calendar", "ci ci--sm") }}
+            <select id="cx-year-select" name="tax_year" data-cx-autosubmit>
+                {% for yr in available_years %}
+                <option value="{{ yr }}" {% if yr == selected_year %}selected{% endif %}>{{ yr }} · Regular</option>
+                {% endfor %}
+            </select>
+            {{ ci("chevron-down", "ci ci--sm cx-yearpick__caret") }}
+        </div>
+        <noscript><button type="submit" class="cx-btn cx-btn--sm">Switch</button></noscript>
+    </form>
+
+    <nav class="cx-nav" aria-label="Client navigation">
+        {% for group, items in nav_groups %}
+        <div class="cx-nav__group">
+            <p class="cx-nav__label">{{ group }}</p>
+            {% for key, href, icon, label in items %}
+            <a class="cx-nav__item{% if key == current %} is-active{% endif %}" href="{{ href }}" {% if key == current %}aria-current="page"{% endif %}>
+                {{ ci(icon) }}<span>{{ label }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </nav>
+
+    <div class="cx-sidebar__foot">
+        <div class="cx-helpcard">
+            {{ ci("help") }}
+            <div>
+                <strong>Need help?</strong>
+                <span>Questions about your return? Contact your tax team.</span>
+            </div>
+        </div>
+        <form action="/auth/logout" method="post">
+            <button type="submit" class="cx-nav__item cx-nav__item--logout">{{ ci("logout") }}<span>Log out</span></button>
+        </form>
+    </div>
+</aside>
