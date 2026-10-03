@@ -1,6 +1,7 @@
 {#- Shared admin page shell: sidebar, header, right rail, quick-action modals and admin.js.
     Pages extend this, set `crumb` for the header, and fill `main`.
-    Optional: `layout_class`, `extra_styles`, `extra_scripts`, `header` (dashboard) and `rail` (empty to hide). -#}
+    Optional: `layout_class`, `extra_styles`, `extra_scripts`, `header` (dashboard), and `no_rail = true`
+    for wide pages (hides the right rail and gives its width to the content). -#}
 {% extends "base.html" %}
 {% set app_name = app_name or 'UrTax' %}
 {% set admin_name = admin.first_name if admin and admin.first_name else 'Administrator' %}
@@ -15,14 +16,14 @@
 {% block body_class %}admin-page{% endblock %}
 
 {% block content %}
-<div class="admin-layout{% block layout_class %}{% endblock %}">
+<div class="admin-layout{% if no_rail %} admin-layout--no-rail{% endif %}{% block layout_class %}{% endblock %}">
     {% include "admin/partials/sidebar.html" %}
 
     <main class="admin-main">
         {% block header %}{% include "admin/partials/header.html" %}{% endblock %}
         {% block main %}{% endblock %}
     </main>
-    {% block rail %}{% include "admin/partials/rail.html" %}{% endblock %}
+    {% block rail %}{% if not no_rail %}{% include "admin/partials/rail.html" %}{% endif %}{% endblock %}
 </div>
 
 {% include "admin/partials/modals.html" %}

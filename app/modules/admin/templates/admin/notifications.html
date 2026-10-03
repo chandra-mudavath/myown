@@ -1,0 +1,65 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Notifications - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Notifications' %}
+{% set tone = {'filing': 'blue', 'upload': 'green', 'reupload': 'amber', 'reply': 'coral', 'stage': 'teal', 'account': 'slate'} %}
+{% set no_rail = true %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Activity</span>
+                <h1>Notifications</h1>
+                <p>{% if new_count %}<strong>{{ new_count }} new</strong> since your last visit.{% else %}You're all caught up.{% endif %}</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <nav class="admin-chips" aria-label="Filter notifications">
+            <a href="/admin/notifications" class="admin-chip{% if kind == 'all' %} is-active{% endif %}">All <span>{{ total }}</span></a>
+            <a href="/admin/notifications?kind=new" class="admin-chip{% if kind == 'new' %} is-active{% endif %}">New <span>{{ new_count }}</span></a>
+            {% for key, label in kinds %}
+            <a href="/admin/notifications?kind={{ key }}" class="admin-chip{% if kind == key %} is-active{% endif %}">{{ label }} <span>{{ counts[key] }}</span></a>
+            {% endfor %}
+        </nav>
+
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>When</th>
+                        <th>Activity</th>
+                        <th>Client / account</th>
+                        <th>Case</th>
+                        <th>Details</th>
+                        <th><span class="sr-only">Open</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in events %}
+                    <tr class="{{ 'admin-row-new' if e.is_new else '' }}">
+                        <td class="admin-nowrap">
+                            {% if e.is_new %}<span class="admin-new-dot" aria-label="New"></span>{% endif %}{{ e.time }}
+                        </td>
+                        <td><span class="admin-pill admin-pill--{{ tone.get(e.kind, 'slate') }}">{{ e.label }}</span></td>
+                        <td>
+                            {% if e.filing %}
+                            <a href="/admin/clients/{{ e.client_id }}" class="link-primary">{{ e.client_name }}</a>
+                            <small class="admin-muted">{{ e.customer_no or '' }}</small>
+                            {% else %}
+                            <span class="admin-muted">{{ e.account_number }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{% if e.filing %}<span class="admin-doc-number">{{ e.case_id }}</span>{% else %}—{% endif %}</td>
+                        <td class="admin-detail-cell">{{ e.detail }}</td>
+                        <td class="admin-nowrap">{% if e.href %}<a href="{{ e.href }}" class="link-primary">Open →</a>{% endif %}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="admin-empty">Nothing here yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

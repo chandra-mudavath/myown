@@ -20,6 +20,7 @@ from app.modules.staff.models.staff import Staff
 from app.platform.models.case_workflow import CaseStageHistory
 from app.platform.models.tax_filing import TaxFiling
 from app.platform.services import chat_service
+from app.platform.services.activity_feed import client_activity
 from app.platform.services.catalog import case_stages, document_categories, stage_labels
 from app.platform.services.document_review import account_names, add_comment, comment_threads
 from app.platform.services.storage_service import save_profile_picture
@@ -778,65 +779,12 @@ def staff_move_stage(
 
 def _notification_feed(db: Session, limit: int = 300) -> list[dict]:
     """Recent client activity: new filings, uploads / re-uploads, and replies on documents."""
-    events: list[dict] = []
-    for f in db.query(TaxFiling).order_by(TaxFiling.created_at.desc()).limit(limit).all():
-        events.append({
-            "at": _aware(f.created_at), "kind": "filing", "label": "New filing",
-            "filing": f, "detail": f"Tax year {f.tax_year} · {f.filing_type.capitalize()} filing submitted",
-            "href": f"/staff/cases/{f.id}",
-        })
-    uploads = (
-        db.query(FilingDocument, TaxFiling)
-        .join(TaxFiling, TaxFiling.id == FilingDocument.filing_id)
-        .filter(FilingDocument.uploaded_by_type == "client")
-        .order_by(FilingDocument.uploaded_at.desc())
-        .limit(limit)
-        .all()
+    return client_activity(
+        db,
+        case_link=lambda f: f"/staff/cases/{f.id}",
+        doc_link=lambda f, doc_id: f"/staff/cases/{f.id}/documents" + (f"?doc={doc_id}" if doc_id else ""),
+        limit=limit,
     )
-    for d, f in uploads:
-        reupload = d.version > 1
-        events.append({
-            "at": _aware(d.uploaded_at), "kind": "reupload" if reupload else "upload",
-            "label": "Re-uploaded" if reupload else "Uploaded",
-            "filing": f, "detail": f"{d.document_name} ({d.original_filename}){f' · v{d.version}' if reupload else ''}",
-            "href": f"/staff/cases/{f.id}/documents?doc={d.id}",
-        })
-    replies = (
-        db.query(DocumentComment, TaxFiling)
-        .join(TaxFiling, TaxFiling.id == DocumentComment.filing_id)
-        .filter(DocumentComment.author_type == "client", DocumentComment.kind == "reply")
-        .order_by(DocumentComment.created_at.desc())
-        .limit(limit)
-        .all()
-    )
-    for c, f in replies:
-        events.append({
-            "at": _aware(c.created_at), "kind": "reply", "label": "Replied",
-            "filing": f, "detail": c.body,
-            "href": f"/staff/cases/{f.id}/documents" + (f"?doc={c.document_id}" if c.document_id else ""),
-        })
-    events.sort(key=lambda e: e["at"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
-    events = events[:limit]
-
-    clients = {
-        c.id: c for c in db.query(Client).filter(Client.id.in_({e["filing"].client_id for e in events})).all()
-    } if events else {}
-    case_ids = {}
-    for e in events:
-        f = e["filing"]
-        if f.id not in case_ids:
-            case_ids[f.id] = f.get_case_id(db)
-        client = clients.get(f.client_id)
-        e.update({
-            "client_id": f.client_id,
-            "client_name": f"{f.first_name} {f.last_name}",
-            "customer_no": client.client_number if client else None,
-            "email": f.email,
-            "case_id": case_ids[f.id],
-            "filing_id": f.id,
-            "time": e["at"].strftime("%b %d, %Y · %H:%M") if e["at"] else "",
-        })
-    return events
 
 
 @router.get("/clients", response_class=HTMLResponse, name="staff_clients")

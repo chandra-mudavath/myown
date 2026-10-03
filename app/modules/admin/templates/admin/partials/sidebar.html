@@ -46,13 +46,13 @@
         <a class="admin-nav-item" href="/admin/dashboard#payments">
             <span aria-hidden="true">&#128176;</span>Payments
         </a>
-        <a class="admin-nav-item" href="/admin/dashboard#notifications">
+        <a class="admin-nav-item{% if active_nav == 'notifications' %} active{% endif %}" href="/admin/notifications">
             <span aria-hidden="true">&#128276;</span>Notifications
         </a>
-        <a class="admin-nav-item" href="/admin/dashboard#settings">
+        <a class="admin-nav-item{% if active_nav == 'settings' %} active{% endif %}" href="/admin/settings">
             <span aria-hidden="true">&#9881;</span>Settings
         </a>
-        <a class="admin-nav-item" href="/admin/dashboard#profile">
+        <a class="admin-nav-item{% if active_nav == 'profile' %} active{% endif %}" href="/admin/profile">
             <span aria-hidden="true">&#128100;</span>My Profile
         </a>
     </nav>

@@ -160,7 +160,7 @@ Also kept unchanged: `auth_sessions`, `auth_refresh_tokens`, `auth_password_rese
 `id`, `account_id` FK UK, `client_number` UK, `created_at`, `updated_at`
 
 **`admins`** ♻️
-`id`, `account_id` FK UK, `admin_number` UK, `created_at`, `updated_at`
+`id`, `account_id` FK UK, `admin_number` UK, `notifications_seen_at`, `created_at`, `updated_at`
 
 **`hr`** 🆕
 `id`, `account_id` FK UK, `hr_number` UK, `department`, `created_at`, `updated_at`

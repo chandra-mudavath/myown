@@ -1,0 +1,173 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Settings - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Settings' %}
+{% set no_rail = true %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Configuration</span>
+                <h1>Settings</h1>
+                <p>Tax years, case stages, document types, chat topics and service prices. Every change is recorded.</p>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <nav class="admin-chips" aria-label="Settings sections">
+        {% for key, label in sections %}<a href="#{{ key }}" class="admin-chip">{{ label }}</a>{% endfor %}
+    </nav>
+
+    {# ── Tax years ── #}
+    <section class="admin-section admin-settings-block" id="tax-years">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Filing periods</span><h2>Tax years</h2></div>
+        </div>
+        <p class="admin-form-hint">Open years appear in the client year picker. The default year is preselected.</p>
+        <div hidden>{% for ty in tax_years %}<form method="post" action="/admin/settings/tax-years/{{ ty.id }}" id="ty-{{ ty.id }}"></form>{% endfor %}</div>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Year</th><th>Open</th><th>Default</th><th>Filing deadline</th><th><span class="sr-only">Save</span></th></tr></thead>
+                <tbody>
+                    {% for ty in tax_years %}
+                    <tr>
+                        <td><strong>{{ ty.year }}</strong></td>
+                        <td><input type="checkbox" name="is_open" form="ty-{{ ty.id }}" aria-label="{{ ty.year }} open" {% if ty.is_open %}checked{% endif %}></td>
+                        <td><input type="checkbox" name="is_default" form="ty-{{ ty.id }}" aria-label="{{ ty.year }} default" {% if ty.is_default %}checked{% endif %}></td>
+                        <td><input type="date" name="filing_deadline" form="ty-{{ ty.id }}" class="admin-filter-input admin-input-sm" value="{{ ty.filing_deadline or '' }}" aria-label="{{ ty.year }} filing deadline"></td>
+                        <td><button type="submit" form="ty-{{ ty.id }}" class="admin-mini-btn">Save</button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <form method="post" action="/admin/settings/tax-years" class="admin-inline-form">
+            <input name="year" type="number" min="2000" max="2100" placeholder="Year, e.g. 2027" class="admin-filter-input admin-input-sm" required aria-label="New tax year">
+            <input name="filing_deadline" type="date" class="admin-filter-input admin-input-sm" aria-label="Filing deadline (optional)">
+            <button type="submit" class="admin-filter-btn">Add tax year</button>
+        </form>
+    </section>
+
+    {# ── Case stages ── #}
+    <section class="admin-section admin-settings-block" id="stages">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Workflow</span><h2>Case stages</h2></div>
+        </div>
+        <p class="admin-form-hint">Rename a stage or change its position in the pipeline. Stage codes stay fixed because existing cases use them.</p>
+        <div hidden>{% for dt in document_types %}<form method="post" action="/admin/settings/document-types/{{ dt.id }}" id="dt-{{ dt.id }}"></form>{% endfor %}</div>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>#</th><th>Name</th><th>Code</th><th>Client sees</th><th>Order</th></tr></thead>
+                <tbody>
+                    {% for st in stages %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <form method="post" action="/admin/settings/stages/{{ st.id }}" class="admin-row-form">
+                                <input name="name" value="{{ st.name }}" maxlength="80" class="admin-filter-input admin-input-sm" required aria-label="Name for {{ st.code }}">
+                                <button type="submit" class="admin-mini-btn">Rename</button>
+                            </form>
+                        </td>
+                        <td><span class="admin-doc-number">{{ st.code }}</span></td>
+                        <td>{{ st.client_status }}</td>
+                        <td class="admin-nowrap">
+                            <form method="post" action="/admin/settings/stages/{{ st.id }}/move" class="admin-row-form">
+                                <button type="submit" name="direction" value="up" class="admin-mini-btn" {% if loop.first %}disabled{% endif %} aria-label="Move {{ st.name }} up">↑</button>
+                                <button type="submit" name="direction" value="down" class="admin-mini-btn" {% if loop.last %}disabled{% endif %} aria-label="Move {{ st.name }} down">↓</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ── Document types ── #}
+    <section class="admin-section admin-settings-block" id="document-types">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Uploads</span><h2>Document types</h2></div>
+        </div>
+        <p class="admin-form-hint">Inactive types are hidden from upload choices. Leave max size empty to use the app default ({{ max_upload_mb }} MB).</p>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Name</th><th>Category</th><th>Active</th><th>Max size (MB)</th><th><span class="sr-only">Save</span></th></tr></thead>
+                <tbody>
+                    {% for dt in document_types %}
+                    <tr>
+                        <td><input name="name" form="dt-{{ dt.id }}" value="{{ dt.name }}" maxlength="120" class="admin-filter-input admin-input-sm" required aria-label="Name for {{ dt.code }}"></td>
+                        <td>{{ dt.category }}</td>
+                        <td><input type="checkbox" name="is_active" form="dt-{{ dt.id }}" aria-label="{{ dt.name }} active" {% if dt.is_active %}checked{% endif %}></td>
+                        <td><input name="max_file_mb" form="dt-{{ dt.id }}" type="number" min="1" max="100" value="{{ dt.max_file_mb or '' }}" class="admin-filter-input admin-input-xs" aria-label="{{ dt.name }} max size"></td>
+                        <td><button type="submit" form="dt-{{ dt.id }}" class="admin-mini-btn">Save</button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ── Chat query topics ── #}
+    <section class="admin-section admin-settings-block" id="chat-topics">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Messages</span><h2>Chat query topics</h2></div>
+        </div>
+        <p class="admin-form-hint">Topics clients choose from when they raise a query. Inactive topics are hidden from new queries.</p>
+        <div hidden>{% for tp in chat_topics %}<form method="post" action="/admin/settings/chat-topics/{{ tp.id }}" id="tp-{{ tp.id }}"></form>{% endfor %}</div>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Name</th><th>Code</th><th>Active</th><th><span class="sr-only">Save</span></th></tr></thead>
+                <tbody>
+                    {% for tp in chat_topics %}
+                    <tr>
+                        <td><input name="name" form="tp-{{ tp.id }}" value="{{ tp.name }}" maxlength="80" class="admin-filter-input admin-input-sm" required aria-label="Name for {{ tp.code }}"></td>
+                        <td><span class="admin-doc-number">{{ tp.code }}</span></td>
+                        <td><input type="checkbox" name="is_active" form="tp-{{ tp.id }}" aria-label="{{ tp.name }} active" {% if tp.is_active %}checked{% endif %}></td>
+                        <td><button type="submit" form="tp-{{ tp.id }}" class="admin-mini-btn">Save</button></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <form method="post" action="/admin/settings/chat-topics" class="admin-inline-form">
+            <input name="name" maxlength="80" placeholder="New topic, e.g. Extension request" class="admin-filter-input admin-input-sm" required aria-label="New topic name">
+            <button type="submit" class="admin-filter-btn">Add topic</button>
+        </form>
+    </section>
+
+    {# ── Services & prices ── #}
+    <section class="admin-section admin-settings-block" id="services">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Billing</span><h2>Services &amp; prices</h2></div>
+        </div>
+        <p class="admin-form-hint">The price list used when creating invoices. Changing a price doesn't change invoices already created.</p>
+        <div hidden>{% for sv in services %}<form method="post" action="/admin/settings/services/{{ sv.id }}" id="sv-{{ sv.id }}"></form>{% endfor %}</div>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Service</th><th>Code</th><th>Price (USD)</th><th>Active</th><th><span class="sr-only">Save</span></th></tr></thead>
+                <tbody>
+                    {% for sv in services %}
+                    <tr>
+                        <td><input name="name" form="sv-{{ sv.id }}" value="{{ sv.name }}" maxlength="120" class="admin-filter-input admin-input-sm" required aria-label="Service name"></td>
+                        <td><span class="admin-doc-number">{{ sv.service_code }}</span></td>
+                        <td><input name="base_price" form="sv-{{ sv.id }}" value="{{ '%.2f' | format(sv.base_price) }}" inputmode="decimal" class="admin-filter-input admin-input-xs" required aria-label="{{ sv.name }} price"></td>
+                        <td><input type="checkbox" name="is_active" form="sv-{{ sv.id }}" aria-label="{{ sv.name }} active" {% if sv.is_active %}checked{% endif %}></td>
+                        <td><button type="submit" form="sv-{{ sv.id }}" class="admin-mini-btn">Save</button></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="admin-empty">No services yet. Add your first one below.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <form method="post" action="/admin/settings/services" class="admin-inline-form">
+            <input name="name" maxlength="120" placeholder="Service name, e.g. Individual tax return" class="admin-filter-input admin-input-sm" required aria-label="New service name">
+            <input name="base_price" inputmode="decimal" placeholder="Price, e.g. 150" class="admin-filter-input admin-input-xs" required aria-label="New service price">
+            <input name="description" maxlength="255" placeholder="Description (optional)" class="admin-filter-input admin-input-sm" aria-label="New service description">
+            <button type="submit" class="admin-filter-btn">Add service</button>
+        </form>
+    </section>
+{% endblock %}

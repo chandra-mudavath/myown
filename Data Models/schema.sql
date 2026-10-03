@@ -297,6 +297,7 @@ CREATE TABLE admins (
     id            VARCHAR(36)  NOT NULL PRIMARY KEY,
     account_id    VARCHAR(36)  NOT NULL UNIQUE,
     admin_number  VARCHAR(20)  NOT NULL UNIQUE,
+    notifications_seen_at  TIMESTAMP,
     created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_admins_account FOREIGN KEY (account_id) REFERENCES auth_accounts (id) ON DELETE CASCADE
