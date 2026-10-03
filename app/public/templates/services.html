@@ -1,14 +1,9 @@
-{% extends "base.html" %}
+{% extends "_site_layout.html" %}
 {% block title %}Services | {{ app_name }}{% endblock %}
 {% block meta_desc %}Explore UrTax tax preparation, planning, compliance, international tax, and IRS notice support services.{% endblock %}
 {% block body_class %}landing-page services-page{% endblock %}
-{% block head %}
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet" />
-{% endblock %}
-{% block content %}
-{% include "partials/landing_header.html" %}
+
+{% block page %}
 <main id="content">
     <section id="services" class="section py-16 md:py-20 bg-white">
         <div class="container xl:max-w-6xl mx-auto px-4">
@@ -23,7 +18,7 @@
                         <span class="service-number">01</span><span class="service-name">Individual Tax Preparation</span><span class="service-toggle" aria-hidden="true">−</span>
                     </button>
                     <div class="service-panel" id="service-panel-01">
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/individual_tax.jpg') }}" alt="Tax professional preparing an individual return" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/individual_tax.jpg') }}" alt="Tax professional preparing an individual return" /></div>
                         <div class="service-content">
                             <h2>INDIVIDUAL TAX <span>PREPARATION</span></h2>
                             <p><strong>Accurate, organized tax preparation for individuals and families.</strong></p>
@@ -48,7 +43,7 @@
                         <span class="service-number">02</span><span class="service-name">Business Tax Preparation</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-02" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/business_tax.jpg') }}" alt="Tax professional supporting a business return" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/business_tax.jpg') }}" alt="Tax professional supporting a business return" /></div>
                         <div class="service-content">
                             <h2>BUSINESS TAX <span>PREPARATION</span></h2>
                             <p><strong>Professional tax preparation and filing support for businesses and business owners.</strong></p>
@@ -73,7 +68,7 @@
                         <span class="service-number">03</span><span class="service-name">Tax Planning &amp; Compliance</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-03" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/tax_planning.jpg') }}" alt="Tax professionals reviewing tax planning documents" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/tax_planning.jpg') }}" alt="Tax professionals reviewing tax planning documents" /></div>
                         <div class="service-content">
                             <h2>TAX PLANNING &amp; <span>COMPLIANCE</span></h2>
                             <p><strong>Plan ahead, understand your obligations, and stay prepared for your US tax responsibilities.</strong></p>
@@ -98,7 +93,7 @@
                         <span class="service-number">04</span><span class="service-name">International &amp; Non-Resident Tax</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-04" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/internation_non_resident1.jpg') }}" alt="International tax professional reviewing documents" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/internation_non_resident1.jpg') }}" alt="International tax professional reviewing documents" /></div>
                         <div class="service-content">
                             <h2>INTERNATIONAL &amp; NON-RESIDENT <span>TAX</span></h2>
                             <p><strong>US tax support for non-residents and individuals with international tax situations.</strong></p>
@@ -123,7 +118,7 @@
                         <span class="service-number">05</span><span class="service-name">IRS &amp; Tax Notice Support</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-05" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/irs_amendment.jpg') }}" alt="Professional reviewing an IRS tax notice" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/irs_amendment.jpg') }}" alt="Professional reviewing an IRS tax notice" /></div>
                         <div class="service-content">
                             <h2>IRS &amp; TAX NOTICE <span>SUPPORT</span></h2>
                             <p><strong>Professional assistance when you receive an IRS or state tax notice.</strong></p>
@@ -148,7 +143,7 @@
                         <span class="service-number">06</span><span class="service-name">ITIN Preparation</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-06" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/itin_preparation.jpg') }}" alt="ITIN application and passport verification" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/itin_preparation.jpg') }}" alt="ITIN application and passport verification" /></div>
                         <div class="service-content">
                             <h2>ITIN <span>PREPARATION</span></h2>
                             <p><strong>Official IRS Individual Taxpayer Identification Number application and renewal support.</strong></p>
@@ -173,7 +168,7 @@
                         <span class="service-number">07</span><span class="service-name">Extensions Filing</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-07" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/extensions_filing.jpg') }}" alt="Tax calendar and extension filing" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/extensions_filing.jpg') }}" alt="Tax calendar and extension filing" /></div>
                         <div class="service-content">
                             <h2>EXTENSIONS <span>FILING</span></h2>
                             <p><strong>Timely, accurate federal and state tax extension filing to prevent late penalties.</strong></p>
@@ -198,7 +193,7 @@
                         <span class="service-number">08</span><span class="service-name">FBAR &amp; FATCA Filing</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-08" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/fbar_fatca.jpg') }}" alt="International financial asset and FBAR compliance" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/fbar_fatca.jpg') }}" alt="International financial asset and FBAR compliance" /></div>
                         <div class="service-content">
                             <h2>FBAR &amp; FATCA <span>FILING</span></h2>
                             <p><strong>Comprehensive foreign financial asset reporting and international compliance.</strong></p>
@@ -223,7 +218,7 @@
                         <span class="service-number">09</span><span class="service-name">Amendment Filing</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-09" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/amendment_filing.jpg') }}" alt="Tax amended return preparation" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/amendment_filing.jpg') }}" alt="Tax amended return preparation" /></div>
                         <div class="service-content">
                             <h2>AMENDMENT <span>FILING</span></h2>
                             <p><strong>Correct previously filed tax returns, claim missed deductions, or adjust reporting.</strong></p>
@@ -248,7 +243,7 @@
                         <span class="service-number">10</span><span class="service-name">Advanced Tax Planning</span><span class="service-toggle" aria-hidden="true">+</span>
                     </button>
                     <div class="service-panel" id="service-panel-10" hidden>
-                        <div class="service-media"><img src="{{ url_for('public_static', path='/img/Services/advanced_tax_planning.jpg') }}" alt="Executive tax planning and advisory meeting" /></div>
+                        <div class="service-media"><img src="{{ asset('public', 'img/Services/advanced_tax_planning.jpg') }}" alt="Executive tax planning and advisory meeting" /></div>
                         <div class="service-content">
                             <h2>ADVANCED TAX <span>PLANNING</span></h2>
                             <p><strong>Proactive, multi-year tax strategies to minimize lifetime tax liabilities.</strong></p>
@@ -272,8 +267,4 @@
         </div>
     </section>
 </main>
-{% include "partials/landing_footer.html" %}
-{% endblock %}
-{% block scripts %}
-<script src="/static/public/js/landing.js?v=3" defer></script>
 {% endblock %}

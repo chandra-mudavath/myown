@@ -73,7 +73,7 @@
         <a class="sidebar-nav-item{% if active_nav == 'profile' %} active{% endif %}" href="/staff/profile">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("user") }}</span> Profile
         </a>
-        <script src="/static/js/chat-badge.js?v=1" defer></script>
+        <script src="{{ asset('platform', 'js/chat-badge.js') }}" defer></script>
         <form action="/auth/logout" method="post">
             <button type="submit" class="sidebar-nav-item sidebar-nav-item--logout">
                 <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("logout") }}</span> Logout

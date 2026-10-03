@@ -3,7 +3,7 @@
     Form column on the left (centered logo + one-line heading, icon inputs), headline + trust copy on the right.
     No theme: always the same clear look, whatever theme the landing page uses. Child templates fill auth_heading, auth_subtitle (optional) and auth_form. -#}
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}?v=5.3" />
+<link rel="stylesheet" href="{{ asset('platform', 'css/auth.css') }}" />
 {% endblock %}
 {% block body_class %}au-page{% endblock %}
 {% block content %}
@@ -45,6 +45,6 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
-<script src="{{ url_for('static', path='/js/auth-stars.js') }}?v=1.0"></script>
+<script src="{{ asset('platform', 'js/auth.js') }}"></script>
+<script src="{{ asset('platform', 'js/auth-stars.js') }}"></script>
 {% endblock %}

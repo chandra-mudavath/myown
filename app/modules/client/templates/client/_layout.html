@@ -12,7 +12,7 @@
 {% block title %}{{ page_title }} · {{ app_name }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('client_static', path='/css/client.css') }}?v=2.2" />
+<link rel="stylesheet" href="{{ asset('client', 'css/client.css') }}" />
 {% block page_styles %}{% endblock %}
 {% endblock %}
 
@@ -88,6 +88,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('client_static', path='/js/client.js') }}?v=1.0"></script>
+<script src="{{ asset('client', 'js/client.js') }}"></script>
 {% block page_scripts %}{% endblock %}
 {% endblock %}

@@ -1,18 +1,18 @@
-{% extends "base.html" %} {% block title %}{{ app_name }} | Tax workflow management{% endblock %} {% block meta_desc
-%}{{ app_name }} helps tax professionals organize client documents, prepare returns, manage filing deadlines, and
-maintain compliance records.{% endblock %} {% block body_class %}landing-page{% endblock %} {% block head %}
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet" />
-{% endblock %} {% block content %}
+{% extends "_site_layout.html" %}
+{% block title %}{{ app_name }} | Tax workflow management{% endblock %}
+{% block meta_desc %}{{ app_name }} helps tax professionals organize client documents, prepare returns, manage filing deadlines, and maintain compliance records.{% endblock %}
+{% block body_class %}landing-page{% endblock %}
+{% block before_header %}
 <div class="preloader" aria-hidden="true">
     <span></span>
 </div>
-{% include "partials/landing_header.html" %}
+{% endblock %}
+
+{% block page %}
 <section id="hero" class="landing-gallery" data-landing-gallery aria-label="UrTax highlights">
     <div class="landing-gallery-track">
         <div class="landing-slide is-active">
-            <img src="{{ url_for('public_static', path='/img/landing_coin.jpg') }}" alt="Tax professional reviewing a return" />
+            <img src="{{ asset('public', 'img/landing_coin.jpg') }}" alt="Tax professional reviewing a return" />
         </div>
     </div>
     <div class="landing-gallery-copy hero-copy-content">
@@ -263,25 +263,25 @@ maintain compliance records.{% endblock %} {% block body_class %}landing-page{% 
             </header>
             <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <article class="team-card">
-                    <img src="{{ url_for('public_static', path='/img/team-operations.jpg') }}"
+                    <img src="{{ asset('public', 'img/team-operations.jpg') }}"
                         alt="Tax operations team member" />
                     <h3><span>Operations</span></h3>
                     <p>Keep deadlines and case progress visible across the firm.</p>
                 </article>
                 <article class="team-card">
-                    <img src="{{ url_for('public_static', path='/img/team-preparer.jpg') }}"
+                    <img src="{{ asset('public', 'img/team-preparer.jpg') }}"
                         alt="Tax preparer team member" />
                     <h3><span>Preparation</span></h3>
                     <p>Focus on accurate returns with fewer follow-ups.</p>
                 </article>
                 <article class="team-card">
-                    <img src="{{ url_for('public_static', path='/img/team-compliance.jpg') }}"
+                    <img src="{{ asset('public', 'img/team-compliance.jpg') }}"
                         alt="Tax compliance team member" />
                     <h3><span>Compliance</span></h3>
                     <p>Preserve a clear history of every client decision.</p>
                 </article>
                 <article class="team-card">
-                    <img src="{{ url_for('public_static', path='/img/team-client-service.jpg') }}"
+                    <img src="{{ asset('public', 'img/team-client-service.jpg') }}"
                         alt="Tax client service team member" />
                     <h3>Client <span>service</span></h3>
                     <p>Give clients a more consistent filing experience.</p>
@@ -458,9 +458,9 @@ maintain compliance records.{% endblock %} {% block body_class %}landing-page{% 
         </div>
     </section>
 </main>
-{% include "partials/landing_footer.html" %}
-{% endblock %} {% block scripts %}
-<script src="/static/public/js/landing.js?v=3" defer></script>
-<script src="{{ url_for('public_static', path='/js/services-globe.js') }}?v=1.0" defer></script>
-<script src="{{ url_for('public_static', path='/js/workflow-flow.js') }}?v=1.0" defer></script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ asset('public', 'js/services-globe.js') }}" defer></script>
+<script src="{{ asset('public', 'js/workflow-flow.js') }}" defer></script>
 {% endblock %}

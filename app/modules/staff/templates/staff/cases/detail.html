@@ -1,13 +1,5 @@
-{% extends "base.html" %}
+{% extends "staff/_layout.html" %}
 {% from "client/_icons.html" import ci %}
-{% block title %}{{ case.case_id ~ ' · ' ~ case.client_name if case else 'Case not found' }} - {{ app_name }}{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('staff_static', path='/css/staff.css') }}?v=21" />
-{% endblock %}
-
-{% block body_class %}staff-page{% endblock %}
-
 {%- macro facts(rows) -%}
 <dl class="staff-detail-list">
     {% for label, value in rows %}
@@ -31,217 +23,200 @@
     <span class="case-status case-status--{{ status }}">{{ status | replace('_', ' ') | capitalize }}</span>
 </header>
 {%- endmacro -%}
-
-{% block content %}
-{% set app_name = app_name or 'UrTax' %}
+{% block title %}{{ case.case_id ~ ' · ' ~ case.client_name if case else 'Case not found' }} - {{ app_name }}{% endblock %}
 {% set active_nav = 'cases' %}
-{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
-{% set last_name = staff.last_name if staff and staff.last_name else '' %}
-{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
 
-{% include "staff/partials/sidebar.html" %}
+{% block main %}
+    <a class="staff-back" href="/staff/cases">{{ ci("chevron-left", "ci ci--sm") }} Back to cases</a>
 
-<div class="staff-main">
-    {% include "staff/partials/header.html" %}
+    {% if case %}
+    {% set status = {} %}
+    {% for s in case.sections %}{% set _ = status.update({s.number: s.status}) %}{% endfor %}
 
-    <main class="staff-content">
-        <a class="staff-back" href="/staff/cases">{{ ci("chevron-left", "ci ci--sm") }} Back to cases</a>
-
-        {% if case %}
-        {% set status = {} %}
-        {% for s in case.sections %}{% set _ = status.update({s.number: s.status}) %}{% endfor %}
-
-        {# ── Case file header ── #}
-        <header class="case-file">
-            <div class="case-file__main">
-                <p class="case-file__label">Case file · Tax year {{ case.tax_year }}</p>
-                <h1 class="case-file__id">{{ case.case_id }}</h1>
-                <p class="case-file__client">
-                    <a href="/staff/clients/{{ case.client_id }}">{{ case.client_name }}</a>
-                    {% if case.client_number %}<span class="staff-id-chip">{{ case.client_number }}</span>{% endif %}
-                </p>
-                <p><a class="staff-btn staff-btn--ghost" href="/staff/messages?case={{ case.id }}">{{ ci("send", "ci ci--sm") }} Message client</a></p>
-            </div>
-            <div class="case-file__stage">
-                <span class="case-file__stage-label">Current stage</span>
-                <span class="staff-stage-pill tone-{{ case.stage_tone }} case-file__pill">{{ case.stage }}</span>
-                {% if case.stage_number %}<span class="case-file__stage-step">Step {{ case.stage_number }} of {{ case.stage_total }}</span>{% endif %}
-                <button type="button" class="staff-btn staff-btn--primary case-file__move" data-move-stage
-                        data-action="/staff/cases/{{ case.id }}/stage" data-case="{{ case.case_id }} · {{ case.client_name }}"
-                        data-current="{{ case.stage }}" data-current-key="{{ case.stage_key }}" data-next="{{ case.next_stage or '' }}">
-                    {% if case.next_stage_label %}Move to {{ case.next_stage_label }}{% else %}Move stage{% endif %} {{ ci("arrow-right", "ci ci--sm") }}
-                </button>
-            </div>
-            <dl class="case-file__meta">
-                <div><dt>Filing type</dt><dd>{{ case.filing_type or '—' }}</dd></div>
-                <div><dt>Opened</dt><dd>{{ case.created }}</dd></div>
-                <div><dt>Last activity</dt><dd>{{ case.updated }}</dd></div>
-                <div><dt>Documents</dt><dd>{{ case.documents | length }}</dd></div>
-            </dl>
-        </header>
-
-        {# ── Pipeline strip: every workflow stage, current one highlighted ── #}
-        <nav class="case-pipeline" aria-label="Workflow stages">
-            <ol class="case-pipeline__track" data-pipeline>
-                {% for step in case.pipeline %}
-                <li class="case-pipeline__step is-{{ step.state }}" {% if step.state == 'current' %}aria-current="step"{% endif %}>
-                    <span class="case-pipeline__dot" aria-hidden="true">{% if step.state == 'done' %}{{ ci("check", "ci") }}{% else %}{{ loop.index }}{% endif %}</span>
-                    <span class="case-pipeline__label">{{ step.label }}</span>
-                </li>
-                {% endfor %}
-            </ol>
-        </nav>
-
-        <div class="case-layout">
-            {# ── Left: intake checklist + section cards ── #}
-            <div class="case-main">
-                <nav class="case-checklist" aria-label="Intake sections">
-                    {% for s in case.sections %}
-                    <a class="case-checklist__item case-checklist__item--{{ s.status }}" href="#sec-{{ s.number }}">
-                        <span class="case-checklist__mark" aria-hidden="true">{% if s.status == 'complete' %}{{ ci("check", "ci") }}{% elif s.status == 'not_applicable' %}–{% else %}{{ s.number }}{% endif %}</span>
-                        <span>{{ s.label }}</span>
-                    </a>
-                    {% endfor %}
-                    <a class="case-checklist__item case-checklist__item--{{ 'complete' if case.documents else 'not_started' }}" href="#sec-docs">
-                        <span class="case-checklist__mark" aria-hidden="true">{% if case.documents %}{{ ci("check", "ci") }}{% else %}09{% endif %}</span>
-                        <span>Documents</span>
-                    </a>
-                </nav>
-
-                <section class="case-section" id="sec-01">
-                    {{ section_head("01", "Taxpayer", status["01"]) }}
-                    {{ facts(case.taxpayer) }}
-                </section>
-
-                <section class="case-section" id="sec-02">
-                    {{ section_head("02", "Filing details", status["02"]) }}
-                    {{ facts(case.filing_details) }}
-                </section>
-
-                <section class="case-section" id="sec-03">
-                    {{ section_head("03", "Spouse", status["03"]) }}
-                    {% if case.married %}{{ facts(case.spouse) }}{% else %}<p class="case-none">Not needed for this filing status.</p>{% endif %}
-                </section>
-
-                <section class="case-section" id="sec-04">
-                    {{ section_head("04", "Dependents", status["04"]) }}
-                    {% if case.dependents %}
-                    <ul class="case-people">
-                        {% for d in case.dependents %}
-                        <li>
-                            <strong>{{ d.first_name }} {{ d.last_name }}</strong>
-                            <span>{{ d.relationship or 'Dependent' }}{% if d.date_of_birth %} · Born {{ d.date_of_birth }}{% endif %}{% if d.months_lived %} · {{ d.months_lived }} months at home{% endif %}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="case-none">No dependents listed.</p>
-                    {% endif %}
-                </section>
-
-                <section class="case-section" id="sec-05">
-                    {{ section_head("05", "Income sources", status["05"]) }}
-                    {{ chips(case.income, "No income sources selected.") }}
-                </section>
-
-                <section class="case-section" id="sec-06">
-                    {{ section_head("06", "Deductions & credits", status["06"]) }}
-                    {{ chips(case.deductions, "No deductions or credits selected.") }}
-                </section>
-
-                <section class="case-section" id="sec-07">
-                    {{ section_head("07", "Previous tax information", status["07"]) }}
-                    <ul class="case-answers">
-                        {% for label, answer in case.previous %}
-                        <li class="{{ 'is-yes' if answer == 'yes' and not loop.first else '' }}">
-                            <span>{{ label }}</span>
-                            <strong>{{ answer | capitalize if answer else '—' }}</strong>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </section>
-
-                <section class="case-section" id="sec-08">
-                    {{ section_head("08", "Special situations", status["08"]) }}
-                    {{ chips(case.situations, "No special situations reported.") }}
-                </section>
-
-                <section class="case-section" id="sec-docs">
-                    {{ section_head("09", "Documents", 'complete' if case.documents else 'not_started') }}
-                    {% if case.documents %}
-                    <ul class="case-docs">
-                        {% for d in case.documents %}
-                        <li class="case-doc">
-                            <span class="case-doc__icon" aria-hidden="true">{{ ci("file") }}</span>
-                            <div class="case-doc__body">
-                                <strong>{{ d.name }}</strong>
-                                <span>{{ d.number }} · {{ d.category }} · {{ d.filename }} · {{ d.size }} · v{{ d.version }} · {{ d.uploaded }}</span>
-                                {% if d.reason %}<span class="case-doc__reason">{{ d.reason }}</span>{% endif %}
-                            </div>
-                            <span class="staff-stage-pill tone-{{ d.tone }}">{{ d.status }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="case-none">The client hasn't uploaded any documents yet.</p>
-                    {% endif %}
-                    <a class="staff-btn staff-btn--ghost case-docs__open" href="/staff/cases/{{ case.id }}/documents">{{ ci("folder", "ci ci--sm") }} Open document review</a>
-                </section>
-            </div>
-
-            {# ── Right: sticky case summary ── #}
-            <aside class="case-aside">
-                <section class="case-card">
-                    <h2>Intake completeness</h2>
-                    <div class="case-meter">
-                        <div class="case-meter__ring" style="--pct: {{ case.completeness }}" role="img" aria-label="{{ case.completeness }}% of intake sections complete">
-                            <span>{{ case.completeness }}%</span>
-                        </div>
-                        <p>{{ case.sections | selectattr('status', 'in', ['complete', 'not_applicable']) | list | length }} of {{ case.sections | length }} intake sections complete</p>
-                    </div>
-                </section>
-
-                <section class="case-card{% if case.flags %} case-card--alert{% endif %}">
-                    <h2>{{ ci("alert", "ci ci--sm") }} Needs attention</h2>
-                    {% if case.flags %}
-                    <ul class="case-flags">{% for flag in case.flags %}<li>{{ flag }}</li>{% endfor %}</ul>
-                    {% else %}
-                    <p class="case-none">Nothing flagged on this case.</p>
-                    {% endif %}
-                </section>
-
-                <section class="case-card">
-                    <h2>Documents</h2>
-                    <ul class="case-docstats">
-                        {% for label, count in case.doc_summary.items() %}
-                        <li><span>{{ label }}</span><strong>{{ count }}</strong></li>
-                        {% endfor %}
-                    </ul>
-                </section>
-
-                <section class="case-card">
-                    <h2>Client contact</h2>
-                    <ul class="case-links">
-                        <li><a href="/staff/clients/{{ case.client_id }}">{{ ci("user", "ci ci--sm") }} Client profile</a></li>
-                        {% if case.email %}<li><a href="mailto:{{ case.email }}?subject={{ ('Your ' ~ case.tax_year ~ ' tax filing ' ~ case.case_id) | urlencode }}">{{ ci("mail", "ci ci--sm") }} {{ case.email }}</a></li>{% endif %}
-                        {% if case.phone %}<li><a href="tel:{{ case.phone }}">{{ ci("phone", "ci ci--sm") }} {{ case.phone }}</a></li>{% endif %}
-                    </ul>
-                </section>
-            </aside>
+    {# ── Case file header ── #}
+    <header class="case-file">
+        <div class="case-file__main">
+            <p class="case-file__label">Case file · Tax year {{ case.tax_year }}</p>
+            <h1 class="case-file__id">{{ case.case_id }}</h1>
+            <p class="case-file__client">
+                <a href="/staff/clients/{{ case.client_id }}">{{ case.client_name }}</a>
+                {% if case.client_number %}<span class="staff-id-chip">{{ case.client_number }}</span>{% endif %}
+            </p>
+            <p><a class="staff-btn staff-btn--ghost" href="/staff/messages?case={{ case.id }}">{{ ci("send", "ci ci--sm") }} Message client</a></p>
         </div>
-        {% include "staff/_stage_dialog.html" %}
-        {% else %}
-        <section class="staff-panel staff-empty">
-            {{ ci("folder") }}
-            <strong>Case not found</strong>
-            <span>This filing may have been removed or the link is wrong. Go back to cases and try again.</span>
-        </section>
-        {% endif %}
-    </main>
-</div>
-{% endblock %}
+        <div class="case-file__stage">
+            <span class="case-file__stage-label">Current stage</span>
+            <span class="staff-stage-pill tone-{{ case.stage_tone }} case-file__pill">{{ case.stage }}</span>
+            {% if case.stage_number %}<span class="case-file__stage-step">Step {{ case.stage_number }} of {{ case.stage_total }}</span>{% endif %}
+            <button type="button" class="staff-btn staff-btn--primary case-file__move" data-move-stage
+                    data-action="/staff/cases/{{ case.id }}/stage" data-case="{{ case.case_id }} · {{ case.client_name }}"
+                    data-current="{{ case.stage }}" data-current-key="{{ case.stage_key }}" data-next="{{ case.next_stage or '' }}">
+                {% if case.next_stage_label %}Move to {{ case.next_stage_label }}{% else %}Move stage{% endif %} {{ ci("arrow-right", "ci ci--sm") }}
+            </button>
+        </div>
+        <dl class="case-file__meta">
+            <div><dt>Filing type</dt><dd>{{ case.filing_type or '—' }}</dd></div>
+            <div><dt>Opened</dt><dd>{{ case.created }}</dd></div>
+            <div><dt>Last activity</dt><dd>{{ case.updated }}</dd></div>
+            <div><dt>Documents</dt><dd>{{ case.documents | length }}</dd></div>
+        </dl>
+    </header>
 
-{% block scripts %}
-<script src="{{ url_for('staff_static', path='/js/sidebar-nav.js') }}?v=5"></script>
-<script src="{{ url_for('staff_static', path='/js/staff-page.js') }}?v=6"></script>
+    {# ── Pipeline strip: every workflow stage, current one highlighted ── #}
+    <nav class="case-pipeline" aria-label="Workflow stages">
+        <ol class="case-pipeline__track" data-pipeline>
+            {% for step in case.pipeline %}
+            <li class="case-pipeline__step is-{{ step.state }}" {% if step.state == 'current' %}aria-current="step"{% endif %}>
+                <span class="case-pipeline__dot" aria-hidden="true">{% if step.state == 'done' %}{{ ci("check", "ci") }}{% else %}{{ loop.index }}{% endif %}</span>
+                <span class="case-pipeline__label">{{ step.label }}</span>
+            </li>
+            {% endfor %}
+        </ol>
+    </nav>
+
+    <div class="case-layout">
+        {# ── Left: intake checklist + section cards ── #}
+        <div class="case-main">
+            <nav class="case-checklist" aria-label="Intake sections">
+                {% for s in case.sections %}
+                <a class="case-checklist__item case-checklist__item--{{ s.status }}" href="#sec-{{ s.number }}">
+                    <span class="case-checklist__mark" aria-hidden="true">{% if s.status == 'complete' %}{{ ci("check", "ci") }}{% elif s.status == 'not_applicable' %}–{% else %}{{ s.number }}{% endif %}</span>
+                    <span>{{ s.label }}</span>
+                </a>
+                {% endfor %}
+                <a class="case-checklist__item case-checklist__item--{{ 'complete' if case.documents else 'not_started' }}" href="#sec-docs">
+                    <span class="case-checklist__mark" aria-hidden="true">{% if case.documents %}{{ ci("check", "ci") }}{% else %}09{% endif %}</span>
+                    <span>Documents</span>
+                </a>
+            </nav>
+
+            <section class="case-section" id="sec-01">
+                {{ section_head("01", "Taxpayer", status["01"]) }}
+                {{ facts(case.taxpayer) }}
+            </section>
+
+            <section class="case-section" id="sec-02">
+                {{ section_head("02", "Filing details", status["02"]) }}
+                {{ facts(case.filing_details) }}
+            </section>
+
+            <section class="case-section" id="sec-03">
+                {{ section_head("03", "Spouse", status["03"]) }}
+                {% if case.married %}{{ facts(case.spouse) }}{% else %}<p class="case-none">Not needed for this filing status.</p>{% endif %}
+            </section>
+
+            <section class="case-section" id="sec-04">
+                {{ section_head("04", "Dependents", status["04"]) }}
+                {% if case.dependents %}
+                <ul class="case-people">
+                    {% for d in case.dependents %}
+                    <li>
+                        <strong>{{ d.first_name }} {{ d.last_name }}</strong>
+                        <span>{{ d.relationship or 'Dependent' }}{% if d.date_of_birth %} · Born {{ d.date_of_birth }}{% endif %}{% if d.months_lived %} · {{ d.months_lived }} months at home{% endif %}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="case-none">No dependents listed.</p>
+                {% endif %}
+            </section>
+
+            <section class="case-section" id="sec-05">
+                {{ section_head("05", "Income sources", status["05"]) }}
+                {{ chips(case.income, "No income sources selected.") }}
+            </section>
+
+            <section class="case-section" id="sec-06">
+                {{ section_head("06", "Deductions & credits", status["06"]) }}
+                {{ chips(case.deductions, "No deductions or credits selected.") }}
+            </section>
+
+            <section class="case-section" id="sec-07">
+                {{ section_head("07", "Previous tax information", status["07"]) }}
+                <ul class="case-answers">
+                    {% for label, answer in case.previous %}
+                    <li class="{{ 'is-yes' if answer == 'yes' and not loop.first else '' }}">
+                        <span>{{ label }}</span>
+                        <strong>{{ answer | capitalize if answer else '—' }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="case-section" id="sec-08">
+                {{ section_head("08", "Special situations", status["08"]) }}
+                {{ chips(case.situations, "No special situations reported.") }}
+            </section>
+
+            <section class="case-section" id="sec-docs">
+                {{ section_head("09", "Documents", 'complete' if case.documents else 'not_started') }}
+                {% if case.documents %}
+                <ul class="case-docs">
+                    {% for d in case.documents %}
+                    <li class="case-doc">
+                        <span class="case-doc__icon" aria-hidden="true">{{ ci("file") }}</span>
+                        <div class="case-doc__body">
+                            <strong>{{ d.name }}</strong>
+                            <span>{{ d.number }} · {{ d.category }} · {{ d.filename }} · {{ d.size }} · v{{ d.version }} · {{ d.uploaded }}</span>
+                            {% if d.reason %}<span class="case-doc__reason">{{ d.reason }}</span>{% endif %}
+                        </div>
+                        <span class="staff-stage-pill tone-{{ d.tone }}">{{ d.status }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="case-none">The client hasn't uploaded any documents yet.</p>
+                {% endif %}
+                <a class="staff-btn staff-btn--ghost case-docs__open" href="/staff/cases/{{ case.id }}/documents">{{ ci("folder", "ci ci--sm") }} Open document review</a>
+            </section>
+        </div>
+
+        {# ── Right: sticky case summary ── #}
+        <aside class="case-aside">
+            <section class="case-card">
+                <h2>Intake completeness</h2>
+                <div class="case-meter">
+                    <div class="case-meter__ring" style="--pct: {{ case.completeness }}" role="img" aria-label="{{ case.completeness }}% of intake sections complete">
+                        <span>{{ case.completeness }}%</span>
+                    </div>
+                    <p>{{ case.sections | selectattr('status', 'in', ['complete', 'not_applicable']) | list | length }} of {{ case.sections | length }} intake sections complete</p>
+                </div>
+            </section>
+
+            <section class="case-card{% if case.flags %} case-card--alert{% endif %}">
+                <h2>{{ ci("alert", "ci ci--sm") }} Needs attention</h2>
+                {% if case.flags %}
+                <ul class="case-flags">{% for flag in case.flags %}<li>{{ flag }}</li>{% endfor %}</ul>
+                {% else %}
+                <p class="case-none">Nothing flagged on this case.</p>
+                {% endif %}
+            </section>
+
+            <section class="case-card">
+                <h2>Documents</h2>
+                <ul class="case-docstats">
+                    {% for label, count in case.doc_summary.items() %}
+                    <li><span>{{ label }}</span><strong>{{ count }}</strong></li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="case-card">
+                <h2>Client contact</h2>
+                <ul class="case-links">
+                    <li><a href="/staff/clients/{{ case.client_id }}">{{ ci("user", "ci ci--sm") }} Client profile</a></li>
+                    {% if case.email %}<li><a href="mailto:{{ case.email }}?subject={{ ('Your ' ~ case.tax_year ~ ' tax filing ' ~ case.case_id) | urlencode }}">{{ ci("mail", "ci ci--sm") }} {{ case.email }}</a></li>{% endif %}
+                    {% if case.phone %}<li><a href="tel:{{ case.phone }}">{{ ci("phone", "ci ci--sm") }} {{ case.phone }}</a></li>{% endif %}
+                </ul>
+            </section>
+        </aside>
+    </div>
+    {% include "staff/_stage_dialog.html" %}
+    {% else %}
+    <section class="staff-panel staff-empty">
+        {{ ci("folder") }}
+        <strong>Case not found</strong>
+        <span>This filing may have been removed or the link is wrong. Go back to cases and try again.</span>
+    </section>
+    {% endif %}
 {% endblock %}

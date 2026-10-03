@@ -1,15 +1,12 @@
-{% extends "base.html" %}
+{% extends "_site_layout.html" %}
 {% block title %}Refer &amp; Earn | {{ app_name }}{% endblock %}
 {% block meta_desc %}Refer friends and businesses to {{ app_name }} and earn a reward for every successful tax filing.{% endblock %}
 {% block body_class %}landing-page refer-page{% endblock %}
-{% block head %}
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="{{ url_for('public_static', path='/css/refer.css') }}?v=1.2" />
+{% block extra_head %}
+<link rel="stylesheet" href="{{ asset('public', 'css/refer.css') }}" />
 {% endblock %}
-{% block content %}
-{% include "partials/landing_header.html" %}
+
+{% block page %}
 <main id="content" class="pt-24">
 
     <!-- Hero -->
@@ -43,7 +40,7 @@
                         <rect width="200" height="200" fill="url(#refer-dot-grid)" />
                     </svg>
                     <div class="refer-hero-frame">
-                        <img src="{{ url_for('public_static', path='/img/refer/hero-friends.jpg') }}"
+                        <img src="{{ asset('public', 'img/refer/hero-friends.jpg') }}"
                             alt="Four friends laughing while looking at a phone together" />
                     </div>
 
@@ -195,20 +192,20 @@
             </header>
             <div class="refer-people">
                 <article class="refer-person">
-                    <img src="{{ url_for('public_static', path='/img/refer/refer-family.jpg') }}" alt="" loading="lazy" />
+                    <img src="{{ asset('public', 'img/refer/refer-family.jpg') }}" alt="" loading="lazy" />
                     <div><h3>Friends &amp; family</h3><p>W-2 earners, freelancers, and households.</p></div>
                 </article>
                 <article class="refer-person">
-                    <img src="{{ url_for('public_static', path='/img/refer/refer-business.jpg') }}" class="refer-person-img-right" alt="" loading="lazy" />
+                    <img src="{{ asset('public', 'img/refer/refer-business.jpg') }}" class="refer-person-img-right" alt="" loading="lazy" />
                     <div><h3>Business owners</h3><p>LLCs, S-Corps, C-Corps, and partnerships.</p></div>
                 </article>
                 <article class="refer-person">
-                    <img src="{{ url_for('public_static', path='/img/refer/refer-student.jpg') }}" alt=""
+                    <img src="{{ asset('public', 'img/refer/refer-student.jpg') }}" alt=""
                         loading="lazy" />
                     <div><h3>Students &amp; non-residents</h3><p>Visa holders and cross-border earners.</p></div>
                 </article>
                 <article class="refer-person">
-                    <img src="{{ url_for('public_static', path='/img/refer/refer-itin.jpg') }}" alt=""
+                    <img src="{{ asset('public', 'img/refer/refer-itin.jpg') }}" alt=""
                         loading="lazy" />
                     <div><h3>ITIN applicants</h3><p>New arrivals and dependents needing an ITIN.</p></div>
                 </article>
@@ -255,7 +252,7 @@
             </header>
             <div class="refer-faq-grid">
                 <aside class="refer-help">
-                    <img src="{{ url_for('public_static', path='/img/refer/referral-desk.jpg') }}"
+                    <img src="{{ asset('public', 'img/refer/referral-desk.jpg') }}"
                         alt="Support agent with a headset smiling at her desk" loading="lazy" />
                     <div class="refer-help-body">
                         <h3>Talk to our <span>referral desk</span></h3>
@@ -327,9 +324,8 @@
         </div>
     </section>
 </main>
-{% include "partials/landing_footer.html" %}
 {% endblock %}
-{% block scripts %}
-<script src="/static/public/js/landing.js?v=3" defer></script>
-<script src="{{ url_for('public_static', path='/js/refer.js') }}" defer></script>
+
+{% block extra_scripts %}
+<script src="{{ asset('public', 'js/refer.js') }}" defer></script>
 {% endblock %}

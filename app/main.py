@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.core.assets import STATIC_MOUNTS, mount_name
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.templates import templates
@@ -50,17 +51,9 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
 
 
-# Static files: each module serves its own static/ folder under /static/<module>/.
-# Module mounts must come before the shared /static mount, which would otherwise swallow their paths.
-for module, directory in [
-    ("public", "app/public/static"),
-    ("client", "app/modules/client/static"),
-    ("staff", "app/modules/staff/static"),
-    ("admin", "app/modules/admin/static"),
-    ("hr", "app/modules/hr/static"),
-]:
-    app.mount(f"/static/{module}", StaticFiles(directory=directory), name=f"{module}_static")
-app.mount("/static", StaticFiles(directory="app/platform/static"), name="static")
+# Static files: each module serves its own static/ folder (see app/core/assets.py).
+for module, prefix, directory in STATIC_MOUNTS:
+    app.mount(prefix, StaticFiles(directory=directory), name=mount_name(module))
 # storage/ is git-ignored upload data, so create it on a fresh checkout before mounting
 os.makedirs("storage", exist_ok=True)
 app.mount("/storage", StaticFiles(directory="storage"), name="storage")

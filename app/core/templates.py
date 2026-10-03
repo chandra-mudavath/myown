@@ -1,6 +1,8 @@
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
 
+from app.core.assets import asset
+
 
 # Each module keeps its own templates/ folder; names stay namespaced ("admin/index.html").
 templates = Jinja2Templates(directory=[
@@ -33,3 +35,4 @@ def two_tone(text: str) -> Markup:
 
 
 templates.env.filters["two_tone"] = two_tone
+templates.env.globals["asset"] = asset

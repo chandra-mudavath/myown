@@ -1,0 +1,32 @@
+{#- Shared staff page shell: sidebar, header, the main content area and the staff scripts.
+    Pages extend this, set `active_nav`, and fill `main`.
+    Optional: `main_class`, `extra_styles`, and `page_scripts` (defaults to staff-page.js). -#}
+{% extends "base.html" %}
+{% set app_name = app_name or 'UrTax' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ asset('staff', 'css/staff.css') }}" />
+{% block extra_styles %}{% endblock %}
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% include "staff/partials/sidebar.html" %}
+
+<div class="staff-main">
+    {% include "staff/partials/header.html" %}
+
+    <main class="staff-content{% block main_class %}{% endblock %}">
+        {% block main %}{% endblock %}
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ asset('staff', 'js/sidebar-nav.js') }}"></script>
+{% block page_scripts %}<script src="{{ asset('staff', 'js/staff-page.js') }}"></script>{% endblock %}
+{% endblock %}

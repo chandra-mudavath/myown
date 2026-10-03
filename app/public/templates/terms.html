@@ -1,14 +1,9 @@
-{% extends "base.html" %}
+{% extends "_site_layout.html" %}
 {% block title %}Terms &amp; Conditions | {{ app_name }}{% endblock %}
 {% block meta_desc %}Read the Terms and Conditions, Privacy Policy, security, disclosure, and consent information for {{ app_name }}.{% endblock %}
 {% block body_class %}landing-page terms-page{% endblock %}
-{% block head %}
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet" />
-{% endblock %}
-{% block content %}
-{% include "partials/landing_header.html" %}
+
+{% block page %}
 <main id="content" class="pt-24">
     <section class="section py-16 md:py-20 bg-white">
         <div class="container xl:max-w-6xl mx-auto px-4">
@@ -57,8 +52,4 @@
         </div>
     </section>
 </main>
-{% include "partials/landing_footer.html" %}
-{% endblock %}
-{% block scripts %}
-<script src="/static/public/js/landing.js?v=3" defer></script>
 {% endblock %}

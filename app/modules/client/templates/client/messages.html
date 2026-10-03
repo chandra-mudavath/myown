@@ -5,7 +5,7 @@
 {% set page_subtitle = "Talk to the team working on your filing, or ask a question." %}
 
 {% block page_styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/chat.css') }}?v=1" />
+<link rel="stylesheet" href="{{ asset('platform', 'css/chat.css') }}" />
 {% endblock %}
 
 {% block page %}
@@ -16,5 +16,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', path='/js/chat.js') }}?v=1"></script>
+<script src="{{ asset('platform', 'js/chat.js') }}"></script>
 {% endblock %}

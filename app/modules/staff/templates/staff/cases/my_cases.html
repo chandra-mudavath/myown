@@ -1,43 +1,19 @@
-{% extends "base.html" %}
+{% extends "staff/_layout.html" %}
 {% from "client/_icons.html" import ci %}
 {% block title %}{{ page_title or 'Cases' }} - {{ app_name }}{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="{{ url_for('staff_static', path='/css/staff.css') }}?v=21" />
-{% endblock %}
-
-{% block body_class %}staff-page{% endblock %}
-
-{% block content %}
-{% set app_name = app_name or 'UrTax' %}
 {% set active_nav = active_nav or 'my_cases' %}
-{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
-{% set last_name = staff.last_name if staff and staff.last_name else '' %}
-{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
 
-{% include "staff/partials/sidebar.html" %}
-
-<div class="staff-main">
-    {% include "staff/partials/header.html" %}
-
-    <main class="staff-content">
-        <div class="staff-pagehead">
-            <div>
-                <p class="eyebrow">Case management</p>
-                <h1>{{ table.stage_label or page_title or 'Cases' }}</h1>
-            </div>
-            {% if table.stage_label %}
-            <a class="staff-btn staff-btn--ghost" href="{{ request.url.path }}">{{ ci("x", "ci ci--sm") }} Clear stage</a>
-            {% endif %}
+{% block main %}
+    <div class="staff-pagehead">
+        <div>
+            <p class="eyebrow">Case management</p>
+            <h1>{{ table.stage_label or page_title or 'Cases' }}</h1>
         </div>
+        {% if table.stage_label %}
+        <a class="staff-btn staff-btn--ghost" href="{{ request.url.path }}">{{ ci("x", "ci ci--sm") }} Clear stage</a>
+        {% endif %}
+    </div>
 
-        {% set table_title = page_title %}
-        {% include "staff/_case_table.html" %}
-    </main>
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('staff_static', path='/js/sidebar-nav.js') }}?v=5"></script>
-<script src="{{ url_for('staff_static', path='/js/staff-page.js') }}?v=6"></script>
+    {% set table_title = page_title %}
+    {% include "staff/_case_table.html" %}
 {% endblock %}
