@@ -5,15 +5,17 @@ from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, chat, dashboard, profile, staff, admin
-from app.api.client import client as client_routes
 from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.templates import templates
-import app.models  # noqa: F401 — registers all models with Base.metadata
+import app.db_models  # noqa: F401 — registers all models with Base.metadata
+from app.modules.admin.api import admin
+from app.modules.client.api import client as client_routes, dashboard, profile
+from app.modules.staff.api import staff
+from app.platform.api import auth, chat
+from app.public.api import pages
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -48,8 +50,17 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
 
 
-# Static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+# Static files: each module serves its own static/ folder under /static/<module>/.
+# Module mounts must come before the shared /static mount, which would otherwise swallow their paths.
+for module, directory in [
+    ("public", "app/public/static"),
+    ("client", "app/modules/client/static"),
+    ("staff", "app/modules/staff/static"),
+    ("admin", "app/modules/admin/static"),
+    ("hr", "app/modules/hr/static"),
+]:
+    app.mount(f"/static/{module}", StaticFiles(directory=directory), name=f"{module}_static")
+app.mount("/static", StaticFiles(directory="app/platform/static"), name="static")
 # storage/ is git-ignored upload data, so create it on a fresh checkout before mounting
 os.makedirs("storage", exist_ok=True)
 app.mount("/storage", StaticFiles(directory="storage"), name="storage")
@@ -86,28 +97,4 @@ app.include_router(client_routes.router)
 app.include_router(staff.router)
 app.include_router(admin.router)
 app.include_router(chat.router)
-
-
-@app.get("/", response_class=HTMLResponse, include_in_schema=False)
-def root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/about-us", response_class=HTMLResponse, include_in_schema=False)
-def about_us(request: Request):
-    return templates.TemplateResponse("about.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/services", response_class=HTMLResponse, include_in_schema=False)
-def services(request: Request):
-    return templates.TemplateResponse("services.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/refer-and-earn", response_class=HTMLResponse, include_in_schema=False)
-def refer_and_earn(request: Request):
-    return templates.TemplateResponse("refer.html", {"request": request, "app_name": settings.APP_NAME})
-
-
-@app.get("/terms-and-conditions", response_class=HTMLResponse, include_in_schema=False)
-def terms_and_conditions(request: Request):
-    return templates.TemplateResponse("terms.html", {"request": request, "app_name": settings.APP_NAME})
+app.include_router(pages.router)

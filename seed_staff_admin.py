@@ -6,10 +6,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.core.database import SessionLocal
 from app.core.security import hash_password
-from app.models.auth import AuthAccount, AccountType
-from app.models.staff import Staff, StaffRole
-from app.models.admin import Admin
-import app.models  # noqa: F401 — registers the readable-number hooks
+from app.platform.models.auth import AuthAccount, AccountType
+from app.modules.staff.models.staff import Staff, StaffRole
+from app.modules.admin.models.admin import Admin
+import app.db_models  # noqa: F401 — registers the readable-number hooks
 
 def seed_data():
     db = SessionLocal()

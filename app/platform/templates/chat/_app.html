@@ -1,0 +1,157 @@
+{#- Shared chat UI, placed inside each portal's layout. app/platform/static/js/chat.js renders into it.
+    Needs: portal ("staff" | "admin" | "client"), open_thread, open_case. -#}
+{% from "client/_icons.html" import ci %}
+{% set is_client = portal == "client" %}
+<div class="chat" data-chat data-portal="{{ portal }}" data-open-thread="{{ open_thread }}" data-open-case="{{ open_case }}">
+    <aside class="chat-list" aria-label="Conversations">
+        <div class="chat-list__head">
+            <div class="chat-list__title">
+                <h2>Messages</h2>
+                {% if is_client %}
+                <button type="button" class="chat-btn chat-btn--primary" data-chat-ask>{{ ci("plus", "ci ci--sm") }} Ask a question</button>
+                {% else %}
+                <button type="button" class="chat-btn chat-btn--primary" data-chat-new="direct">{{ ci("plus", "ci ci--sm") }} New</button>
+                {% endif %}
+            </div>
+            <label class="chat-search">
+                {{ ci("search", "ci ci--sm") }}
+                <span class="sr-only">Filter conversations</span>
+                <input type="search" id="chat-filter" placeholder="{{ 'Filter conversations' if is_client else 'Filter people, groups, cases or MSG- number' }}" data-chat-filter autocomplete="off" />
+            </label>
+        </div>
+        <div class="chat-sections" data-chat-sections aria-live="polite">
+            <p class="chat-muted chat-pad">Loading conversations…</p>
+        </div>
+    </aside>
+
+    <section class="chat-conv" data-chat-conv aria-label="Conversation">
+        <div class="chat-empty" data-chat-empty>
+            {{ ci("mail") }}
+            <h3>{{ "Talk to your tax team" if is_client else "Pick a conversation" }}</h3>
+            <p>{{ "Open one of your filings to message the team working on it, or ask a question." if is_client else "Choose a chat on the left, or start a new one." }}</p>
+        </div>
+        <div class="chat-thread" data-chat-thread hidden>
+            <header class="chat-thread__head">
+                <button type="button" class="chat-iconbtn chat-back" data-chat-back aria-label="Back to conversations">{{ ci("chevron-left") }}</button>
+                <span class="chat-avatar" data-chat-head-avatar aria-hidden="true"></span>
+                <div class="chat-thread__titles">
+                    <h3 data-chat-head-title></h3>
+                    <p data-chat-head-sub></p>
+                </div>
+                <div class="chat-thread__members" data-chat-head-members></div>
+                <div class="chat-thread__actions" data-chat-head-actions></div>
+            </header>
+            <div class="chat-banner" data-chat-banner hidden></div>
+            <div class="chat-messages" data-chat-messages tabindex="0" aria-label="Messages"></div>
+            <form class="chat-compose" data-chat-compose>
+                <div class="chat-compose__mode" data-chat-mode hidden role="group" aria-label="Who sees this message">
+                    <button type="button" class="chat-mode is-active" data-mode="all" aria-pressed="true">Reply to client</button>
+                    <button type="button" class="chat-mode chat-mode--note" data-mode="internal" aria-pressed="false">Internal note</button>
+                </div>
+                <div class="chat-compose__files" data-chat-files hidden></div>
+                <div class="chat-compose__row">
+                    <label class="chat-iconbtn" title="Attach files">
+                        {{ ci("upload") }}<span class="sr-only">Attach files</span>
+                        <input type="file" id="chat-file-input" multiple hidden data-chat-file />
+                    </label>
+                    <label for="chat-input" class="sr-only">Message</label>
+                    <textarea id="chat-input" rows="1" maxlength="4000" placeholder="Write a message…" data-chat-input></textarea>
+                    <button type="submit" class="chat-btn chat-btn--primary" data-chat-send>{{ ci("send", "ci ci--sm") }} Send</button>
+                </div>
+                <p class="chat-compose__hint" data-chat-hint>Enter to send · Shift+Enter for a new line</p>
+            </form>
+        </div>
+    </section>
+
+    {% if not is_client %}
+    <dialog class="chat-dialog" data-chat-dialog="new" aria-labelledby="chat-new-title">
+        <form method="dialog" class="chat-dialog__body" data-chat-new-form>
+            <div class="chat-dialog__head">
+                <h3 id="chat-new-title">New conversation</h3>
+                <button type="button" class="chat-iconbtn" data-chat-close aria-label="Close">{{ ci("x") }}</button>
+            </div>
+            <div class="chat-tabs" role="tablist">
+                <button type="button" role="tab" class="chat-tab is-active" data-new-tab="direct" aria-selected="true">Direct message</button>
+                <button type="button" role="tab" class="chat-tab" data-new-tab="group" aria-selected="false">Group</button>
+            </div>
+            <label class="chat-field" data-new-only="group" hidden>
+                <span>Group name</span>
+                <input type="text" id="chat-group-name" maxlength="100" placeholder="e.g. Preparers team" data-new-name />
+            </label>
+            <div class="chat-field">
+                <span data-new-people-label>Person</span>
+                <div class="chat-chips" data-new-chosen></div>
+                <input type="search" id="chat-people-search" placeholder="Search staff and admins" data-new-search autocomplete="off" />
+                <div class="chat-picker" data-new-results role="listbox" aria-label="People"></div>
+            </div>
+            {% if portal in ("staff", "admin") %}
+            <div class="chat-field">
+                <span>About a filing <em>(optional)</em></span>
+                <div class="chat-chips" data-new-case-chosen></div>
+                <input type="search" id="chat-case-search" placeholder="Case number or client name" data-new-case-search autocomplete="off" />
+                <div class="chat-picker" data-new-case-results role="listbox" aria-label="Filings"></div>
+                <small class="chat-muted">Link it only when the conversation is about this case. The client never sees internal chats.</small>
+            </div>
+            {% endif %}
+            <p class="chat-error" data-new-error hidden></p>
+            <div class="chat-dialog__foot">
+                <button type="button" class="chat-btn" data-chat-close>Cancel</button>
+                <button type="submit" class="chat-btn chat-btn--primary" data-new-submit>Start chat</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="chat-dialog" data-chat-dialog="members" aria-labelledby="chat-members-title">
+        <div class="chat-dialog__body">
+            <div class="chat-dialog__head">
+                <h3 id="chat-members-title">Members</h3>
+                <button type="button" class="chat-iconbtn" data-chat-close aria-label="Close">{{ ci("x") }}</button>
+            </div>
+            <form class="chat-inline" data-members-rename hidden>
+                <label for="chat-rename" class="sr-only">Group name</label>
+                <input type="text" id="chat-rename" maxlength="100" data-members-name />
+                <button type="submit" class="chat-btn">Rename</button>
+            </form>
+            <ul class="chat-memberlist" data-members-list></ul>
+            <div class="chat-field" data-members-add hidden>
+                <span>Add people</span>
+                <input type="search" id="chat-members-search" placeholder="Search staff and admins" data-members-search autocomplete="off" />
+                <div class="chat-picker" data-members-results role="listbox" aria-label="People"></div>
+            </div>
+            <p class="chat-error" data-members-error hidden></p>
+        </div>
+    </dialog>
+    {% else %}
+    <dialog class="chat-dialog" data-chat-dialog="ask" aria-labelledby="chat-ask-title">
+        <form class="chat-dialog__body" data-chat-ask-form>
+            <div class="chat-dialog__head">
+                <h3 id="chat-ask-title">Ask your tax team a question</h3>
+                <button type="button" class="chat-iconbtn" data-chat-close aria-label="Close">{{ ci("x") }}</button>
+            </div>
+            <div class="chat-two">
+                <label class="chat-field"><span>Topic</span><select id="chat-ask-topic" name="topic_id" required data-ask-topic></select></label>
+                <label class="chat-field"><span>About which filing? <em>(optional)</em></span><select id="chat-ask-case" name="case_id" data-ask-case><option value="">Not about a specific filing</option></select></label>
+            </div>
+            <label class="chat-field"><span>Subject</span><input type="text" id="chat-ask-subject" name="subject" maxlength="150" required placeholder="e.g. When will my refund arrive?" /></label>
+            <label class="chat-field"><span>Your question</span><textarea id="chat-ask-body" name="body" rows="4" maxlength="4000" required></textarea></label>
+            <label class="chat-field"><span>Attach files <em>(optional)</em></span><input type="file" id="chat-ask-files" name="files" multiple /></label>
+            <small class="chat-muted">Your question goes to the team working on the filing you pick.</small>
+            <p class="chat-error" data-ask-error hidden></p>
+            <div class="chat-dialog__foot">
+                <button type="button" class="chat-btn" data-chat-close>Cancel</button>
+                <button type="submit" class="chat-btn chat-btn--primary">Send question</button>
+            </div>
+        </form>
+    </dialog>
+    {% endif %}
+
+    <dialog class="chat-dialog chat-dialog--small" data-chat-dialog="confirm" aria-labelledby="chat-confirm-title">
+        <form method="dialog" class="chat-dialog__body">
+            <h3 id="chat-confirm-title" data-confirm-text></h3>
+            <div class="chat-dialog__foot">
+                <button type="submit" class="chat-btn" value="no">Cancel</button>
+                <button type="submit" class="chat-btn chat-btn--danger" value="yes" data-confirm-yes>Confirm</button>
+            </div>
+        </form>
+    </dialog>
+</div>

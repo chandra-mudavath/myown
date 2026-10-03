@@ -18,7 +18,7 @@ import argparse
 import sys
 
 from app.core.database import Base
-import app.models  # noqa: F401  (registers every table on Base.metadata)
+import app.db_models  # noqa: F401  (registers every table on Base.metadata)
 
 # Insert and read only: history that must never change.
 APPEND_ONLY = {

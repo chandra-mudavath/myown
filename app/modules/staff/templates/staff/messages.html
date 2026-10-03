@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}Messages - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('staff_static', path='/css/staff.css') }}?v=21" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/chat.css') }}?v=1" />
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+
+{% include "staff/partials/sidebar.html" %}
+
+<div class="staff-main">
+    {% include "staff/partials/header.html" %}
+    <main class="staff-content chat-page">
+        {% set portal = "staff" %}
+        {% include "chat/_app.html" %}
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('staff_static', path='/js/sidebar-nav.js') }}?v=5"></script>
+<script src="{{ url_for('static', path='/js/chat.js') }}?v=1"></script>
+{% endblock %}

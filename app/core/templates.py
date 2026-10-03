@@ -2,7 +2,15 @@ from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
 
 
-templates = Jinja2Templates(directory="app/templates")
+# Each module keeps its own templates/ folder; names stay namespaced ("admin/index.html").
+templates = Jinja2Templates(directory=[
+    "app/platform/templates",
+    "app/public/templates",
+    "app/modules/client/templates",
+    "app/modules/staff/templates",
+    "app/modules/admin/templates",
+    "app/modules/hr/templates",
+])
 
 
 def two_tone(text: str) -> Markup:

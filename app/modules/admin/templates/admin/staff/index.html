@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Staff Directory - Admin - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('admin_static', path='/css/admin.css') }}?v=7.0" />
+{% endblock %}
+
+{% block body_class %}admin-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set admin_name = admin.first_name if admin and admin.first_name else 'Administrator' %}
+{% set admin_last_name = admin.last_name if admin and admin.last_name else '' %}
+{% set initials = (admin_name[0] ~ (admin_last_name[0] if admin_last_name else '')) | upper %}
+
+<div class="admin-layout">
+    {% include "admin/partials/sidebar.html" %}
+
+    <main class="admin-main">
+        <header class="admin-header">
+            <div class="admin-header-brand">
+                <span class="admin-mark">UT</span>
+                <span>{{ app_name }} / Admin / Staff</span>
+            </div>
+            <div class="admin-header-actions">
+                <div class="account-menu-wrap">
+                    <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu">
+                        {% if admin and admin.profile_picture %}
+                        <img src="{{ admin.profile_picture }}" alt="Admin Avatar" class="admin-header-avatar-img" />
+                        {% else %}
+                        <span class="admin-avatar" title="{{ admin_name }} {{ admin_last_name }}">{{ initials }}</span>
+                        {% endif %}
+                    </button>
+                    <div class="account-menu admin-account-menu" hidden>
+                        {% if admin and admin.profile_picture %}
+                        <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ admin.profile_picture }}')" title="View Profile Picture"><span aria-hidden="true">&#128065;</span> View</a>
+                        {% endif %}
+                        <label class="account-menu-action" onclick="document.getElementById('admin-avatar-input').click()" title="Edit Profile Picture"><span aria-hidden="true">&#9998;</span> Edit</label>
+                    </div>
+                </div>
+                <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme">
+                    <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+                    <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+                    <span class="sr-only">Switch theme</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="admin-welcome">
+            <div class="admin-page-topbar">
+                <div>
+                    <span class="admin-kicker">Staff Management</span>
+                    <h1>Staff Members Directory</h1>
+                    <p>Manage employees, assign roles, and view staff details.</p>
+                </div>
+                <div>
+                    <button type="button" id="btn-quick-new-staff" class="modal-btn-submit admin-btn-action">
+                        <b>+</b> Add New Staff
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Section -->
+        <section class="admin-section">
+            <form method="get" action="/admin/staff">
+                <div class="admin-filter-bar">
+                    <input 
+                        type="text" 
+                        name="q" 
+                        value="{{ q or '' }}" 
+                        placeholder="Search by name, email, staff #..." 
+                        class="admin-filter-input"
+                    >
+                    <button type="submit" class="admin-filter-btn">
+                        Search
+                    </button>
+                    {% if q %}
+                    <a href="/admin/staff" class="admin-filter-clear">
+                        Clear
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="admin-table-panel">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Staff #</th>
+                            <th>Staff Name</th>
+                            <th>Email Address</th>
+                            <th>Role</th>
+                            <th>Created Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if staff_list %}
+                        {% for s in staff_list %}
+                        <tr>
+                            <td>
+                                <a href="/admin/staff/{{ s.id }}" class="link-primary">
+                                    {{ s.staff_number }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="/admin/staff/{{ s.id }}" class="link-primary">
+                                    👔 {{ s.first_name }} {{ s.last_name or '' }}
+                                </a>
+                            </td>
+                            <td>{{ s.email }}</td>
+                            <td>
+                                <span class="admin-role-badge">
+                                    {{ s.role.value if s.role else 'INITIATOR' }}
+                                </span>
+                            </td>
+                            <td>{{ s.created_at.strftime('%b %d, %Y') if s.created_at else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="empty-cell">
+                                No staff members found.
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    {% include "admin/partials/rail.html" %}
+</div>
+
+<!-- Include Admin Quick Action Modals Partial -->
+{% include "admin/partials/modals.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('admin_static', path='/js/admin.js') }}?v=3.0"></script>
+{% endblock %}

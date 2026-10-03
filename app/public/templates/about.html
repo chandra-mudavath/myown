@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}About UrTax | {{ app_name }}{% endblock %}
+{% block meta_desc %}Learn about UrTax Consulting, Inc., our tax expertise, services, and organized filing process.{% endblock %}
+{% block body_class %}landing-page about-page{% endblock %}
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet" />
+{% endblock %}
+{% block content %}
+{% include "partials/landing_header.html" %}
+<main id="content" class="pt-24">
+    <section class="section py-16 md:py-20 bg-white">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header about-intro">
+                <p class="eyebrow">About UrTax</p>
+                <h2>Simplifying US tax filing with <span>expertise, accuracy, and care</span></h2>
+                <p><strong>UrTax Consulting, Inc. (UR Tax)</strong> is a full-service tax consulting firm dedicated to helping individuals and businesses navigate the complexities of US taxation.</p>
+            </header>
+            <div class="grid lg:grid-cols-2 gap-8 mb-12 items-stretch">
+                <div class="flex flex-col gap-8">
+                    <article class="solution-card">
+                        <p>Since <strong>2003</strong>, we have provided professional tax preparation, tax planning, tax compliance, accounting, bookkeeping, payroll, and business advisory services to individuals, entrepreneurs, and small to medium-sized businesses.</p>
+                        <p>Our goal is simple: <strong>make US tax filing easier, more accurate, and less stressful for our clients.</strong></p>
+                    </article>
+                    <article class="solution-card">
+                        <p class="eyebrow">Who we are</p>
+                        <h3>Your trusted US tax &amp; accounting <span>professionals</span></h3>
+                        <p>Tax laws can be complex and constantly changing. At UrTax, we combine professional tax expertise, structured processes, and personalized service to help our clients stay compliant and make informed financial decisions.</p>
+                        <p>We work with our clients throughout the process, not just at filing time.</p>
+                    </article>
+                </div>
+                <div class="about-image-panel">
+                    <img src="{{ url_for('public_static', path='/img/aboutus/whoweare.jpg') }}" alt="UrTax tax operations professional" />
+                </div>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-8 mb-12 items-stretch">
+                <div class="about-image-panel lg:order-1">
+                    <img src="{{ url_for('public_static', path='/img/aboutus/taxhelp.jpg') }}" alt="UrTax tax compliance professional" />
+                </div>
+                <div class="flex flex-col gap-8 lg:order-2">
+                    <article class="solution-card">
+                        <p class="eyebrow">What we help with</p>
+                        <h3>Support for every <span>tax need</span></h3>
+                        <ul class="grid sm:grid-cols-2 gap-2 mt-5">
+                            <li>US Individual Tax Returns</li><li>Business Tax Returns</li><li>Tax Planning</li><li>Tax Compliance</li><li>Tax Preparation</li><li>Accounting &amp; Bookkeeping</li><li>Payroll Services</li><li>Business Advisory</li><li>Business Incorporation</li><li>Tax Filing Support</li>
+                        </ul>
+                    </article>
+                    <article class="solution-card">
+                        <p class="eyebrow">Our approach</p>
+                        <h3>From information collection to <span>tax filing</span></h3>
+                        <p>We believe tax preparation should be a clear and organized process. Our team works through each filing systematically, from collecting client information and supporting documents to preparing, reviewing, filing, and tracking the return.</p>
+                    </article>
+                </div>
+            </div>
+            <!-- <div class="section-header">
+                <p class="eyebrow">Our tax filing process</p>
+                <h2>A clear path from start to <span>completion</span></h2>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <article class="solution-card"><b>01</b><h3>Information <span>collection</span></h3><p>We collect the required personal, financial, and tax information from the client.</p></article>
+                <article class="solution-card"><b>02</b><h3>Tax <span>preparation</span></h3><p>Our tax professionals prepare the return based on the information and documents provided.</p></article>
+                <article class="solution-card"><b>03</b><h3><span>Review</span></h3><p>The prepared return goes through an internal review process to identify potential errors or missing information.</p></article>
+                <article class="solution-card"><b>04</b><h3><span>Filing</span></h3><p>Once approved, the return is prepared for electronic filing with the appropriate tax authorities.</p></article>
+                <article class="solution-card"><b>05</b><h3><span>Acknowledgment</span></h3><p>We monitor the filing status and track the acknowledgment from the tax authorities.</p></article>
+                <article class="solution-card"><b>06</b><h3><span>Completion</span></h3><p>The filing is completed and the client can access their tax records and filing information.</p></article>
+            </div> -->
+            <!-- <div class="section-header management-intro mt-16">
+                <p class="eyebrow">Management Team</p>
+                <h2>Meet Our <span>Leadership</span></h2>
+                <p>Our leadership team brings experience across taxation, accounting, financial reporting, compliance, and business advisory services.</p>
+            </div>
+            <div class="grid gap-8">
+                <article class="solution-card management-card">
+                    <div class="management-card-image">
+                        <img src="{{ url_for('public_static', path='/img/aboutus/CEO.jpg') }}" alt="Sumit, UrTax founder and CEO" />
+                    </div>
+                    <div class="management-card-content">
+                        <p class="eyebrow">Sumit</p>
+                        <h3>Founder &amp; <span>CEO</span></h3>
+                        <p>Sumit is the <strong>Founder, President, and Chief Executive Officer of UrTax Consulting, Inc. (UR Tax)</strong>.</p>
+                        <p>He has been leading and operating UR Tax since <strong>2003</strong>, beginning his journey as a tax preparer and building extensive experience in tax preparation, tax compliance, and client service.</p>
+                        <p>His focus is on building a professional tax organization that combines <strong>tax expertise, technology, structured processes, and personalized client service</strong>.</p>
+                    </div>
+                </article>
+                <article class="solution-card management-card">
+                    <div class="management-card-image">
+                        <img src="{{ url_for('public_static', path='/img/aboutus/CFO.jpg') }}" alt="Abhishek, UrTax CFO" />
+                    </div>
+                    <div class="management-card-content">
+                        <p class="eyebrow">Abhishek</p>
+                        <h3><span>CFO</span></h3>
+                        <p>Abhishek brings more than <strong>nine years of experience in financial reporting and accounting</strong>, with experience ranging from startups through company exits.</p>
+                        <p>His professional experience includes <strong>financial reporting, auditing and assurance, risk management, operational and management audits, taxation, corporate compliance, due diligence, and internal controls</strong>.</p>
+                        <p>He contributes strategic financial and accounting expertise to support the organization's operations, compliance, and continued growth.</p>
+                    </div>
+                </article> -->
+            </div>
+        </div>
+    </section>
+</main>
+{% include "partials/landing_footer.html" %}
+{% endblock %}
+{% block scripts %}
+<script src="/static/public/js/landing.js?v=3" defer></script>
+{% endblock %}

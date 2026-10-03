@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Terms &amp; Conditions | {{ app_name }}{% endblock %}
+{% block meta_desc %}Read the Terms and Conditions, Privacy Policy, security, disclosure, and consent information for {{ app_name }}.{% endblock %}
+{% block body_class %}landing-page terms-page{% endblock %}
+{% block head %}
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;700&display=swap" rel="stylesheet" />
+{% endblock %}
+{% block content %}
+{% include "partials/landing_header.html" %}
+<main id="content" class="pt-24">
+    <section class="section py-16 md:py-20 bg-white">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header about-intro">
+                <p class="eyebrow">Legal information</p>
+                <h1>Terms &amp; <span>Conditions</span></h1>
+                <p>Please read these terms of use carefully before using this site.</p>
+            </header>
+            <article class="terms-content mx-auto">
+                <h2>Terms &amp; Conditions</h2>
+                <p>By accessing this website, you agree to be bound by these Terms and Conditions of Use, all applicable laws and regulations, and any applicable local laws. The materials on this website are protected by applicable copyright and trademark law. {{ app_name }} reserves the right to modify or update these provisions at any time. Please check this page each time you visit for the most current information.</p>
+
+                <h2>Privacy Policy</h2>
+                <p>{{ app_name }} is a full-service tax consulting firm offering tax return preparation, tax planning, tax compliance, accounting, bookkeeping, business advisory, business incorporation, and payroll services to individuals, entrepreneurs, and small to medium-sized businesses.</p>
+                <p>We are committed to confidentiality and privacy. We will not disclose your identity or information without your express or written consent, except where required by law. Our services are not a substitute for advice from an attorney or licensed CPA. To the extent permitted by law, liability relating to a product or service is limited to the fees paid for that product or service.</p>
+
+                <h2>Cookies</h2>
+                <p>A cookie is a small text file that websites use to store information about you and your preferences. We may use cookies to understand how visitors use this site and improve the experience. Cookies do not contain personally identifiable information submitted through the site. You may accept or decline cookies through your browser settings. Declining cookies may limit some online services.</p>
+
+                <h2>Security</h2>
+                <p>{{ app_name }} takes reasonable steps to protect taxpayer information and personal information submitted through this website. We use appropriate safeguards and security standards to help prevent unauthorized access, disclosure, alteration, loss, misuse, or destruction.</p>
+                <p>Where you use passwords, ID numbers, or other access features, you are responsible for taking reasonable steps to safeguard them.</p>
+
+                <h2>Data Protection and Integrity</h2>
+                <p>{{ app_name }} maintains reasonable security policies and procedures to protect personal information. No security system can be guaranteed against every threat. Access to personal information is limited to people who need it, and we make reasonable efforts to retain information only as long as necessary for the requested service or as required by law.</p>
+
+                <h2>Unsuitable Content</h2>
+                <p>When accessing this website or using {{ app_name }} services, you agree not to upload, download, display, perform, transmit, or distribute content that is libelous, defamatory, obscene, abusive, threatening, unlawful, or that solicits funds or goods and services without authorization. We reserve the right to remove such material and terminate access where appropriate.</p>
+
+                <h2>Intellectual Property and Copyright</h2>
+                <p>All website content and design, including text, graphics, and the selection and arrangement of those materials, are reserved to {{ app_name }} or their respective owners. You may not reproduce, republish, distribute, or create derivative works without written permission.</p>
+
+                <h2>Disclosure</h2>
+                <p>Except as otherwise stated, information submitted through this site may be used to improve content, customize the site, communicate requested information, and conduct internal marketing and research, subject to this Privacy Policy and applicable law.</p>
+
+                <h2>Return Policy</h2>
+                <p>Fees once collected will not be returned except where required by law or where a service delivery issue is confirmed. For questions about fees or refunds, please contact our team through the information provided on this website.</p>
+
+                <h2>Consent Form Disclosure</h2>
+                <p>Federal law may require consent before tax return information is disclosed to third parties for purposes other than preparing and filing a tax return. If you consent to disclosure, the law may not protect the information from further use or distribution in the same way.</p>
+                <p>By using a consent form, you authorize {{ app_name }} to disclose information, including source documents that may contain identifying information, to authorized personnel, associates, or affiliates for the purpose of preparing and filing an individual or business income tax return for the relevant tax year.</p>
+
+                <h2>Changes to This Policy</h2>
+                <p>We will post details of material changes to these terms or our Privacy Policy on this website. Continued use of the site after changes are posted means you accept the updated terms.</p>
+            </article>
+        </div>
+    </section>
+</main>
+{% include "partials/landing_footer.html" %}
+{% endblock %}
+{% block scripts %}
+<script src="/static/public/js/landing.js?v=3" defer></script>
+{% endblock %}

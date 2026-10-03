@@ -131,7 +131,7 @@ admins (audit view) and backend developers (`urtax_readonly`).
 - **Read through scoped queries.** Client routes never load a record by id alone. They go through a helper that
   adds the ownership filter, for example `client_filing(db, account, filing_id)` returning `None` for someone
   else's case. The client routes already follow this (`TaxFiling.client_id == client.id` in
-  `app/api/client/client.py`); new code collects these helpers in one module instead of repeating the filter.
+  `app/modules/client/api/client.py`); new code collects these helpers in one module instead of repeating the filter.
 - **One check per action.** Writes go through a service function that checks the matrix before changing anything
   (`chat_service.can_post(...)`, `document_review.add_comment(...)`). Routes don't write models directly.
 - **No `db.delete()` outside the tables marked "allowed".** Retire rows with their flag instead. Today the app has
@@ -234,7 +234,7 @@ starts with that column). Every readable number has a unique index.
 
 **Lag that indexes don't fix:**
 - **Lists without paging.** Admin pages load every row: `/admin` dashboard, clients, cases, staff
-  (`app/api/admin.py`, `.all()` without `limit`). Fine at today's size; at thousands of rows they need paging
+  (`app/modules/admin/api/admin.py`, `.all()` without `limit`). Fine at today's size; at thousands of rows they need paging
   like the staff case list (`staff.py`, `offset` / `limit`).
 - **A query per row (N+1).** Counting or loading inside a loop; use one grouped query instead (fixed on the admin
   clients page).

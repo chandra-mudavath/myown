@@ -10,7 +10,7 @@ from app.core.database import Base
 from dotenv import load_dotenv
 
 # Import all models so Alembic can detect them
-import app.models  # noqa: F401
+import app.db_models  # noqa: F401
 
 config = context.config
 load_dotenv()

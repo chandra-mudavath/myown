@@ -5,16 +5,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.core.database import SessionLocal
-from app.models.client import Client
-from app.models.staff import Staff
-from app.models.admin import Admin
+from app.modules.client.models.client import Client
+from app.modules.staff.models.staff import Staff
+from app.modules.admin.models.admin import Admin
 
 def set_default_avatars():
     db = SessionLocal()
-    source_ceo = Path("app/static/img/aboutus/CEO.jpg")
+    source_ceo = Path("app/public/static/img/aboutus/CEO.jpg")
 
     if not source_ceo.exists():
-        print("CEO.jpg source image not found at app/static/img/aboutus/CEO.jpg")
+        print("CEO.jpg source image not found at app/public/static/img/aboutus/CEO.jpg")
         return
 
     print("Updating Clients...")

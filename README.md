@@ -32,20 +32,29 @@ Professional tax services web application.
 ```
 myown/
 ├── app/
-│   ├── api/            ← Route handlers (auth, dashboard, ...)
-│   ├── core/           ← config, database, security, deps
-│   ├── models/         ← SQLAlchemy ORM models
-│   ├── schemas/        ← Pydantic request/response schemas
-│   ├── services/       ← Business logic layer
-│   ├── tasks/          ← Celery async tasks
-│   ├── static/         ← CSS, JS, images
-│   │   ├── css/
-│   │   ├── js/
-│   │   └── img/
-│   ├── templates/      ← Jinja2 HTML templates
-│   │   ├── auth/
-│   │   ├── dashboard/
-│   │   └── partials/
+│   ├── core/           ← config, database, security, deps, template loader
+│   ├── platform/       ← Code used by more than one role
+│   │   ├── api/        ← auth, chat routes
+│   │   ├── models/     ← auth, tax filings, documents, workflow, billing, lookups, chat, ...
+│   │   ├── schemas/    ← Pydantic request/response schemas
+│   │   ├── services/   ← Business logic (auth, storage, numbering, chat, document review, ...)
+│   │   ├── tasks/      ← Background jobs
+│   │   ├── templates/  ← base.html, auth/, errors/, chat/, shared partials/
+│   │   └── static/     ← Shared CSS/JS/images, served at /static/
+│   ├── modules/        ← One folder per role, each with the same layout
+│   │   ├── client/
+│   │   │   ├── api/        ← Route handlers
+│   │   │   ├── models/     ← SQLAlchemy ORM models
+│   │   │   ├── schemas/
+│   │   │   ├── services/   ← Business logic
+│   │   │   ├── templates/client/
+│   │   │   └── static/     ← css/, js/ — served at /static/client/
+│   │   ├── staff/      ← same layout, static at /static/staff/
+│   │   ├── admin/      ← same layout, static at /static/admin/
+│   │   └── hr/         ← same layout (placeholder), static at /static/hr/
+│   ├── public/         ← Marketing site: landing, about, services, refer, terms
+│   │   ├── api/  templates/  static/   ← static at /static/public/
+│   ├── db_models.py    ← Imports every model so Base.metadata/Alembic see all tables
 │   └── main.py         ← FastAPI app entry point
 ├── alembic/            ← DB migrations
 ├── tests/              ← Pytest test suite

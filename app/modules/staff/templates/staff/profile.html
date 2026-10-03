@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Staff Profile - {{ app_name }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('staff_static', path='/css/staff.css') }}?v=21" />
+{% endblock %}
+
+{% block body_class %}staff-page{% endblock %}
+
+{% block content %}
+{% set app_name = app_name or 'UrTax' %}
+{% set active_nav = 'profile' %}
+{% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
+{% set last_name = staff.last_name if staff and staff.last_name else '' %}
+{% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
+
+{% include "staff/partials/sidebar.html" %}
+
+<div class="staff-main">
+    {% include "staff/partials/header.html" %}
+
+    <main class="staff-content">
+        <div class="staff-page-header">
+            <div>
+                <p class="eyebrow">Account Settings</p>
+                <h1 class="staff-page-title">Staff Profile</h1>
+            </div>
+        </div>
+
+        <section class="staff-panel staff-profile-card">
+            <div class="staff-profile-header">
+                <div class="staff-avatar-wrapper">
+                    {% if staff.profile_picture %}
+                    <img id="staff-avatar-preview" src="{{ staff.profile_picture }}" alt="Profile Picture" class="staff-avatar-img" />
+                    {% else %}
+                    <div id="staff-avatar-initials" class="staff-avatar-initials-lg">{{ initials }}</div>
+                    <img id="staff-avatar-preview" src="" alt="Profile Picture" class="staff-avatar-img" style="display:none;" />
+                    {% endif %}
+                    <label for="staff-avatar-input" title="Upload Profile Picture" class="staff-avatar-upload-label">📷</label>
+                    <input type="file" id="staff-avatar-input" accept="image/*" style="display: none;" />
+                </div>
+                <div>
+                    <h2 class="staff-profile-name">{{ first_name }} {{ last_name }}</h2>
+                    <span class="staff-profile-role">{{ staff.job_title or 'Tax Preparer' }}</span>
+                </div>
+            </div>
+
+            <dl class="staff-profile-dl">
+                <dt>Staff Number:</dt>
+                <dd>{{ staff.staff_number if staff else '—' }}</dd>
+                <dt>Email Address:</dt>
+                <dd>{{ account.email }}</dd>
+                <dt>Role:</dt>
+                <dd>{{ staff.role.value if staff and staff.role else 'INITIATOR' }}</dd>
+            </dl>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('staff_static', path='/js/sidebar-nav.js') }}?v=5"></script>
+<script src="{{ url_for('staff_static', path='/js/staff-page.js') }}?v=6"></script>
+{% endblock %}

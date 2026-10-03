@@ -1,0 +1,155 @@
+{#- Case table shared by the staff dashboard and case lists.
+    Needs `table` from _case_table() in app/modules/staff/api/staff.py; `table_title` is optional. -#}
+{% from "client/_icons.html" import ci %}
+{%- set t = table -%}
+{%- set filters_open = t.stage or t.year or t.per_page != t.per_page_options[0] -%}
+{%- set stage_labels = {} -%}
+{%- for s in stage_nav %}{% set _ = stage_labels.update({s.slug: s.label}) %}{% endfor -%}
+{%- macro sort_th(key, label) -%}
+<th scope="col" aria-sort="{{ ('ascending' if t.direction == 'asc' else 'descending') if t.sort == key else 'none' }}">
+    <a class="staff-sort{% if t.sort == key %} is-sorted is-{{ t.direction }}{% endif %}" href="{{ t.sort_url(key) }}">{{ label }}</a>
+</th>
+{%- endmacro %}
+
+<section class="staff-panel staff-cases" aria-labelledby="cases-title" data-loading-region>
+    <div class="staff-cases-head">
+        <div class="staff-cases-title">
+            <h2 id="cases-title">{{ table_title or t.stage_label or 'Cases' }}</h2>
+            <span class="staff-count-chip">{{ '{:,}'.format(t.total) }}</span>
+        </div>
+
+        <form class="staff-cases-search" method="get" role="search">
+            {% if t.stage %}<input type="hidden" name="stage" value="{{ t.stage }}" />{% endif %}
+            {% if t.year %}<input type="hidden" name="year" value="{{ t.year }}" />{% endif %}
+            <input type="hidden" name="sort" value="{{ t.sort }}" />
+            <input type="hidden" name="dir" value="{{ t.direction }}" />
+            <input type="hidden" name="per_page" value="{{ t.per_page }}" />
+            <label class="staff-search-field">
+                <span class="sr-only">Search cases</span>
+                {{ ci("search", "ci ci--sm") }}
+                <input type="search" name="q" value="{{ t.q }}" placeholder="Search name, email or case no." />
+            </label>
+            <button type="button" class="staff-btn staff-btn--primary" data-filters-toggle aria-expanded="{{ 'true' if filters_open else 'false' }}" aria-controls="case-filters">
+                {{ ci("list", "ci ci--sm") }} Advanced filters
+            </button>
+        </form>
+    </div>
+
+    <form class="staff-cases-filters" id="case-filters" method="get" {% if not filters_open %}hidden{% endif %}>
+        {% if t.q %}<input type="hidden" name="q" value="{{ t.q }}" />{% endif %}
+        <input type="hidden" name="sort" value="{{ t.sort }}" />
+        <input type="hidden" name="dir" value="{{ t.direction }}" />
+        <label>
+            <span>Stage</span>
+            <select name="stage" class="staff-select">
+                <option value="">All stages</option>
+                {% for stage in stage_nav %}
+                <option value="{{ stage.slug }}" {% if t.stage == stage.slug %}selected{% endif %}>{{ stage.label }} ({{ stage.count }})</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Tax year</span>
+            <select name="year" class="staff-select">
+                <option value="">All years</option>
+                {% for yr in t.years %}
+                <option value="{{ yr }}" {% if t.year == yr|string %}selected{% endif %}>{{ yr }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <span>Rows per page</span>
+            <select name="per_page" class="staff-select">
+                {% for n in t.per_page_options %}
+                <option value="{{ n }}" {% if t.per_page == n %}selected{% endif %}>{{ n }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <div class="staff-cases-filters__actions">
+            <button type="submit" class="staff-btn staff-btn--primary">Apply</button>
+            {% if t.q or t.stage or t.year %}
+            <a class="staff-btn staff-btn--ghost" href="?">Clear all</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <div class="staff-table-scroll" tabindex="0" aria-label="Cases table, scrolls horizontally">
+        <table class="staff-table staff-cases-table">
+            <thead>
+                <tr>
+                    <th scope="col" class="col-sno">S.No</th>
+                    {{ sort_th("case", "Filing ID") }}
+                    {{ sort_th("name", "Client name") }}
+                    {{ sort_th("customer", "Customer no") }}
+                    {{ sort_th("email", "Email") }}
+                    {{ sort_th("year", "Tax year") }}
+                    {{ sort_th("stage", "Stage") }}
+                    <th scope="col">Staff</th>
+                    <th scope="col">Comments</th>
+                    <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in t.cases %}
+                <tr>
+                    <td class="col-sno">{{ c.sno }}</td>
+                    <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ c.id }}">{{ c.case_id }}</a></td>
+                    <td class="staff-cell-strong">{{ c.client_name }}</td>
+                    <td class="col-mono">{{ c.customer_no or '—' }}</td>
+                    <td class="col-email">{{ c.email }}</td>
+                    <td>{{ c.tax_year }}</td>
+                    <td><span class="staff-stage-pill tone-{{ c.stage_tone }}">{{ c.stage }}</span></td>
+                    <td>{% if c.staff %}{{ c.staff }}{% else %}<span class="staff-cell-muted">Unassigned</span>{% endif %}</td>
+                    <td class="col-comment">{% if c.comment %}{{ c.comment }}{% else %}<span class="staff-cell-muted">—</span>{% endif %}</td>
+                    <td class="col-actions">
+                        <a class="staff-row-action" href="/staff/cases/{{ c.id }}/documents" title="Documents">{{ ci("file", "ci ci--sm") }}<span>{{ c.doc_count }}</span></a>
+                        <button type="button" class="staff-row-action staff-row-action--primary" data-move-stage
+                                data-action="/staff/cases/{{ c.id }}/stage" data-case="{{ c.case_id }} · {{ c.client_name }}"
+                                data-current="{{ c.stage }}" data-current-key="{{ c.stage_key }}" data-next="{{ c.next_stage or '' }}"
+                                title="{{ 'Move to ' ~ stage_labels[c.next_stage] if c.next_stage else 'Move stage' }}">
+                            Move {{ ci("arrow-right", "ci ci--sm") }}
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="staff-empty">
+                        {{ ci("search") }}
+                        <strong>No cases found</strong>
+                        <span>{% if t.q or t.stage or t.year %}Try a different search or clear the filters.{% else %}New filings will appear here as clients submit them.{% endif %}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="staff-cases-foot">
+        <p class="staff-cases-range">Showing {{ '{:,}'.format(t.start) }} to {{ '{:,}'.format(t.end) }} of {{ '{:,}'.format(t.total) }} entries</p>
+        {% if t.pages > 1 %}
+        <nav class="staff-pager" aria-label="Pagination">
+            {% if t.page > 1 %}
+            <a class="staff-pager__btn" href="{{ t.url(page=t.page - 1) }}">{{ ci("chevron-left", "ci ci--sm") }}<span>Previous</span></a>
+            {% else %}
+            <span class="staff-pager__btn is-disabled" aria-disabled="true">{{ ci("chevron-left", "ci ci--sm") }}<span>Previous</span></span>
+            {% endif %}
+            {% for n in t.page_links %}
+            {% if n is none %}
+            <span class="staff-pager__gap" aria-hidden="true">…</span>
+            {% elif n == t.page %}
+            <span class="staff-pager__num is-current" aria-current="page">{{ n }}</span>
+            {% else %}
+            <a class="staff-pager__num" href="{{ t.url(page=n) }}">{{ n }}</a>
+            {% endif %}
+            {% endfor %}
+            {% if t.page < t.pages %}
+            <a class="staff-pager__btn" href="{{ t.url(page=t.page + 1) }}"><span>Next</span>{{ ci("chevron-right", "ci ci--sm") }}</a>
+            {% else %}
+            <span class="staff-pager__btn is-disabled" aria-disabled="true"><span>Next</span>{{ ci("chevron-right", "ci ci--sm") }}</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+    </div>
+</section>
+
+{% include "staff/_stage_dialog.html" %}

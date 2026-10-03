@@ -15,7 +15,7 @@ low-latency dashboards and strict row-level data isolation between roles.
 | Layer | Current | Verdict |
 |---|---|---|
 | DB | PostgreSQL 16+ | ✅ Native `ENUM`, `JSONB`, partial/composite indexes, **Row Level Security (RLS)**, materialized views — everything below relies on these. |
-| ORM/Migrations | SQLAlchemy 2.0 + Alembic | ✅ Keep. Map new Postgres `ENUM`s the same way `AccountType` already is in [auth.py](app/models/auth.py). |
+| ORM/Migrations | SQLAlchemy 2.0 + Alembic | ✅ Keep. Map new Postgres `ENUM`s the same way `AccountType` already is in [auth.py](../app/platform/models/auth.py). |
 | Sessions | Sync `SessionLocal` in [database.py](app/core/database.py), plain `get_db()` | ⚠️ Needs one addition: a per-request `SET LOCAL app.*` call so RLS policies know who's asking (Section 4). No engine/driver change needed. |
 | Auth | PyJWT + Argon2, cookie-based | ✅ Already gives us `account_id` + `account_type` per request — exactly what RLS needs. |
 | Background jobs | Celery + Redis (present in `requirements.txt`, but [app/tasks](app/tasks/__init__.py) is empty) | 🟡 Currently unused — this plan puts it to work: stage-change notifications, document virus/parse scans, nightly KPI materialized-view refresh, scheduled salary-hike effective dates. |
@@ -29,7 +29,7 @@ No stack changes are required — only additive schema + one session-context hoo
 
 ## 2. Role model changes
 
-Today `AccountType` = `CLIENT | STAFF | ADMIN` ([auth.py](app/models/auth.py)). Business context adds **HR** as a fourth,
+Today `AccountType` = `CLIENT | STAFF | ADMIN` ([auth.py](../app/platform/models/auth.py)). Business context adds **HR** as a fourth,
 fully separate login, and splits `STAFF` into four working roles.
 
 ```python
@@ -167,7 +167,7 @@ Exactly the 5 states requested — a many-to-one mapping from the internal stage
 | `CLOSED` | **Closed** |
 | (open row in `filing_amendments`) | **Amendment** — overrides whatever `stage` says while open |
 
-This mapping lives once in a service function (e.g. `app/services/filing_service.py::to_client_status()`) and is
+This mapping lives once in a service function (e.g. `app/platform/services/filing_service.py::to_client_status()`) and is
 applied every time `stage` changes, writing the result into `client_status` in the same DB transaction — so client
 dashboard reads never need to know about the 10+ internal stages.
 

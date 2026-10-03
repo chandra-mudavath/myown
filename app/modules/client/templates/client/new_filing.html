@@ -1,0 +1,376 @@
+{% extends "client/_layout.html" %}
+{% set active_nav = "filings" %}
+{% set page_title = "New Tax Filing" %}
+{% set page_subtitle = "Answer each section and attach supporting documents. You can review everything before submitting." %}
+
+{% block page_styles %}
+<link rel="stylesheet" href="{{ url_for('client_static', path='/css/dashboard.css') }}?v=2" />
+<link rel="stylesheet" href="{{ url_for('client_static', path='/css/profile.css') }}?v=1" />
+{% endblock %}
+
+{% block page %}
+<div class="cx-legacy">
+        <section class="panel new-filing-panel" aria-label="New tax filing">
+
+            <form action="{{ url_for('submit_new_filing') }}" method="post" enctype="multipart/form-data" class="profile-form new-filing-form" data-filing-accordion>
+                <section class="filing-section is-open" data-filing-section>
+                    <button class="filing-section-header" type="button" aria-expanded="true" aria-controls="basic-information-panel">
+                        <span class="filing-section-number">01</span>
+                        <span class="filing-section-heading"><strong>Basic <span class="cx-accent">Information</span></strong><span>Basic filing and client information</span></span>
+                        <span class="filing-section-status status-in-progress">In Progress</span>
+                        <span class="filing-section-toggle" aria-hidden="true">−</span>
+                    </button>
+                    <div class="filing-section-content" id="basic-information-panel">
+                        <div class="fields">
+                            <label for="tax_year">Tax year <span class="required">Required</span>
+                                <select id="tax_year" name="tax_year" required>
+                                    <option value="">Select year</option>
+                                    {% for year in filing_years %}<option value="{{ year }}">{{ year }}</option>{% endfor %}
+                                </select>
+                            </label>
+                            <label for="filing_type">Filing type <span class="required">Required</span>
+                                <select id="filing_type" name="filing_type" required>
+                                    <option value="">Select filing type</option>{% for t in tax_types %}<option value="{{ t.code }}">{{ t.name }}</option>{% endfor %}
+                                </select>
+                            </label>
+                            <label for="first_name">First name <span class="required">Required</span><input id="first_name" name="first_name" type="text" placeholder="Enter first name" required /></label>
+                            <label for="last_name">Last name <span class="required">Required</span><input id="last_name" name="last_name" type="text" placeholder="Enter last name" required /></label>
+                            <label for="email">Email <span class="required">Required</span><input id="email" name="email" type="email" placeholder="your@email.com" required /></label>
+                            <label for="phone">Phone <span class="optional">Optional</span><input id="phone" name="phone" type="tel" placeholder="(555) 123-4567" /></label>
+                        </div>
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filing-section" data-filing-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="personal-filing-panel">
+                        <span class="filing-section-number">02</span>
+                        <span class="filing-section-heading"><strong>Personal &amp; <span class="cx-accent">Filing Details</span></strong><span>Personal, residency and filing information</span></span>
+                        <span class="filing-section-status status-not-started">Not Started</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="personal-filing-panel" hidden>
+                        <div class="fields">
+                            <label for="date_of_birth">Date of birth <span class="required">Required</span><input id="date_of_birth" name="date_of_birth" type="date" required /></label>
+                            <label for="country_of_citizenship">Country of citizenship <span class="optional">Optional</span><input id="country_of_citizenship" name="country_of_citizenship" type="text" placeholder="Enter country" /></label>
+                            <label for="current_country_of_residence">Current country of residence <span class="required">Required</span><input id="current_country_of_residence" name="current_country_of_residence" type="text" autocomplete="country-name" placeholder="Enter country" required /></label>
+                            <label for="us_tax_residency_status">US tax residency status <span class="required">Required</span>
+                                <select id="us_tax_residency_status" name="us_tax_residency_status" required><option value="">Select status</option><option value="us_citizen">US citizen</option><option value="resident_alien">Resident alien</option><option value="nonresident_alien">Nonresident alien</option><option value="undetermined">Not sure</option></select>
+                            </label>
+                            <label for="filing_status">Filing status <span class="required">Required</span>
+                                <select id="filing_status" name="filing_status" required><option value="">Select status</option><option value="single">Single</option><option value="married_jointly">Married Filing Jointly</option><option value="married_separately">Married Filing Separately</option><option value="head_of_household">Head of Household</option><option value="qualifying_widow">Qualifying Surviving Spouse</option></select>
+                            </label>
+                            <label for="filed_us_taxes_before">Have you filed US taxes before? <span class="required">Required</span>
+                                <select id="filed_us_taxes_before" name="filed_us_taxes_before" required><option value="">Select an answer</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            </label>
+                            <label id="previous-tax-year-field" for="previous_tax_year_filed" hidden>Previous tax year filed <span class="optional">If applicable</span><input id="previous_tax_year_filed" name="previous_tax_year_filed" type="number" min="1900" max="2100" placeholder="e.g. 2024" /></label>
+                            <label for="address_line_1">Address line 1 <span class="required">Required</span><input id="address_line_1" name="address_line_1" type="text" autocomplete="address-line1" placeholder="Street address" required /></label>
+                            <label for="address_line_2">Address line 2 <span class="optional">Optional</span><input id="address_line_2" name="address_line_2" type="text" autocomplete="address-line2" placeholder="Apartment, suite, etc." /></label>
+                            <label for="city">City <span class="required">Required</span><input id="city" name="city" type="text" autocomplete="address-level2" placeholder="Enter city" required /></label>
+                            <label for="state_province">State / Province <span class="required">Required</span><input id="state_province" name="state_province" type="text" autocomplete="address-level1" placeholder="Enter state or province" required /></label>
+                            <label for="postal_code">ZIP / Postal code <span class="required">Required</span><input id="postal_code" name="postal_code" type="text" autocomplete="postal-code" placeholder="Enter ZIP or postal code" required /></label>
+                            <label for="country">Country <span class="required">Required</span><input id="country" name="country" type="text" autocomplete="country-name" placeholder="Enter country" required /></label>
+                        </div>
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filing-section is-not-applicable" data-filing-section data-spouse-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="spouse-information-panel">
+                        <span class="filing-section-number">03</span>
+                        <span class="filing-section-heading"><strong>Spouse <span class="cx-accent">Information</span></strong><span>Information about your spouse for a joint or separate return</span></span>
+                        <span class="filing-section-status status-not-applicable">Not Applicable</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="spouse-information-panel" hidden>
+                        <p class="section-helper">Add your spouse's information to continue with this filing.</p>
+                        <div class="fields">
+                            <label for="spouse_first_name">First name <span class="required">Required</span><input id="spouse_first_name" name="spouse_first_name" type="text" placeholder="Enter first name" disabled /></label>
+                            <label for="spouse_last_name">Last name <span class="required">Required</span><input id="spouse_last_name" name="spouse_last_name" type="text" placeholder="Enter last name" disabled /></label>
+                            <label for="spouse_date_of_birth">Date of birth <span class="required">Required</span><input id="spouse_date_of_birth" name="spouse_date_of_birth" type="date" disabled /></label>
+                            <label for="spouse_email">Email <span class="optional">Optional</span><input id="spouse_email" name="spouse_email" type="email" placeholder="spouse@email.com" disabled /></label>
+                            <label for="spouse_phone">Phone <span class="optional">Optional</span><input id="spouse_phone" name="spouse_phone" type="tel" placeholder="(555) 123-4567" disabled /></label>
+                            <label for="spouse_country_of_citizenship">Country of citizenship <span class="optional">Optional</span><input id="spouse_country_of_citizenship" name="spouse_country_of_citizenship" type="text" placeholder="Enter country" disabled /></label>
+                            <label for="spouse_us_tax_residency_status">US tax residency status <span class="required">Required</span>
+                                <select id="spouse_us_tax_residency_status" name="spouse_us_tax_residency_status" disabled><option value="">Select status</option><option value="us_citizen">US citizen</option><option value="resident_alien">Resident alien</option><option value="nonresident_alien">Nonresident alien</option><option value="undetermined">Not sure</option></select>
+                            </label>
+                        </div>
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filing-section" data-filing-section data-dependents-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="dependents-panel">
+                        <span class="filing-section-number">04</span>
+                        <span class="filing-section-heading"><strong>Your <span class="cx-accent">dependents</span></strong><span>Add and manage dependents included on this filing</span></span>
+                        <span class="filing-section-status status-not-started">Not Started</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="dependents-panel" hidden>
+                        <p class="section-helper">Add each dependent who may be included on your tax return. SSN / ITIN is not required at this stage.</p>
+                        <div class="dependent-list" data-dependent-list></div>
+                        <button class="button button-secondary add-dependent-button" type="button" data-add-dependent>
+                            <span aria-hidden="true">+</span> Add Dependent
+                        </button>
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filing-section" data-filing-section data-income-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="income-information-panel">
+                        <span class="filing-section-number">05</span>
+                        <span class="filing-section-heading"><strong>Income <span class="cx-accent">Information</span></strong><span>Select the income categories that apply to this filing</span></span>
+                        <span class="filing-section-status status-not-started">Not Started</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="income-information-panel" hidden>
+                        <p class="section-helper">Select all income sources you may have. Detailed income fields and document requirements can be added later for each selection.</p>
+                        <fieldset class="income-categories">
+                            <legend class="sr-only">Income categories</legend>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="w2_employment" /><span><strong>W-2 Employment Income</strong><small>Wages reported by an employer</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="self_employment" /><span><strong>Self-Employment / Business Income</strong><small>Income from operating a business</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="freelance" /><span><strong>Freelance / Contractor Income</strong><small>Independent contractor or gig work</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="interest" /><span><strong>Interest Income</strong><small>Interest from bank or other accounts</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="dividends" /><span><strong>Dividend Income</strong><small>Dividends from investments</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="capital_gains" /><span><strong>Investment / Capital Gains</strong><small>Sales of stocks, funds, or other investments</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="rental" /><span><strong>Rental Income</strong><small>Income from rental property</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="retirement" /><span><strong>Retirement Income</strong><small>Pension, IRA, or retirement distributions</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="unemployment" /><span><strong>Unemployment Income</strong><small>Unemployment compensation</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="foreign" /><span><strong>Foreign Income</strong><small>Income earned outside the United States</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="digital_assets" /><span><strong>Digital Asset / Cryptocurrency Activity</strong><small>Digital asset transactions or rewards</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="income_categories" value="other" /><span><strong>Other Income</strong><small>Any income not listed above</small></span></label>
+                        </fieldset>
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+                <section class="filing-section" data-filing-section data-deductions-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="deductions-credits-panel">
+                        <span class="filing-section-number">06</span>
+                        <span class="filing-section-heading"><strong>Deductions <span class="cx-accent">&amp; Credits</span></strong><span>Identify potential deductions and credits</span></span>
+                        <span class="filing-section-status status-not-started">Not Started</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="deductions-credits-panel" hidden>
+                        <p class="section-helper">Select the areas where you may have potential deductions or credits. Simple yes/no toggles to identify applicable areas.</p>
+                        <fieldset class="income-categories">
+                            <legend class="sr-only">Deductions and Credits categories</legend>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="mortgage_interest" /><span><strong>Mortgage Interest</strong><small>Interest paid on a home mortgage</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="property_taxes" /><span><strong>Property Taxes</strong><small>State or local property taxes paid</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="charitable_contributions" /><span><strong>Charitable Contributions</strong><small>Donations made to qualifying charities</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="education_expenses" /><span><strong>Education Expenses</strong><small>Tuition, fees, or related expenses</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="student_loan_interest" /><span><strong>Student Loan Interest</strong><small>Interest paid on student loans</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="child_dependent_care" /><span><strong>Child or Dependent Care Expenses</strong><small>Expenses paid for the care of a qualifying individual</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="medical_expenses" /><span><strong>Medical Expenses</strong><small>Out-of-pocket medical and dental expenses</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="retirement_contributions" /><span><strong>Retirement Contributions</strong><small>Contributions to IRA, 401(k), etc.</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="deductions_credits" value="other" /><span><strong>Other Potential Deductions or Credits</strong><small>Any other eligible expenses</small></span></label>
+                        </fieldset>
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+                <section class="filing-section" data-filing-section data-previous-tax-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="previous-tax-panel">
+                        <span class="filing-section-number">07</span>
+                        <span class="filing-section-heading"><strong>Previous <span class="cx-accent">Tax Information</span></strong><span>Information about your tax history</span></span>
+                        <span class="filing-section-status status-not-started">Not Started</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="previous-tax-panel" hidden>
+                        <p class="section-helper">Please provide some details regarding your past filings.</p>
+                        <div class="fields">
+                            <label for="has_previous_return_copy">Do you have a copy of your previous tax return? <span class="required">Required</span>
+                                <select id="has_previous_return_copy" name="has_previous_return_copy" required><option value="">Select an answer</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            </label>
+                            <label for="received_irs_notice">Have you received any IRS notices? <span class="required">Required</span>
+                                <select id="received_irs_notice" name="received_irs_notice" required><option value="">Select an answer</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            </label>
+                            <label for="unresolved_tax_issues">Are there any unresolved tax issues? <span class="required">Required</span>
+                                <select id="unresolved_tax_issues" name="unresolved_tax_issues" required><option value="">Select an answer</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            </label>
+                            <label for="is_amended_return">Is this an amended return? <span class="required">Required</span>
+                                <select id="is_amended_return" name="is_amended_return" required><option value="">Select an answer</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            </label>
+                        </div>
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+                <section class="filing-section" data-filing-section data-special-situations-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="special-situations-panel">
+                        <span class="filing-section-number">08</span>
+                        <span class="filing-section-heading"><strong>Special <span class="cx-accent">Situations</span></strong><span>Identify any special tax situations</span></span>
+                        <span class="filing-section-status status-not-started">Not Started</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="special-situations-panel" hidden>
+                        <p class="section-helper">Select any of the following situations that apply to you for this tax year.</p>
+                        <fieldset class="income-categories">
+                            <legend class="sr-only">Special Situations</legend>
+                            <label class="income-category"><input type="checkbox" name="special_situations" value="lived_outside_us" /><span><strong>Lived outside the US</strong><small>Did you live outside the United States during the tax year?</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="special_situations" value="multiple_states" /><span><strong>Worked in multiple states</strong><small>Did you work in multiple US states?</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="special_situations" value="owned_business" /><span><strong>Owned or operated a business</strong><small>Did you own or operate a business?</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="special_situations" value="foreign_income" /><span><strong>Received foreign income</strong><small>Did you receive foreign income?</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="special_situations" value="foreign_accounts" /><span><strong>Foreign financial accounts</strong><small>Did you have foreign financial accounts?</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="special_situations" value="digital_assets" /><span><strong>Digital assets</strong><small>Did you transact in digital assets or cryptocurrency?</small></span></label>
+                            <label class="income-category"><input type="checkbox" name="special_situations" value="other_special" /><span><strong>Other special situation</strong><small>Do you have any other special tax situation?</small></span></label>
+                        </fieldset>
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+                <section class="filing-section" data-filing-section data-documents-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="documents-panel">
+                        <span class="filing-section-number">09</span>
+                        <span class="filing-section-heading"><strong>Your <span class="cx-accent">documents</span></strong><span>Upload required and supporting documents</span></span>
+                        <span class="filing-section-status status-pending">Pending</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="documents-panel" hidden>
+                        <p class="section-helper">Please upload the requested supporting documents for your tax filing.</p>
+                        
+                        <div class="document-categories">
+                            <div class="document-category-card" data-category="Personal">
+                                <strong>Identity Documents</strong>
+                                <p>Provide a copy of your ID, Passport, or Driver's License.</p>
+                                <input type="file" name="files_Personal" class="doc-file-input" id="file-personal" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-personal').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-personal">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-personal">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
+                                    </div>
+                                    <span class="progress-text">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-personal"></ul>
+                            </div>
+                            
+                            <div class="document-category-card" data-category="Income">
+                                <strong>Income Documents</strong>
+                                <p>Provide W-2s, 1099s, or other income statements.</p>
+                                <input type="file" name="files_Income" class="doc-file-input" id="file-income" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-income').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-income">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-income">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
+                                    </div>
+                                    <span class="progress-text">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-income"></ul>
+                            </div>
+                            
+                            <div class="document-category-card" data-category="Other">
+                                <strong>Previous Tax Returns</strong>
+                                <p>Provide a copy of your most recent tax return.</p>
+                                <input type="file" name="files_Other" class="doc-file-input" id="file-previous" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-previous').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-previous">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-previous">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
+                                    </div>
+                                    <span class="progress-text">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-previous"></ul>
+                            </div>
+                            
+                            <div class="document-category-card" data-category="Deductions">
+                                <strong>Deduction Supporting Documents</strong>
+                                <p>Provide receipts, 1098s, or charitable donation statements.</p>
+                                <input type="file" name="files_Deductions" class="doc-file-input" id="file-deductions" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-deductions').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-deductions">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-deductions">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
+                                    </div>
+                                    <span class="progress-text">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-deductions"></ul>
+                            </div>
+                            
+                            <div class="document-category-card" data-category="Other">
+                                <strong>Other Supporting Documents</strong>
+                                <p>Any other documents relevant to your tax situation.</p>
+                                <input type="file" name="files_Other_Extra" class="doc-file-input" id="file-other" multiple accept=".pdf,.png,.jpg,.jpeg,.csv,.docx,.xlsx,.txt" style="display: none;" />
+                                <div class="upload-controls">
+                                    <button class="button button-secondary" type="button" onclick="document.getElementById('file-other').click()">Select Files</button>
+                                    <span class="file-count-label" id="count-other">No files selected</span>
+                                </div>
+                                <div class="upload-progress-container" id="progress-other">
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill"></div>
+                                    </div>
+                                    <span class="progress-text">0%</span>
+                                </div>
+                                <ul class="file-list" id="list-other"></ul>
+                            </div>
+                        </div>
+
+                        <div class="section-actions">
+                            <button class="button button-primary" type="button" data-save-section>Check &amp; Save</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="filing-section" data-filing-section data-review-section>
+                    <button class="filing-section-header" type="button" aria-expanded="false" aria-controls="review-submit-panel">
+                        <span class="filing-section-number">10</span>
+                        <span class="filing-section-heading"><strong>Review <span class="cx-accent">&amp; Submit</span></strong><span>Review your information and submit</span></span>
+                        <span class="filing-section-status status-not-started">Not Started</span>
+                        <span class="filing-section-toggle" aria-hidden="true">+</span>
+                    </button>
+                    <div class="filing-section-content" id="review-submit-panel" hidden>
+                        <p class="section-helper">Please review the status of your filing sections below. Make sure all applicable sections are completed before submitting.</p>
+                        
+                        <div class="review-summary-list">
+                            <div class="review-summary-item"><span>Basic Information</span><span class="status-in-progress">In Progress</span></div>
+                            <div class="review-summary-item"><span>Personal &amp; Filing Details</span><span class="status-not-started">Not Started</span></div>
+                            <div class="review-summary-item"><span>Spouse Information</span><span class="status-not-applicable">Not Applicable</span></div>
+                            <div class="review-summary-item"><span>Dependents</span><span class="status-not-started">Not Started</span></div>
+                            <div class="review-summary-item"><span>Income Information</span><span class="status-not-started">Not Started</span></div>
+                            <div class="review-summary-item"><span>Deductions &amp; Credits</span><span class="status-not-started">Not Started</span></div>
+                            <div class="review-summary-item"><span>Previous Tax Information</span><span class="status-not-started">Not Started</span></div>
+                            <div class="review-summary-item"><span>Special Situations</span><span class="status-not-started">Not Started</span></div>
+                            <div class="review-summary-item"><span>Documents</span><span class="status-pending">Pending</span></div>
+                        </div>
+
+                        <div class="submit-confirmation-message">
+                            <p><strong>Note:</strong> By submitting this filing, your information will be sent to our team for processing. A tax professional will review your details and may contact you for additional information or documents to finalize your return.</p>
+                        </div>
+
+                        <div class="form-actions form-actions-end">
+                            <a class="button button-secondary" href="/client/dashboard">Cancel</a>
+                            <button class="button button-primary" type="submit">Submit Filing for Review</button>
+                        </div>
+                    </div>
+                </section>
+            </form>
+        </section>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script type="module" src="{{ url_for('client_static', path='/js/new-filing.js') }}"></script>
+{% endblock %}

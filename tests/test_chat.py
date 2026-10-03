@@ -9,19 +9,19 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-import app.models  # noqa: F401
+import app.db_models  # noqa: F401
 from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.security import create_access_token
 from app.main import app
-from app.models.admin import Admin
-from app.models.auth import AccountType, AuthAccount
-from app.models.chat import ChatThread
-from app.models.client import Client
-from app.models.lookups import AccountTypeLookup, CaseStage, ChatQueryTopic
-from app.models.staff import Staff
-from app.models.tax_filing import TaxFiling
-from app.services import chat_service
+from app.modules.admin.models.admin import Admin
+from app.platform.models.auth import AccountType, AuthAccount
+from app.platform.models.chat import ChatThread
+from app.modules.client.models.client import Client
+from app.platform.models.lookups import AccountTypeLookup, CaseStage, ChatQueryTopic
+from app.modules.staff.models.staff import Staff
+from app.platform.models.tax_filing import TaxFiling
+from app.platform.services import chat_service
 
 
 @pytest.fixture()
