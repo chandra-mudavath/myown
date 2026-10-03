@@ -2,7 +2,7 @@
 {% block title %}Work Queue - Admin - {{ app_name }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}?v=4.0" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}?v=7.0" />
 {% endblock %}
 
 {% block body_class %}admin-page{% endblock %}
@@ -74,10 +74,7 @@
                     >
                     <select name="status" class="admin-filter-select">
                         <option value="">All Statuses</option>
-                        <option value="pending_review" {% if selected_status == 'pending_review' %}selected{% endif %}>Pending Review</option>
-                        <option value="in_progress" {% if selected_status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                        <option value="payment_pending" {% if selected_status == 'payment_pending' %}selected{% endif %}>Payment Pending</option>
-                        <option value="complete" {% if selected_status == 'complete' %}selected{% endif %}>Completed</option>
+                        {% for stage in stages %}<option value="{{ stage.code }}" {% if selected_status == stage.code %}selected{% endif %}>{{ stage.name }}</option>{% endfor %}
                     </select>
                     <button type="submit" class="admin-filter-btn">
                         Filter
@@ -120,7 +117,7 @@
                             <td>{{ f.filing_type or 'Federal & State' }}</td>
                             <td>
                                 <span class="status-pill-subtle">
-                                    {{ f.status.replace('_', ' ').title() }}
+                                    {{ stage_labels.get(f.status, f.status.replace('_', ' ').title()) }}
                                 </span>
                             </td>
                             <td>{{ f.created_at.strftime('%b %d, %Y') if f.created_at else 'N/A' }}</td>

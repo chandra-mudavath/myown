@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% from "client/_icons.html" import ci %}
 {% block title %}Staff Dashboard - {{ app_name }}{% endblock %}
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=3" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=21" />
 {% endblock %}
 {% block body_class %}staff-page{% endblock %}
 {% block content %}
@@ -10,59 +11,93 @@
 {% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
 {% set last_name = staff.last_name if staff and staff.last_name else '' %}
 {% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}
-{% set counts = dashboard_counts if (dashboard_counts is defined and dashboard_counts) else {'my_cases': 0, 'new_cases': 0, 'info_pending': 0, 'docs_pending': 0} %}
-{% set activity_items = recent_activity if (recent_activity is defined and recent_activity) else [] %}
 
 {% include "partials/staff_sidebar.html" %}
 <div class="staff-main">
     {% include "partials/staff_header.html" %}
 
     <main class="staff-content">
-        <section class="staff-welcome" aria-labelledby="staff-page-title">
-            <p class="eyebrow">Staff portal</p>
-            <h1 id="staff-page-title">Good morning, {{ first_name }}</h1>
-            <p>Here's what needs your attention today.</p>
+        <div class="staff-pagehead">
+            <div>
+                <p class="eyebrow">Staff portal</p>
+                <h1>Welcome back, {{ first_name }}</h1>
+            </div>
+            <p class="staff-pagehead__meta">Case pipeline at a glance</p>
+        </div>
+
+        <section class="staff-summary" aria-label="Case summary" data-loading-region>
+            {% for card in summary_cards %}
+            <a class="staff-summary-card{% if table.stage == card.slug and card.slug %} is-active{% endif %}"
+               href="{{ '/staff/cases?stage=' ~ card.slug if card.slug else '/staff/cases' }}">
+                <span class="staff-summary-card__label">{{ card.label }}</span>
+                <strong class="staff-summary-card__value">{{ '{:,}'.format(card.count) }}</strong>
+            </a>
+            {% endfor %}
         </section>
-        <section class="staff-section" aria-labelledby="overview-title">
-            <div class="section-heading"><div><p class="eyebrow">Overview</p><h2 id="overview-title">Case activity</h2></div></div>
-            <div class="staff-stat-grid">
-                {% for label, key, destination, tone in [
-                    ('My Cases', 'my_cases', '/staff/cases/my', 'teal'),
-                    ('New Cases', 'new_cases', '/staff/cases?stage=pending_review', 'blue'),
-                    ('Info Pending', 'info_pending', '/staff/cases?stage=info_pending', 'amber'),
-                    ('Docs Pending', 'docs_pending', '/staff/cases?stage=docs_pending', 'coral')
-                ] %}
-                <a class="staff-stat-card {{ tone }}" href="{{ destination }}">
-                    <span class="stat-label">{{ label }}</span><strong>{{ counts[key] }}</strong>
-                    <span class="stat-link">View cases <span aria-hidden="true">&#8594;</span></span>
-                </a>
-                {% endfor %}
+
+        <section class="staff-panel staff-cases staff-clients" aria-labelledby="clients-title" data-loading-region>
+            <div class="staff-cases-head">
+                <div class="staff-cases-title">
+                    <h2 id="clients-title">Clients</h2>
+                    <span class="staff-count-chip" data-client-count>{{ '{:,}'.format(clients | length) }}</span>
+                </div>
+                <div class="staff-cases-search">
+                    <label class="staff-search-field">
+                        <span class="sr-only">Filter clients</span>
+                        {{ ci("search", "ci ci--sm") }}
+                        <input type="search" placeholder="Filter clients…" data-client-filter aria-controls="clients-table" />
+                    </label>
+                    <a class="staff-btn staff-btn--ghost" href="/staff/clients">Client directory</a>
+                </div>
+            </div>
+
+            <div class="staff-table-scroll staff-clients-scroll" tabindex="0" aria-label="Clients table">
+                <table class="staff-table staff-cases-table" id="clients-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="col-sno">S.No</th>
+                            <th scope="col">Client name</th>
+                            <th scope="col">Customer no</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Phone</th>
+                            <th scope="col">Filings</th>
+                            <th scope="col">Latest stage</th>
+                            <th scope="col">Joined</th>
+                            <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in clients %}
+                        <tr data-client-row data-search="{{ [c.name, c.customer_no, c.email or '', c.phone or ''] | join(' ') | lower }}">
+                            <td class="col-sno">{{ c.sno }}</td>
+                            <td><a class="staff-cell-link" href="/staff/clients/{{ c.id }}">{{ c.name }}</a></td>
+                            <td class="col-mono">{{ c.customer_no }}</td>
+                            <td class="col-email">{{ c.email or '—' }}</td>
+                            <td>{{ c.phone or '—' }}</td>
+                            <td>{{ c.filings }}</td>
+                            <td>{% if c.stage %}<span class="staff-stage-pill tone-{{ c.stage_tone }}">{{ c.stage }}</span>{% else %}<span class="staff-cell-muted">No filing</span>{% endif %}</td>
+                            <td class="staff-cell-muted">{{ c.joined }}</td>
+                            <td class="col-actions"><a class="staff-row-action staff-row-action--primary" href="/staff/clients/{{ c.id }}">View</a></td>
+                        </tr>
+                        {% endfor %}
+                        <tr data-client-empty {% if clients %}hidden{% endif %}>
+                            <td colspan="9" class="staff-empty">
+                                {{ ci("users") }}
+                                <strong>No clients found</strong>
+                                <span>{% if clients %}No clients match that filter.{% else %}Clients will appear here once they register.{% endif %}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
-        <section class="staff-panel" aria-labelledby="activity-title">
-            <div class="panel-heading"><div><p class="eyebrow">Latest updates</p><h2 id="activity-title">Recent activity</h2></div><a class="text-link" href="/staff/notifications">View all</a></div>
-            <ol class="activity-list">
-                {% if activity_items %}
-                {% for activity in activity_items %}
-                <li class="activity-item">
-                    <span class="activity-dot {{ activity.tone }}" aria-hidden="true"></span>
-                    <div class="activity-copy">
-                        <a class="case-link" href="/staff/cases/{{ activity.id }}">{{ activity.case_id }}</a>
-                        <span>{{ activity.description }}</span>
-                    </div>
-                    <time>{{ activity.time }}</time>
-                </li>
-                {% endfor %}
-                {% else %}
-                <li class="activity-item activity-item--empty">
-                    No recent activity recorded yet.
-                </li>
-                {% endif %}
-            </ol>
-        </section>
+
+        {% set table_title = table.stage_label or 'All cases' %}
+        {% include "staff/_case_table.html" %}
     </main>
 </div>
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}?v=5"></script>
+<script src="{{ url_for('static', path='/js/staff-page.js') }}?v=6"></script>
 {% endblock %}

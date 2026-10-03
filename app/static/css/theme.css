@@ -93,6 +93,16 @@ body {
     font-family: var(--font-body);
 }
 
+/* ── Portal scale ──────────────────────────────
+   Pages after login (admin, staff, client portal) render at 90%, like browser zoom at 90%,
+   so more fits on a laptop screen. Login and public pages stay at 100%.
+   Zoom also shrinks vh units, so full-height layouts use calc(100vh / var(--page-zoom)). */
+:root { --page-zoom: 1; }
+html:has(> body.admin-page, > body.staff-page, > body.cx-body) {
+    --page-zoom: 0.9;
+    zoom: var(--page-zoom);
+}
+
 /* ── Global Theme Toggle Button ──────────────── */
 .theme-toggle {
     align-items: center;

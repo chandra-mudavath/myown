@@ -9,7 +9,7 @@ from app.core.security import hash_password
 from app.models.auth import AuthAccount, AccountType
 from app.models.staff import Staff, StaffRole
 from app.models.admin import Admin
-from app.services.auth_service import _next_account_number
+import app.models  # noqa: F401 — registers the readable-number hooks
 
 def seed_data():
     db = SessionLocal()
@@ -18,7 +18,6 @@ def seed_data():
         staff_1_acc = db.query(AuthAccount).filter_by(email="staff@urtax.com").first()
         if not staff_1_acc:
             staff_1_acc = AuthAccount(
-                account_number=_next_account_number(db, AccountType.STAFF),
                 email="staff@urtax.com",
                 password_hash=hash_password("password123"),
                 account_type=AccountType.STAFF,
@@ -28,7 +27,6 @@ def seed_data():
             db.add(staff_1_acc)
             db.flush()
             staff_1 = Staff(
-                staff_number="STF-00000001",
                 account_id=staff_1_acc.id,
                 first_name="Priya",
                 last_name="Sharma",
@@ -46,7 +44,6 @@ def seed_data():
         staff_2_acc = db.query(AuthAccount).filter_by(email="naik4312@urtax.com").first()
         if not staff_2_acc:
             staff_2_acc = AuthAccount(
-                account_number=_next_account_number(db, AccountType.STAFF),
                 email="naik4312@urtax.com",
                 password_hash=hash_password("password123"),
                 account_type=AccountType.STAFF,
@@ -56,7 +53,6 @@ def seed_data():
             db.add(staff_2_acc)
             db.flush()
             staff_2 = Staff(
-                staff_number="STF-00000002",
                 account_id=staff_2_acc.id,
                 first_name="Naik",
                 last_name="User",
@@ -73,7 +69,6 @@ def seed_data():
         # Check if admin exists
         if not db.query(AuthAccount).filter_by(email="admin@urtax.com").first():
             admin_acc = AuthAccount(
-                account_number=_next_account_number(db, AccountType.ADMIN),
                 email="admin@urtax.com",
                 password_hash=hash_password("password123"),
                 account_type=AccountType.ADMIN,
@@ -83,7 +78,6 @@ def seed_data():
             db.add(admin_acc)
             db.flush()
             admin = Admin(
-                admin_number="ADM-00000001",
                 account_id=admin_acc.id,
                 first_name="Marcus",
                 last_name="Admin"

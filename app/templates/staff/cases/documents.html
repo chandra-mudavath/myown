@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Case Documents - {{ case.case_id if case else 'Documents' }} - {{ app_name }}{% endblock %}
+{% from "client/_icons.html" import ci %}
+{% block title %}Documents · {{ case.case_id if case else 'Case not found' }} - {{ app_name }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=2" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=21" />
 {% endblock %}
 
 {% block body_class %}staff-page{% endblock %}
@@ -20,77 +21,231 @@
     {% include "partials/staff_header.html" %}
 
     <main class="staff-content">
-        <!-- Top Header & Breadcrumb -->
-        <div class="staff-topbar">
+        {% if case %}
+        <a class="staff-back" href="/staff/cases/{{ case.id }}">{{ ci("chevron-left", "ci ci--sm") }} Back to case {{ case.case_id }}</a>
+
+        <header class="doc-head">
             <div>
-                <a href="/staff/cases/my" class="staff-back-link">← Back to Cases List</a>
-                <h1>
-                    Case Documents — {{ case.case_id }}
-                </h1>
-                <p>
-                    Client: <strong>{{ case.client_name }}</strong> | Tax Year: <strong>{{ case.tax_year }}</strong> | Status: <span class="status-pill">{{ case.stage }}</span>
+                <p class="eyebrow">Document review</p>
+                <h1><span class="doc-head__id">{{ case.case_id }}</span> documents</h1>
+                <p class="doc-head__meta">
+                    <a href="/staff/clients/{{ case.client_id }}">{{ case.client_name }}</a>
+                    <span>Tax year {{ case.tax_year }}</span>
+                    <span class="staff-stage-pill tone-{{ case.stage_tone }}">{{ case.stage }}</span>
                 </p>
             </div>
-            <div>
-                <a href="/staff/cases/{{ case.id }}" class="button button-secondary btn-view-sm">
-                    🔍 Review Full Case
-                </a>
-            </div>
-        </div>
+            <dl class="doc-tally">
+                <div class="tone-amber"><dt>To review</dt><dd>{{ counts.pending_review }}</dd></div>
+                <div class="tone-green"><dt>Accepted</dt><dd>{{ counts.accepted }}</dd></div>
+                <div class="tone-coral"><dt>Re-upload</dt><dd>{{ counts.rejected_reupload_requested }}</dd></div>
+            </dl>
+        </header>
 
-        <!-- Documents Table Panel -->
-        <section class="staff-panel staff-table-panel">
-            <div class="staff-table-header">
-                <h2>Uploaded Documents ({{ documents | length }})</h2>
-            </div>
-
-            <table class="staff-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>File Name</th>
-                        <th>Category</th>
-                        <th>File Size</th>
-                        <th>Upload Date</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if documents %}
-                    {% for doc in documents %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>
-                            <strong>📄 {{ doc.original_filename }}</strong>
-                        </td>
-                        <td>
-                            <span class="category-badge">
-                                {{ doc.category }}
-                            </span>
-                        </td>
-                        <td>{{ (doc.file_size / 1024) | round(1) if doc.file_size else 0 }} KB</td>
-                        <td>{{ doc.uploaded_at.strftime('%b %d, %Y') if doc.uploaded_at else 'N/A' }}</td>
-                        <td>
-                            <a href="/client/filings/{{ case.id }}/documents/{{ doc.id }}/download" class="button button-secondary btn-view-sm">
-                                ⬇ Download
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="empty-cell">
-                            No documents have been uploaded for this filing yet.
-                        </td>
-                    </tr>
+        <section class="staff-panel staff-cases" aria-labelledby="docs-title" data-loading-region>
+            <div class="staff-cases-head">
+                <div class="staff-cases-title">
+                    <h2 id="docs-title">All documents</h2>
+                    <span class="staff-count-chip">{{ counts.all }}</span>
+                </div>
+                <div class="doc-toolbar">
+                    <div class="doc-filter" role="group" aria-label="Filter by status" data-doc-filter>
+                        {% for key, label in [('all', 'All'), ('pending_review', 'To review'), ('accepted', 'Accepted'), ('rejected_reupload_requested', 'Re-upload')] %}
+                        <button type="button" class="doc-filter__btn{% if loop.first %} is-active{% endif %}" data-filter="{{ key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
+                            {{ label }} <span>{{ counts[key] }}</span>
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% if rows | selectattr('is_old') | list %}
+                    <label class="doc-toggle">
+                        <input type="checkbox" data-show-old /> Show older versions
+                    </label>
                     {% endif %}
-                </tbody>
-            </table>
+                </div>
+            </div>
+
+            <div class="staff-table-scroll" tabindex="0" aria-label="Documents table">
+                <table class="staff-table staff-cases-table doc-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="col-sno">S.No</th>
+                            <th scope="col">Document</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Uploaded by</th>
+                            <th scope="col">Comments</th>
+                            <th scope="col">Category</th>
+                            <th scope="col">Uploaded</th>
+                            <th scope="col">Version</th>
+                            <th scope="col">Size</th>
+                            <th scope="col">Reviewed</th>
+                            <th scope="col">File name</th>
+                            <th scope="col" class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set n = namespace(i=0) %}
+                        {% for d in rows %}
+                        {% if not d.is_old %}{% set n.i = n.i + 1 %}{% endif %}
+                        <tr id="doc-{{ d.id }}" data-doc-item data-status="{{ d.status_key }}"
+                            class="{{ 'doc-row--old' if d.is_old else '' }}{{ ' is-highlight' if highlight == d.id else '' }}"
+                            {% if d.is_old %}data-old hidden{% endif %}>
+                            <td class="col-sno">{% if not d.is_old %}{{ n.i }}{% endif %}</td>
+                            <td>
+                                <div class="doc-cell">
+                                    <span class="doc-ext doc-ext--{{ d.kind }}" aria-hidden="true">{{ d.ext }}</span>
+                                    <span class="doc-cell__text"><strong>{{ d.name }}</strong><span class="doc-cell__num">{{ d.number }}</span></span>
+                                </div>
+                            </td>
+                            <td><span class="staff-stage-pill tone-{{ d.tone }}">{{ d.status }}</span></td>
+                            <td>
+                                <span class="doc-uploader">
+                                    <strong>{{ d.uploaded_by }}</strong>
+                                    <small class="doc-role doc-role--{{ d.uploaded_role }}">{{ d.uploaded_role | capitalize }}</small>
+                                </span>
+                            </td>
+                            {% set thread = d.comments if d.comments is defined else [] %}
+                            <td class="doc-comments">
+                                {% if not d.is_old %}
+                                <button type="button" class="doc-comment-btn{% if d.client_replied %} is-reply{% endif %}" data-thread-open="{{ d.id }}"
+                                        data-action="/staff/cases/{{ case.id }}/documents/{{ d.id }}/comments" data-name="{{ d.name }}">
+                                    {% if thread %}
+                                    {% set last = thread | last %}
+                                    <span class="doc-comment-btn__count">{{ ci("mail", "ci ci--sm") }} {{ thread | length }}</span>
+                                    <span class="doc-comment-btn__text">{% if d.client_replied %}<b>Client replied:</b> {% endif %}{{ last.body }}</span>
+                                    {% else %}
+                                    <span class="doc-comment-btn__count">{{ ci("plus", "ci ci--sm") }}</span>
+                                    <span class="doc-comment-btn__text staff-cell-muted">Add comment</span>
+                                    {% endif %}
+                                </button>
+                                <div hidden data-thread-for="{{ d.id }}">
+                                    {% for c in thread %}
+                                    <li class="doc-thread__msg is-{{ 'client' if c.role == 'client' else 'team' }}">
+                                        <div class="doc-thread__meta">
+                                            <strong>{{ c.author }}</strong>
+                                            <span>{{ 'Client' if c.role == 'client' else c.role | capitalize }}{% if c.kind == 'rejection' %} · Rejected{% elif c.kind == 'reupload' %} · Re-uploaded{% endif %}</span>
+                                            {% if c.time %}<time>{{ c.time }}</time>{% endif %}
+                                        </div>
+                                        <p>{{ c.body }}</p>
+                                    </li>
+                                    {% endfor %}
+                                </div>
+                                {% else %}<span class="staff-cell-muted">—</span>{% endif %}
+                            </td>
+                            <td>{{ d.category_label or d.category }}</td>
+                            <td class="staff-cell-muted">{{ d.uploaded }}</td>
+                            <td><span class="doc-ver{% if d.is_old %} is-old{% endif %}">v{{ d.version }}</span>{% if not d.is_old and d.versions | length > 1 %} <span class="staff-cell-muted">of {{ d.versions | length }}</span>{% endif %}</td>
+                            <td class="staff-cell-muted">{{ d.size }}</td>
+                            <td class="staff-cell-muted">{{ d.reviewed or '—' }}</td>
+                            <td class="col-email doc-filename" title="{{ d.filename }}">{{ d.filename }}</td>
+                            <td class="col-actions">
+                                <div class="doc-actions-cell">
+                                    <button type="button" class="doc-act" data-preview
+                                            data-url="{{ d.url }}" data-kind="{{ d.kind }}" data-name="{{ d.name }}" data-file="{{ d.filename }}"
+                                            title="Preview" aria-label="Preview {{ d.name }}">{{ ci("eye", "ci ci--sm") }}</button>
+                                    <a class="doc-act" href="{{ d.url }}?download=1" download title="Download" aria-label="Download {{ d.name }}">{{ ci("download", "ci ci--sm") }}</a>
+                                    {% if not d.is_old %}
+                                    <form method="post" action="/staff/cases/{{ case.id }}/documents/{{ d.id }}/review">
+                                        <input type="hidden" name="action" value="accept" />
+                                        <button type="submit" class="doc-act doc-act--approve" {% if d.status_key == 'accepted' %}disabled{% endif %}
+                                                title="{{ 'Already approved' if d.status_key == 'accepted' else 'Approve' }}">{{ ci("check", "ci ci--sm") }}<span>Approve</span></button>
+                                    </form>
+                                    <button type="button" class="doc-act doc-act--reject" data-reject
+                                            data-action="/staff/cases/{{ case.id }}/documents/{{ d.id }}/review" data-name="{{ d.name }}" data-reason="{{ d.reason or '' }}"
+                                            {% if highlight == d.id and error == 'reason' %}data-reject-open{% endif %}
+                                            title="Reject and request re-upload">{{ ci("x", "ci ci--sm") }}<span>Reject</span></button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="12" class="staff-empty">
+                                {{ ci("upload") }}
+                                <strong>No documents yet</strong>
+                                <span>When {{ case.client_name }} uploads files for this filing, they'll appear here for review.</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if rows %}
+                        <tr data-doc-none hidden>
+                            <td colspan="12" class="staff-empty"><strong>No documents with this status</strong></td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </section>
+
+        {# Preview dialog #}
+        <dialog class="doc-dialog doc-dialog--preview" data-preview-dialog aria-labelledby="preview-title">
+            <header class="doc-dialog__head">
+                <div>
+                    <h2 id="preview-title" data-preview-title>Preview</h2>
+                    <p data-preview-file></p>
+                </div>
+                <a class="staff-btn staff-btn--ghost" data-preview-open href="#" target="_blank" rel="noopener">{{ ci("eye", "ci ci--sm") }} New tab</a>
+                <a class="staff-btn staff-btn--ghost" data-preview-download href="#" download>{{ ci("download", "ci ci--sm") }} Download</a>
+                <button type="button" class="doc-dialog__close" data-dialog-close aria-label="Close preview">{{ ci("x") }}</button>
+            </header>
+            <div class="doc-stage" data-preview-stage></div>
+        </dialog>
+
+        {# Comments dialog: conversation with the client about one document #}
+        <dialog class="doc-dialog" data-thread-dialog aria-labelledby="thread-title">
+            <form method="post" class="doc-reject__form" data-thread-form>
+                <header class="doc-dialog__head">
+                    <div>
+                        <h2 id="thread-title">Comments</h2>
+                        <p data-thread-name></p>
+                    </div>
+                    <button type="button" class="doc-dialog__close" data-dialog-close aria-label="Close">{{ ci("x") }}</button>
+                </header>
+                <ol class="doc-thread" data-thread-list></ol>
+                <p class="doc-thread__empty staff-cell-muted" data-thread-empty hidden>No comments yet. Anything you write here is shown to the client on their Documents page.</p>
+                <label for="thread-body">Reply to the client</label>
+                <textarea id="thread-body" name="body" rows="3" required maxlength="2000" placeholder="Write a message the client will see…"></textarea>
+                <div class="doc-dialog__foot">
+                    <button type="button" class="staff-btn staff-btn--ghost" data-dialog-close>Close</button>
+                    <button type="submit" class="staff-btn staff-btn--primary">{{ ci("send", "ci ci--sm") }} Send</button>
+                </div>
+            </form>
+        </dialog>
+
+        {# Reject dialog #}
+        <dialog class="doc-dialog doc-dialog--reject" data-reject-dialog aria-labelledby="reject-title">
+            <form method="post" class="doc-reject__form" data-reject-form>
+                <header class="doc-dialog__head">
+                    <div>
+                        <h2 id="reject-title">Reject document</h2>
+                        <p data-reject-name></p>
+                    </div>
+                    <button type="button" class="doc-dialog__close" data-dialog-close aria-label="Close">{{ ci("x") }}</button>
+                </header>
+                <input type="hidden" name="action" value="reject" />
+                <label for="reject-reason">Tell the client what's wrong so they can re-upload</label>
+                <textarea id="reject-reason" name="reason" rows="4" required maxlength="1000"
+                          placeholder="e.g. Page 2 is missing — please upload the complete statement."
+                          {% if error == 'reason' %}aria-invalid="true" aria-describedby="reject-error"{% endif %}></textarea>
+                {% if error == 'reason' %}<p class="doc-reject__error" id="reject-error">Add a reason so the client knows what to fix.</p>{% endif %}
+                <div class="doc-dialog__foot">
+                    <button type="button" class="staff-btn staff-btn--ghost" data-dialog-close>Cancel</button>
+                    <button type="submit" class="staff-btn doc-btn--danger">Reject &amp; request re-upload</button>
+                </div>
+            </form>
+        </dialog>
+
+        {% else %}
+        <a class="staff-back" href="/staff/cases">{{ ci("chevron-left", "ci ci--sm") }} Back to cases</a>
+        <section class="staff-panel staff-empty">
+            {{ ci("folder") }}
+            <strong>Case not found</strong>
+            <span>This filing may have been removed or the link is wrong.</span>
+        </section>
+        {% endif %}
     </main>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}?v=5"></script>
+<script src="{{ url_for('static', path='/js/staff-page.js') }}?v=6"></script>
 {% endblock %}

@@ -2,7 +2,7 @@
 {% block title %}Case {{ case_number }} - Admin - {{ app_name }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}?v=4.0" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}?v=7.0" />
 {% endblock %}
 
 {% block body_class %}admin-page{% endblock %}
@@ -55,7 +55,10 @@
                     <a href="/admin/clients" class="admin-back-link">← Back to Clients</a>
                     {% endif %}
                     <h1>Filing Case: {{ case_number }}</h1>
-                    <p>Tax Year {{ filing.tax_year }} | Status: <strong class="capitalize">{{ filing.status.replace('_', ' ') }}</strong></p>
+                    <p>Tax Year {{ filing.tax_year }} | Status: <strong class="capitalize">{{ stage_labels.get(filing.status, filing.status.replace('_', ' ')) }}</strong></p>
+                </div>
+                <div>
+                    <a class="modal-btn-submit admin-btn-action" href="/admin/messages?case={{ filing.id }}">&#128172; Message client</a>
                 </div>
             </div>
         </section>
@@ -70,7 +73,7 @@
                     <div><strong>Client:</strong> {% if client %}<a href="/admin/clients/{{ client.id }}" class="link-primary">{{ client.first_name }} {{ client.last_name or '' }}</a>{% else %}{{ filing.first_name }} {{ filing.last_name }}{% endif %}</div>
                     <div><strong>Tax Year:</strong> {{ filing.tax_year }}</div>
                     <div><strong>Filing Type:</strong> {{ filing.filing_type or 'Federal & State' }}</div>
-                    <div><strong>Status:</strong> {{ filing.status.replace('_', ' ').title() }}</div>
+                    <div><strong>Status:</strong> {{ stage_labels.get(filing.status, filing.status.replace('_', ' ').title()) }}</div>
                     <div><strong>Created At:</strong> {{ filing.created_at.strftime('%Y-%m-%d %H:%M') if filing.created_at else 'N/A' }}</div>
                 </div>
             </div>
@@ -90,7 +93,7 @@
                         {% if documents %}
                         {% for doc in documents %}
                         <tr>
-                            <td>📄 {{ doc.original_filename }}</td>
+                            <td>📄 {{ doc.original_filename }} <small class="admin-doc-number">{{ doc.document_number }}</small></td>
                             <td>{{ doc.document_type or 'General' }}</td>
                             <td>{{ doc.created_at.strftime('%Y-%m-%d') if doc.created_at else 'N/A' }}</td>
                         </tr>

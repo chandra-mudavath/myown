@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import Any
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, JSON, String
+from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -21,6 +21,13 @@ def _uuid() -> str:
 class TaxFiling(Base):
     """Stores tax filing forms and all associated section data."""
     __tablename__ = "tax_filings"
+    __table_args__ = (
+        Index("ix_tax_filings_client_year", "client_id", "tax_year", "created_at"),  # client dashboard
+        Index("ix_tax_filings_status_created", "status", "created_at"),  # stage counts / filter
+        Index("ix_tax_filings_year_status", "tax_year", "status"),  # staff list by year
+        Index("ix_tax_filings_created", "created_at"),  # newest-first lists, feed
+        Index("ix_tax_filings_updated", "updated_at"),  # admin "recently updated"
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     client_id: Mapped[str] = mapped_column(String(36), ForeignKey("clients.id", ondelete="CASCADE"), index=True, nullable=False)
@@ -71,7 +78,7 @@ class TaxFiling(Base):
     is_amended_return: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     # Meta
-    case_number: Mapped[str | None] = mapped_column(String(30), unique=True, index=True, nullable=True)  # e.g., FLI_0000001
+    case_number: Mapped[str] = mapped_column(String(30), unique=True, index=True, nullable=False)  # e.g., FLI_0000001; filled in by app.services.numbering
     status: Mapped[str] = mapped_column(String(50), default="pending_review", nullable=False)
 
     def get_case_id(self, db: Session | None = None) -> str:

@@ -11,24 +11,23 @@ from app.core.templates import templates
 from app.models.client import Client
 from app.models.filing_document import FilingDocument
 from app.models.tax_filing import TaxFiling
+from app.services.catalog import case_stages, default_tax_year, open_tax_years
 
 router = APIRouter(prefix="/client", tags=["client-dashboard"])
 
 TAX_YEAR_COOKIE = "tax_year"
-_YEARS_BACK = 4  # selectable range: current year plus the 4 prior years
+def _available_tax_years(db: Session) -> list[int]:
+    """Open years from the tax_years table, newest first (admins add a row to open a new year)."""
+    return open_tax_years(db) or [datetime.now(timezone.utc).year]
 
 
-def _available_tax_years() -> list[int]:
-    current_year = datetime.now(timezone.utc).year
-    return [current_year - offset for offset in range(_YEARS_BACK + 1)]
-
-
-def resolve_tax_year(tax_year: str | None) -> int:
-    """Return the cookie year when it is selectable, else the most recent year."""
-    years = _available_tax_years()
+def resolve_tax_year(db: Session, tax_year: str | None) -> int:
+    """Return the cookie year when it is selectable, else the default year."""
+    years = _available_tax_years(db)
     if tax_year and tax_year.isdigit() and int(tax_year) in years:
         return int(tax_year)
-    return years[0]
+    default = default_tax_year(db)
+    return default if default in years else years[0]
 
 
 def client_shell_context(db: Session, account, tax_year: str | None) -> dict:
@@ -43,8 +42,8 @@ def client_shell_context(db: Session, account, tax_year: str | None) -> dict:
         "account_email": account.email,
         "display_name": display_name,
         "initials": initials or "U",
-        "available_years": _available_tax_years(),
-        "selected_year": resolve_tax_year(tax_year),
+        "available_years": _available_tax_years(db),
+        "selected_year": resolve_tax_year(db, tax_year),
     }
 
 
@@ -165,7 +164,7 @@ def select_year_page(
         {
             "request": request,
             "app_name": settings.APP_NAME,
-            "years": _available_tax_years(),
+            "years": _available_tax_years(db),
             "previous_filings": previous_filings,
         },
     )
@@ -190,7 +189,7 @@ def select_year_submit(
             .all()
         }
 
-    if tax_year not in _available_tax_years() and tax_year not in filed_years:
+    if tax_year not in _available_tax_years(db) and tax_year not in filed_years:
         return RedirectResponse(url=request.url_for("select_year_page"), status_code=status.HTTP_303_SEE_OTHER)
 
     # Year switcher in the sidebar posts the current page so the client stays where they were.
@@ -207,7 +206,7 @@ def client_dashboard(
     db: Session = Depends(get_db),
     tax_year: str | None = Cookie(None),
 ):
-    if not tax_year or not tax_year.isdigit() or int(tax_year) not in _available_tax_years():
+    if not tax_year or not tax_year.isdigit() or int(tax_year) not in _available_tax_years(db):
         return RedirectResponse(url=request.url_for("select_year_page"), status_code=status.HTTP_303_SEE_OTHER)
 
     selected_year = int(tax_year)
@@ -256,12 +255,23 @@ def client_dashboard(
 
     # Summary counts (across all years for this client)
     all_filings = db.query(TaxFiling).filter(TaxFiling.client_id == client.id).all() if client else []
+    client_status = {s.code: s.client_status for s in case_stages(db)}
+    reupload_requests = (
+        db.query(FilingDocument)
+        .filter(
+            FilingDocument.filing_id.in_([f.id for f in all_filings]),
+            FilingDocument.is_latest.is_(True),
+            FilingDocument.status == "rejected_reupload_requested",
+        )
+        .count()
+        if all_filings else 0
+    )
     summary = {
         "total_filings": len(all_filings),
-        "in_progress": sum(1 for f in all_filings if f.status == "in_progress"),
-        "completed": sum(1 for f in all_filings if f.status == "complete"),
-        "action_required": 0,
-        "payment_pending": 0,
+        "in_progress": sum(1 for f in all_filings if client_status.get(f.status) == "In Progress"),
+        "completed": sum(1 for f in all_filings if client_status.get(f.status) == "Completed"),
+        "action_required": reupload_requests,  # documents the tax team asked the client to re-upload
+        "payment_pending": sum(1 for f in all_filings if f.status == "payment_pending"),
     }
 
     # Active filing exists if there is a filing that is not 'complete'
@@ -282,7 +292,7 @@ def client_dashboard(
         "display_name": display_name,
         "initials": initials,
         "tax_year": selected_year,
-        "available_years": _available_tax_years(),
+        "available_years": _available_tax_years(db),
         "last_updated": updated_at,
         "filing": filing_data,
         "section_statuses": section_statuses,

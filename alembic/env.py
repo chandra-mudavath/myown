@@ -14,7 +14,9 @@ import app.models  # noqa: F401
 
 config = context.config
 load_dotenv()
-data_base_url = os.getenv("DATABASE_URL") or settings.DATABASE_URL
+# Migrations may run as a separate database user that owns the tables (see docs/DATABASE_POLICIES.md);
+# without MIGRATION_DATABASE_URL they use the app's DATABASE_URL as before.
+data_base_url = os.getenv("MIGRATION_DATABASE_URL") or os.getenv("DATABASE_URL") or settings.DATABASE_URL
 
 if not data_base_url:
     raise RuntimeError("DATABASE_URL is not set")

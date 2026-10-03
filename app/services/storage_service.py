@@ -6,17 +6,9 @@ from fastapi import UploadFile
 from app.core.config import settings
 from app.services.storage_provider import storage_provider
 
-SUPPORTED_CATEGORIES = {
-    "Personal",
-    "Income",
-    "Employment",
-    "Investments",
-    "Deductions",
-    "Credits",
-    "Foreign_Information",
-    "Dependents",
-    "Other",
-}
+# Categories come from the document_categories table; on disk each one is a folder, so only
+# plain names are allowed (no path separators or dots).
+_SAFE_CATEGORY = re.compile(r"^[A-Za-z0-9_]{1,50}$")
 
 
 def generate_uuid() -> str:
@@ -30,20 +22,14 @@ def sanitize_filename(filename: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
 
 
-def ensure_filing_storage_dirs(client_id: str, tax_year: int, filing_id: str) -> dict[str, Path]:
+def ensure_filing_storage_dir(client_id: str, tax_year: int, filing_id: str, category: str) -> Path:
     """
-    Ensure target directory layout exists:
+    Ensure the target directory exists:
     storage/client_documents/{CLI}/{YEAR}/{FILING}/{CATEGORY}/
     """
-    base_dir = Path(settings.CLIENT_DOCUMENTS_DIR) / str(client_id) / str(tax_year) / str(filing_id)
-    category_paths = {}
-
-    for cat in SUPPORTED_CATEGORIES:
-        cat_path = base_dir / cat
-        cat_path.mkdir(parents=True, exist_ok=True)
-        category_paths[cat] = cat_path
-
-    return category_paths
+    path = Path(settings.CLIENT_DOCUMENTS_DIR) / str(client_id) / str(tax_year) / str(filing_id) / category
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def save_document_file(
@@ -59,11 +45,10 @@ def save_document_file(
     Saves an uploaded file to disk into storage/client_documents/{CLI}/{YEAR}/{FILING}/{CATEGORY}/.
     Returns: (stored_filename, relative_file_path, mime_type, file_size)
     """
-    if category not in SUPPORTED_CATEGORIES:
+    if not _SAFE_CATEGORY.match(category or ""):
         category = "Other"
 
-    dirs = ensure_filing_storage_dirs(client_id, tax_year, filing_id)
-    target_dir = dirs[category]
+    target_dir = ensure_filing_storage_dir(client_id, tax_year, filing_id, category)
 
     original_filename = file.filename or "uploaded_document"
     sanitized = sanitize_filename(original_filename)

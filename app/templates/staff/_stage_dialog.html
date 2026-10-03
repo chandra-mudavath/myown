@@ -1,0 +1,27 @@
+{#- "Move stage" dialog. Include once per page; open it from any button with
+    data-move-stage data-action data-case data-current data-next (see staff-page.js). -#}
+{% from "client/_icons.html" import ci %}
+<dialog class="doc-dialog stage-dialog" data-stage-dialog aria-labelledby="stage-title">
+    <form method="post" class="doc-reject__form" data-stage-form>
+        <header class="doc-dialog__head">
+            <div>
+                <h2 id="stage-title">Move filing to another stage</h2>
+                <p data-stage-case></p>
+            </div>
+            <button type="button" class="doc-dialog__close" data-dialog-close aria-label="Close">{{ ci("x") }}</button>
+        </header>
+        <input type="hidden" name="next" value="{{ request.url.path }}{{ '?' ~ request.url.query if request.url.query else '' }}" />
+        <p class="stage-dialog__from">Current stage: <strong data-stage-current></strong></p>
+        <label for="stage-to">Move to</label>
+        <select id="stage-to" name="to" class="staff-select" required>
+            {% for stage in stage_nav %}
+            <option value="{{ stage.slug }}">{{ loop.index }}. {{ stage.label }}</option>
+            {% endfor %}
+        </select>
+        <p class="stage-dialog__hint">The next stage in the workflow is selected for you.</p>
+        <div class="doc-dialog__foot">
+            <button type="button" class="staff-btn staff-btn--ghost" data-dialog-close>Cancel</button>
+            <button type="submit" class="staff-btn staff-btn--primary">Move filing</button>
+        </div>
+    </form>
+</dialog>

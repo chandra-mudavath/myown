@@ -4,17 +4,7 @@
 {% set page_section = "Documents" %}
 {% set page_title = "Upload Documents" %}
 {% set page_subtitle = "Upload your tax forms and supporting records for " ~ selected_year ~ "." %}
-{% set category_labels = {
-    'Personal': 'Personal',
-    'Income': 'Income (W-2, 1099)',
-    'Employment': 'Employment',
-    'Investments': 'Investments',
-    'Deductions': 'Deductions',
-    'Credits': 'Credits',
-    'Foreign_Information': 'Foreign info',
-    'Dependents': 'Dependents',
-    'Other': 'Other'
-} %}
+{# category_labels comes from the document_categories table (app/api/client/client.py) #}
 {% set ns = namespace(total=0) %}
 {% for docs in documents_by_category.values() %}{% set ns.total = ns.total + docs | length %}{% endfor %}
 
@@ -114,7 +104,7 @@
         <div id="treeDisplayContainer" class="cx-table-wrap" style="margin-top: 0.9rem;">
             <table class="cx-table">
                 <thead>
-                    <tr><th>#</th><th>Document</th><th>Type</th><th>Status</th><th>Uploaded</th><th style="text-align:right;">Actions</th></tr>
+                    <tr><th>#</th><th>Document</th><th>Type</th><th>Status</th><th>Uploaded</th><th>Uploaded by</th><th style="text-align:right;">Actions</th></tr>
                 </thead>
                 <tbody>
                     {% set row = namespace(i=0) %}
@@ -128,13 +118,14 @@
                                 {{ file_icon(doc.original_filename) }}
                                 <div style="min-width:0;">
                                     <span title="{{ doc.original_filename }}">{{ doc.original_filename }}</span>
-                                    <div class="cx-muted" style="font-size:0.76rem;font-weight:400;">{{ (doc.file_size / 1024) | round(1) }} KB{% if doc.version > 1 %} · v{{ doc.version }}{% endif %}</div>
+                                    <div class="cx-muted" style="font-size:0.76rem;font-weight:400;"><span class="cx-mono">{{ doc.document_number }}</span> · {{ (doc.file_size / 1024) | round(1) }} KB{% if doc.version > 1 %} · v{{ doc.version }}{% endif %}</div>
                                 </div>
                             </div>
                         </td>
                         <td>{{ category_labels.get(doc.category, doc.category) }}</td>
                         <td>{{ status_badge(doc.status) }}</td>
                         <td class="cx-muted">{{ doc.uploaded_at.strftime('%b %d, %Y') if doc.uploaded_at else '—' }}</td>
+                        <td>{% if uploaders.get(doc.id) == 'Me' %}<span class="cx-badge cx-badge--plain cx-badge--info">Me</span>{% else %}{{ uploaders.get(doc.id, '—') }}{% endif %}</td>
                         <td>
                             <div class="cx-table__actions">
                                 <a class="cx-btn cx-btn--sm cx-btn--ghost" href="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/download" target="_blank" rel="noopener">{{ ci("eye", "ci ci--sm") }} View</a>
@@ -142,6 +133,46 @@
                             </div>
                         </td>
                     </tr>
+                    {% set thread = threads.get(doc.document_group_id, []) %}
+                    {% set needs_reupload = doc.status == 'rejected_reupload_requested' %}
+                    {% if thread or needs_reupload %}
+                    <tr class="document-item-element cx-docthread-row" id="doc-{{ doc.document_group_id }}" data-category="{{ doc.category }}" data-filename="{{ doc.original_filename | lower }}">
+                        <td></td>
+                        <td colspan="6">
+                            <div class="cx-docthread{% if needs_reupload %} is-open{% endif %}">
+                                {% if needs_reupload %}
+                                <p class="cx-docthread__alert">{{ ci("alert", "ci ci--sm") }} Your tax team needs a new copy of this document. Read their note, then reply or upload a corrected file.</p>
+                                {% endif %}
+                                <ol class="cx-docthread__list">
+                                    {% if not thread and doc.rejection_reason %}
+                                    <li class="is-team"><strong>Tax team</strong><p>{{ doc.rejection_reason }}</p></li>
+                                    {% endif %}
+                                    {% for c in thread %}
+                                    <li class="{{ 'is-me' if c.author_account_id == account_id else 'is-team' }}">
+                                        <strong>{{ 'You' if c.author_account_id == account_id else c.author_name ~ ' · Tax team' }}</strong>
+                                        <time>{{ c.created_at.strftime('%b %d, %Y · %H:%M') }}</time>
+                                        <p>{{ c.body }}</p>
+                                    </li>
+                                    {% endfor %}
+                                </ol>
+                                <form class="cx-docthread__form" method="post" action="/client/filings/{{ doc.filing_id }}/documents/{{ doc.id }}/reply" enctype="multipart/form-data">
+                                    <label class="cx-label" for="reply-{{ doc.id }}">Reply to your tax team</label>
+                                    <textarea class="cx-textarea" id="reply-{{ doc.id }}" name="body" rows="2" maxlength="2000" placeholder="e.g. I've uploaded the full statement with page 2."></textarea>
+                                    <div class="cx-docthread__actions">
+                                        <label class="cx-btn cx-btn--sm cx-btn--ghost cx-docthread__file">
+                                            {{ ci("upload", "ci ci--sm") }} <span data-file-label>{{ 'Attach corrected file' if needs_reupload else 'Attach a new version' }}</span>
+                                            <input type="file" name="file" data-reply-file />
+                                        </label>
+                                        <button type="submit" class="cx-btn cx-btn--sm cx-btn--primary">{{ ci("send", "ci ci--sm") }} Send</button>
+                                    </div>
+                                    {% if request.query_params.get('reply_error') == doc.id %}
+                                    <p class="cx-docthread__error" role="alert">Write a reply or attach a file before sending.</p>
+                                    {% endif %}
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
                     {% endfor %}
                     {% endfor %}
                 </tbody>
@@ -157,9 +188,12 @@
                         {{ file_icon(doc.original_filename) }}
                         <div style="min-width:0;">
                             <h3 class="cx-doccard__name" title="{{ doc.original_filename }}">{{ doc.original_filename }}</h3>
-                            <span class="cx-doccard__meta">{{ category_labels.get(doc.category, doc.category) }} · {{ (doc.file_size / 1024) | round(1) }} KB</span>
+                            <span class="cx-doccard__meta"><span class="cx-mono">{{ doc.document_number }}</span> · {{ category_labels.get(doc.category, doc.category) }} · {{ (doc.file_size / 1024) | round(1) }} KB</span>
                         </div>
                     </div>
+                    {% if doc.status == 'rejected_reupload_requested' %}
+                    <a class="cx-doccard__note" href="#doc-{{ doc.document_group_id }}" onclick="switchView('tree')">{{ ci("alert", "ci ci--sm") }} Re-upload needed — see note</a>
+                    {% endif %}
                     <div class="cx-doccard__foot">
                         {{ status_badge(doc.status) }}
                         <div class="cx-table__actions">
@@ -185,5 +219,5 @@
 {% endblock %}
 
 {% block page_scripts %}
-<script src="{{ url_for('static', path='/js/documents.js') }}?v=2.0"></script>
+<script src="{{ url_for('static', path='/js/documents.js') }}?v=2.1"></script>
 {% endblock %}

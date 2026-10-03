@@ -20,8 +20,8 @@ if (sidebarToggle && dashboardSidebar && sidebarOverlay) {
         sidebarOverlay.hidden = !isMobile();
     };
 
-    // --- Start sidebar OPEN by default ---
-    openSidebar();
+    // --- Start sidebar open on desktop; on mobile it would cover the page ---
+    if (!isMobile()) openSidebar();
 
     sidebarToggle.addEventListener("click", () => {
         const isOpen = dashboardSidebar.classList.contains("open");
@@ -30,6 +30,14 @@ if (sidebarToggle && dashboardSidebar && sidebarOverlay) {
         } else {
             openSidebar();
         }
+    });
+
+    // ☰ inside the sidebar heading closes it; the header ☰ then reopens it
+    dashboardSidebar.querySelectorAll("[data-sidebar-collapse]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            closeSidebar();
+            sidebarToggle.focus();
+        });
     });
 
     sidebarOverlay.addEventListener("click", closeSidebar);

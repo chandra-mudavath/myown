@@ -1,302 +1,374 @@
-# UrTax — Final Data Model (reconciled)
+# UrTax — Final Data Model (revision 2)
 
-Status: **final reconciled proposal** — merges your table list with the earlier plan
-([docs/DATABASE_IMPLEMENTATION_PLAN.md](../docs/DATABASE_IMPLEMENTATION_PLAN.md), which still holds the
-RLS policies, indexing notes, and rollout phases — this file is the authoritative **table catalog**).
-No migrations have been applied yet.
+Status: **final reconciled proposal, revision 2 (2026-10-01)**. This file is the authoritative **table
+catalog**. Access policies (per table and operation) and indexing are in
+[docs/DATABASE_POLICIES.md](../docs/DATABASE_POLICIES.md).
 
----
+Implemented so far: all tables in this catalog exist as models in `app/models/` (migrations `d4e6a8c0f2b3`,
+`e5f7b9d1a3c4`; messaging in `a7c9e1b3d5f8`). Columns marked ✏️ on existing tables are not migrated yet, except the readable numbers in §0.1.
 
-## 1. Reconciliation notes — read this first
+Companion files in this folder (keep all three in sync when the model changes):
+- [schema-map.html](schema-map.html): ER diagrams with every column and relationship. Open it in a browser.
+- [schema.sql](schema.sql): portable SQL for this revision (tables, keys, indexes, lookup seed data),
+  with notes for PostgreSQL, MySQL, SQLite, SQL Server and Oracle.
 
-### 1.1 ✅ Auth/credentials — confirmed: keep the existing `auth_accounts`, don't duplicate it
-Your list puts `email`, `password_hash`, `is_active`, `is_verified`, `last_login_at` directly on `clients`,
-`staff`, and `admin`. The codebase already has a **working, unified** credentials table —
-[auth_accounts](../app/models/auth.py) — shared by all account types, plus `auth_sessions`,
-`auth_refresh_tokens`, `auth_password_reset_tokens`, `auth_email_verification_tokens`, `auth_login_attempts`
-all keyed off it ([auth_service.py](../app/services/auth_service.py), [deps.py](../app/core/deps.py)).
+Revision 2 cross-checks the catalog against the models that already exist in `app/models/` and covers
+three review points:
 
-Duplicating credential columns per role would mean:
-- Losing global email-uniqueness across account types (today a client and a staff member can't share an email).
-- Re-implementing session/refresh-token/password-reset/email-verification 4× (once per role) instead of once.
-- Rewriting already-working, tested login code.
+1. Make it easy to add new staff roles, document types and tax years later.
+2. Make it easy to add a new kind of account alongside client, staff, admin and HR.
+3. Fill in the missing staff schema, staff profile and documents.
 
-**Decision: keep `auth_accounts` as the single credentials table.** `clients` / `staff` / `admins` / `hr`
-(new) stay **profile-only** tables with `account_id → auth_accounts.id`, exactly like today. Your
-`client_number` / `staff_number` / `admin_number` pattern is unaffected — it already coexists with
-`auth_accounts.account_number` in the current code.
-
-### 1.2 `client_profiles` vs. one `clients` table
-Today's `clients` table already merges identity + address + DOB fields
-([client.py](../app/models/client.py)). Splitting into `clients` (identity) + `client_profiles`
-(address/DOB) is valid normalization, but it means touching working code
-([profile.py](../app/services/client_profile.py), [profile.py](../app/api/profile.py)) for no immediate
-functional gain. **Recommendation: keep the single `clients` table as today** unless you have a concrete
-reason to split (e.g. multiple addresses per client). Noted as optional, not adopted below.
-
-### 1.3 Your question: *"case_assignments — instead of a separate table, can we just change the stage?"*
-**Keep it as a separate table.** Stage (`tax_cases.stage`) answers *"where is this case in the pipeline"*.
-`case_assignments` answers a different question — *"which specific staff member owns this case, in which
-role, right now"* — and a case has **up to 4 people attached at once** (Initiator/Preparer/Reviewer/Manager),
-not one. Folding this into `stage` would break:
-- Staff "My Queue" (`WHERE staff_id = ? AND status = 'active'`) — can't derive this from stage alone.
-- Reassignment without a stage change (someone goes on leave, case gets handed off mid-stage).
-- Per-staff performance stats (avg handle time, cases closed) — needs to know who, not just when the stage moved.
-
-`case_stage_history` is complementary, not a substitute: it logs *transitions*, `case_assignments` tracks
-*current ownership per role*.
-
-### 1.4 `tax_years` — adopted, and it fixes something we already built
-Your `tax_years` table (`id, year, is_open`) is a genuinely good addition I hadn't proposed. It directly
-replaces the hardcoded `current_year - 4 … current_year` Python list in
-[dashboard.py](../app/api/dashboard.py)'s year-picker (`_available_tax_years()`) with an
-admin-configurable, DB-driven list (`SELECT year FROM tax_years WHERE is_open = true ORDER BY year DESC`).
-This is a direct, immediate win for the feature we already shipped.
-
-### 1.5 `document_types` + `required_documents` — adopted
-Lets admin configure, per `tax_year` + `tax_type`, which document types are mandatory — no code change
-needed when requirements shift year to year. This is the config-driven flexibility the business asked for.
-
-### 1.6 `documents.version` + `document_reviews` — adopted, and they're complementary
-`version` handles re-upload cycles (client re-submits after rejection); `document_reviews` handles the
-review/approval cycle on top of a given version. Using both (rather than my earlier single-column
-`verified_by`/`verified_at`) is more accurate.
-
-### 1.7 Polymorphic actor columns (`*_type` + `*_id`) — adopted, with one caveat
-Your pattern of `actor_type/actor_id`, `uploaded_by_type/uploaded_by_id`, `changed_by_type/changed_by_id`,
-`filed_by_type/filed_by_id`, `acknowledged_by_type/acknowledged_by_id`, `reviewed_by_type/reviewed_by_id`,
-`recipient_type/recipient_id` is consistent and lets any of CLIENT/STAFF/ADMIN be an actor without one FK
-column per type. Trade-off: Postgres can't enforce a normal FK across three possible target tables from one
-column pair. Mitigate with an app-layer/service check (or a `CHECK` constraint validating `*_type` against
-the enum) rather than skipping validation — flagging so it isn't forgotten, not blocking adoption.
-
-### 1.8 `filing_method` — added (missing from your list, needed for the paper vs. Form 8879 branch)
-Added `tax_cases.filing_method` (`PAPER_FILING | FORM_8879`, nullable until decided at Review) — this is
-what determines whether a case's `filings` row goes through an e-file acknowledgment or straight to
-completed, per the workflow you described earlier.
-
-### 1.9 HR domain — not in your list, still required per your earlier business context
-Your list has no HR tables. Keeping them here as a clearly-marked **addition**, matching what you asked
-for earlier (HR manages staff phone/email/job docs/employment/salary — HR has no visibility into
-tax case data at all):
-- `hr` (own login, same flattened style you used for `staff`/`admin` — see note in 1.1 about whether this
-  goes through `auth_accounts` instead)
-- `staff_employment_details`, `staff_documents` (HR-managed employment docs — distinct from case
-  `documents`), `staff_salary_history`
-
-### 1.10 Client-facing 5 states — derived mapping, not a stored column duplication risk
-`tax_cases.stage` still holds the detailed internal pipeline. The 5 client-visible states
-(`Submitted / In Progress / Completed / Closed / Amendment`) are a many-to-one mapping applied once in a
-service function — see Section 4.
-
-### 1.11 What I did *not* add back in
-Your simpler `stage` + `case_stage_history.comment` approach (vs. my earlier separate `filing_issues` /
-`client_action_items` tables) is adopted as-is for MVP — it's simpler and sufficient as long as a case only
-needs **one** open blocking reason at a time (e.g. either docs-pending or info-pending, not both
-independently tracked). If you later need multiple concurrent, independently-resolved blockers on one case,
-a `case_issues` table is the Phase-2 add — not needed now.
+Where a table already exists in code, this revision **keeps it and its name** and lists only the columns
+that change. Nothing here has been migrated yet.
 
 ---
 
-## 2. Final table catalog
+## 0. What changed in revision 2
 
-### CLIENT
-**`clients`** *(profile only — credentials live in `auth_accounts`, see 1.1)*
-`id`, `account_id` FK → `auth_accounts.id`, `client_number`, `first_name`, `last_name`, `phone`,
+| # | Change | Why | Reuses |
+|---|---|---|---|
+| R1 | Every "list of options" becomes a **lookup table** with the same shape (§1) | Adding a role, document type, tax year, tax type, stage or account kind becomes an insert, with no code change or migration | `tax_years`, `staff_roles`, `document_types` from rev 1 |
+| R2 | New `account_types` lookup replaces the `AccountType` enum | A new kind of account (e.g. Auditor) is one row | `auth_accounts.account_type` column (kept, now a FK to `account_types.code`) |
+| R3 | New shared `user_profiles` table holds name, phone, picture, DOB and address for **every** account | Staff and admins get a full profile, and a new account kind gets one with no new table | Columns now on `clients`, `staff`, `admins` |
+| R4 | `clients` / `staff` / `admins` / `hr` keep only the fields specific to that kind | No repeated columns. A new kind only needs an extension table if it has fields of its own | Existing tables, same names |
+| R5 | HR stops being a staff role and becomes an account type | Matches the business rule that HR has its own login and no case access | Removes `StaffRole.HR` and `StaffRole.ADMIN` |
+| R6 | `staff.role` enum is replaced by `staff_role_assignments` | A staff member can hold several roles, and roles come from the lookup | `staff.role` values migrate into rows |
+| R7 | Every "who did it" column becomes `*_account_id` → `auth_accounts.id` | A real foreign key the database checks, with no `*_type` values to extend when a kind is added | `document_comments.author_account_id` already works this way |
+| R8 | Tax case = the existing `tax_filings` table, with lookups added | Keeps the intake form fields and code that already work. Rev 1 had dropped them | `tax_filings` |
+| R9 | Case documents = the existing `filing_documents` + `document_comments` | Keeps version groups, `is_latest`, rejection reason and the comment thread. `document_comments` replaces rev 1's `document_reviews` | `filing_documents`, `document_comments` |
+| R10 | One `document_types` catalog serves both case documents and HR staff documents (`applies_to`) | One admin screen, one list | `document_types` |
+| R11 | Rev 1's `filings` renamed `irs_submissions` | Avoids confusion with `tax_filings`, which is the case itself | — |
+| R12 | New `case_stages` lookup, holding the client-facing status on each row | Adding a stage is one row, and the 5-status mapping lives in the data instead of a code map | rev 1 §4 mapping |
+
+Superseded from revision 1: §1.2 (`client_profiles` split), which `user_profiles` replaces, and §1.7 (`*_type` +
+`*_id` pairs), which R7 replaces.
+
+---
+
+## 0.1 Ids: UUID plus a readable number
+
+Every table keeps a **UUID primary key** (`VARCHAR(36)`, generated by the app). URLs, foreign keys
+and APIs use it, so ids can't be guessed by counting. Lookup tables use a small integer `id` plus `code`.
+
+Every record the UI shows **also** has a unique, human-readable number that people see and quote:
+
+| Record | Column | Format |
+|---|---|---|
+| Login account | `auth_accounts.account_number` | `CLT-` / `STF-` / `ADM-` / `HR-` + 8 digits |
+| Client / staff / admin / HR | `client_number`, `staff_number`, `admin_number`, `hr_number` | `CLI-`, `STF-`, `ADM-`, `HR-` + 8 digits |
+| Case | `tax_filings.case_number` (required) | `FLI_` + 7 digits |
+| Case document (each version) | `filing_documents.document_number` 🆕 | `DOC-` + 7 digits |
+| HR staff document | `staff_documents.document_number` 🆕 | `SDOC-` + 7 digits |
+| Employee record | `staff_employment_details.employee_number` | `EMP-` + 6 digits |
+| IRS submission / acknowledgment | `submission_number`, `ack_number` | `SUB-`, `ACK-` + 7 digits |
+| Invoice / payment | `invoice_number`, `payment_number` | `INV-`, `PAY-` + 7 digits |
+| Chat conversation | `chat_threads.thread_number` 🆕 | `MSG-` + 7 digits |
+
+Rows that only appear as part of another record (assignments, stage history, role grants, salary
+history, comments, required-document rules, audit rows, notifications) are shown through their parent's
+number and don't get their own.
+
+**How numbers are made:** `id_sequences` 🆕 holds one counter per kind (`name`, `prefix`, `width`,
+`current_value`). `app/services/numbering.py` increments it with a single UPDATE and fills the number in
+automatically when a record is saved, so code never counts rows. A deleted record's number is never
+reused, and a number set by hand moves the counter past it. Formats match the numbers already in use.
+
+---
+
+## 1. Lookup tables — the "easy to add" pattern
+
+Every lookup shares this base shape, so one admin "Settings" screen can manage all of them the same way:
+
+| Column | Notes |
+|---|---|
+| `id` | PK |
+| `code` | UK, stable machine value used in code (`PREPARER`, `W2`, `FORM_1040`). Never renamed once used |
+| `name` | Display label, safe to edit |
+| `description` | Optional help text |
+| `sort_order` | Order in dropdowns |
+| `is_active` | Retire an option without deleting rows that reference it |
+| `created_at`, `updated_at` | |
+
+**Rules that keep "add a row" safe:**
+- Code compares against `code`, never `id` or `name`.
+- Lookups are never hard-deleted, only deactivated (`is_active = false`).
+- Dropdowns show `WHERE is_active ORDER BY sort_order`. Old records still show their retired value.
+- The migration seeds the current enum values, so existing data maps 1:1.
+
+| Lookup | Extra columns beyond the base | Seed values (from current code / rev 1) |
+|---|---|---|
+| **`account_types`** 🆕 | `number_prefix` (e.g. `CLT`), `portal_path` (e.g. `/staff`), `has_case_access` bool, `is_internal` bool (firm side; may use internal chat) | CLIENT, STAFF, ADMIN, HR (`is_internal` = STAFF, ADMIN, HR) |
+| **`staff_roles`** | `is_case_role` bool (can be assigned on a case) | INITIATOR, PREPARER, REVIEWER, MANAGER |
+| **`tax_years`** | `year` int UK (used in place of `code`), `is_open`, `is_default`, `filing_deadline` date | last 5 years, replacing `_available_tax_years()` |
+| **`tax_types`** 🆕 | — | `individual`, `business`, `estate`, `non_profit`, `amended` (the values `tax_filings.filing_type` stores) |
+| **`document_categories`** 🆕 | — | `Personal`, `Income`, `Employment`, `Investments`, `Deductions`, `Credits`, `Foreign_Information`, `Dependents`, `Property`, `Business`, `Other` (the values `filing_documents.category` stores) |
+| **`document_types`** | `category` (Personal / Income / Deductions, as `filing_documents.category` uses today), `applies_to` (`CASE` \| `STAFF`), `allowed_mime_types`, `max_file_mb` | W2, 1099, … plus HR docs (offer letter, ID proof, …) |
+| **`case_stages`** 🆕 | `client_status` (Submitted / In Progress / Completed / Closed / Amendment), `is_terminal` bool | the 20-stage staff workflow in §4 |
+| **`chat_query_topics`** 🆕 | — | `FILING_STATUS`, `DOCUMENTS`, `PAYMENT`, `REFUND`, `IRS_NOTICE`, `GENERAL` |
+
+**Adding a new staff role, document type or tax year:** insert one row from the admin settings screen.
+`required_documents` then decides which document types a tax year + tax type needs, also by row.
+
+---
+
+## 2. Adding a new kind of account (point 2)
+
+Today a new kind needs a new enum value, a new prefix in `auth_service._next_account_number`, a new
+profile table with copied name/phone columns, and new `*_type` values everywhere. With R2, R3, R4 and R7:
+
+1. Insert a row into `account_types` (`code = AUDITOR`, `number_prefix = AUD`, `portal_path = /auditor`).
+2. Sign-up writes `auth_accounts` + `user_profiles`. The shared profile covers name, phone, picture and address.
+3. **Only if** the kind has its own fields, add a small extension table (`auditors`: `account_id`, …).
+4. Everything that records "who did it" already works, because it points at `auth_accounts.id`.
+
+The part that still needs code is the portal itself (routes, templates) and the `require_*` guard in
+`app/core/deps.py`. That guard can be one generic `require_account_type("AUDITOR")`.
+
+**Permissions (Phase 2, not adopted yet):** if new roles need different powers without code changes, add
+`permissions(code, name)` + `account_type_permissions` + `staff_role_permissions`, and check permission
+codes instead of role codes.
+
+---
+
+## 3. Final table catalog
+
+Legend: 🆕 new table · ♻️ existing table in `app/models/`, kept · ✏️ column change on an existing table.
+
+### LOOKUPS
+`account_types` 🆕, `staff_roles`, `tax_years`, `tax_types` 🆕, `document_categories` 🆕, `document_types`, `case_stages` 🆕,
+`chat_query_topics` 🆕. See §1.
+
+The app reads these through `app/services/catalog.py`: the staff stage list and sidebar, every year picker,
+filing-type and document-type dropdowns, document category filters, and the admin dashboard counts.
+
+### IDENTITY
+**`auth_accounts`** ♻️ *(the only credentials table)*
+`id`, `account_number` UK, `email` UK, `password_hash`, ✏️ `account_type` FK → `account_types.code`
+(was enum, same values), `is_active`, `is_verified`, `email_verified_at`, `last_login_at`,
+`failed_login_count`, `locked_until`, `created_at`, `updated_at`
+Also kept unchanged: `auth_sessions`, `auth_refresh_tokens`, `auth_password_reset_tokens`,
+`auth_email_verification_tokens`, `auth_login_attempts`.
+
+**`user_profiles`** 🆕 *(one per account, every kind)*
+`id`, `account_id` FK → `auth_accounts.id` UK, `first_name`, `last_name`, `phone`, `profile_picture`,
+`date_of_birth`, `address_line_1`, `address_line_2`, `city`, `state_province`, `postal_code`, `country`,
 `created_at`, `updated_at`
+*Columns move here from `clients`, `staff` and `admins`. Uses `state_province` because the code does.*
 
-**`client_profiles`**
-`id`, `client_id` FK → `clients.id`, `date_of_birth`, `address_line_1`, `address_line_2`, `city`, `state`,
-`postal_code`, `country`, `created_at`, `updated_at`
+**`clients`** ♻️ *(client-specific only)*
+`id`, `account_id` FK UK, `client_number` UK, `created_at`, `updated_at`
 
-### STAFF
-**`staff`** *(profile only, see 1.1)*
-`id`, `account_id` FK → `auth_accounts.id`, `staff_number`, `first_name`, `last_name`, `phone`, `joined_at`,
-`created_at`, `updated_at`
+**`admins`** ♻️
+`id`, `account_id` FK UK, `admin_number` UK, `created_at`, `updated_at`
 
-**`staff_roles`** — role catalog (Initiator/Preparer/Reviewer/Manager), not a join table itself
-`id`, `name`, `description`, `is_active`, `created_at`
+**`hr`** 🆕
+`id`, `account_id` FK UK, `hr_number` UK, `department`, `created_at`, `updated_at`
 
-**`staff_role_assignments`** 🆕 — which roles a staff member is *qualified* to act in (N:M)
-`id`, `staff_id` FK → `staff.id`, `role_id` FK → `staff_roles.id`, `assigned_at`
-*(kept separate from `case_assignments.role_id`, which is the role they're acting in **for one specific
-case** — a staff member can be qualified for multiple roles but only acts as one per case.)*
+### STAFF (point 3)
+**`staff`** ♻️ *(staff-specific only)*
+`id`, `account_id` FK UK, `staff_number` UK, `job_title`, `notifications_seen_at`, `created_at`, `updated_at`
+✏️ drops `role` (→ `staff_role_assignments`), and drops `first_name`, `last_name`, `phone`,
+`profile_picture` (→ `user_profiles`).
+
+**`staff_role_assignments`** — roles a staff member may act in
+`id`, `staff_id` FK → `staff.id`, `role_id` FK → `staff_roles.id`, `is_primary` bool,
+`assigned_by_account_id` FK → `auth_accounts.id`, `assigned_at`
+UK (`staff_id`, `role_id`)
+
+**`staff_employment_details`** — HR-managed, 1:1 with staff
+`id`, `staff_id` FK UK, `employee_number` UK, `date_of_joining`, `employment_type`, `department`,
+`designation`, `reporting_manager_staff_id` FK → `staff.id` (nullable), `employment_status`,
+`termination_date`, `current_salary`, `updated_by_account_id` FK, `updated_at`
+
+**`staff_documents`** — HR-managed job documents
+`id`, 🆕 `document_number` UK (`SDOC-0000001`), `staff_id` FK, ✏️ `document_type_id` FK → `document_types.id` (where `applies_to = 'STAFF'`),
+`original_filename`, `stored_filename`, `file_path`, `mime_type`, `file_size`,
+`uploaded_by_account_id` FK, `uploaded_at`, `expiry_date`, `notes`
+*Same file columns as `filing_documents`, so upload code can be shared.*
+
+**`staff_salary_history`**
+`id`, `staff_id` FK, `effective_date`, `previous_salary`, `new_salary`, `hike_percentage`, `reason`,
+`approved_by_account_id` FK, `created_at`
 
 ### TAX CASE
-**`tax_years`**
-`id`, `year`, `is_open`, `created_at`
-
-**`tax_cases`**
-`id`, `case_number`, `client_id` FK → `clients.id`, `tax_year_id` FK → `tax_years.id`, `tax_type`,
-`filing_method` 🆕 (`PAPER_FILING | FORM_8879`, nullable), `stage`, `priority`, `submitted_at`, `closed_at`,
-`created_at`, `updated_at`
+**`tax_filings`** ♻️ *(the "tax case")*
+Kept as is: `id`, `client_id` FK, `case_number` UK (✏️ now required), the intake snapshot (`first_name`, `last_name`, `email`,
+`phone`, `date_of_birth`, citizenship/residency, `filing_status`, address fields), spouse fields,
+`dependents` JSON, `income_categories` JSON, `deductions_credits` JSON, `special_situations` JSON, prior-year
+and IRS-notice answers, `created_at`, `updated_at`.
+✏️ Changes:
+- `tax_year` int → `tax_year_id` FK → `tax_years.id`
+- `filing_type` string → `tax_type_id` FK → `tax_types.id`
+- `status` string → `stage_code` FK → `case_stages.code` (existing values seeded as stages)
+- add `filing_method` (`PAPER_FILING | FORM_8879`, nullable until Review), `priority`, `submitted_at`, `closed_at`
 
 **`case_assignments`**
-`id`, `case_id` FK → `tax_cases.id`, `staff_id` FK → `staff.id`, `role_id` FK → `staff_roles.id`,
-`assigned_by`, `assigned_at`, `unassigned_at`, `status`
+`id`, `case_id` FK → `tax_filings.id`, `staff_id` FK, `role_id` FK → `staff_roles.id`,
+`assigned_by_account_id` FK, `assigned_at`, `unassigned_at`, `status` (`active | ended`)
+*Only one `active` row per (`case_id`, `role_id`), as a partial unique index.*
 
 **`case_stage_history`**
-`id`, `case_id` FK → `tax_cases.id`, `from_stage`, `to_stage`, `changed_by_type`, `changed_by_id`, `comment`,
-`created_at`
+`id`, `case_id` FK, `from_stage_code` FK, `to_stage_code` FK, `changed_by_account_id` FK, `comment`, `created_at`
 
 ### DOCUMENTS
-**`document_types`**
-`id`, `code`, `name`, `description`, `is_active`, `created_at`
-
 **`required_documents`**
-`id`, `tax_year_id` FK → `tax_years.id`, `tax_type`, `document_type_id` FK → `document_types.id`,
-`is_required`, `created_at`
+`id`, `tax_year_id` FK, `tax_type_id` FK, `document_type_id` FK, `is_required`, `created_at`
+UK (`tax_year_id`, `tax_type_id`, `document_type_id`)
 
-**`documents`**
-`id`, `document_number`, `case_id` FK → `tax_cases.id`, `client_id` FK → `clients.id`, `document_type_id`
-FK → `document_types.id`, `file_name`, `storage_path`, `mime_type`, `file_size`, `version`,
-`uploaded_by_type`, `uploaded_by_id`, `uploaded_at`, `status`
+**`filing_documents`** ♻️ *(case documents)*
+Kept: `id`, 🆕 `document_number` UK (`DOC-0000001`), `filing_id` FK → `tax_filings.id`, `document_group_id` (groups versions of one document),
+`document_name`, `original_filename`, `stored_filename`, `file_path`, `file_size`, `mime_type`, `version`,
+`is_latest`, `status` (`pending_review | accepted | rejected_reupload_requested | superseded`),
+`rejection_reason`, `uploaded_at`, `reviewed_at`
+✏️ Changes:
+- add `document_type_id` FK → `document_types.id`. `category` then comes from the type; keep the
+  column during migration
+- `uploaded_by_type` + `uploaded_by_id` → `uploaded_by_account_id` FK
+- `reviewed_by_id` → `reviewed_by_account_id` FK
 
-**`document_reviews`**
-`id`, `document_id` FK → `documents.id`, `reviewed_by_type`, `reviewed_by_id`, `status`, `comments`,
-`reviewed_at`
+**`document_comments`** ♻️ *(review thread; replaces rev 1 `document_reviews`)*
+`id`, `filing_id` FK, `document_group_id`, `document_id` FK (nullable), `kind`
+(`rejection | reply | reupload | note`, ✏️ add `accepted`), `body`, `author_type`,
+`author_account_id` ✏️ make it a real FK → `auth_accounts.id`, `author_name` (snapshot), `created_at`
+*Each review decision is a comment row. Together with `filing_documents.status` that gives the full review
+history, so a separate `document_reviews` table isn't needed.*
 
-### FILING
-**`filings`**
-`id`, `filing_number`, `case_id` FK → `tax_cases.id`, `filed_by_type`, `filed_by_id`, `irs_submission_id`,
-`status`, `submitted_at`, `created_at`, `updated_at`
+### IRS FILING
+**`irs_submissions`** *(rev 1 `filings`, renamed)*
+`id`, `submission_number` UK, `case_id` FK → `tax_filings.id`, `submitted_by_account_id` FK,
+`irs_submission_id`, `status`, `submitted_at`, `created_at`, `updated_at`
 
 **`acknowledgments`**
-`id`, `ack_number`, `filing_id` FK → `filings.id`, `acknowledged_by_type`, `acknowledged_by_id`,
+`id`, `ack_number` UK, `submission_id` FK → `irs_submissions.id`, `recorded_by_account_id` FK,
 `irs_ack_number`, `status`, `received_at`, `message`, `created_at`
 
-### FINANCIAL
-**`services`**
-`id`, `service_code`, `name`, `description`, `base_price`, `is_active`, `created_at`, `updated_at`
-
-**`case_services`**
-`id`, `case_id` FK → `tax_cases.id`, `service_id` FK → `services.id`, `quantity`, `unit_price`,
-`total_amount`, `created_at`
-
-**`invoices`**
-`id`, `invoice_number`, `client_id` FK → `clients.id`, `case_id` FK → `tax_cases.id`, `subtotal`,
+### FINANCIAL *(unchanged except FK target)*
+**`services`** `id`, `service_code` UK, `name`, `description`, `base_price`, `is_active`, `created_at`, `updated_at`
+**`case_services`** `id`, `case_id` FK → `tax_filings.id`, `service_id` FK, `quantity`, `unit_price`, `total_amount`, `created_at`
+**`invoices`** `id`, `invoice_number` UK, `client_id` FK, `case_id` FK → `tax_filings.id`, `subtotal`,
 `discount_amount`, `tax_amount`, `total_amount`, `status`, `invoice_date`, `due_date`, `created_at`
-
-**`payments`**
-`id`, `payment_number`, `invoice_id` FK → `invoices.id`, `client_id` FK → `clients.id`, `amount`,
-`payment_method`, `transaction_reference`, `status`, `paid_at`, `created_at`
+**`payments`** `id`, `payment_number` UK, `invoice_id` FK, `client_id` FK, `amount`, `payment_method`,
+`transaction_reference`, `status`, `paid_at`, `created_at`
 
 ### SYSTEM
 **`audit_logs`**
-`id`, `actor_type`, `actor_id`, `action`, `entity_type`, `entity_id`, `old_values`, `new_values`,
-`ip_address`, `created_at`
+`id`, ✏️ `actor_account_id` FK → `auth_accounts.id` (nullable for system jobs), `action`, `entity_type`,
+`entity_id`, `old_values` JSON, `new_values` JSON, `ip_address`, `created_at`
 
 **`notifications`**
-`id`, `recipient_type`, `recipient_id`, `type`, `title`, `message`, `entity_type`, `entity_id`, `is_read`,
-`created_at`, `read_at`
+`id`, ✏️ `recipient_account_id` FK → `auth_accounts.id`, `type`, `title`, `message`, `entity_type`,
+`entity_id`, `is_read`, `created_at`, `read_at`
 
-### ADMIN
-**`admins`** *(profile only, see 1.1)*
-`id`, `account_id` FK → `auth_accounts.id`, `admin_number`, `first_name`, `last_name`, `phone`,
-`created_at`, `updated_at`
+`entity_type` + `entity_id` stays polymorphic on purpose: these two tables can point at any record.
 
-### HR 🆕 (addition — see 1.9)
-**`hr`** *(profile only, see 1.1)*
-`id`, `account_id` FK → `auth_accounts.id`, `hr_number`, `first_name`, `last_name`, `phone`, `department`,
-`created_at`, `updated_at`
+### MESSAGING 🆕 *(models in `app/models/chat.py`)*
+Every conversation is one `chat_threads` row. `kind` decides who may join and what it points at:
 
-**`staff_employment_details`**
-`id`, `staff_id` FK → `staff.id` (unique), `employee_number`, `date_of_joining`, `employment_type`,
-`department`, `designation`, `reporting_manager_staff_id` FK → `staff.id` (nullable), `employment_status`,
-`termination_date`, `current_salary`, `updated_at`
+| `kind` | Who | `case_id` |
+|---|---|---|
+| `DIRECT` | two internal members (`account_types.is_internal`) | only when about a filing |
+| `GROUP` | named group of internal members (staff only, or with admins) | only when about a filing |
+| `CASE` | the client + staff with an active `case_assignments` row; admins join when they post | always; one per case |
+| `QUERY` | a question a client raised, with a topic | only when about one of their filings |
 
-**`staff_documents`**
-`id`, `staff_id` FK → `staff.id`, `doc_type`, `file_path`, `uploaded_by_account_id`, `uploaded_at`,
-`expiry_date`, `notes`
+Clients never join DIRECT or GROUP threads. HR uses internal chat only (`has_case_access = false`).
 
-**`staff_salary_history`**
-`id`, `staff_id` FK → `staff.id`, `effective_date`, `previous_salary`, `new_salary`, `hike_percentage`,
-`reason`, `approved_by_account_id`, `created_at`
+**`chat_threads`**
+`id`, `thread_number` UK (`MSG-0000001`), `kind`, `name` (GROUP), `case_id` FK → `tax_filings.id` (set only when
+the conversation is about a filing), `topic_id` FK → `chat_query_topics.id` (QUERY), `subject` (QUERY),
+`direct_key` UK (DIRECT: the two account ids sorted, plus `:case_id` when about a filing, so each pair has one
+general thread and one per filing), `status` (`open | resolved | closed`), `owner_account_id` FK (QUERY; NULL =
+unclaimed queue), `created_by_account_id` FK, `last_message_at`, `last_message_preview` (last client-visible
+message), `resolved_at`, `resolved_by_account_id` FK, `hide_after`, `hidden_at`, `created_at`, `updated_at`
+*One CASE thread per case: service layer, plus a partial unique index on PostgreSQL / SQLite.*
 
----
+**`chat_participants`**
+`id`, `thread_id` FK, `account_id` FK, `member_role` (`owner | member`; GROUP owners manage members),
+`added_reason` (`member | client | case_assignment | admin_joined | query_owner`), `joined_at`, `left_at`,
+`last_read_at` (unread = messages after this), `is_muted`
+UK (`thread_id`, `account_id`)
 
-## 3. ER diagrams (grouped for readability)
+**`chat_messages`**
+`id`, `thread_id` FK, `sender_account_id` FK (NULL for system messages), `sender_type`, `sender_name` (snapshots),
+`kind` (`text | system`), `visibility` (`all | internal`; internal = staff note in CASE / QUERY, never shown to the
+client), `body`, `reply_to_message_id` FK, `edited_at`, `deleted_at`, `deleted_by_account_id` FK, `created_at`
+*Deletes are soft; the text stays for audit.*
 
-**Identity**
-```mermaid
-erDiagram
-    AUTH_ACCOUNTS ||--|| CLIENTS : "is a"
-    AUTH_ACCOUNTS ||--|| STAFF : "is a"
-    AUTH_ACCOUNTS ||--|| HR : "is a"
-    AUTH_ACCOUNTS ||--|| ADMINS : "is a"
-    CLIENTS ||--|| CLIENT_PROFILES : has
-```
+**`chat_attachments`**
+`id`, `message_id` FK, `original_filename`, `stored_filename`, `file_path`, `mime_type`, `file_size`,
+`filing_document_id` FK (set by "Save to case documents", which copies the file into `filing_documents`), `created_at`
 
-**Case core**
-```mermaid
-erDiagram
-    CLIENTS ||--o{ TAX_CASES : files
-    TAX_YEARS ||--o{ TAX_CASES : scopes
-    TAX_CASES ||--o{ CASE_ASSIGNMENTS : has
-    STAFF ||--o{ CASE_ASSIGNMENTS : "acts on"
-    STAFF_ROLES ||--o{ CASE_ASSIGNMENTS : defines
-    STAFF }o--o{ STAFF_ROLES : "qualified for (staff_role_assignments)"
-    TAX_CASES ||--o{ CASE_STAGE_HISTORY : logs
-```
+**Hiding (retention), decided 2026-10-02.** Nothing is deleted. A daily job sets `hidden_at` on threads past
+`hide_after`; hidden threads leave every portal but stay in the tables for audit, readable by admins (read-only
+audit view) and backend developers (database).
+`hide_after` = 3 months (`CHAT_HIDE_AFTER_DAYS = 90`) after:
+- the case reaches a terminal stage, for CASE threads and threads linked to that filing (cleared if the case moves back, e.g. to Amendments);
+- the query is resolved (cleared if reopened);
+- the last message, for general DIRECT / GROUP threads (every message pushes it forward; a new message or a restore brings the thread back).
 
-**Documents**
-```mermaid
-erDiagram
-    TAX_YEARS ||--o{ REQUIRED_DOCUMENTS : scopes
-    DOCUMENT_TYPES ||--o{ REQUIRED_DOCUMENTS : defines
-    DOCUMENT_TYPES ||--o{ DOCUMENTS : classifies
-    TAX_CASES ||--o{ DOCUMENTS : contains
-    DOCUMENTS ||--o{ DOCUMENT_REVIEWS : "reviewed via"
-```
-
-**Filing**
-```mermaid
-erDiagram
-    TAX_CASES ||--o{ FILINGS : submits
-    FILINGS ||--o{ ACKNOWLEDGMENTS : receives
-```
-
-**Financial**
-```mermaid
-erDiagram
-    TAX_CASES ||--o{ CASE_SERVICES : includes
-    SERVICES ||--o{ CASE_SERVICES : "used in"
-    TAX_CASES ||--o{ INVOICES : billed
-    CLIENTS ||--o{ INVOICES : "billed to"
-    INVOICES ||--o{ PAYMENTS : "paid via"
-```
-
-**HR**
-```mermaid
-erDiagram
-    ADMINS ||--o{ HR : manages
-    HR ||--o{ STAFF_EMPLOYMENT_DETAILS : maintains
-    STAFF ||--|| STAFF_EMPLOYMENT_DETAILS : has
-    STAFF ||--o{ STAFF_DOCUMENTS : has
-    STAFF ||--o{ STAFF_SALARY_HISTORY : has
-```
+Alerts are in-app only (sidebar badge, `notifications` with `type = chat_message`, at most one unread per thread
+per person). No email for now.
 
 ---
 
-## 4. Client-facing status mapping
+## 4. Case stages and client status (seed for `case_stages`)
 
-| `tax_cases.stage` (internal) | Client sees |
-|---|---|
-| Submitted | **Submitted** |
-| Info pending, Docs pending, Preparation, Review, Payment pending, Payment confirmed, E-filing | **In Progress** |
-| Completed | **Completed** |
-| Closed | **Closed** |
-| Amendment | **Amendment** |
+Codes are the values `tax_filings.status` already stores; order is the staff pipeline.
 
-Applied once in a service function whenever `stage` changes — client dashboard never needs to know the
-internal pipeline detail.
+| `code` | Name | `client_status` |
+|---|---|---|
+| pending_review | Registered | Submitted |
+| info_pending, docs_pending, docs_received, in_progress, drip, preparation, review, payment_pending, draft_uploading, client_review, rev_doc_rej, form_8879, e_filing, paper_filing, paper_filing_coa, state_filing, signed_docs_uploaded | (title of each) | In Progress |
+| complete | Completed | Completed |
+| amendments | Amendments | Amendment |
+
+The client portal and admin dashboard read `case_stages.client_status`. A new internal stage is one row,
+with its client status chosen at insert time. Moving a case to another stage also writes a
+`case_stage_history` row.
+
+---|---|
+| SUBMITTED | Submitted |
+| INFO_PENDING, DOCS_PENDING, PREPARATION, REVIEW, PAYMENT_PENDING, PAYMENT_CONFIRMED, E_FILING | In Progress |
+| COMPLETED | Completed |
+| CLOSED | Closed |
+| AMENDMENT | Amendment |
+
+The client dashboard reads `case_stages.client_status`. A new internal stage is one row, with its client
+status chosen at insert time.
 
 ---
 
-## 5. Still open
+## 5. Code touch points (for planning the migration)
 
-1. ~~Should `hr`/`staff`/`admins`/`clients` route through `auth_accounts`~~ — **confirmed**: yes, credentials
-   stay solely in `auth_accounts`; profile tables never get `email`/`password_hash`/`is_active` columns.
-2. `client_profiles` split (1.2) — keep merged into `clients` as today, or actually split? Default: keep merged.
-3. Full `document_types` seed list beyond W2/1099/etc.
-4. File storage target for `storage_path`/`file_path` (local vs S3).
+| Area | Today | After |
+|---|---|---|
+| `app/models/auth.py` | `AccountType` enum (CLIENT, STAFF, ADMIN) | string FK to `account_types.code`; constants can stay for readability |
+| `app/services/auth_service.py` | hardcoded prefix map `{"CLIENT": "CLT", …}` | read `account_types.number_prefix` |
+| `app/api/admin.py` | creates clients with `CLI-` / `ACC-` prefixes, a different scheme from `auth_service` (`CLT-`) | one helper that uses `account_types.number_prefix` |
+| `app/core/deps.py` | `require_client` / `require_staff` / `require_admin` compare enums | one `require_account_type(code)`; the existing helpers wrap it |
+| `app/models/staff.py` | `StaffRole` enum includes HR and ADMIN | role rows in `staff_roles`; HR and ADMIN become account types |
+| Profile service, templates | read name/phone/address from `clients` / `staff` / `admins` | read from `user_profiles` (largest change, do last) |
+| `dashboard.py` `_available_tax_years()` | computed list | `tax_years WHERE is_open` |
+
+**Suggested order** (each step can ship on its own):
+1. Add lookups and seed them from the current enum values (additive only).
+2. Add FK columns next to the old ones (`tax_year_id`, `tax_type_id`, `document_type_id`, `*_account_id`),
+   backfill them, then switch reads.
+3. Move `staff.role` into `staff_role_assignments`, and HR into `account_types`.
+4. Move profile columns into `user_profiles`.
+5. Drop the old columns.
+
+`main.py` runs `create_all` on startup, so every migration must check whether a table or column already
+exists before creating it.
+
+---
+
+## 6. Still open
+
+1. Per-kind numbers (`client_number`, `staff_number`, …) duplicate `auth_accounts.account_number`. Keep both
+   (search and UI use `client_number` today) or collapse to `account_number`? Default: keep both.
+2. Full seed list for `document_types` (case and HR) and `tax_types`.
+3. Whether permissions need to be data-driven now (§2, Phase 2) or can wait.
+4. File storage target for `file_path` (local vs S3).
+5. Hidden chat data: kept about 12 months after `hidden_at`, then delete or keep longer. To agree with the project client.

@@ -219,3 +219,6 @@ __marimo__/
 
 # Uploaded files (avatars, client documents) - runtime data, never commit
 storage/
+
+# Chat attachments - private runtime data, served only through permission-checked routes
+private_storage/

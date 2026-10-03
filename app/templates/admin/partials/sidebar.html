@@ -33,6 +33,10 @@
         <a class="admin-nav-item{% if active_nav == 'queue' %} active{% endif %}" href="/admin/cases">
             <span aria-hidden="true">&#128203;</span>Work Queue
         </a>
+        <a class="admin-nav-item{% if active_nav == 'messages' %} active{% endif %}" href="/admin/messages">
+            <span aria-hidden="true">&#128172;</span>Messages
+            <span data-chat-unread hidden style="display:none;margin-left:auto;min-width:18px;padding:0 6px;border-radius:999px;background:var(--coral,#dc2626);color:#fff;font-size:.66rem;font-weight:700;line-height:1.6;text-align:center"></span>
+        </a>
         <a class="admin-nav-item" href="/admin/dashboard#reports">
             <span aria-hidden="true">&#128202;</span>Reports
         </a>
@@ -52,6 +56,7 @@
             <span aria-hidden="true">&#128100;</span>My Profile
         </a>
     </nav>
+    <script src="/static/js/chat-badge.js?v=1" defer></script>
     <form class="admin-logout" action="/auth/logout" method="post">
         <button type="submit"><span aria-hidden="true">&#8630;</span>Logout</button>
     </form>

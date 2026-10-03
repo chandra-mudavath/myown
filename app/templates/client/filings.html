@@ -15,7 +15,8 @@
 {%- endmacro %}
 
 {% block page_actions %}
-{% if filing %}<a class="cx-btn cx-btn--soft" href="/client/documents">{{ ci("upload", "ci ci--sm") }} Upload documents</a>{% endif %}
+{% if filing %}<a class="cx-btn cx-btn--soft" href="/client/messages?case={{ filing.id }}">{{ ci("mail", "ci ci--sm") }} Message your tax team</a>
+<a class="cx-btn cx-btn--soft" href="/client/documents">{{ ci("upload", "ci ci--sm") }} Upload documents</a>{% endif %}
 {% endblock %}
 
 {% block page %}
@@ -122,7 +123,7 @@
                 <tbody>
                     {% for doc in filing.documents %}
                     <tr>
-                        <td><div class="cx-table__file"><span class="cx-fileicon">{{ ci("file") }}</span><span>{{ doc.original_filename }}</span></div></td>
+                        <td><div class="cx-table__file"><span class="cx-fileicon">{{ ci("file") }}</span><span>{{ doc.original_filename }} <span class="cx-muted cx-mono">{{ doc.document_number }}</span></span></div></td>
                         <td class="cx-muted">{{ doc.category }}</td>
                         <td><div class="cx-table__actions"><a class="cx-btn cx-btn--sm cx-btn--soft" href="/client/filings/{{ filing.id }}/documents/{{ doc.id }}/download">{{ ci("download", "ci ci--sm") }} Download</a></div></td>
                     </tr>

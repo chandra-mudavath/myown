@@ -68,7 +68,8 @@
 {%- set text = {
     'complete': 'Complete', 'in_progress': 'In progress', 'not_started': 'Pending',
     'not_applicable': 'Not applicable', 'pending': 'Pending', 'pending_review': 'Pending review',
-    'approved': 'Approved', 'rejected': 'Needs attention', 'superseded': 'Replaced'
+    'approved': 'Approved', 'rejected': 'Needs attention', 'superseded': 'Replaced',
+    'accepted': 'Approved', 'rejected_reupload_requested': 'Re-upload needed'
 } -%}
 <span class="cx-badge cx-badge--{{ status }}">{{ (labels or text).get(status, status | replace('_', ' ') | capitalize) }}</span>
 {%- endmacro %}

@@ -2,7 +2,7 @@
 {% block title %}Staff Profile - {{ app_name }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=3" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=21" />
 {% endblock %}
 
 {% block body_class %}staff-page{% endblock %}
@@ -47,7 +47,7 @@
 
             <dl class="staff-profile-dl">
                 <dt>Staff Number:</dt>
-                <dd>{{ staff.staff_number if staff else 'STF-00000001' }}</dd>
+                <dd>{{ staff.staff_number if staff else '—' }}</dd>
                 <dt>Email Address:</dt>
                 <dd>{{ account.email }}</dd>
                 <dt>Role:</dt>
@@ -59,5 +59,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}?v=5"></script>
+<script src="{{ url_for('static', path='/js/staff-page.js') }}?v=6"></script>
 {% endblock %}

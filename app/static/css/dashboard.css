@@ -1697,32 +1697,7 @@ html[data-theme=dark] .progress-step.in_progress .step-num {
   gap: 0.75rem;
 }
 
-/* ── Year Selection & Confirmation ── */
-.year-selected-card {
-  text-align: center;
-  max-width: 420px;
-}
-
-.brand-icon-check {
-  font-size: 2rem;
-}
-
-.year-countdown-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.2rem;
-}
-
-.year-countdown-text {
-  color: var(--muted);
-  font-size: 0.875rem;
-}
-
-.btn-dashboard-now {
-  margin-top: 0.5rem;
-}
-
+/* ── Year Selection ── */
 .year-preview-text {
   color: var(--brand);
   font-weight: 500;

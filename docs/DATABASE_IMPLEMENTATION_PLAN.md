@@ -1,6 +1,10 @@
 # UrTax — Database & Access-Control Implementation Plan
 
 Status: **proposal / design phase** — no schema changes have been applied yet.
+
+> **Superseded in part (2026-10-02):** the table catalog is now [Final-Data-Model.md](../Data%20Models/Final-Data-Model.md),
+> and §5 (RLS) and §6 (indexing) are replaced by [DATABASE_POLICIES.md](DATABASE_POLICIES.md), which covers local
+> MySQL and production PostgreSQL.
 Scope: client ↔ staff ↔ HR ↔ admin tax-filing workflow, backed by PostgreSQL, designed for
 low-latency dashboards and strict row-level data isolation between roles.
 

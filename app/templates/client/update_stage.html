@@ -4,14 +4,14 @@
 {% set page_section = "Review & File" %}
 {% set page_title = "Filing Status" %}
 {% set page_subtitle = "See where your return stands and ask your tax team for an update." %}
+{# Steps are the statuses a client sees; how far the case has got comes from its real stage (case_stages). #}
 {% set flow = [
-    ("Form submitted", "Your filing details were received"),
-    ("Document review", "Your tax team checks your uploads"),
-    ("Tax preparation", "Your return is being prepared"),
-    ("Client review", "You review and sign the draft"),
-    ("IRS e-file", "Return transmitted to the IRS and state"),
+    ("Submitted", "Your filing details were received"),
+    ("In Progress", "Your tax team is working on your return" ~ (" · now: " ~ stage.name if stage and stage.client_status == "In Progress" else "")),
+    ("Completed", "Your return has been filed"),
 ] %}
-{% set reached = 1 if filing else 0 %}
+{% set step_of = {"Submitted": 1, "In Progress": 1, "Completed": 3, "Closed": 3, "Amendment": 3} %}
+{% set reached = step_of.get(stage.client_status, 1) if stage else (1 if filing else 0) %}
 
 {% block page %}
 <div class="cx-grid cx-grid--main">
@@ -21,7 +21,7 @@
                 <h2 class="cx-card__title" id="flow-title">{{ ci("stage") }} Tax <span class="cx-accent">year {{ selected_year }}</span></h2>
                 <p class="cx-card__sub">{% if filing %}Case {{ filing.case_number }}{% else %}No filing started for this year{% endif %}</p>
             </div>
-            {% if filing %}<span class="cx-badge cx-badge--in_progress">{{ filing.status | replace('_', ' ') | capitalize }}</span>{% endif %}
+            {% if filing %}<span class="cx-badge cx-badge--in_progress">{{ stage.name if stage else filing.status | replace('_', ' ') | capitalize }}</span>{% endif %}
         </div>
         <ol class="cx-stages">
             {% for title, text in flow %}

@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth, dashboard, profile, staff, admin
+from app.api import auth, chat, dashboard, profile, staff, admin
 from app.api.client import client as client_routes
 from app.core.config import settings
 from app.core.database import Base, engine
@@ -85,6 +85,7 @@ app.include_router(profile.router)
 app.include_router(client_routes.router)
 app.include_router(staff.router)
 app.include_router(admin.router)
+app.include_router(chat.router)
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)

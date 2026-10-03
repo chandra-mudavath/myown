@@ -25,12 +25,12 @@
                             <label for="tax_year">Tax year <span class="required">Required</span>
                                 <select id="tax_year" name="tax_year" required>
                                     <option value="">Select year</option>
-                                    {% for year in filing_years or [2025] %}<option value="{{ year }}">{{ year }}</option>{% endfor %}
+                                    {% for year in filing_years %}<option value="{{ year }}">{{ year }}</option>{% endfor %}
                                 </select>
                             </label>
                             <label for="filing_type">Filing type <span class="required">Required</span>
                                 <select id="filing_type" name="filing_type" required>
-                                    <option value="">Select filing type</option><option value="individual">Individual</option><option value="business">Business</option><option value="estate">Estate</option><option value="non_profit">Non-profit</option>
+                                    <option value="">Select filing type</option>{% for t in tax_types %}<option value="{{ t.code }}">{{ t.name }}</option>{% endfor %}
                                 </select>
                             </label>
                             <label for="first_name">First name <span class="required">Required</span><input id="first_name" name="first_name" type="text" placeholder="Enter first name" required /></label>

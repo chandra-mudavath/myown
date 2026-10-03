@@ -1,54 +1,83 @@
+{% from "client/_icons.html" import ci %}
+{%- set stages = stage_nav if (stage_nav is defined and stage_nav) else [] -%}
+{%- set current_stage = selected_stage if (selected_stage is defined and active_nav == 'all_cases') else '' -%}
+{%- set cases_open = active_nav in ['my_cases', 'all_cases', 'cases'] -%}
 <div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
 <aside class="dashboard-sidebar staff-sidebar" id="dashboard-sidebar">
-    <div class="staff-sidebar-heading"><span class="staff-brand-mark" aria-hidden="true">UT</span><span>{{ app_name or 'UrTax' }}</span></div>
+    <div class="staff-sidebar-heading">
+        <a class="staff-sidebar-brand staff-brand" href="/staff/dashboard" aria-label="{{ app_name or 'UrTax' }} staff dashboard">
+            <span class="staff-brand-mark" aria-hidden="true">UT</span>
+            <span class="staff-brand-text"><strong>{{ app_name or 'UrTax' }}</strong><small>Staff workspace</small></span>
+        </a>
+        <button type="button" class="sidebar-toggle staff-sidebar-collapse" data-sidebar-collapse aria-controls="dashboard-sidebar" aria-label="Close menu">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </button>
+    </div>
     <nav class="sidebar-nav" aria-label="Staff navigation">
         <a class="sidebar-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/staff/dashboard">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#9635;</span> Dashboard
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("dashboard") }}</span> Dashboard
         </a>
-        
-        <!-- Collapsible / Expandable Cases Dropdown -->
+
         <div class="sidebar-dropdown-wrap">
-            <button 
-                type="button" 
-                class="sidebar-nav-item sidebar-dropdown-toggle{% if active_nav in ['my_cases', 'all_cases', 'cases'] %} active{% endif %}" 
+            <button
+                type="button"
+                class="sidebar-nav-item sidebar-dropdown-toggle{% if cases_open and not current_stage %} is-parent-active{% endif %}"
                 id="cases-dropdown-btn"
-                aria-expanded="{% if active_nav in ['my_cases', 'all_cases', 'cases'] %}true{% else %}false{% endif %}"
+                aria-expanded="{{ 'true' if cases_open else 'false' }}"
+                aria-controls="cases-dropdown-menu"
             >
                 <span class="sidebar-dropdown-label">
-                    <span class="sidebar-nav-icon" aria-hidden="true">&#128194;</span> Cases
+                    <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("folder") }}</span> Cases
                 </span>
-                <span class="dropdown-chevron">&#9660;</span>
+                <span class="dropdown-chevron" aria-hidden="true">{{ ci("chevron-down") }}</span>
             </button>
-            <div 
-                class="sidebar-dropdown-menu" 
-                id="cases-dropdown-menu" 
-                {% if active_nav not in ['my_cases', 'all_cases', 'cases'] %}hidden{% endif %}
-            >
-                <a class="sidebar-nav-item sidebar-nav-item--nested{% if active_nav == 'my_cases' %} active{% endif %}" href="/staff/cases/my">
-                    My Cases
-                </a>
-                <a class="sidebar-nav-item sidebar-nav-item--nested{% if active_nav == 'all_cases' %} active{% endif %}" href="/staff/cases">
-                    All Cases
-                </a>
+            <div class="sidebar-dropdown-menu" id="cases-dropdown-menu" {% if not cases_open %}hidden{% endif %}>
+                <a class="sidebar-nav-item sidebar-nav-item--nested{% if active_nav == 'my_cases' %} active{% endif %}" href="/staff/cases/my">My Cases</a>
+                <a class="sidebar-nav-item sidebar-nav-item--nested{% if active_nav == 'all_cases' and not current_stage %} active{% endif %}" href="/staff/cases">All Cases</a>
             </div>
         </div>
 
         <a class="sidebar-nav-item{% if active_nav == 'clients' %} active{% endif %}" href="/staff/clients">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128101;</span> Clients
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("users") }}</span> Clients
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'messages' %} active{% endif %}" href="/staff/messages">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("send") }}</span> Messages
+            <span class="staff-unread-pill" data-chat-unread hidden style="display:none"></span>
         </a>
         <a class="sidebar-nav-item{% if active_nav == 'notifications' %} active{% endif %}" href="/staff/notifications">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128276;</span> Notifications
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("mail") }}</span> Notifications
+            {% if unread_count is defined and unread_count %}<span class="staff-unread-pill" aria-label="{{ unread_count }} new">{{ '99+' if unread_count > 99 else unread_count }}</span>{% endif %}
         </a>
+
+        {% if stages %}
+        <p class="sidebar-nav-label">Stages</p>
+        <ul class="staff-stage-list">
+            {% for stage in stages %}
+            <li>
+                <a class="sidebar-nav-item staff-stage-item{% if current_stage == stage.slug %} active{% endif %}"
+                   href="/staff/cases?stage={{ stage.slug }}"
+                   {% if current_stage == stage.slug %}aria-current="page"{% endif %}>
+                    <span class="staff-stage-arrow" aria-hidden="true">{{ ci("arrow-right") }}</span>
+                    <span class="staff-stage-label">{{ stage.label }}</span>
+                    <span class="staff-stage-count{% if not stage.count %} is-empty{% endif %}" aria-label="{{ stage.count }} cases">{{ stage.count }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
     </nav>
+
     <div class="sidebar-footer">
         <a class="sidebar-nav-item{% if active_nav == 'profile' %} active{% endif %}" href="/staff/profile">
-            <span class="sidebar-nav-icon" aria-hidden="true">&#128100;</span> Profile
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("user") }}</span> Profile
         </a>
+        <script src="/static/js/chat-badge.js?v=1" defer></script>
         <form action="/auth/logout" method="post">
             <button type="submit" class="sidebar-nav-item sidebar-nav-item--logout">
-                <span class="sidebar-nav-icon" aria-hidden="true">&#8630;</span> Logout
+                <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("logout") }}</span> Logout
             </button>
         </form>
     </div>
 </aside>
-

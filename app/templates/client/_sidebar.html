@@ -3,6 +3,7 @@
     ("Overview", [
         ("dashboard", "/client/dashboard", "dashboard", "Dashboard"),
         ("filings", "/client/filings", "history", "My Filings"),
+        ("messages", "/client/messages", "mail", "Messages"),
     ]),
     ("My tax return", [
         ("personal_info", "/client/personal-info", "user", "Personal Info"),
@@ -42,7 +43,7 @@
             {{ ci("calendar", "ci ci--sm") }}
             <select id="cx-year-select" name="tax_year" data-cx-autosubmit>
                 {% for yr in available_years %}
-                <option value="{{ yr }}" {% if yr == selected_year %}selected{% endif %}>{{ yr }} · Regular</option>
+                <option value="{{ yr }}" {% if yr == selected_year %}selected{% endif %}>{{ yr }}</option>
                 {% endfor %}
             </select>
             {{ ci("chevron-down", "ci ci--sm cx-yearpick__caret") }}
@@ -57,12 +58,14 @@
             {% for key, href, icon, label in items %}
             <a class="cx-nav__item{% if key == current %} is-active{% endif %}" href="{{ href }}" {% if key == current %}aria-current="page"{% endif %}>
                 {{ ci(icon) }}<span>{{ label }}</span>
+                {%- if key == "messages" %}<span data-chat-unread hidden style="display:none;margin-left:auto;min-width:18px;padding:0 6px;border-radius:999px;background:var(--coral,#dc2626);color:#fff;font-size:.66rem;font-weight:700;line-height:1.6;text-align:center"></span>{% endif %}
             </a>
             {% endfor %}
         </div>
         {% endfor %}
     </nav>
 
+    <script src="/static/js/chat-badge.js?v=1" defer></script>
     <div class="cx-sidebar__foot">
         <div class="cx-helpcard">
             {{ ci("help") }}

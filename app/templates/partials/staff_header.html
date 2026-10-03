@@ -1,21 +1,42 @@
+{#- The one header for every staff page: a full-width command bar above the sidebar.
+    Keeps the ids other scripts rely on: sidebar-toggle (sidebar-nav.js), staff-avatar-btn /
+    staff-account-menu (sidebar-nav.js), theme-toggle (main.js). -#}
+{% from "client/_icons.html" import ci %}
+{% set unread = unread_count if unread_count is defined else 0 %}
+<div class="staff-progress" aria-hidden="true"><span></span></div>
+<span class="sr-only" role="status" aria-live="polite" data-loading-status></span>
 <header class="staff-header">
     <div class="staff-header-left">
         {% include "partials/sidebar_toggle.html" %}
         <a class="staff-brand" href="/staff/dashboard" aria-label="{{ app_name or 'UrTax' }} staff dashboard">
             <span class="staff-brand-mark" aria-hidden="true">UT</span>
-            <span>{{ app_name or 'UrTax' }}</span>
+            <span class="staff-brand-text">
+                <strong>{{ app_name or 'UrTax' }}</strong>
+                <small>Staff workspace</small>
+            </span>
         </a>
     </div>
+
     <div class="staff-header-actions">
-        <!-- Notification Icon -->
-        <a class="icon-button notification-button" href="/staff/notifications" aria-label="View notifications" title="Notifications">
-            <span aria-hidden="true">&#128276;</span><span class="notification-badge">3</span>
+        <a class="staff-hbtn staff-hbtn--bell{% if unread %} has-unread{% endif %}" href="/staff/notifications"
+           aria-label="{{ unread ~ ' new notifications' if unread else 'Notifications' }}" title="Notifications">
+            <svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+            </svg>
+            {% if unread %}<span class="notification-badge">{{ '99+' if unread > 99 else unread }}</span>{% endif %}
         </a>
 
-        <!-- Avatar Circle with Dropdown -->
+        <button id="theme-toggle" class="theme-toggle staff-hbtn" type="button" aria-label="Switch theme" title="Switch theme" aria-pressed="false">
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
+            <span class="sr-only">Switch theme</span>
+        </button>
+
+        <span class="staff-header-divider" aria-hidden="true"></span>
+
         <div class="account-menu-wrap">
             <button
-                class="account-menu-button staff-avatar-btn"
+                class="account-menu-button staff-avatar-btn staff-user"
                 id="staff-avatar-btn"
                 type="button"
                 aria-expanded="false"
@@ -23,28 +44,30 @@
                 aria-label="Open staff menu"
             >
                 {% if staff and staff.profile_picture %}
-                <img src="{{ staff.profile_picture }}" alt="{{ first_name }}" class="staff-header-avatar-img" />
+                <img src="{{ staff.profile_picture }}" alt="" class="staff-header-avatar-img" />
                 {% else %}
-                <span class="staff-avatar" aria-label="{{ first_name }} {{ last_name }}" title="{{ first_name }} {{ last_name }}">{{ initials }}</span>
+                <span class="staff-avatar" aria-hidden="true">{{ initials }}</span>
                 {% endif %}
+                <span class="staff-user__text">
+                    <strong>{{ first_name }} {{ last_name }}</strong>
+                    <small>{{ staff.job_title if staff and staff.job_title else 'Staff' }}</small>
+                </span>
+                {{ ci("chevron-down", "ci ci--sm staff-user__caret") }}
             </button>
             <div class="account-menu staff-account-menu" id="staff-account-menu" hidden>
+                <div class="staff-menu-head">
+                    <strong>{{ first_name }} {{ last_name }}</strong>
+                    <small>{{ account.email if account is defined and account and account.email else '' }}</small>
+                </div>
+                <a class="account-menu-action" href="/staff/profile">{{ ci("user", "ci ci--sm") }} My profile</a>
                 {% if staff and staff.profile_picture %}
-                <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ staff.profile_picture }}')" title="View Profile Picture">
-                    <span aria-hidden="true">&#128065;</span> View
-                </a>
+                <a class="account-menu-action" href="javascript:void(0)" onclick="openAvatarModal('{{ staff.profile_picture }}')">{{ ci("image", "ci ci--sm") }} View photo</a>
                 {% endif %}
-                <a class="account-menu-action" href="/staff/profile" title="Edit Profile Picture">
-                    <span aria-hidden="true">&#9998;</span> Edit
-                </a>
+                <a class="account-menu-action" href="/staff/profile">{{ ci("edit", "ci ci--sm") }} Change photo</a>
+                <form action="/auth/logout" method="post">
+                    <button type="submit" class="account-menu-action account-menu-action--danger">{{ ci("logout", "ci ci--sm") }} Log out</button>
+                </form>
             </div>
         </div>
-
-        <!-- Theme Toggle -->
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme" aria-pressed="false">
-            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
-            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"></path></svg>
-            <span class="sr-only">Switch theme</span>
-        </button>
     </div>
-</header>
+</header>

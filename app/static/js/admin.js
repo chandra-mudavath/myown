@@ -5,6 +5,31 @@ document.addEventListener("DOMContentLoaded", function () {
     const modalCloseBtn = document.getElementById("modal-close-btn");
     let shouldRefreshOnClose = false;
 
+    // Dropdown options for the quick-action forms come from the lookup tables
+    // (tax years, filing types, document types, staff roles), loaded once per page.
+    let formOptionsPromise = null;
+    function loadFormOptions() {
+        if (!formOptionsPromise) {
+            formOptionsPromise = fetch("/admin/api/form-options").then((res) => {
+                if (!res.ok) throw new Error("Could not load form options");
+                return res.json();
+            });
+            formOptionsPromise.catch(() => { formOptionsPromise = null; });
+        }
+        return formOptionsPromise;
+    }
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+    function optionTags(items, selected) {
+        return items.map(({ code, name }) =>
+            `<option value="${escapeHtml(code)}"${code === selected ? " selected" : ""}>${escapeHtml(name)}</option>`
+        ).join("");
+    }
+    function yearOptions(opts) {
+        return optionTags(opts.tax_years.map((y) => ({ code: y, name: y })), opts.default_tax_year);
+    }
+
     function openModal(title, contentHtml) {
         if (!modalOverlay || !modalTitle || !modalBody) return;
         shouldRefreshOnClose = false;
@@ -93,7 +118,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // 2. Quick Action: + New Staff
-    function bindStaffHandler() {
+    async function bindStaffHandler() {
+        let opts;
+        try {
+            opts = await loadFormOptions();
+        } catch (err) {
+            openModal("+ Create New Staff", "<p style='text-align:center;color:#ef4444;'>Couldn't load staff roles. Refresh the page and try again.</p>");
+            return;
+        }
         const html = `
             <form id="form-quick-staff">
                 <div class="modal-form-group">
@@ -111,10 +143,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <div class="modal-form-group">
                     <label>Role *</label>
                     <select name="role">
-                        <option value="INITIATOR">Initiator</option>
-                        <option value="PREPARER">Preparer</option>
-                        <option value="REVIEWER">Reviewer</option>
-                        <option value="MANAGER">Manager</option>
+                        ${optionTags(opts.staff_roles)}
                     </select>
                 </div>
                 <button type="submit" class="modal-btn-submit">Create Staff Member</button>
@@ -163,6 +192,7 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const res = await fetch("/admin/api/clients");
             const clients = await res.json();
+            const opts = await loadFormOptions();
 
             let clientOptionsHtml = clients.map(c => `<option value="${c.id}">${c.name} (${c.client_number})</option>`).join("");
             if (!clients.length) {
@@ -180,17 +210,13 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div class="modal-form-group">
                         <label>Tax Year *</label>
                         <select name="tax_year" required>
-                            <option value="2026" selected>2026</option>
-                            <option value="2025">2025</option>
-                            <option value="2024">2024</option>
+                            ${yearOptions(opts)}
                         </select>
                     </div>
                     <div class="modal-form-group">
                         <label>Filing Type *</label>
                         <select name="filing_type" required>
-                            <option value="individual" selected>Individual (1040)</option>
-                            <option value="business">Business (1065 / 1120)</option>
-                            <option value="amended">Amended Return</option>
+                            ${optionTags(opts.tax_types, "individual")}
                         </select>
                     </div>
                     <button type="submit" class="modal-btn-submit">Start New Filing</button>
@@ -248,6 +274,7 @@ document.addEventListener("DOMContentLoaded", function () {
             try {
                 const res = await fetch("/admin/api/filings");
                 const filings = await res.json();
+                const opts = await loadFormOptions();
 
                 let filingOptionsHtml = filings.map(f => `<option value="${f.id}">${f.case_id} — ${f.client_name} (TY ${f.tax_year})</option>`).join("");
                 if (!filings.length) {
@@ -265,10 +292,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="modal-form-group">
                             <label>Document Category / Type *</label>
                             <select name="doc_type" required>
-                                <option value="w2" selected>W-2 / Income Statement</option>
-                                <option value="1099">1099 / Misc Income</option>
-                                <option value="id_proof">ID / SSN Proof</option>
-                                <option value="general">General Tax Document</option>
+                                ${optionTags(opts.document_types, "OTHER")}
                             </select>
                         </div>
                         <div class="modal-form-group">
@@ -315,6 +339,7 @@ document.addEventListener("DOMContentLoaded", function () {
             try {
                 const res = await fetch("/admin/api/clients");
                 const clients = await res.json();
+                const opts = await loadFormOptions();
 
                 let clientOptionsHtml = clients.map(c => `<option value="${c.id}">${c.name} (${c.client_number})</option>`).join("");
                 if (!clients.length) {
@@ -332,26 +357,19 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="modal-form-group">
                             <label>Tax Year *</label>
                             <select name="tax_year" required>
-                                <option value="2026" selected>2026</option>
-                                <option value="2025">2025</option>
-                                <option value="2024">2024</option>
+                                ${yearOptions(opts)}
                             </select>
                         </div>
                         <div class="modal-form-group">
                             <label>Filing Type *</label>
                             <select name="filing_type" required>
-                                <option value="individual" selected>Individual (1040)</option>
-                                <option value="business">Business (1065 / 1120)</option>
-                                <option value="amended">Amended Return</option>
+                                ${optionTags(opts.tax_types, "individual")}
                             </select>
                         </div>
                         <div class="modal-form-group">
                             <label>Document Category / Type *</label>
                             <select name="doc_type" required>
-                                <option value="w2" selected>W-2 / Income Statement</option>
-                                <option value="1099">1099 / Misc Income</option>
-                                <option value="id_proof">ID / SSN Proof</option>
-                                <option value="general">General Tax Document</option>
+                                ${optionTags(opts.document_types, "OTHER")}
                             </select>
                         </div>
                         <div class="modal-form-group">

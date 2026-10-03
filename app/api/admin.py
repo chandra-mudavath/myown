@@ -2,6 +2,7 @@ import secrets
 import string
 from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -13,8 +14,19 @@ from app.models.admin import Admin
 from app.models.auth import AccountType, AuthAccount
 from app.models.client import Client
 from app.models.filing_document import FilingDocument
+from app.models.lookups import DocumentType
 from app.models.staff import Staff, StaffRole
 from app.models.tax_filing import TaxFiling
+from app.services.catalog import (
+    case_document_types,
+    case_stages,
+    default_tax_year,
+    open_tax_years,
+    stage_codes_for_client_status,
+    stage_labels,
+    staff_roles,
+    tax_types,
+)
 from app.services.storage_service import generate_uuid, save_document_file, save_profile_picture
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -29,12 +41,18 @@ def _generate_temp_password(length: int = 10) -> str:
 def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depends(get_db)):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
     
-    # Calculate filing status counts dynamically
+    # Filing status counts, grouped by the client-facing status each stage maps to (case_stages)
     total_filings = db.query(TaxFiling).count()
-    submitted_count = db.query(TaxFiling).filter(TaxFiling.status == "pending_review").count()
-    in_review_count = db.query(TaxFiling).filter(TaxFiling.status == "in_progress").count()
-    payment_pending_count = db.query(TaxFiling).filter(TaxFiling.status == "payment_pending").count()
-    completed_count = db.query(TaxFiling).filter(TaxFiling.status == "complete").count()
+
+    def _count_in(codes: list[str]) -> int:
+        return db.query(TaxFiling).filter(TaxFiling.status.in_(codes)).count() if codes else 0
+
+    in_progress_codes = stage_codes_for_client_status(db, "In Progress")
+    submitted_count = _count_in(stage_codes_for_client_status(db, "Submitted"))
+    payment_pending_count = _count_in(["payment_pending"])
+    in_review_count = _count_in([c for c in in_progress_codes if c != "payment_pending"])
+    completed_count = _count_in(stage_codes_for_client_status(db, "Completed"))
+    labels = stage_labels(db)
 
     # Calculate business overview counts
     total_clients = db.query(Client).count()
@@ -58,7 +76,7 @@ def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depen
         time_str = updated_time.strftime("%b %d, %H:%M") if updated_time else "Recently"
         recent_activity.append({
             "name": f"{f.first_name} {f.last_name}",
-            "description": f"Filing status: {f.status.replace('_', ' ').title()} ({f.get_case_id(db)})",
+            "description": f"Filing status: {labels.get(f.status, f.status.replace('_', ' ').title())} ({f.get_case_id(db)})",
             "time": time_str,
             "tone": "teal" if f.status == "complete" else ("amber" if "pending" in f.status else "blue"),
             "case_id": f.id
@@ -118,10 +136,23 @@ def admin_clients_directory(
         )
     
     clients = query.order_by(Client.created_at.desc()).all()
+    client_ids = [c.id for c in clients]
+    # One grouped query each for filing counts and emails, instead of two queries per client.
+    filing_counts = dict(
+        db.query(TaxFiling.client_id, func.count(TaxFiling.id))
+        .filter(TaxFiling.client_id.in_(client_ids))
+        .group_by(TaxFiling.client_id)
+        .all()
+    ) if client_ids else {}
+    emails = dict(
+        db.query(AuthAccount.id, AuthAccount.email)
+        .filter(AuthAccount.id.in_([c.account_id for c in clients]))
+        .all()
+    ) if clients else {}
     formatted_clients = []
     for c in clients:
-        filing_count = db.query(TaxFiling).filter(TaxFiling.client_id == c.id).count()
-        email = c.account.email if c.account else "N/A"
+        filing_count = filing_counts.get(c.id, 0)
+        email = emails.get(c.account_id, "N/A")
         formatted_clients.append({
             "id": c.id,
             "client_number": c.client_number,
@@ -174,6 +205,7 @@ def admin_client_detail(
         "admin/clients/detail.html",
         {
             "request": request,
+            "stage_labels": stage_labels(db),
             "account": account,
             "admin": admin,
             "client": client,
@@ -226,6 +258,8 @@ def admin_cases_queue(
         "admin/cases/index.html",
         {
             "request": request,
+            "stage_labels": stage_labels(db),
+            "stages": case_stages(db),
             "account": account,
             "admin": admin,
             "filings": formatted_filings,
@@ -256,6 +290,7 @@ def admin_case_detail(
         "admin/cases/detail.html",
         {
             "request": request,
+            "stage_labels": stage_labels(db),
             "account": account,
             "admin": admin,
             "filing": filing,
@@ -346,6 +381,7 @@ def admin_staff_detail(
         "admin/staff/detail.html",
         {
             "request": request,
+            "stage_labels": stage_labels(db),
             "account": account,
             "admin": admin,
             "staff_member": staff_member,
@@ -364,6 +400,18 @@ def admin_staff_detail(
 def get_clients_api(account: AdminAccount, db: Session = Depends(get_db)):
     clients = db.query(Client).all()
     return [{"id": c.id, "client_number": c.client_number, "name": f"{c.first_name} {c.last_name}"} for c in clients]
+
+
+@router.get("/api/form-options", response_class=JSONResponse)
+def get_form_options_api(account: AdminAccount, db: Session = Depends(get_db)):
+    """Dropdown options for the quick-action forms, from the lookup tables."""
+    return {
+        "tax_years": open_tax_years(db),
+        "default_tax_year": default_tax_year(db),
+        "tax_types": [{"code": t.code, "name": t.name} for t in tax_types(db)],
+        "document_types": [{"code": d.code, "name": d.name} for d in case_document_types(db)],
+        "staff_roles": [{"code": r.code, "name": r.name} for r in staff_roles(db)],
+    }
 
 
 @router.get("/api/filings", response_class=JSONResponse)
@@ -388,12 +436,7 @@ def quick_create_client(
     temp_password = _generate_temp_password(10)
     hashed_pwd = hash_password(temp_password)
 
-    client_count = db.query(Client).count() + 1
-    client_number = f"CLI-{client_count:08d}"
-    account_number = f"ACC-{client_count:08d}"
-
     auth_acc = AuthAccount(
-        account_number=account_number,
         email=email.strip().lower(),
         password_hash=hashed_pwd,
         account_type=AccountType.CLIENT,
@@ -404,7 +447,6 @@ def quick_create_client(
     db.flush()
 
     new_client = Client(
-        client_number=client_number,
         account_id=auth_acc.id,
         first_name=first_name.strip(),
         last_name=last_name.strip(),
@@ -416,7 +458,7 @@ def quick_create_client(
     return {
         "success": True,
         "message": "Client created successfully!",
-        "client_number": client_number,
+        "client_number": new_client.client_number,
         "email": email.strip().lower(),
         "temp_password": temp_password,
     }
@@ -439,17 +481,12 @@ def quick_create_staff(
     temp_password = _generate_temp_password(10)
     hashed_pwd = hash_password(temp_password)
 
-    staff_count = db.query(Staff).count() + 1
-    staff_number = f"STF-{staff_count:08d}"
-    account_number = f"ACC-STF-{staff_count:08d}"
-
     try:
         staff_role_enum = StaffRole(role.upper())
     except ValueError:
         staff_role_enum = StaffRole.INITIATOR
 
     auth_acc = AuthAccount(
-        account_number=account_number,
         email=email.strip().lower(),
         password_hash=hashed_pwd,
         account_type=AccountType.STAFF,
@@ -460,7 +497,6 @@ def quick_create_staff(
     db.flush()
 
     new_staff = Staff(
-        staff_number=staff_number,
         account_id=auth_acc.id,
         first_name=first_name.strip(),
         last_name=last_name.strip(),
@@ -473,7 +509,7 @@ def quick_create_staff(
     return {
         "success": True,
         "message": "Staff created successfully!",
-        "staff_number": staff_number,
+        "staff_number": new_staff.staff_number,
         "email": email.strip().lower(),
         "temp_password": temp_password,
     }
@@ -491,14 +527,10 @@ def quick_create_filing(
     if not client:
         raise HTTPException(status_code=404, detail="Client not found.")
 
-    filing_count = db.query(TaxFiling).count() + 1
-    case_number = f"FLI_{filing_count:07d}"
-
     email = client.account.email if client.account else f"{client.first_name.lower()}@example.com"
 
     new_filing = TaxFiling(
         client_id=client.id,
-        case_number=case_number,
         tax_year=tax_year,
         filing_type=filing_type,
         first_name=client.first_name,
@@ -514,7 +546,7 @@ def quick_create_filing(
         "success": True,
         "message": "New filing created successfully!",
         "filing_id": new_filing.id,
-        "case_number": case_number,
+        "case_number": new_filing.case_number,
         "redirect_url": f"/admin/cases/{new_filing.id}"
     }
 
@@ -523,7 +555,7 @@ def quick_create_filing(
 async def quick_upload_document(
     account: AdminAccount,
     filing_id: str = Form(...),
-    doc_type: str = Form("general"),
+    doc_type: str = Form("OTHER"),  # document_types.code
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
@@ -531,13 +563,8 @@ async def quick_upload_document(
     if not filing:
         raise HTTPException(status_code=404, detail="Filing not found.")
 
-    category_map = {
-        "w2": "Income",
-        "1099": "Income",
-        "id_proof": "Personal",
-        "general": "Other"
-    }
-    category = category_map.get(doc_type.lower(), "Other")
+    doc_type_row = db.query(DocumentType).filter(DocumentType.code == doc_type).first()
+    category = doc_type_row.category if doc_type_row else "Other"
 
     group_id = generate_uuid()
     stored_name, relative_path, mime_type, file_size = save_document_file(
@@ -583,7 +610,7 @@ async def quick_create_filing_with_doc(
     client_id: str = Form(...),
     tax_year: int = Form(...),
     filing_type: str = Form("individual"),
-    doc_type: str = Form("general"),
+    doc_type: str = Form("OTHER"),  # document_types.code
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
@@ -591,14 +618,10 @@ async def quick_create_filing_with_doc(
     if not client:
         raise HTTPException(status_code=404, detail="Client not found.")
 
-    filing_count = db.query(TaxFiling).count() + 1
-    case_number = f"FLI_{filing_count:07d}"
-
     email = client.account.email if client.account else f"{client.first_name.lower()}@example.com"
 
     new_filing = TaxFiling(
         client_id=client.id,
-        case_number=case_number,
         tax_year=tax_year,
         filing_type=filing_type,
         first_name=client.first_name,
@@ -610,13 +633,8 @@ async def quick_create_filing_with_doc(
     db.add(new_filing)
     db.flush()
 
-    category_map = {
-        "w2": "Income",
-        "1099": "Income",
-        "id_proof": "Personal",
-        "general": "Other"
-    }
-    category = category_map.get(doc_type.lower(), "Other")
+    doc_type_row = db.query(DocumentType).filter(DocumentType.code == doc_type).first()
+    category = doc_type_row.category if doc_type_row else "Other"
 
     group_id = generate_uuid()
     stored_name, relative_path, mime_type, file_size = save_document_file(
@@ -650,7 +668,7 @@ async def quick_create_filing_with_doc(
 
     return {
         "success": True,
-        "message": f"Filing '{case_number}' created and initial document uploaded!",
+        "message": f"Filing '{new_filing.case_number}' created and initial document uploaded!",
         "filing_id": new_filing.id,
         "redirect_url": f"/admin/cases/{new_filing.id}"
     }

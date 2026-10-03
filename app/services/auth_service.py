@@ -44,29 +44,6 @@ PASSWORD_RESET_EXPIRE_MINUTES = 15
 EMAIL_VERIFY_EXPIRE_HOURS = 24
 
 
-# ── Counters for generating business IDs ─────────────────────────────────────
-
-def _next_client_number(db: Session) -> str:
-    count = db.query(Client).count()
-    return f"CLI-{(count + 1):08d}"
-
-
-def _next_staff_number(db: Session) -> str:
-    count = db.query(Staff).count()
-    return f"STF-{(count + 1):08d}"
-
-
-def _next_admin_number(db: Session) -> str:
-    count = db.query(Admin).count()
-    return f"ADM-{(count + 1):08d}"
-
-
-def _next_account_number(db: Session, account_type: AccountType) -> str:
-    prefix = {"CLIENT": "CLT", "STAFF": "STF", "ADMIN": "ADM"}[account_type.value]
-    count = db.query(AuthAccount).filter(AuthAccount.account_type == account_type).count()
-    return f"{prefix}-{(count + 1):08d}"
-
-
 # ── Lookup ────────────────────────────────────────────────────────────────────
 
 def get_account_by_email(db: Session, email: str) -> Optional[AuthAccount]:
@@ -104,7 +81,6 @@ def register_by_email_domain(db: Session, data: RegisterRequest) -> tuple[AuthAc
 def _register_client(db: Session, data: RegisterRequest, email: str) -> tuple[AuthAccount, Client]:
     """Create a Client account. Verified immediately — no email check needed."""
     account = AuthAccount(
-        account_number=_next_account_number(db, AccountType.CLIENT),
         email=email,
         password_hash=hash_password(data.password),
         account_type=AccountType.CLIENT,
@@ -115,7 +91,6 @@ def _register_client(db: Session, data: RegisterRequest, email: str) -> tuple[Au
     db.flush()
 
     client = Client(
-        client_number=_next_client_number(db),
         account_id=account.id,
         first_name=data.first_name,
         last_name=data.last_name,
@@ -131,7 +106,6 @@ def _register_client(db: Session, data: RegisterRequest, email: str) -> tuple[Au
 def _register_staff(db: Session, data: RegisterRequest, email: str, role: StaffRole) -> tuple[AuthAccount, Staff]:
     """Create a Staff account. Temporarily verified immediately until company email is set up."""
     account = AuthAccount(
-        account_number=_next_account_number(db, AccountType.STAFF),
         email=email,
         password_hash=hash_password(data.password),
         account_type=AccountType.STAFF,
@@ -143,7 +117,6 @@ def _register_staff(db: Session, data: RegisterRequest, email: str, role: StaffR
     db.flush()
 
     staff = Staff(
-        staff_number=_next_staff_number(db),
         account_id=account.id,
         first_name=data.first_name,
         last_name=data.last_name,
@@ -160,7 +133,6 @@ def _register_staff(db: Session, data: RegisterRequest, email: str, role: StaffR
 def _register_admin(db: Session, data: RegisterRequest, email: str) -> tuple[AuthAccount, Admin]:
     """Create an Admin account. Temporarily verified immediately until company email is set up."""
     account = AuthAccount(
-        account_number=_next_account_number(db, AccountType.ADMIN),
         email=email,
         password_hash=hash_password(data.password),
         account_type=AccountType.ADMIN,
@@ -172,7 +144,6 @@ def _register_admin(db: Session, data: RegisterRequest, email: str) -> tuple[Aut
     db.flush()
 
     admin = Admin(
-        admin_number=_next_admin_number(db),
         account_id=account.id,
         first_name=data.first_name,
         last_name=data.last_name,

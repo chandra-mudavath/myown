@@ -69,6 +69,17 @@ async function handleQuickUpload(e) {
     button.innerHTML = label;
 }
 
+// Reply forms: show the chosen file's name on the attach button
+document.querySelectorAll("[data-reply-file]").forEach((input) => {
+    input.addEventListener("change", () => {
+        const label = input.closest("label");
+        const text = label?.querySelector("[data-file-label]");
+        const name = input.files?.[0]?.name;
+        if (text && name) text.textContent = name;
+        label?.classList.toggle("has-file", Boolean(name));
+    });
+});
+
 window.filterDocuments = filterDocuments;
 window.selectCategoryFolder = selectCategoryFolder;
 window.switchView = switchView;

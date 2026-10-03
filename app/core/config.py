@@ -40,5 +40,9 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 10
     ALLOWED_EXTENSIONS: list[str] = [".pdf", ".png", ".jpg", ".jpeg", ".csv", ".docx", ".xlsx", ".txt"]
 
+    # Chat
+    CHAT_HIDE_AFTER_DAYS: int = 90  # threads are hidden (kept for audit) this long after they close
+    CHAT_ATTACHMENTS_DIR: str = "private_storage/chat_attachments"  # not under the public /storage mount
+
 
 settings = Settings()

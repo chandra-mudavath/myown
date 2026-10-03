@@ -10,6 +10,7 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -85,6 +86,7 @@ class AuthSession(Base):
 # ─────────────────────────────────────────────
 class AuthRefreshToken(Base):
     __tablename__ = "auth_refresh_tokens"
+    __table_args__ = (Index("ix_auth_refresh_tokens_account_revoked", "account_id", "revoked_at"),)  # sign out everywhere
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     account_id: Mapped[str] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="CASCADE"), nullable=False, index=True)

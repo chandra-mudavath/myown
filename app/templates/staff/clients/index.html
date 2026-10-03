@@ -2,12 +2,13 @@
 {% block title %}Client Directory - {{ app_name }}{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=3" />
+<link rel="stylesheet" href="{{ url_for('static', path='/css/staff.css') }}?v=21" />
 {% endblock %}
 
 {% block body_class %}staff-page{% endblock %}
 
 {% block content %}
+{% from "client/_icons.html" import ci %}
 {% set app_name = app_name or 'UrTax' %}
 {% set active_nav = 'clients' %}
 {% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
@@ -45,18 +46,18 @@
                     <tr>
                         <td>
                             <a href="/staff/clients/{{ c.id }}" class="client-link">
-                                {{ c.client_number }}
+                                {{ c.customer_no }}
                             </a>
                         </td>
                         <td>
                             <a href="/staff/clients/{{ c.id }}" class="client-link">
-                                👤 {{ c.first_name }} {{ c.last_name }}
+                                👤 {{ c.name }}
                             </a>
                         </td>
-                        <td>{{ c.email }}</td>
+                        <td>{{ c.email or 'N/A' }}</td>
                         <td>{{ c.phone or 'N/A' }}</td>
                         <td>
-                            <a href="/staff/clients/{{ c.id }}" class="button button-secondary btn-view-sm">View Profile</a>
+                            <a href="/staff/clients/{{ c.id }}" class="staff-eye-btn" aria-label="View profile of {{ c.name }}" title="View profile">{{ ci("eye", "ci ci--sm") }}</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -73,5 +74,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}"></script>
+<script src="{{ url_for('static', path='/js/sidebar-nav.js') }}?v=5"></script>
+<script src="{{ url_for('static', path='/js/staff-page.js') }}?v=6"></script>
 {% endblock %}

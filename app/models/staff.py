@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -30,6 +30,7 @@ class StaffRole(str, enum.Enum):
 class Staff(Base):
     """Business entity representing employee details."""
     __tablename__ = "staff"
+    __table_args__ = (Index("ix_staff_created", "created_at"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     staff_number: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)  # e.g. STF-00000001
@@ -40,6 +41,8 @@ class Staff(Base):
     job_title: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g., Senior Tax Preparer
     role: Mapped[StaffRole] = mapped_column(Enum(StaffRole), nullable=False, default=StaffRole.INITIATOR)
     profile_picture: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Anything in the notifications feed newer than this counts as unread
+    notifications_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

@@ -10,8 +10,11 @@ from app.core.deps import ClientAccount
 from app.core.templates import templates
 from app.models.client import Client
 from app.models.filing_document import FilingDocument
+from app.models.lookups import CaseStage
 from app.models.tax_filing import TaxFiling
 from app.schemas.tax_filing import TaxFilingCreate
+from app.services.catalog import document_categories, open_tax_years, tax_types
+from app.services.document_review import account_names, add_comment, comment_threads, store_upload
 from app.services.storage_service import generate_uuid, save_document_file
 
 router = APIRouter(prefix="/client", tags=["client"])
@@ -24,7 +27,7 @@ async def my_filings_page(
     db: Session = Depends(get_db),
     tax_year: str | None = Cookie(None),
 ):
-    selected_year = resolve_tax_year(tax_year)
+    selected_year = resolve_tax_year(db, tax_year)
 
     client = db.query(Client).filter(Client.account_id == account.id).first()
     display_name = client.first_name if client else account.email.split("@", 1)[0]
@@ -124,7 +127,8 @@ async def new_filing_page(
         {
             "request": request,
             **shell,
-            "filing_years": [2024, 2025, 2026],
+            "filing_years": open_tax_years(db),
+            "tax_types": tax_types(db),
         },
     )
 
@@ -173,9 +177,7 @@ async def submit_new_filing(
     parsed = TaxFilingCreate(**data)
 
     # Persist to DB
-    count = db.query(TaxFiling).count()
-    case_num = f"FLI_{count + 1:07d}"
-    tax_filing = TaxFiling(client_id=client.id, case_number=case_num, **parsed.model_dump())
+    tax_filing = TaxFiling(client_id=client.id, **parsed.model_dump())  # case_number filled in on insert
     db.add(tax_filing)
 
     # Update Client profile details with information from the filing form
@@ -263,7 +265,8 @@ async def client_documents_page(
     tax_year: str | None = Cookie(None),
 ):
     from app.api.dashboard import _available_tax_years
-    available_years = _available_tax_years()
+    available_years = _available_tax_years(db)
+    category_labels = document_categories(db)
 
     if not tax_year or not tax_year.isdigit() or int(tax_year) not in available_years:
         selected_year = available_years[0]
@@ -274,6 +277,8 @@ async def client_documents_page(
     documents_by_category: dict[str, list[FilingDocument]] = {}
     current_filing_id: str | None = None
     has_active_filing: bool = False
+    uploaders: dict[str, str] = {}
+    threads: dict = {}
 
     if client:
         # Check if client has any filing for the selected year
@@ -301,10 +306,16 @@ async def client_documents_page(
                 .all()
             )
             for doc in docs:
-                cat = doc.category if doc.category in ["Personal", "Income", "Employment", "Investments", "Deductions", "Credits", "Foreign_Information", "Dependents", "Other"] else "Other"
+                cat = doc.category if doc.category in category_labels else "Other"
                 if cat not in documents_by_category:
                     documents_by_category[cat] = []
                 documents_by_category[cat].append(doc)
+
+            # "Me" for the client's own uploads, otherwise the tax team member's name
+            names = account_names(db, {d.uploaded_by_id for d in docs})
+            for d in docs:
+                uploaders[d.id] = "Me" if d.uploaded_by_id == account.id else names.get(d.uploaded_by_id, {}).get("name", "Tax team")
+            threads = comment_threads(db, filing.id)
 
     return templates.TemplateResponse(
         "client/documents.html",
@@ -314,10 +325,67 @@ async def client_documents_page(
             "available_years": available_years,
             "selected_year": selected_year,
             "documents_by_category": documents_by_category,
+            "category_labels": category_labels,
             "current_filing_id": current_filing_id,
             "has_active_filing": has_active_filing,
+            "uploaders": uploaders,
+            "threads": threads,
+            "account_id": account.id,
         },
     )
+
+
+@router.post("/filings/{filing_id}/documents/{doc_id}/reply", name="client_reply_document")
+async def client_reply_document(
+    filing_id: str,
+    doc_id: str,
+    account: ClientAccount,
+    body: str = Form(""),
+    file: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+):
+    """Client answers a rejected document: a comment, a re-uploaded file, or both."""
+    client = db.query(Client).filter(Client.account_id == account.id).first()
+    filing = (
+        db.query(TaxFiling).filter(TaxFiling.id == filing_id, TaxFiling.client_id == client.id).first() if client else None
+    )
+    doc = (
+        db.query(FilingDocument).filter(FilingDocument.id == doc_id, FilingDocument.filing_id == filing_id).first()
+        if filing else None
+    )
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+
+    body = body.strip()
+    has_file = file is not None and bool(file.filename)
+    if not body and not has_file:
+        return RedirectResponse(f"/client/documents?reply_error={doc_id}#doc-{doc.document_group_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+    target = doc
+    if has_file:
+        target = store_upload(
+            db,
+            client=client,
+            filing=filing,
+            file=file,
+            category=doc.category,
+            document_name=doc.document_name,
+            document_group_id=doc.document_group_id,
+            uploaded_by_type="client",
+            uploaded_by_id=account.id,
+        )
+        db.flush()
+    if body or has_file:
+        add_comment(
+            db,
+            document=target,
+            kind="reupload" if has_file else "reply",
+            body=body or f"Uploaded a new version: {file.filename}",
+            author_type="client",
+            author_account_id=account.id,
+        )
+    db.commit()
+    return RedirectResponse(f"/client/documents#doc-{doc.document_group_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/filings/{filing_id}/upload", name="upload_client_document")
@@ -343,57 +411,17 @@ async def upload_client_document(
     for file in files:
         if not file.filename:
             continue
-
-        # Extension check
-        ext = f".{file.filename.split('.')[-1].lower()}" if "." in file.filename else ""
-        if ext not in settings.ALLOWED_EXTENSIONS:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"File extension {ext} not allowed. Supported: {', '.join(settings.ALLOWED_EXTENSIONS)}",
-            )
-
-        # Version handling
-        group_id = document_group_id or generate_uuid()
-        current_version = 1
-
-        if document_group_id:
-            existing_docs = db.query(FilingDocument).filter(
-                FilingDocument.filing_id == filing.id,
-                FilingDocument.document_group_id == document_group_id,
-            ).all()
-            if existing_docs:
-                current_version = max(d.version for d in existing_docs) + 1
-                for d in existing_docs:
-                    d.is_latest = False
-                    d.status = "superseded"
-
-        stored_name, relative_path, mime_type, file_size = save_document_file(
+        doc_record = store_upload(
+            db,
+            client=client,
+            filing=filing,
             file=file,
-            client_id=client.id,
-            tax_year=filing.tax_year,
-            filing_id=filing.id,
             category=category,
-            version=current_version,
-            document_name=document_name or file.filename,
-        )
-
-        doc_record = FilingDocument(
-            filing_id=filing.id,
-            document_group_id=group_id,
-            category=category,
-            document_name=document_name or file.filename,
-            original_filename=file.filename,
-            stored_filename=stored_name,
-            file_path=relative_path,
-            file_size=file_size,
-            mime_type=mime_type,
-            version=current_version,
-            is_latest=True,
-            status="pending_review",
+            document_name=document_name,
+            document_group_id=document_group_id,
             uploaded_by_type="client",
             uploaded_by_id=account.id,
         )
-        db.add(doc_record)
         uploaded_records.append(doc_record)
 
     db.commit()
@@ -468,7 +496,13 @@ async def download_client_document(
     if not client:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client profile not found.")
 
-    doc = db.query(FilingDocument).filter(FilingDocument.id == doc_id, FilingDocument.filing_id == filing_id).first()
+    # Only serve documents from the signed-in client's own filings
+    doc = (
+        db.query(FilingDocument)
+        .join(TaxFiling, TaxFiling.id == FilingDocument.filing_id)
+        .filter(FilingDocument.id == doc_id, FilingDocument.filing_id == filing_id, TaxFiling.client_id == client.id)
+        .first()
+    )
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
@@ -496,6 +530,8 @@ def _render_client_section(template_name: str, request: Request, account: Client
             **shell,
             "has_active_filing": has_active_filing,
             "filing": filing,
+            # The filing's workflow stage (name + the status the client sees), from case_stages
+            "stage": db.query(CaseStage).filter(CaseStage.code == filing.status).first() if filing else None,
             "active_nav": active_nav,
         },
     )

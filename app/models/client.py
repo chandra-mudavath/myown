@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, ForeignKey, String
+from sqlalchemy import Date, DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -20,6 +20,7 @@ def _uuid() -> str:
 class Client(Base):
     """Business entity — stores client profile, not credentials."""
     __tablename__ = "clients"
+    __table_args__ = (Index("ix_clients_created", "created_at"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     client_number: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)  # e.g. CLI-00000001
