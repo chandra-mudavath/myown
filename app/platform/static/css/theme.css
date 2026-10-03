@@ -77,7 +77,6 @@ html[data-theme="dark"] {
     --brand-soft:     rgba(37, 99, 235, 0.18);
 }
 
-
 /* ── Global Body Styles (applies to ALL pages) ── */
 html,
 body {
@@ -178,22 +177,6 @@ nav {
 .status-complete {
     color: var(--green);
     background: rgba(43, 139, 99, 0.12);
-}
-
-.status-in_progress {
-    color: var(--amber);
-    background: rgba(184, 121, 22, 0.12);
-}
-
-.status-not_started {
-    color: var(--muted);
-    background: rgba(100, 120, 139, 0.10);
-}
-
-.status-not_applicable {
-    color: var(--muted);
-    background: transparent;
-    font-style: italic;
 }
 
 .status-pending {

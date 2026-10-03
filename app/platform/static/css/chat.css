@@ -228,8 +228,6 @@ html[data-theme="dark"] .chat { --chat-bubble: rgba(30, 41, 59, 0.9); --chat-not
 .chat-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 
 /* sidebar badge (filled by /chat/api/unread) */
-.chat-nav-badge { margin-left: auto; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--coral); color: #fff; font: 700 0.66rem/1.6 var(--font-body); text-align: center; }
-.chat-nav-badge[hidden] { display: none; }
 
 @media (max-width: 820px) {
     .chat { grid-template-columns: 1fr; --chat-h: calc(100vh - var(--site-header-h, 84px) - 40px); }

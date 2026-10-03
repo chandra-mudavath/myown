@@ -362,77 +362,9 @@
     text-shadow: none;
 }
 
-.landing-page .landing-gallery-control {
-    align-items: center;
-    background: rgba(23, 50, 77, 0.62);
-    border: 1px solid rgba(255, 255, 255, 0.55);
-    border-radius: 50%;
-    color: #fff;
-    display: flex;
-    font-size: 2rem;
-    height: 2.8rem;
-    justify-content: center;
-    line-height: 1;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 2.8rem;
-    z-index: 2;
-}
-
-.landing-page .landing-gallery-control:hover {
-    background: var(--landing-primary);
-}
-
-.landing-page .landing-gallery-control.previous {
-    left: 1.25rem;
-}
-
-.landing-page .landing-gallery-control.next {
-    right: 1.25rem;
-}
-
-.landing-page .landing-gallery-dots {
-    bottom: 1.25rem;
-    display: flex;
-    gap: 0.5rem;
-    left: 50%;
-    position: absolute;
-    transform: translateX(-50%);
-    z-index: 2;
-}
-
-.landing-page .landing-gallery-dots button {
-    background: rgba(255, 255, 255, 0.6);
-    border: 0;
-    border-radius: 50%;
-    height: 0.65rem;
-    padding: 0;
-    width: 0.65rem;
-}
-
-.landing-page .landing-gallery-dots button.is-active {
-    background: var(--landing-primary);
-    box-shadow: 0 0 0 2px #fff;
-}
-
 @media (max-width: 639px) {
     .landing-page .landing-gallery {
         height: 15rem;
-    }
-
-    .landing-page .landing-gallery-control {
-        font-size: 1.5rem;
-        height: 2.2rem;
-        width: 2.2rem;
-    }
-
-    .landing-page .landing-gallery-control.previous {
-        left: 0.65rem;
-    }
-
-    .landing-page .landing-gallery-control.next {
-        right: 0.65rem;
     }
 
     .landing-page .landing-gallery-copy {
@@ -527,7 +459,6 @@
     padding-bottom: 2rem;
 }
 
-
 .landing-page #testimonials {
     padding-top: 2rem;
     padding-bottom: 2rem;
@@ -572,11 +503,9 @@
 .landing-page .section-header h2 span,
 .landing-page .workflow-preview h2 span,
 .landing-page .section-heading span,
-.landing-page .trust-panel h3 span,
 .landing-page .solution-card h3 span,
 .landing-page .team-card h3 span,
 .landing-page .testimonial-card h3 span,
-.landing-page .plan-card h3 span,
 .landing-page .faq-list h2 span,
 .landing-page .contact-panel h2 span {
     color: var(--landing-primary);
@@ -617,19 +546,6 @@
     width: min(100%, 28rem);
 }
 
-.landing-page .hero-art-centered {
-    justify-self: center;
-}
-
-.landing-page .hero-art-centered img {
-    height: auto;
-    width: min(100%, 28rem);
-}
-
-.landing-page .hero-content-row {
-    align-items: center;
-}
-
 .landing-page .hero-tailone-layout {
     align-items: center;
     display: grid;
@@ -658,20 +574,8 @@
 
 .landing-page .hero-copy-content .hero-title,
 .landing-page .hero-copy-content .hero-copy,
-.landing-page .hero-copy-content .hero-actions,
-.landing-page .hero-copy-content .hero-note {
+.landing-page .hero-copy-content .hero-actions {
     width: 100%;
-}
-
-.landing-page .hero-art-caption {
-    border-right: 2px solid var(--landing-primary);
-    color: var(--landing-primary-dark);
-    font-size: 1.15rem;
-    font-weight: 700;
-    line-height: 1.45;
-    margin: -0.35rem 0 1.25rem;
-    min-height: 1.8rem;
-    padding-right: 0.25rem;
 }
 
 .landing-page .hero-tailone-layout .hero-preview-column {
@@ -767,14 +671,7 @@
     transform: translateY(-2px);
 }
 
-.landing-page .hero-note {
-    color: var(--landing-hero-note);
-    font-size: 0.8rem;
-    margin-top: 1.25rem;
-}
-
 .landing-page .workflow-preview,
-.landing-page .trust-panel,
 .landing-page .contact-panel {
     background: var(--landing-panel-bg);
     border: 1px solid var(--landing-panel-border);
@@ -1292,32 +1189,9 @@
     margin-top: 0.25rem;
 }
 
-.landing-page .trust-panel {
-    padding: 2.2rem;
-}
-
-.landing-page .trust-panel h3 {
-    color: var(--landing-ink);
-    font-size: 1.7rem;
-    font-weight: 700;
-    line-height: 1.3;
-    margin: 0.5rem 0 0.8rem;
-}
-
-.landing-page .trust-panel > p:not(.eyebrow) {
-    color: var(--landing-muted);
-    line-height: 1.7;
-}
-
-.landing-page .trust-panel a,
 .landing-page .site-footer a {
     color: var(--landing-primary);
     font-weight: 700;
-}
-
-.landing-page .trust-panel a {
-    display: inline-block;
-    margin-top: 1.3rem;
 }
 
 .landing-page .team-card {
@@ -1347,84 +1221,6 @@
     border-color: var(--landing-primary);
     box-shadow: var(--landing-card-hover-shadow);
     transform: translateY(-6px);
-}
-
-.landing-page .team-initials {
-    align-items: center;
-    background: var(--landing-icon-bg);
-    border-radius: 50%;
-    color: var(--landing-primary-dark);
-    display: flex;
-    font-size: 1rem;
-    font-weight: 700;
-    height: 4.5rem;
-    justify-content: center;
-    margin: 0 auto 1.1rem;
-    width: 4.5rem;
-}
-
-.landing-page .pricing-section {
-    background: var(--landing-section-card-bg);
-}
-
-.landing-page .plan-card {
-    background: var(--landing-panel-bg);
-    border: 1px solid var(--landing-line);
-    border-radius: 4px;
-    padding: 1.8rem;
-    position: relative;
-}
-
-.landing-page .plan-card.featured {
-    border-color: var(--landing-primary);
-    box-shadow: 0 14px 30px rgba(15, 118, 110, 0.12);
-    transform: translateY(-8px);
-}
-
-.landing-page .plan-label {
-    color: var(--landing-primary);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-}
-
-.landing-page .plan-card h3 {
-    color: var(--landing-ink);
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin: 0.65rem 0 1rem;
-}
-
-.landing-page .plan-card > strong {
-    color: var(--landing-ink);
-    display: block;
-    font-size: 1.8rem;
-    margin-bottom: 0.65rem;
-}
-
-.landing-page .plan-card > p:not(.plan-label) {
-    color: var(--landing-muted);
-    font-size: 0.88rem;
-    line-height: 1.65;
-    min-height: 4.6rem;
-}
-
-.landing-page .plan-card > a {
-    border: 1px solid var(--landing-primary);
-    border-radius: 4px;
-    color: var(--landing-primary);
-    display: inline-block;
-    font-size: 0.85rem;
-    font-weight: 700;
-    margin-top: 1.2rem;
-    padding: 0.65rem 1rem;
-}
-
-.landing-page .plan-card.featured > a,
-.landing-page .plan-card > a:hover {
-    background: var(--landing-primary);
-    color: #fff;
 }
 
 .landing-page .faq-list {
@@ -1897,71 +1693,6 @@
         height: 6rem;
         width: 9rem;
     }
-
-    .landing-page .plan-card.featured {
-        transform: none;
-    }
-}
-
-.landing-page .section-header h2 .heading-dark {
-    color: var(--landing-ink);
-}
-
-.landing-page.light-theme {
-    background: var(--bg-gradient);
-}
-
-.landing-page.light-theme .main-nav,
-.landing-page.light-theme .site-footer {
-    background: rgba(247, 248, 246, 0.96);
-    border-color: rgba(15, 118, 110, 0.14);
-}
-
-.landing-page.light-theme .hero-section {
-    background: var(--bg-gradient);
-}
-
-.landing-page.light-theme .navbar > li > a {
-    color: var(--landing-ink);
-}
-
-.landing-page.light-theme .navbar .signup-link {
-    color: var(--landing-signup-text);
-}
-
-.landing-page.light-theme .theme-icon-sun {
-    display: none;
-}
-
-.landing-page.light-theme .theme-icon-moon {
-    display: block;
-}
-
-.landing-page.light-theme .bg-white,
-.landing-page.light-theme .workflow-preview,
-.landing-page.light-theme .trust-panel,
-.landing-page.light-theme .contact-panel,
-.landing-page.light-theme .testimonial-card {
-    background: var(--landing-panel-bg) !important;
-    color: var(--landing-muted);
-}
-
-.landing-page.light-theme .solution-card,
-.landing-page.light-theme .team-card,
-.landing-page.light-theme .plan-card {
-    background: rgba(255,255,255,0.5);
-    border-color: var(--landing-line);
-}
-
-.landing-page.light-theme .workflow-section,
-.landing-page.light-theme .testimonials-section,
-.landing-page.light-theme .pricing-section {
-    background: rgba(255,255,255,0.2);
-}
-
-.landing-page.light-theme .hero-copy,
-.landing-page.light-theme .hero-note {
-    color: var(--landing-muted);
 }
 
 .landing-page .main-nav,
@@ -1983,8 +1714,7 @@
     background: var(--bg-gradient);
 }
 
-.landing-page .hero-copy,
-.landing-page .hero-note {
+.landing-page .hero-copy {
     color: var(--landing-muted);
 }
 
@@ -1997,14 +1727,12 @@
 .landing-page .action-secondary,
 .landing-page .navbar .login-link,
 .landing-page .navbar .signup-link,
-.landing-page .plan-card > a,
 .landing-page button {
     border-radius: 4px;
 }
 
 .landing-page .bg-white,
 .landing-page .workflow-preview,
-.landing-page .trust-panel,
 .landing-page .contact-panel,
 .landing-page .testimonial-card {
     background: var(--landing-panel-bg) !important;
@@ -2012,15 +1740,13 @@
 }
 
 .landing-page .solution-card,
-.landing-page .team-card,
-.landing-page .plan-card {
+.landing-page .team-card {
     background: rgba(255,255,255,0.5);
     border-color: var(--landing-line);
 }
 
 .landing-page .workflow-section,
-.landing-page .testimonials-section,
-.landing-page .pricing-section {
+.landing-page .testimonials-section {
     background: rgba(255,255,255,0.2);
 }
 
@@ -2062,8 +1788,6 @@ html[data-theme=dark] .landing-page .hero-title,
 html[data-theme=dark] .landing-page .section-heading,
 html[data-theme=dark] .landing-page .section-header h2,
 html[data-theme=dark] .landing-page .workflow-preview h2,
-html[data-theme=dark] .landing-page .trust-panel h3,
-html[data-theme=dark] .landing-page .plan-card h3,
 html[data-theme=dark] .landing-page .team-card h3,
 html[data-theme=dark] .landing-page .testimonial-card strong,
 html[data-theme=dark] .landing-page .faq-list summary {
@@ -2072,13 +1796,11 @@ html[data-theme=dark] .landing-page .faq-list summary {
 
 html[data-theme=dark] .landing-page .navbar > li > a,
 html[data-theme=dark] .landing-page .hero-copy,
-html[data-theme=dark] .landing-page .hero-note,
 html[data-theme=dark] .landing-page .section-header > p:not(.eyebrow),
 html[data-theme=dark] .landing-page .section-copy,
 html[data-theme=dark] .landing-page .solution-card p,
 html[data-theme=dark] .landing-page .team-card p,
 html[data-theme=dark] .landing-page .testimonial-card > p,
-html[data-theme=dark] .landing-page .plan-card > p:not(.plan-label),
 html[data-theme=dark] .landing-page .faq-list details p,
 html[data-theme=dark] .landing-page .site-footer p {
     color: var(--muted);
@@ -2090,7 +1812,6 @@ html[data-theme=dark] .landing-page .hero-section {
 
 html[data-theme=dark] .landing-page .bg-white,
 html[data-theme=dark] .landing-page .workflow-preview,
-html[data-theme=dark] .landing-page .trust-panel,
 html[data-theme=dark] .landing-page .contact-panel,
 html[data-theme=dark] .landing-page .testimonial-card {
     background: var(--surface) !important;
@@ -2100,16 +1821,14 @@ html[data-theme=dark] .landing-page .testimonial-card {
 }
 
 html[data-theme=dark] .landing-page .solution-card,
-html[data-theme=dark] .landing-page .team-card,
-html[data-theme=dark] .landing-page .plan-card {
+html[data-theme=dark] .landing-page .team-card {
     background: var(--surface);
     border-color: var(--line);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 html[data-theme=dark] .landing-page .workflow-section,
-html[data-theme=dark] .landing-page .testimonials-section,
-html[data-theme=dark] .landing-page .pricing-section {
+html[data-theme=dark] .landing-page .testimonials-section {
     background: transparent;
 }
 
@@ -2158,19 +1877,6 @@ html[data-theme=dark] .landing-page .hero-art {
     background: transparent;
     border: 0;
     box-shadow: none;
-}
-
-.landing-page .hero-art-centered img {
-    height: auto;
-    max-width: none;
-    width: 100%;
-}
-
-@media (max-width: 800px) {
-    .landing-page .hero-art-centered img {
-        max-width: 100%;
-        width: 100%;
-    }
 }
 
 html[data-theme=dark] .landing-page .theme-toggle:hover {

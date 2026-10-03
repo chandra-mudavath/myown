@@ -792,7 +792,6 @@ body.cx-body::before { display: none; } /* legacy dotted overlay from profile.cs
 .cx-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.25rem; }
 .cx-form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cx-span-2 { grid-column: span 2; }
-.cx-span-all { grid-column: 1 / -1; }
 
 .cx-legend {
     display: flex;
@@ -1244,10 +1243,6 @@ body.cx-body::before { display: none; } /* legacy dotted overlay from profile.cs
 .cx-toast.is-error { background: #7f1d1d; }
 @keyframes cx-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* ── Modal ────────────────────────────── */
-.cx-modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 1rem; background: rgba(2, 6, 23, 0.55); }
-.cx-modal__box { width: min(480px, 100%); border-radius: var(--cx-radius); background: var(--cx-card); box-shadow: var(--cx-shadow-lg); }
-
 /* ── Responsive ───────────────────────── */
 @media (max-width: 1180px) {
     .cx-grid--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1453,7 +1448,6 @@ html[data-theme="dark"] .cx-body .cx-topbar { background: rgba(7, 13, 26, 0.85);
     .cx-body .cx-topbar__menu { display: grid; }
 }
 
-
 /* ── Soft Sky rail colours (light theme) ── */
 .cx-body .cx-sidebar { --cx-side-ink: #1e3a8a; --cx-side-line: rgba(37, 99, 235, 0.14); border-right: 1px solid #bfdbfe; }
 .cx-body .cx-brand { color: #0f172a; }
@@ -1480,7 +1474,6 @@ html[data-theme="dark"] .cx-body .cx-yearpick__control,
 html[data-theme="dark"] .cx-body .cx-sidebar .cx-yearpick select { color: #ffffff; }
 html[data-theme="dark"] .cx-body .cx-helpcard { background: rgba(99, 102, 241, 0.12); color: #aab6d3; }
 html[data-theme="dark"] .cx-body .cx-helpcard strong { color: #ffffff; }
-
 
 /* ── Document conversation with the tax team (client/documents.html) ── */
 .cx-docthread-row > td { padding-top: 0 !important; border-top: 0 !important; }

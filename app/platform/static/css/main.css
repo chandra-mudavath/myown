@@ -54,19 +54,6 @@
 }
 
 /* Push main content when sidebar is open (desktop only) */
-.dashboard-shell,
-.profile-shell {
-    transition: margin-left 0.25s ease, width 0.25s ease;
-}
-
-@media (min-width: 768px) {
-    body.sidebar-open .dashboard-shell,
-    body.sidebar-open .profile-shell {
-        margin-left: 280px; /* 250px sidebar width + 30px gap */
-        width: calc(100% - 310px); /* 280px left + 30px right gap to prevent overflow */
-        max-width: 1120px;
-    }
-}
 
 .dashboard-sidebar .brand {
     padding: 0 8px 18px;
@@ -120,44 +107,12 @@
     flex-shrink: 0;
 }
 
-.sidebar-logout {
-    margin-top: auto;
-    padding-top: 14px;
-    border-top: 1px solid var(--line, #d8e5e8);
-}
-
 .sidebar-nav-item--logout:hover {
     background: rgba(166, 83, 72, 0.1);
     color: var(--coral);
 }
 
 /* Disabled state for nav items (e.g., New Filing when active filing exists) */
-.sidebar-nav-item--disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--sidebar-ink, inherit);
-}
-
-.sidebar-disabled-badge {
-    margin-left: auto;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    background: rgba(184, 121, 22, 0.13);
-    color: var(--amber);
-    border: 1px solid rgba(184, 121, 22, 0.33);
-    border-radius: 6px;
-    padding: 1px 6px;
-    text-transform: uppercase;
-}
 
 .sidebar-toggle {
     display: flex;
@@ -442,35 +397,10 @@ html[data-theme="dark"] .auth-theme-toggle .theme-icon-moon {
     color: #fff;
 }
 
-.brand-icon--sm {
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.75rem;
-}
-
-.brand-icon--md {
-    width: 2.25rem;
-    height: 2.25rem;
-    font-size: 0.875rem;
-}
-
 .brand-icon--lg {
     width: 3rem;
     height: 3rem;
     font-size: 1.125rem;
-}
-
-/* --- Nav Link --- */
-.nav-link {
-    font-size: 0.875rem;
-    color: #64748b;
-    font-weight: 500;
-    transition: color 0.2s;
-    text-decoration: none;
-}
-
-.nav-link:hover {
-    color: #2563eb;
 }
 
 /* --- Form Label --- */
@@ -727,11 +657,6 @@ html[data-theme="dark"] .auth-theme-toggle .theme-icon-moon {
     white-space: nowrap;
 }
 
-.phone-help {
-    display: block;
-    margin-top: 0.35rem;
-}
-
 /* --- Submit Button (full width) --- */
 .btn-submit {
     width: 100%;
@@ -776,14 +701,6 @@ html[data-theme="dark"] .auth-theme-toggle .theme-icon-moon {
     background: var(--auth-paper);
 }
 
-.auth-image-page {
-    align-items: flex-end;
-    background:
-        linear-gradient(270deg, rgba(3, 16, 19, 0.58) 0%, rgba(3, 16, 19, 0.28) 48%, rgba(3, 16, 19, 0.08) 100%),
-        url("/static/img/auth/signin.jpg") center / cover fixed no-repeat;
-    justify-content: center;
-}
-
 .auth-page .auth-header__title {
     color: var(--auth-ink);
     text-shadow: none;
@@ -797,68 +714,6 @@ html[data-theme="dark"] .auth-theme-toggle .theme-icon-moon {
 .auth-page .auth-title-accent {
     color: var(--auth-primary);
 }
-
-.auth-image-page .auth-card {
-    margin: 0 6rem 0 0;
-    max-width: 25.8rem;
-    width: min(100%, 25.8rem);
-}
-
-.auth-image-page .back-link {
-    bottom: auto;
-    left: 1.5rem;
-    position: fixed;
-    right: auto;
-    top: 1.5rem;
-    z-index: 20;
-}
-
-/* Keep the registration flow over the open, darker side of the supplied image. */
-.auth-register-page {
-    align-items: flex-end;
-    background:
-        linear-gradient(270deg, rgba(3, 16, 19, 0.58) 0%, rgba(3, 16, 19, 0.28) 48%, rgba(3, 16, 19, 0.08) 100%),
-        url("/static/img/auth/signin.jpg") center / cover fixed no-repeat;
-    justify-content: center;
-}
-
-.auth-register-page .auth-card {
-    margin: 0 6rem 0 0;
-    max-width: 25.8rem;
-    min-height: auto;
-    padding: 0.75rem 0.25rem 0.5rem;
-    width: min(100%, 25.8rem);
-}
-
-.auth-register-page .back-link {
-    bottom: auto;
-    left: 1.5rem;
-    position: fixed;
-    right: auto;
-    top: 1.5rem;
-    z-index: 20;
-}
-
-.auth-register-page .auth-header {
-    margin-bottom: 0.5rem;
-    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.65);
-}
-
-.auth-register-page #register-form {
-    padding: 0.75rem;
-}
-
-.auth-register-page #register-form > :not([hidden]) ~ :not([hidden]) {
-    margin-top: 0.65rem;
-}
-
-.auth-register-page #register-form .form-input,
-.auth-register-page #register-form .country-picker-toggle {
-    padding-bottom: 0.5rem;
-    padding-top: 0.5rem;
-}
-
-
 
 /* --- Auth Form Card --- */
 .auth-card {
@@ -963,12 +818,6 @@ html[data-theme="dark"] .auth-theme-toggle .theme-icon-moon {
 }
 
 /* Bottom of form links — always uses the muted token, never inherits the background-image white */
-.auth-form-footer {
-    font-size: 0.875rem;
-    color: var(--auth-muted);
-    margin-top: 0.75rem;
-    text-shadow: none !important;
-}
 
 .auth-title-accent {
     color: var(--auth-primary);
@@ -1020,36 +869,6 @@ html[data-theme="dark"] .auth-theme-toggle .theme-icon-moon {
         padding-left: 1rem;
         padding-right: 1rem;
     }
-
-    .auth-register-page {
-        background-position: 42% center;
-    }
-
-    .auth-register-page .auth-card {
-        margin-left: 0;
-        padding-top: 4.5rem;
-    }
-
-    .auth-image-page .auth-card {
-        margin-left: 0;
-    }
-
-    .auth-register-page #register-form {
-        padding: 2rem;
-    }
-}
-
-/* --- Footer Link --- */
-.footer-link {
-    font-size: 0.75rem;
-    color: #64748b;
-    font-weight: 500;
-    transition: color 0.2s;
-    text-decoration: none;
-}
-
-.footer-link:hover {
-    color: #2563eb;
 }
 
 /* --- Section Heading --- */
@@ -1065,36 +884,6 @@ html[data-theme="dark"] .auth-theme-toggle .theme-icon-moon {
     max-width: 80rem;
     margin: 0 auto;
     padding: 0 1.5rem;
-}
-
-.container--sm {
-    max-width: 48rem;
-}
-
-/* --- Contact Info Card --- */
-.contact-card {
-    border-radius: 0.75rem;
-    padding: 1rem;
-    text-align: center;
-    transition: box-shadow 0.2s;
-}
-
-.contact-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-/* --- Team Avatar --- */
-.team-avatar {
-    width: 4rem;
-    height: 4rem;
-    border-radius: 1rem;
-    margin: 0 auto 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    color: #fff;
-    font-weight: 900;
 }
 
 /* --- Avatar Lightbox Modal --- */

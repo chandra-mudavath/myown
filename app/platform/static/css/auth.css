@@ -155,7 +155,6 @@
     top: 0;
 }
 
-
 .au-copy__text {
     max-width: 28rem;
 }
@@ -227,7 +226,6 @@
     display: none;
 }
 
-
 /* ── Form (landing-page type and buttons) ── */
 .au-form {
     margin: 0 auto auto;
@@ -257,15 +255,6 @@
     text-decoration: none;
 }
 
-.au-eyebrow {
-    color: var(--brand);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    margin: 0 0 0.5rem;
-    text-transform: uppercase;
-}
-
 /* Landing-page heading style: Roboto Slab, ink text, key phrase in brand blue. */
 .au-title {
     color: var(--ink);
@@ -290,18 +279,6 @@
     gap: 1rem;
 }
 
-.au-field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-}
-
-.au-field__row {
-    align-items: baseline;
-    display: flex;
-    justify-content: space-between;
-}
-
 .au-row {
     display: grid;
     gap: 1rem;
@@ -316,10 +293,6 @@
 
 .au-link:hover {
     text-decoration: underline;
-}
-
-.au-link--small {
-    font-size: 0.78rem;
 }
 
 /* Same as the landing page's primary button ("Get started"). */
@@ -570,16 +543,8 @@
     margin-bottom: 0.3rem;
 }
 
-.au-form--wide .au-eyebrow {
-    margin-bottom: 0.35rem;
-}
-
 .au-form--wide .au-fields {
     gap: 0.7rem;
-}
-
-.au-form--wide .au-field {
-    gap: 0.3rem;
 }
 
 .au-main .au-form--wide .form-input,
