@@ -37,10 +37,10 @@
             <span aria-hidden="true">&#128172;</span>Messages
             <span data-chat-unread hidden style="display:none;margin-left:auto;min-width:18px;padding:0 6px;border-radius:999px;background:var(--coral,#dc2626);color:#fff;font-size:.66rem;font-weight:700;line-height:1.6;text-align:center"></span>
         </a>
-        <a class="admin-nav-item" href="/admin/dashboard#reports">
+        <a class="admin-nav-item{% if active_nav == 'reports' %} active{% endif %}" href="/admin/reports">
             <span aria-hidden="true">&#128202;</span>Reports
         </a>
-        <a class="admin-nav-item" href="/admin/dashboard#analytics">
+        <a class="admin-nav-item{% if active_nav == 'analytics' %} active{% endif %}" href="/admin/analytics">
             <span aria-hidden="true">&#128200;</span>Analytics
         </a>
         <a class="admin-nav-item" href="/admin/dashboard#payments">

@@ -27,6 +27,7 @@ from app.platform.services.catalog import (
     staff_roles,
     tax_types,
 )
+from app.modules.admin.services.reports import dashboard_progress
 from app.platform.services.storage_service import generate_uuid, save_document_file, save_profile_picture
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -93,6 +94,7 @@ def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depen
             "account": account,
             "admin": admin,
             "dashboard_stats": dashboard_stats,
+            "progress": dashboard_progress(db),
             "activity": recent_activity,
             "clients_list": clients_list,
             "filings_list": formatted_filings,

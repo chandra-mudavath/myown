@@ -1,0 +1,140 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Reports - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Reports' %}
+{% set no_rail = true %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Operations</span>
+                <h1>Reports</h1>
+                <p>Case pipeline, stuck cases, documents waiting for review and staff activity. Every table downloads as CSV.</p>
+            </div>
+        </div>
+    </section>
+
+    <nav class="admin-chips" aria-label="Report sections">
+        <a href="#by-stage" class="admin-chip">Filings by stage</a>
+        <a href="#stuck" class="admin-chip">Stuck cases <span>{{ stuck | length }}</span></a>
+        <a href="#pending" class="admin-chip">Awaiting review <span>{{ pending | length }}</span></a>
+        <a href="#staff" class="admin-chip">Staff activity</a>
+    </nav>
+
+    {# ── Filings by stage and tax year ── #}
+    <section class="admin-section admin-settings-block" id="by-stage">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Pipeline</span><h2>Filings by stage and tax year</h2></div>
+            <a href="/admin/reports/filings-by-stage.csv">Download CSV ↓</a>
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--numbers">
+                <thead><tr><th>Stage</th>{% for y in by_stage.years %}<th>{{ y }}</th>{% endfor %}<th>Total</th></tr></thead>
+                <tbody>
+                    {% for r in by_stage.rows %}
+                    <tr class="{{ 'admin-row-muted' if not r.total else '' }}">
+                        <td><a href="/admin/cases?status={{ r.code }}" class="link-primary">{{ r.name }}</a></td>
+                        {% for n in r.by_year %}<td>{{ n or '·' }}</td>{% endfor %}
+                        <td><strong>{{ r.total }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot><tr><th>Total</th>{% for n in by_stage.year_totals %}<th>{{ n }}</th>{% endfor %}<th>{{ by_stage.total }}</th></tr></tfoot>
+            </table>
+        </div>
+    </section>
+
+    {# ── Stuck cases ── #}
+    <section class="admin-section admin-settings-block" id="stuck">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Attention</span><h2>Cases stuck in a stage</h2></div>
+            <a href="/admin/reports/stuck-cases.csv?days={{ days }}">Download CSV ↓</a>
+        </div>
+        <form method="get" action="/admin/reports#stuck" class="admin-inline-form admin-report-filter">
+            <label for="days">In the same stage for at least</label>
+            <input id="days" name="days" type="number" min="0" max="365" value="{{ days }}" class="admin-filter-input admin-input-xs">
+            <span>days</span>
+            <input type="hidden" name="start" value="{{ start }}"><input type="hidden" name="end" value="{{ end }}">
+            <button type="submit" class="admin-filter-btn">Apply</button>
+        </form>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Case</th><th>Client</th><th>Tax year</th><th>Stage</th><th>Since</th><th>Days</th><th>Moved by</th></tr></thead>
+                <tbody>
+                    {% for r in stuck %}
+                    <tr>
+                        <td><a href="/admin/cases/{{ r.filing_id }}" class="link-primary">{{ r.case_number }}</a></td>
+                        <td>{{ r.client_name }}</td>
+                        <td>{{ r.tax_year }}</td>
+                        <td>{{ r.stage }}</td>
+                        <td class="admin-nowrap">{{ r.since }}</td>
+                        <td><span class="admin-pill admin-pill--{{ 'coral' if r.days >= 30 else 'amber' if r.days >= 14 else 'slate' }}">{{ r.days }}</span></td>
+                        <td>{{ r.moved_by or '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="admin-empty">No open case has been in one stage for {{ days }} days or more.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ── Documents awaiting review ── #}
+    <section class="admin-section admin-settings-block" id="pending">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Documents</span><h2>Waiting for review</h2></div>
+            <a href="/admin/reports/pending-documents.csv">Download CSV ↓</a>
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Document</th><th>Category</th><th>Case</th><th>Client</th><th>Uploaded</th><th>Waiting</th></tr></thead>
+                <tbody>
+                    {% for r in pending %}
+                    <tr>
+                        <td>{{ r.document_name }}{% if r.version > 1 %} <small class="admin-muted admin-inline">v{{ r.version }}</small>{% endif %}<span class="admin-doc-number">{{ r.document_number }}</span></td>
+                        <td>{{ r.category }}</td>
+                        <td><a href="/admin/cases/{{ r.filing_id }}" class="link-primary">{{ r.case_number }}</a></td>
+                        <td>{{ r.client_name }}</td>
+                        <td class="admin-nowrap">{{ r.uploaded }}</td>
+                        <td><span class="admin-pill admin-pill--{{ 'coral' if r.days >= 7 else 'amber' if r.days >= 3 else 'slate' }}">{{ r.days }} d</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="admin-empty">Every uploaded document has been reviewed.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ── Staff activity ── #}
+    <section class="admin-section admin-settings-block" id="staff">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Team</span><h2>Staff activity</h2></div>
+            <a href="/admin/reports/staff-activity.csv?start={{ start }}&amp;end={{ end }}">Download CSV ↓</a>
+        </div>
+        <form method="get" action="/admin/reports#staff" class="admin-inline-form admin-report-filter">
+            <label for="start">From</label>
+            <input id="start" name="start" type="date" value="{{ start }}" class="admin-filter-input admin-input-sm admin-input-date">
+            <label for="end">to</label>
+            <input id="end" name="end" type="date" value="{{ end }}" class="admin-filter-input admin-input-sm admin-input-date">
+            <input type="hidden" name="days" value="{{ days }}">
+            <button type="submit" class="admin-filter-btn">Apply</button>
+        </form>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--numbers">
+                <thead><tr><th>Staff member</th><th>Stage moves</th><th>Docs accepted</th><th>Docs rejected</th><th>Comments</th><th>Total</th></tr></thead>
+                <tbody>
+                    {% for r in activity %}
+                    <tr class="{{ 'admin-row-muted' if not r.total else '' }}">
+                        <td><a href="/admin/staff/{{ r.staff_id }}" class="link-primary">{{ r.name }}</a><small class="admin-muted">{{ r.number }}</small></td>
+                        <td>{{ r.moves }}</td><td>{{ r.accepted }}</td><td>{{ r.rejected }}</td><td>{{ r.comments }}</td>
+                        <td><strong>{{ r.total }}</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="admin-empty">No staff members yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}
