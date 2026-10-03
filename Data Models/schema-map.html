@@ -612,6 +612,7 @@ erDiagram
   CASE_SERVICES {
     string id PK
     string case_id FK
+    string invoice_id FK
     string service_id FK
     int quantity
     decimal unit_price
@@ -649,6 +650,7 @@ erDiagram
   TAX_FILINGS ||--o{ INVOICES : "case_id"
   CLIENTS ||--o{ INVOICES : "client_id"
   INVOICES ||--o{ PAYMENTS : "invoice_id"
+  INVOICES ||--o{ CASE_SERVICES : "invoice_id"
   CLIENTS ||--o{ PAYMENTS : "client_id"
   </pre></div>
 </section>

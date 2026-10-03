@@ -618,6 +618,7 @@ CREATE TABLE services (
 CREATE TABLE case_services (
     id            VARCHAR(36)   NOT NULL PRIMARY KEY,
     case_id       VARCHAR(36)   NOT NULL,
+    invoice_id    VARCHAR(36),                          -- the invoice that billed this line
     service_id    VARCHAR(36)   NOT NULL,
     quantity      INTEGER       NOT NULL DEFAULT 1,
     unit_price    DECIMAL(12,2) NOT NULL,              -- copied from services.base_price
@@ -628,6 +629,7 @@ CREATE TABLE case_services (
     CONSTRAINT ck_cs_quantity CHECK (quantity > 0)
 );
 CREATE INDEX ix_case_services_case_id ON case_services (case_id);
+CREATE INDEX ix_case_services_invoice_id ON case_services (invoice_id);
 
 CREATE TABLE invoices (
     id               VARCHAR(36)   NOT NULL PRIMARY KEY,
@@ -648,6 +650,8 @@ CREATE TABLE invoices (
 );
 CREATE INDEX ix_invoices_case_id ON invoices (case_id);
 CREATE INDEX ix_invoices_client_id ON invoices (client_id);
+-- case_services is created before invoices, so its invoice FK is added here
+ALTER TABLE case_services ADD CONSTRAINT fk_cs_invoice FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE;
 
 CREATE TABLE payments (
     id                     VARCHAR(36)   NOT NULL PRIMARY KEY,

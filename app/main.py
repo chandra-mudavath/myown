@@ -12,7 +12,7 @@ from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.templates import templates
 import app.db_models  # noqa: F401 — registers all models with Base.metadata
-from app.modules.admin.api import admin, notifications as admin_notifications, profile as admin_profile, reports as admin_reports, system_settings as admin_settings
+from app.modules.admin.api import admin, notifications as admin_notifications, profile as admin_profile, payments as admin_payments, reports as admin_reports, system_settings as admin_settings
 from app.modules.client.api import client as client_routes, dashboard, profile
 from app.modules.staff.api import staff
 from app.platform.api import auth, chat
@@ -93,5 +93,6 @@ app.include_router(admin_profile.router)
 app.include_router(admin_notifications.router)
 app.include_router(admin_settings.router)
 app.include_router(admin_reports.router)
+app.include_router(admin_payments.router)
 app.include_router(chat.router)
 app.include_router(pages.router)

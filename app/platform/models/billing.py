@@ -41,6 +41,8 @@ class CaseService(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     case_id: Mapped[str] = mapped_column(String(36), ForeignKey("tax_filings.id", ondelete="CASCADE"), index=True, nullable=False)
+    # The invoice that billed this line; a line belongs to one invoice so nothing is billed twice.
+    invoice_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("invoices.id", ondelete="CASCADE"), index=True, nullable=True)
     service_id: Mapped[str] = mapped_column(String(36), ForeignKey("services.id"), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)

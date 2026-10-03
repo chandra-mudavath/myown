@@ -64,4 +64,29 @@
             </table>
         </div>
     </div>
+
+    <section class="admin-section" aria-labelledby="billing-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Billing</span><h2 id="billing-title">Invoices for this case</h2></div>
+            <a href="/admin/payments/invoices/new?case_id={{ filing.id }}">+ Create invoice</a>
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--money">
+                <thead><tr><th>Invoice</th><th>Date</th><th>Status</th><th>Total</th><th>Balance</th></tr></thead>
+                <tbody>
+                    {% for r in invoices %}
+                    <tr>
+                        <td><a href="/admin/payments/invoices/{{ r.invoice.id }}" class="link-primary">{{ r.invoice.invoice_number }}</a></td>
+                        <td class="admin-nowrap">{{ r.invoice.invoice_date.strftime('%b %d, %Y') }}</td>
+                        <td>{{ r.status_label }}{% if r.overdue %} · <span class="admin-pill admin-pill--coral">Overdue</span>{% endif %}</td>
+                        <td>${{ '{:,.2f}'.format(r.invoice.total_amount) }}</td>
+                        <td><strong>${{ '{:,.2f}'.format(r.balance) }}</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="admin-empty">No invoices for this case yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 {% endblock %}

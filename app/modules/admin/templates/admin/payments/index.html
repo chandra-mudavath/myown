@@ -1,0 +1,71 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Payments - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Payments' %}
+{% set no_rail = true %}
+{% set tone = {'draft': 'slate', 'issued': 'blue', 'partially_paid': 'amber', 'paid': 'green', 'void': 'slate'} %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Billing</span>
+                <h1>Payments</h1>
+                <p>Invoices for cases and payments received. Prices come from Settings &rsaquo; Services &amp; prices.</p>
+            </div>
+            <div>
+                <a href="/admin/payments/invoices/new" class="modal-btn-submit admin-btn-action"><b>+</b> New invoice</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-label="Billing totals">
+        <div class="admin-stat-grid">
+            <a class="admin-stat-card blue" href="/admin/payments?status=issued"><span>Outstanding</span><strong>${{ '{:,.2f}'.format(summary.outstanding) }}</strong><small>{{ summary.open_count }} open invoice{{ 's' if summary.open_count != 1 else '' }}</small></a>
+            <a class="admin-stat-card coral" href="/admin/payments?status=overdue"><span>Overdue</span><strong>${{ '{:,.2f}'.format(summary.overdue) }}</strong><small>{{ summary.overdue_count }} past due date</small></a>
+            <a class="admin-stat-card teal" href="/admin/payments?status=paid"><span>Collected this month</span><strong>${{ '{:,.2f}'.format(summary.collected_month) }}</strong><small>{{ summary.month }}</small></a>
+            <a class="admin-stat-card amber" href="/admin/payments?status=draft"><span>Drafts</span><strong>{{ summary.draft_count }}</strong><small>Not issued yet</small></a>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <form method="get" action="/admin/payments" class="admin-filter-bar">
+            <input type="hidden" name="status" value="{{ status }}">
+            <input type="text" name="q" value="{{ q }}" placeholder="Search invoice #, case # or client name..." class="admin-filter-input" aria-label="Search invoices">
+            <button type="submit" class="admin-filter-btn">Search</button>
+            {% if q %}<a href="/admin/payments?status={{ status }}" class="admin-filter-clear">Clear</a>{% endif %}
+        </form>
+        <nav class="admin-chips" aria-label="Filter invoices by status">
+            {% for key, label in filters %}
+            <a href="/admin/payments?status={{ key }}{% if q %}&amp;q={{ q | urlencode }}{% endif %}" class="admin-chip{% if status == key %} is-active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </nav>
+
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--money">
+                <thead>
+                    <tr><th>Invoice</th><th>Client</th><th>Case</th><th>Date</th><th>Due</th><th>Status</th><th>Total</th><th>Paid</th><th>Balance</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in invoices %}
+                    <tr>
+                        <td><a href="/admin/payments/invoices/{{ r.invoice.id }}" class="link-primary">{{ r.invoice.invoice_number }}</a></td>
+                        <td>{{ r.client_name }}</td>
+                        <td><a href="/admin/cases/{{ r.filing.id }}" class="link-primary">{{ r.filing.case_number }}</a></td>
+                        <td class="admin-nowrap">{{ r.invoice.invoice_date.strftime('%b %d, %Y') }}</td>
+                        <td class="admin-nowrap">{{ r.invoice.due_date.strftime('%b %d, %Y') if r.invoice.due_date else '—' }}</td>
+                        <td>
+                            <span class="admin-pill admin-pill--{{ tone.get(r.invoice.status, 'slate') }}">{{ r.status_label }}</span>
+                            {% if r.overdue %}<span class="admin-pill admin-pill--coral">Overdue</span>{% endif %}
+                        </td>
+                        <td>${{ '{:,.2f}'.format(r.invoice.total_amount) }}</td>
+                        <td>${{ '{:,.2f}'.format(r.paid) }}</td>
+                        <td><strong>${{ '{:,.2f}'.format(r.balance) }}</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="9" class="admin-empty">{% if q or status %}No invoices match.{% else %}No invoices yet. Create one with <strong>New invoice</strong>.{% endif %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

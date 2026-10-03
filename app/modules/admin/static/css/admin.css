@@ -755,3 +755,22 @@ a.admin-hbars__label:hover { color: var(--accent-text); text-decoration: underli
 
 @media (max-width: 1100px) { .admin-chart-grid { grid-template-columns: 1fr; } }
 @media (max-width: 760px) { .admin-columns { gap: .25rem; height: 180px; } .admin-columns__label { font-size: .62rem; } .admin-hbars li { grid-template-columns: minmax(90px, 40%) minmax(0, 1fr) 36px; } }
+
+/* ── Payments ── */
+.admin-table--money td:not(:first-child), .admin-table--money th:not(:first-child) { font-variant-numeric: tabular-nums; }
+.admin-table--money td:last-child, .admin-table--money th:last-child { text-align: right; }
+.admin-table--money tfoot th { text-align: right; font-weight: 600; }
+.admin-table--money tfoot th:first-child { color: var(--muted); }
+.admin-total-row th { color: var(--ink) !important; font-weight: 800 !important; }
+.admin-subhead { margin: 1.4rem 0 .7rem; color: var(--ink); font-size: .9rem; }
+.admin-invoice-actions { display: flex; align-items: center; gap: .6rem; }
+.admin-invoice-actions form { margin: 0; }
+.admin-mini-btn--danger { border-color: color-mix(in srgb, var(--coral) 45%, transparent); background: #fff; color: var(--coral); }
+.admin-mini-btn--danger:hover:not(:disabled) { border-color: var(--coral); background: color-mix(in srgb, var(--coral) 8%, #fff); color: var(--coral); }
+html[data-theme="dark"] .admin-mini-btn--danger { background: transparent; }
+.admin-paid-note { margin-top: 1rem; color: var(--green); font-weight: 700; }
+.admin-invoice-form h4 { margin: 1.2rem 0 .7rem; }
+.admin-invoice-form select { width: 100%; }
+.admin-invoice-adjust { max-width: 420px; margin-top: 1rem; }
+.admin-welcome .admin-pill { vertical-align: middle; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .15); }
+html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }

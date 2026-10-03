@@ -1,0 +1,77 @@
+{% extends "admin/_layout.html" %}
+{% block title %}New invoice - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Payments / New invoice' %}
+{% set no_rail = true %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <a href="/admin/payments" class="admin-back-link">← Back to Payments</a>
+                <h1>New invoice</h1>
+                <p>Pick the case and set a quantity for each service to bill. It's saved as a draft until you issue it.</p>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+
+    {% if not services %}
+    <div class="admin-card">
+        <p class="admin-empty">There are no active services to bill yet. Add your price list in <a href="/admin/settings#services" class="link-primary">Settings &rsaquo; Services &amp; prices</a> first.</p>
+    </div>
+    {% else %}
+    <form method="post" action="/admin/payments/invoices" class="admin-card admin-form admin-invoice-form">
+        <div class="admin-form-row">
+            <div class="modal-form-group">
+                <label for="case_id">Case</label>
+                <select id="case_id" name="case_id" required>
+                    <option value="">Choose a case…</option>
+                    {% for f in cases %}
+                    <option value="{{ f.id }}" {% if f.id == case_id %}selected{% endif %}>{{ f.case_number }} · {{ f.first_name }} {{ f.last_name }} · {{ f.tax_year }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="admin-form-row">
+                <div class="modal-form-group">
+                    <label for="invoice_date">Invoice date</label>
+                    <input id="invoice_date" name="invoice_date" type="date" value="{{ today }}" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="due_date">Due date</label>
+                    <input id="due_date" name="due_date" type="date" value="{{ due }}">
+                </div>
+            </div>
+        </div>
+
+        <h4>Services</h4>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--money">
+                <thead><tr><th>Service</th><th>Unit price</th><th>Quantity</th></tr></thead>
+                <tbody>
+                    {% for s in services %}
+                    <tr>
+                        <td><label for="qty_{{ s.id }}">{{ s.name }}</label>{% if s.description %}<small class="admin-muted">{{ s.description }}</small>{% endif %}</td>
+                        <td>${{ '{:,.2f}'.format(s.base_price) }}</td>
+                        <td><input id="qty_{{ s.id }}" name="qty_{{ s.id }}" type="number" min="0" max="100" value="{{ form.get('qty_' ~ s.id, '0') }}" class="admin-filter-input admin-input-xs"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="admin-form-row admin-invoice-adjust">
+            <div class="modal-form-group">
+                <label for="discount">Discount ($)</label>
+                <input id="discount" name="discount" inputmode="decimal" value="{{ form.get('discount', '0') }}">
+            </div>
+            <div class="modal-form-group">
+                <label for="tax">Tax ($)</label>
+                <input id="tax" name="tax" inputmode="decimal" value="{{ form.get('tax', '0') }}">
+            </div>
+        </div>
+        <p class="admin-form-hint">Total = services − discount + tax. Unit prices are copied onto the invoice, so later price changes won't affect it.</p>
+        <button type="submit" class="modal-btn-submit admin-form-submit">Create draft invoice</button>
+    </form>
+    {% endif %}
+{% endblock %}

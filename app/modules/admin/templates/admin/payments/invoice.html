@@ -1,0 +1,120 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ invoice.invoice_number }} - Payments - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Payments / ' ~ invoice.invoice_number %}
+{% set no_rail = true %}
+{% set tone = {'draft': 'slate', 'issued': 'blue', 'partially_paid': 'amber', 'paid': 'green', 'void': 'slate'} %}
+{% set money = '${:,.2f}' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <a href="/admin/payments" class="admin-back-link">← Back to Payments</a>
+                <h1>Invoice {{ invoice.invoice_number }}</h1>
+                <p>
+                    <span class="admin-pill admin-pill--{{ tone.get(invoice.status, 'slate') }}">{{ status_label }}</span>
+                    {% if overdue %}<span class="admin-pill admin-pill--coral">Overdue</span>{% endif %}
+                    {{ client.first_name if client else '' }} {{ client.last_name or '' if client else '' }} · {{ filing.case_number if filing else '' }}
+                </p>
+            </div>
+            <div class="admin-invoice-actions">
+                {% if invoice.status == 'draft' %}
+                <form method="post" action="/admin/payments/invoices/{{ invoice.id }}/issue"><button type="submit" class="modal-btn-submit admin-btn-action">Issue invoice</button></form>
+                {% endif %}
+                {% if invoice.status != 'void' and not paid %}
+                <form method="post" action="/admin/payments/invoices/{{ invoice.id }}/void" onsubmit="return confirm('Void invoice {{ invoice.invoice_number }}? This can\'t be undone.');">
+                    <button type="submit" class="admin-mini-btn admin-mini-btn--danger">Void</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <div class="admin-detail-grid">
+        <div class="admin-card">
+            <h3 class="admin-card-title">Details</h3>
+            <div class="admin-card-dl">
+                <div><strong>Client:</strong> {% if client %}<a href="/admin/clients/{{ client.id }}" class="link-primary">{{ client.first_name }} {{ client.last_name or '' }}</a> · {{ client.client_number }}{% else %}—{% endif %}</div>
+                <div><strong>Case:</strong> {% if filing %}<a href="/admin/cases/{{ filing.id }}" class="link-primary">{{ filing.case_number }}</a> · Tax year {{ filing.tax_year }}{% else %}—{% endif %}</div>
+                <div><strong>Invoice date:</strong> {{ invoice.invoice_date.strftime('%b %d, %Y') }}</div>
+                <div><strong>Due date:</strong> {{ invoice.due_date.strftime('%b %d, %Y') if invoice.due_date else '—' }}</div>
+            </div>
+
+            <h4 class="admin-subhead">Services</h4>
+            <div class="admin-table-panel">
+                <table class="admin-table admin-table--money">
+                    <thead><tr><th>Service</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead>
+                    <tbody>
+                        {% for l in lines %}
+                        <tr><td>{{ l.service.name }}</td><td>{{ l.quantity }}</td><td>{{ money.format(l.unit_price) }}</td><td>{{ money.format(l.total_amount) }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr><th colspan="3">Subtotal</th><th>{{ money.format(invoice.subtotal) }}</th></tr>
+                        {% if invoice.discount_amount %}<tr><th colspan="3">Discount</th><th>−{{ money.format(invoice.discount_amount) }}</th></tr>{% endif %}
+                        {% if invoice.tax_amount %}<tr><th colspan="3">Tax</th><th>{{ money.format(invoice.tax_amount) }}</th></tr>{% endif %}
+                        <tr class="admin-total-row"><th colspan="3">Total</th><th>{{ money.format(invoice.total_amount) }}</th></tr>
+                        <tr><th colspan="3">Paid</th><th>{{ money.format(paid) }}</th></tr>
+                        <tr class="admin-total-row"><th colspan="3">Balance due</th><th>{{ money.format(balance) }}</th></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h3 class="admin-card-title">Payments</h3>
+            <div class="admin-table-panel">
+                <table class="admin-table admin-table--money">
+                    <thead><tr><th>Payment</th><th>Date</th><th>Method</th><th>Amount</th></tr></thead>
+                    <tbody>
+                        {% for p in payments %}
+                        <tr>
+                            <td>{{ p.payment_number }}{% if p.transaction_reference %}<small class="admin-muted">Ref: {{ p.transaction_reference }}</small>{% endif %}</td>
+                            <td class="admin-nowrap">{{ p.paid_at.strftime('%b %d, %Y') if p.paid_at else '—' }}</td>
+                            <td>{{ method_labels.get(p.payment_method, p.payment_method) }}</td>
+                            <td>{{ money.format(p.amount) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="admin-empty">No payments recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if invoice.status not in ('void', 'paid') %}
+            <form method="post" action="/admin/payments/invoices/{{ invoice.id }}/payments" class="admin-form">
+                <h4>Record a payment</h4>
+                <div class="admin-form-row">
+                    <div class="modal-form-group">
+                        <label for="amount">Amount ($)</label>
+                        <input id="amount" name="amount" inputmode="decimal" value="{{ '%.2f' | format(balance) }}" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="paid_on">Date received</label>
+                        <input id="paid_on" name="paid_on" type="date" value="{{ today }}" max="{{ today }}" required>
+                    </div>
+                </div>
+                <div class="admin-form-row">
+                    <div class="modal-form-group">
+                        <label for="payment_method">Method</label>
+                        <select id="payment_method" name="payment_method" required>
+                            {% for key, label in methods %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="transaction_reference">Reference (optional)</label>
+                        <input id="transaction_reference" name="transaction_reference" maxlength="100" placeholder="Bank ref, cheque no…">
+                    </div>
+                </div>
+                {% if invoice.status == 'draft' %}<p class="admin-form-hint">Recording a payment issues this draft invoice.</p>{% endif %}
+                <button type="submit" class="modal-btn-submit admin-form-submit">Record payment</button>
+            </form>
+            {% elif invoice.status == 'paid' %}
+            <p class="admin-form-hint admin-paid-note">Paid in full.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -27,6 +27,7 @@ from app.platform.services.catalog import (
     staff_roles,
     tax_types,
 )
+from app.modules.admin.services.billing import list_invoices
 from app.modules.admin.services.reports import dashboard_progress
 from app.platform.services.storage_service import generate_uuid, save_document_file, save_profile_picture
 
@@ -299,6 +300,7 @@ def admin_case_detail(
             "case_number": filing.get_case_id(db),
             "client": client,
             "documents": documents,
+            "invoices": list_invoices(db, case_id=filing.id),
             "active_nav": "clients",
             "app_name": settings.APP_NAME,
         },

@@ -245,7 +245,7 @@ history, so a separate `document_reviews` table isn't needed.*
 
 ### FINANCIAL *(unchanged except FK target)*
 **`services`** `id`, `service_code` UK, `name`, `description`, `base_price`, `is_active`, `created_at`, `updated_at`
-**`case_services`** `id`, `case_id` FK → `tax_filings.id`, `service_id` FK, `quantity`, `unit_price`, `total_amount`, `created_at`
+**`case_services`** `id`, `case_id` FK → `tax_filings.id`, ✏️ `invoice_id` FK → `invoices.id` (the invoice that billed the line), `service_id` FK, `quantity`, `unit_price`, `total_amount`, `created_at`
 **`invoices`** `id`, `invoice_number` UK, `client_id` FK, `case_id` FK → `tax_filings.id`, `subtotal`,
 `discount_amount`, `tax_amount`, `total_amount`, `status`, `invoice_date`, `due_date`, `created_at`
 **`payments`** `id`, `payment_number` UK, `invoice_id` FK, `client_id` FK, `amount`, `payment_method`,
