@@ -20,6 +20,7 @@ from app.modules.staff.models.staff import Staff
 from app.platform.models.case_workflow import CaseStageHistory
 from app.platform.models.tax_filing import TaxFiling
 from app.platform.services import chat_service
+from app.platform.services import assignments
 from app.platform.services.activity_feed import client_activity
 from app.platform.services.catalog import case_stages, document_categories, stage_labels
 from app.platform.services.document_review import account_names, add_comment, comment_threads
@@ -115,8 +116,12 @@ def _case_table(
     per_page: int,
     sort: str,
     direction: str,
+    only_case_ids: list[str] | None = None,
 ) -> dict:
-    """Filtered, sorted, paginated case rows plus the state the case table template needs."""
+    """Filtered, sorted, paginated case rows plus the state the case table template needs.
+
+    only_case_ids limits the table to those cases (My Cases: the ones the staff member is assigned to).
+    """
     labels = stage_labels(db)
     stage_keys = _stage_keys(db)
     q = (q or "").strip()
@@ -140,6 +145,8 @@ def _case_table(
         query = query.filter(TaxFiling.status == stage)
     if year:
         query = query.filter(TaxFiling.tax_year == int(year))
+    if only_case_ids is not None:
+        query = query.filter(TaxFiling.id.in_(only_case_ids or [""]))
 
     total = query.count()
     pages = max(1, ceil(total / per_page))
@@ -160,6 +167,7 @@ def _case_table(
         .group_by(FilingDocument.filing_id)
         .all()
     ) if ids else {}
+    teams = assignments.team_names(db, ids)
 
     cases = [
         {
@@ -176,7 +184,7 @@ def _case_table(
             "stage_key": f.status,
             "next_stage": _next_stage(f.status, stage_keys),
             "doc_count": doc_counts.get(f.id, 0),
-            "staff": None,  # TaxFiling has no staff assignment yet
+            "staff": ", ".join(teams.get(f.id, [])) or None,
             "comment": None,  # TaxFiling has no case comments yet
         }
         for i, (f, client_number) in enumerate(rows)
@@ -196,6 +204,7 @@ def _case_table(
 
     return {
         "cases": cases,
+        "mine": only_case_ids is not None,  # My Cases: changes the empty-table hint
         "total": total,
         "page": page,
         "pages": pages,
@@ -313,7 +322,8 @@ def staff_my_cases(
             "active_nav": "my_cases",
             "page_title": "My Cases",
             "selected_stage": (stage or "").strip(),
-            "table": _case_table(db, q=q, stage=stage, year=year, page=page, per_page=per_page, sort=sort, direction=direction),
+            "table": _case_table(db, q=q, stage=stage, year=year, page=page, per_page=per_page, sort=sort, direction=direction,
+                                  only_case_ids=assignments.case_ids_for(db, staff.id) if staff else []),
         },
     )
 

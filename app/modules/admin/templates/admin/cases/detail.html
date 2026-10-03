@@ -65,6 +65,47 @@
         </div>
     </div>
 
+    <section class="admin-section admin-settings-block" id="team" aria-labelledby="team-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Workflow</span><h2 id="team-title">Case team</h2></div>
+        </div>
+        {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+        {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Staff member</th><th>Role on this case</th><th>Since</th><th><span class="sr-only">Remove</span></th></tr></thead>
+                <tbody>
+                    {% for m in team %}
+                    <tr>
+                        <td><a href="/admin/staff/{{ m.staff_id }}" class="link-primary">{{ m.name }}</a><small class="admin-muted">{{ m.staff_number }}</small></td>
+                        <td><span class="admin-role-badge">{{ m.role }}</span></td>
+                        <td class="admin-nowrap">{{ m.since.strftime('%b %d, %Y') if m.since else '—' }}</td>
+                        <td>
+                            <form method="post" action="/admin/cases/{{ filing.id }}/assignments/{{ m.id }}/end" data-confirm="Remove {{ m.name }} from this case?" onsubmit="return confirm(this.dataset.confirm);">
+                                <button type="submit" class="admin-mini-btn admin-mini-btn--danger">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="admin-empty">Nobody is assigned yet. Until someone is, case messages go to all staff.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <form method="post" action="/admin/cases/{{ filing.id }}/assign" class="admin-inline-form">
+            <select name="staff_id" class="admin-filter-select" required aria-label="Staff member">
+                <option value="">Choose a staff member…</option>
+                {% for s in assignable %}<option value="{{ s.id }}">{{ s.name }} · {{ (s.role or '').title() }} · {{ s.cases }} active case{{ 's' if s.cases != 1 else '' }}</option>{% endfor %}
+            </select>
+            <select name="role_code" class="admin-filter-select" aria-label="Role on this case">
+                <option value="">Their own role</option>
+                {% for r in case_roles %}<option value="{{ r.code }}">{{ r.name }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="admin-filter-btn">Assign</button>
+        </form>
+        <p class="admin-form-hint admin-team-hint">One person per role: assigning someone to a role that's taken replaces the current holder. Assigned staff are added to the case's client conversation.</p>
+    </section>
+
     <section class="admin-section" aria-labelledby="billing-title">
         <div class="admin-section-heading">
             <div><span class="admin-kicker">Billing</span><h2 id="billing-title">Invoices for this case</h2></div>

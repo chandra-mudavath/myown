@@ -33,10 +33,15 @@
                     <option value="">All Statuses</option>
                     {% for stage in stages %}<option value="{{ stage.code }}" {% if selected_status == stage.code %}selected{% endif %}>{{ stage.name }}</option>{% endfor %}
                 </select>
+                <select name="assigned" class="admin-filter-select" aria-label="Assigned to">
+                    <option value="">Anyone or no one</option>
+                    <option value="none" {% if assigned == 'none' %}selected{% endif %}>Unassigned</option>
+                    {% for s in assignable %}<option value="{{ s.id }}" {% if assigned == s.id %}selected{% endif %}>{{ s.name }} ({{ s.cases }})</option>{% endfor %}
+                </select>
                 <button type="submit" class="admin-filter-btn">
                     Filter
                 </button>
-                {% if q or selected_status %}
+                {% if q or selected_status or assigned %}
                 <a href="/admin/cases" class="admin-filter-clear">
                     Clear
                 </a>
@@ -53,6 +58,7 @@
                         <th>Tax Year</th>
                         <th>Filing Type</th>
                         <th>Status</th>
+                        <th>Assigned to</th>
                         <th>Created Date</th>
                     </tr>
                 </thead>
@@ -77,12 +83,13 @@
                                 {{ stage_labels.get(f.status, f.status.replace('_', ' ').title()) }}
                             </span>
                         </td>
+                        <td>{% if f.team %}{{ f.team | join(', ') }}{% else %}<span class="admin-muted admin-inline">Unassigned</span>{% endif %}</td>
                         <td>{{ f.created_at.strftime('%b %d, %Y') if f.created_at else 'N/A' }}</td>
                     </tr>
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="6" class="empty-cell">
+                        <td colspan="7" class="empty-cell">
                             No tax filings found in the queue.
                         </td>
                     </tr>

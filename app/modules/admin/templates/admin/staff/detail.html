@@ -36,14 +36,14 @@
 
         <!-- Filings Handled Card -->
         <div class="admin-card">
-            <h3 class="admin-card-title">All System Cases & Status</h3>
+            <h3 class="admin-card-title">Assigned cases ({{ filings | length }})</h3>
             <table class="admin-table">
                 <thead>
                     <tr>
                         <th>Case ID</th>
                         <th>Client Name</th>
                         <th>Tax Year</th>
-                        <th>Filing Type</th>
+                        <th>Role</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -62,7 +62,7 @@
                             </a>
                         </td>
                         <td>{{ f.tax_year }}</td>
-                        <td>{{ f.filing_type or 'Federal & State' }}</td>
+                        <td>{{ f.roles | join(', ') }}</td>
                         <td>
                             <span class="status-pill-subtle">
                                 {{ stage_labels.get(f.status, f.status.replace('_', ' ').title()) }}
@@ -72,7 +72,7 @@
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="5" class="empty-cell">No filing cases available.</td>
+                        <td colspan="5" class="empty-cell">Not assigned to any case yet. Assign cases from a case page or the <a href="/admin/cases?assigned=none" class="link-primary">unassigned queue</a>.</td>
                     </tr>
                     {% endif %}
                 </tbody>

@@ -48,6 +48,7 @@
                         <th>Staff Name</th>
                         <th>Email Address</th>
                         <th>Role</th>
+                        <th>Active cases</th>
                         <th>Created Date</th>
                     </tr>
                 </thead>
@@ -71,12 +72,13 @@
                                 {{ s.role.value if s.role else 'INITIATOR' }}
                             </span>
                         </td>
+                        <td>{% if s.active_cases %}<a href="/admin/cases?assigned={{ s.id }}" class="link-primary">{{ s.active_cases }}</a>{% else %}0{% endif %}</td>
                         <td>{{ s.created_at.strftime('%b %d, %Y') if s.created_at else 'N/A' }}</td>
                     </tr>
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="5" class="empty-cell">
+                        <td colspan="6" class="empty-cell">
                             No staff members found.
                         </td>
                     </tr>

@@ -759,6 +759,7 @@ a.admin-hbars__label:hover { color: var(--accent-text); text-decoration: underli
 /* ── Payments ── */
 .admin-table--money td:not(:first-child), .admin-table--money th:not(:first-child) { font-variant-numeric: tabular-nums; }
 .admin-table--money td:last-child, .admin-table--money th:last-child { text-align: right; }
+.admin-table--money td.admin-empty { text-align: center; }
 .admin-table--money tfoot th { text-align: right; font-weight: 600; }
 .admin-table--money tfoot th:first-child { color: var(--muted); }
 .admin-total-row th { color: var(--ink) !important; font-weight: 800 !important; }
@@ -774,3 +775,7 @@ html[data-theme="dark"] .admin-mini-btn--danger { background: transparent; }
 .admin-invoice-adjust { max-width: 420px; margin-top: 1rem; }
 .admin-welcome .admin-pill { vertical-align: middle; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .15); }
 html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
+
+/* ── Case assignment ── */
+.admin-team-hint { margin-top: .6rem; }
+.admin-inline-form .admin-filter-select { height: 34px; font-size: .82rem; }

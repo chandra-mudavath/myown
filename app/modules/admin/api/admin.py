@@ -28,6 +28,7 @@ from app.platform.services.catalog import (
     tax_types,
 )
 from app.modules.admin.services.billing import list_invoices
+from app.platform.services import assignments
 from app.modules.admin.services.reports import dashboard_progress
 from app.platform.services.storage_service import generate_uuid, save_document_file, save_profile_picture
 
@@ -225,6 +226,7 @@ def admin_cases_queue(
     account: AdminAccount,
     status: str | None = None,
     q: str | None = None,
+    assigned: str = "",
     db: Session = Depends(get_db)
 ):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
@@ -243,10 +245,18 @@ def admin_cases_queue(
             ((TaxFiling.first_name + " " + TaxFiling.last_name).ilike(search_term))
         )
 
+    # assigned: "" = everyone's cases, "none" = nobody on the case yet, or a staff id
+    if assigned == "none":
+        query = query.filter(TaxFiling.id.in_(assignments.unassigned_case_ids(db) or [""]))
+    elif assigned:
+        query = query.filter(TaxFiling.id.in_(assignments.case_ids_for(db, assigned) or [""]))
+
     filings = query.order_by(TaxFiling.created_at.desc()).all()
+    teams = assignments.team_names(db, [f.id for f in filings])
     formatted_filings = []
     for f in filings:
         formatted_filings.append({
+            "team": teams.get(f.id, []),
             "id": f.id,
             "case_id": f.get_case_id(db),
             "client_name": f"{f.first_name} {f.last_name}",
@@ -268,6 +278,8 @@ def admin_cases_queue(
             "filings": formatted_filings,
             "active_nav": "queue",
             "selected_status": status or "",
+            "assigned": assigned,
+            "assignable": assignments.assignable_staff(db),
             "q": q or "",
             "app_name": settings.APP_NAME,
         },
@@ -279,7 +291,9 @@ def admin_case_detail(
     request: Request,
     case_id: str,
     account: AdminAccount,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    saved: str = "",
+    error: str = "",
 ):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
     filing = db.query(TaxFiling).filter(TaxFiling.id == case_id).first()
@@ -301,6 +315,11 @@ def admin_case_detail(
             "client": client,
             "documents": documents,
             "invoices": list_invoices(db, case_id=filing.id),
+            "team": assignments.team(db, filing.id),
+            "assignable": assignments.assignable_staff(db),
+            "case_roles": staff_roles(db),
+            "saved": saved,
+            "error": error,
             "active_nav": "clients",
             "app_name": settings.APP_NAME,
         },
@@ -327,6 +346,7 @@ def admin_staff_directory(
         )
 
     staff_records = query.order_by(Staff.created_at.desc()).all()
+    load = assignments.workload(db)
     formatted_staff = []
     for s in staff_records:
         email = s.account.email if s.account else "N/A"
@@ -338,6 +358,7 @@ def admin_staff_directory(
             "email": email,
             "role": s.role,
             "created_at": s.created_at,
+            "active_cases": load.get(s.id, 0),
         })
 
     return templates.TemplateResponse(
@@ -366,11 +387,16 @@ def admin_staff_detail(
     if not staff_member:
         raise HTTPException(status_code=404, detail="Staff member not found")
 
-    # Fetch all filings available in the system
-    all_filings = db.query(TaxFiling).order_by(TaxFiling.created_at.desc()).all()
+    # The cases this staff member is assigned to, with their role on each
+    roles_by_case: dict[str, list[str]] = {}
+    for a in assignments.team_for_staff(db, staff_member.id):
+        roles_by_case.setdefault(a["case_id"], []).append(a["role"])
+    own_filings = (db.query(TaxFiling).filter(TaxFiling.id.in_(list(roles_by_case) or [""]))
+                   .order_by(TaxFiling.created_at.desc()).all())
     formatted_filings = []
-    for f in all_filings:
+    for f in own_filings:
         formatted_filings.append({
+            "roles": roles_by_case.get(f.id, []),
             "id": f.id,
             "case_id": f.get_case_id(db),
             "client_name": f"{f.first_name} {f.last_name}",

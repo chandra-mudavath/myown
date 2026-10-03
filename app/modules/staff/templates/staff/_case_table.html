@@ -116,7 +116,7 @@
                     <td colspan="10" class="staff-empty">
                         {{ ci("search") }}
                         <strong>No cases found</strong>
-                        <span>{% if t.q or t.stage or t.year %}Try a different search or clear the filters.{% else %}New filings will appear here as clients submit them.{% endif %}</span>
+                        <span>{% if t.q or t.stage or t.year %}Try a different search or clear the filters.{% elif t.mine %}No cases are assigned to you yet. An admin assigns cases from the case page.{% else %}New filings will appear here as clients submit them.{% endif %}</span>
                     </td>
                 </tr>
                 {% endfor %}
