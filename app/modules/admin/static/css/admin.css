@@ -852,3 +852,10 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-role-form { display: flex; align-items: center; gap: .4rem; margin: 0; }
 .admin-role-form .admin-filter-select { height: 32px; padding: 0 .55rem; font-size: .8rem; }
 .admin-table--compact th, .admin-table--compact td { padding-left: .7rem; padding-right: .7rem; }
+
+/* ── My Profile: photo + facts in one row ── */
+.admin-profile-row { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 2rem; }
+.admin-profile-row .admin-profile-head { flex: 0 0 auto; margin-bottom: 0; }
+.admin-profile-facts { flex: 1 1 420px; margin: 0; }
+.admin-edit-row__fields--two { grid-template-columns: repeat(2, minmax(150px, 1fr)) auto; }
+@media (max-width: 760px) { .admin-edit-row__fields--two { grid-template-columns: 1fr; } }
