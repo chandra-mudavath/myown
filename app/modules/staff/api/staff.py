@@ -17,13 +17,11 @@ from app.platform.models.auth import AuthAccount
 from app.modules.client.models.client import Client
 from app.platform.models.filing_document import DocumentComment, FilingDocument
 from app.modules.staff.models.staff import Staff
-from app.platform.models.case_workflow import CaseStageHistory
 from app.platform.models.tax_filing import TaxFiling
-from app.platform.services import chat_service
-from app.platform.services import assignments
+from app.platform.services import assignments, case_actions
 from app.platform.services.activity_feed import client_activity
 from app.platform.services.catalog import case_stages, document_categories, stage_labels
-from app.platform.services.document_review import account_names, add_comment, comment_threads
+from app.platform.services.document_review import account_names, comment_threads
 from app.platform.services.storage_service import save_profile_picture
 
 router = APIRouter(prefix="/staff", tags=["staff"])
@@ -718,24 +716,13 @@ def staff_review_document(
     if not d:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
     back = f"/staff/cases/{filing_id}/documents?doc={doc_id}"
-
-    reason = reason.strip()
-    if action == "accept":
-        d.status = "accepted"
-        d.rejection_reason = None
-    elif action == "reject":
-        if not reason:
-            return RedirectResponse(f"{back}&error=reason", status_code=status.HTTP_303_SEE_OTHER)
-        d.status = "rejected_reupload_requested"
-        d.rejection_reason = reason[:1000]
-        add_comment(db, document=d, kind="rejection", body=reason, author_type="staff", author_account_id=account.id)
-    else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown review action.")
-
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
-    d.reviewed_at = datetime.now(timezone.utc)
-    d.reviewed_by_id = staff.id if staff else account.id
-    db.commit()
+    err = case_actions.review_document(db, d, action, reason, actor_account_id=account.id,
+                                       reviewer_id=staff.id if staff else account.id, author_type="staff")
+    if err == "reason":
+        return RedirectResponse(f"{back}&error=reason", status_code=status.HTTP_303_SEE_OTHER)
+    if err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown review action.")
     return RedirectResponse(back, status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -751,9 +738,7 @@ def staff_comment_document(
     d = db.query(FilingDocument).filter(FilingDocument.id == doc_id, FilingDocument.filing_id == filing_id).first()
     if not d:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
-    if body.strip():
-        add_comment(db, document=d, kind="note", body=body, author_type="staff", author_account_id=account.id)
-        db.commit()
+    case_actions.comment_on_document(db, d, body, author_type="staff", actor_account_id=account.id)
     return RedirectResponse(f"/staff/cases/{filing_id}/documents?doc={doc_id}", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -769,19 +754,8 @@ def staff_move_stage(
     filing = db.query(TaxFiling).filter(TaxFiling.id == filing_id).first()
     if not filing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
-    known = stage_labels(db)
-    if to not in set(_stage_keys(db)):
+    if case_actions.move_stage(db, filing, to, account.id):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown stage.")
-    if to != filing.status:
-        db.add(CaseStageHistory(
-            case_id=filing.id,
-            from_stage_code=filing.status if filing.status in known else None,
-            to_stage_code=to,
-            changed_by_account_id=account.id,
-        ))
-        filing.status = to
-        chat_service.on_case_stage_changed(db, filing)  # start / cancel the 3-month hiding timer
-    db.commit()
     # Only redirect within the staff portal
     back = next if next.startswith("/staff/") and not next.startswith("//") else "/staff/cases"
     return RedirectResponse(back, status_code=status.HTTP_303_SEE_OTHER)

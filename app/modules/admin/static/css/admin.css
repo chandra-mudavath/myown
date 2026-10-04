@@ -789,3 +789,26 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-temp-password code { justify-self: start; padding: .35rem .7rem; border-radius: 8px; background: var(--surface); font: 700 1.05rem var(--font-mono); letter-spacing: .04em; user-select: all; }
 .admin-temp-password span { color: var(--muted); font-size: .82rem; }
 .admin-inline-label { color: var(--ink); font-size: .82rem; font-weight: 600; }
+
+/* ── Case actions ── */
+.admin-history { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; font-size: .84rem; }
+.admin-history li { display: grid; gap: .1rem; padding-left: .8rem; border-left: 2px solid var(--brand-soft); color: var(--ink); }
+.admin-history small { color: var(--muted); }
+.admin-doc-table td { vertical-align: top; }
+.admin-doc-reason { display: block; margin-top: .25rem; color: var(--coral); font-size: .75rem; }
+.admin-doc-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .4rem; }
+.admin-doc-actions form { margin: 0; }
+.admin-doc-actions a.admin-mini-btn { text-decoration: none; }
+.admin-mini-btn--ok { border-color: color-mix(in srgb, var(--green) 45%, transparent); color: var(--green); }
+.admin-doc-pop { position: relative; }
+.admin-doc-pop > summary { list-style: none; }
+.admin-doc-pop > summary::-webkit-details-marker { display: none; }
+.admin-doc-pop[open] > summary { border-color: var(--brand); }
+.admin-pop-form { position: absolute; right: 0; z-index: 20; display: grid; gap: .5rem; width: min(340px, 80vw); margin-top: .4rem; padding: .9rem; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--admin-shadow-hover); }
+.admin-pop-form label { color: var(--ink); font-size: .8rem; font-weight: 600; }
+.admin-pop-form textarea { width: 100%; padding: .5rem .6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: 400 .84rem var(--font-body); resize: vertical; }
+.admin-pop-form form { display: grid; gap: .45rem; margin-top: .3rem; }
+.admin-note { padding: .45rem .6rem; border-radius: 8px; background: color-mix(in srgb, var(--line) 35%, transparent); font-size: .8rem; }
+.admin-note p { margin: .2rem 0 0; color: var(--ink); white-space: pre-wrap; }
+.admin-note small { color: var(--muted); }
+.admin-note--client { background: color-mix(in srgb, #2563eb 8%, transparent); }

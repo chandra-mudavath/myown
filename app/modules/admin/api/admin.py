@@ -28,7 +28,9 @@ from app.platform.services.catalog import (
     tax_types,
 )
 from app.modules.admin.services.billing import list_invoices
+from app.platform.models.case_workflow import CaseStageHistory
 from app.platform.services import assignments
+from app.platform.services.document_review import account_names, comment_threads
 from app.modules.admin.services.accounts import lock_state
 from app.modules.admin.services.reports import dashboard_progress
 from app.platform.services.storage_service import generate_uuid, save_document_file, save_profile_picture
@@ -311,6 +313,7 @@ def admin_case_detail(
     db: Session = Depends(get_db),
     saved: str = "",
     error: str = "",
+    area: str = "",
 ):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
     filing = db.query(TaxFiling).filter(TaxFiling.id == case_id).first()
@@ -318,7 +321,12 @@ def admin_case_detail(
         raise HTTPException(status_code=404, detail="Tax filing not found")
 
     client = db.query(Client).filter(Client.id == filing.client_id).first()
-    documents = db.query(FilingDocument).filter(FilingDocument.filing_id == filing.id).all()
+    # latest version of each document first, then older versions
+    documents = (db.query(FilingDocument).filter(FilingDocument.filing_id == filing.id)
+                 .order_by(FilingDocument.is_latest.desc(), FilingDocument.uploaded_at.desc()).all())
+    history = (db.query(CaseStageHistory).filter(CaseStageHistory.case_id == filing.id)
+               .order_by(CaseStageHistory.created_at.desc()).limit(15).all())
+    movers = account_names(db, {h.changed_by_account_id for h in history})
 
     return templates.TemplateResponse(
         "admin/cases/detail.html",
@@ -333,10 +341,15 @@ def admin_case_detail(
             "documents": documents,
             "invoices": list_invoices(db, case_id=filing.id),
             "team": assignments.team(db, filing.id),
+            "stages": case_stages(db),
+            "history": [{"at": h.created_at, "from": h.from_stage_code, "to": h.to_stage_code,
+                         "by": movers.get(h.changed_by_account_id, {}).get("name") or "System"} for h in history],
+            "threads": comment_threads(db, filing.id),
             "assignable": assignments.assignable_staff(db),
             "case_roles": staff_roles(db),
             "saved": saved,
             "error": error,
+            "area": area or "team",
             "active_nav": "clients",
             "app_name": settings.APP_NAME,
         },

@@ -13,7 +13,7 @@ router = APIRouter(prefix="/admin/cases", tags=["admin"])
 
 
 def _back(case_id: str, err: str | None, saved: str) -> RedirectResponse:
-    query = urlencode({"error": err} if err else {"saved": saved})
+    query = urlencode({"error": err, "area": "team"} if err else {"saved": saved, "area": "team"})
     return RedirectResponse(f"/admin/cases/{case_id}?{query}#team", status_code=303)
 
 

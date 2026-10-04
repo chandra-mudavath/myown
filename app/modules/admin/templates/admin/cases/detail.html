@@ -35,42 +35,117 @@
             </div>
         </div>
 
-        <!-- Documents Card -->
-        <div class="admin-card">
-            <h3 class="admin-card-title">Associated Filing Documents</h3>
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>Document Name</th>
-                        <th>Document Type</th>
-                        <th>Uploaded Date</th>
-                    </tr>
-                </thead>
+        <!-- Workflow Card -->
+        <div class="admin-card admin-settings-block" id="workflow">
+            <h3 class="admin-card-title">Workflow</h3>
+            {% if area == 'workflow' %}{% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+            {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}{% endif %}
+            <div class="admin-card-dl">
+                <div><strong>Current stage:</strong> <span class="admin-role-badge">{{ stage_labels.get(filing.status, filing.status.replace('_', ' ').title()) }}</span></div>
+            </div>
+            <form method="post" action="/admin/cases/{{ filing.id }}/stage" class="admin-inline-form">
+                <label for="to" class="admin-inline-label">Move to</label>
+                <select id="to" name="to" class="admin-filter-select">
+                    {% for s in stages %}<option value="{{ s.code }}" {% if s.code == filing.status %}selected{% endif %}>{{ loop.index }}. {{ s.name }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="admin-filter-btn">Move</button>
+            </form>
+            <h4 class="admin-subhead">Stage history</h4>
+            <ul class="admin-history">
+                {% for h in history %}
+                <li>
+                    <span>{% if h.from %}{{ stage_labels.get(h.from, h.from) }} → {% endif %}<strong>{{ stage_labels.get(h.to, h.to) }}</strong></span>
+                    <small>{{ h.by }} · {{ h.at.strftime('%b %d, %Y · %H:%M') if h.at else '' }}</small>
+                </li>
+                {% else %}
+                <li class="admin-muted">Not moved yet — still in its first stage.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    {% set doc_tone = {'pending_review': 'amber', 'accepted': 'green', 'rejected_reupload_requested': 'coral', 'superseded': 'slate'} %}
+    {% set doc_label = {'pending_review': 'Pending review', 'accepted': 'Accepted', 'rejected_reupload_requested': 'Re-upload requested', 'superseded': 'Superseded'} %}
+    <section class="admin-section admin-settings-block" id="documents" aria-labelledby="documents-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Documents</span><h2 id="documents-title">Filing documents</h2></div>
+        </div>
+        {% if area == 'documents' %}{% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+        {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}{% endif %}
+        <div class="admin-table-panel">
+            <table class="admin-table admin-doc-table">
+                <thead><tr><th>Document</th><th>Category</th><th>Uploaded</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
-                    {% if documents %}
                     {% for doc in documents %}
-                    <tr>
-                        <td>📄 {{ doc.original_filename }} <small class="admin-doc-number">{{ doc.document_number }}</small></td>
-                        <td>{{ doc.document_type or 'General' }}</td>
-                        <td>{{ doc.created_at.strftime('%Y-%m-%d') if doc.created_at else 'N/A' }}</td>
+                    {% set notes = threads.get(doc.document_group_id, []) if doc.is_latest else [] %}
+                    <tr class="{{ '' if doc.is_latest else 'admin-row-muted' }}">
+                        <td>
+                            📄 {{ doc.document_name }}{% if doc.version > 1 %} <small class="admin-muted admin-inline">v{{ doc.version }}</small>{% endif %}
+                            <span class="admin-doc-number">{{ doc.document_number }}</span>
+                            <small class="admin-muted">{{ doc.original_filename }}</small>
+                            {% if doc.rejection_reason and doc.status == 'rejected_reupload_requested' %}<small class="admin-doc-reason">Reason: {{ doc.rejection_reason }}</small>{% endif %}
+                        </td>
+                        <td>{{ doc.category }}</td>
+                        <td class="admin-nowrap">{{ doc.uploaded_at.strftime('%b %d, %Y') if doc.uploaded_at else '—' }}<small class="admin-muted">by {{ doc.uploaded_by_type }}</small></td>
+                        <td><span class="admin-pill admin-pill--{{ doc_tone.get(doc.status, 'slate') if doc.is_latest else 'slate' }}">{{ doc_label.get(doc.status, doc.status) if doc.is_latest else 'Older version' }}</span></td>
+                        <td>
+                            <div class="admin-doc-actions">
+                                <a class="admin-mini-btn" href="/admin/cases/{{ filing.id }}/documents/{{ doc.id }}/file" target="_blank" rel="noopener">View</a>
+                                <a class="admin-mini-btn" href="/admin/cases/{{ filing.id }}/documents/{{ doc.id }}/file?download=true">Download</a>
+                                {% if doc.is_latest %}
+                                {% if doc.status != 'accepted' %}
+                                <form method="post" action="/admin/cases/{{ filing.id }}/documents/{{ doc.id }}/review">
+                                    <input type="hidden" name="action" value="accept">
+                                    <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Accept</button>
+                                </form>
+                                {% endif %}
+                                {% if doc.status != 'rejected_reupload_requested' %}
+                                <details class="admin-doc-pop">
+                                    <summary class="admin-mini-btn admin-mini-btn--danger">Reject</summary>
+                                    <form method="post" action="/admin/cases/{{ filing.id }}/documents/{{ doc.id }}/review" class="admin-pop-form">
+                                        <input type="hidden" name="action" value="reject">
+                                        <label for="reason-{{ doc.id }}">Why should the client re-upload it?</label>
+                                        <textarea id="reason-{{ doc.id }}" name="reason" rows="3" maxlength="1000" required placeholder="e.g. The image is blurry; please upload a clear scan."></textarea>
+                                        <button type="submit" class="admin-filter-btn">Send back to client</button>
+                                    </form>
+                                </details>
+                                {% endif %}
+                                <details class="admin-doc-pop">
+                                    <summary class="admin-mini-btn">Notes{% if notes %} ({{ notes | length }}){% endif %}</summary>
+                                    <div class="admin-pop-form">
+                                        {% for n in notes %}
+                                        <div class="admin-note admin-note--{{ n.author_type }}">
+                                            <strong>{{ n.author_name }}</strong> <small>{{ n.kind | replace('_', ' ') }} · {{ n.created_at.strftime('%b %d, %H:%M') if n.created_at else '' }}</small>
+                                            <p>{{ n.body }}</p>
+                                        </div>
+                                        {% else %}
+                                        <p class="admin-muted">No notes yet.</p>
+                                        {% endfor %}
+                                        <form method="post" action="/admin/cases/{{ filing.id }}/documents/{{ doc.id }}/comments">
+                                            <label for="note-{{ doc.id }}">Add a note (the client sees it)</label>
+                                            <textarea id="note-{{ doc.id }}" name="body" rows="2" maxlength="2000" required></textarea>
+                                            <button type="submit" class="admin-filter-btn">Post note</button>
+                                        </form>
+                                    </div>
+                                </details>
+                                {% endif %}
+                            </div>
+                        </td>
                     </tr>
-                    {% endfor %}
                     {% else %}
-                    <tr>
-                        <td colspan="3" class="empty-cell">No documents uploaded for this filing case yet.</td>
-                    </tr>
-                    {% endif %}
+                    <tr><td colspan="5" class="admin-empty">No documents uploaded for this case yet.</td></tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 
     <section class="admin-section admin-settings-block" id="team" aria-labelledby="team-title">
         <div class="admin-section-heading">
             <div><span class="admin-kicker">Workflow</span><h2 id="team-title">Case team</h2></div>
         </div>
-        {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
-        {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+        {% if area == 'team' %}{% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+        {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}{% endif %}
         <div class="admin-table-panel">
             <table class="admin-table">
                 <thead><tr><th>Staff member</th><th>Role on this case</th><th>Since</th><th><span class="sr-only">Remove</span></th></tr></thead>
