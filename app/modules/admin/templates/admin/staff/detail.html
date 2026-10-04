@@ -13,25 +13,18 @@
         </div>
     </section>
 
-    <!-- Profile & Filings Grid -->
-    <div class="admin-detail-grid">
-        <!-- Personal Details Card -->
+    <!-- Personal Details: one horizontal row of facts -->
+    <section class="admin-section" aria-labelledby="personal-title">
         <div class="admin-card">
-            <h3 class="admin-card-title">Personal Details</h3>
-            <div class="admin-card-dl">
-                <div><strong>Staff Number:</strong> {{ staff_member.staff_number }}</div>
-                <div><strong>Full Name:</strong> {{ staff_member.first_name }} {{ staff_member.last_name or '' }}</div>
-                <div><strong>Email Address:</strong> {{ staff_member.account.email if staff_member.account else 'N/A' }}</div>
-                <div><strong>Assigned Role:</strong> 
-                    <span class="admin-role-badge">
-                        {{ staff_member.role.value if staff_member.role else 'INITIATOR' }}
-                    </span>
-                </div>
-                <div><strong>Account Status:</strong>
-                    {% if target and target.is_active %}<span class="admin-status-active">Active</span>{% else %}<span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
-                </div>
-                <div><strong>Joined Date:</strong> {{ staff_member.created_at.strftime('%Y-%m-%d') if staff_member.created_at else 'N/A' }}</div>
-            </div>
+            <h3 class="admin-card-title" id="personal-title">Personal Details</h3>
+            <dl class="admin-facts">
+                <div><dt>Staff Number</dt><dd>{{ staff_member.staff_number }}</dd></div>
+                <div><dt>Full Name</dt><dd>{{ staff_member.first_name }} {{ staff_member.last_name or '' }}</dd></div>
+                <div><dt>Email Address</dt><dd>{{ staff_member.account.email if staff_member.account else 'N/A' }}</dd></div>
+                <div><dt>Assigned Role</dt><dd><span class="admin-role-badge">{{ staff_member.role.value if staff_member.role else 'INITIATOR' }}</span></dd></div>
+                <div><dt>Account Status</dt><dd>{% if target and target.is_active %}<span class="admin-status-active">Active</span>{% else %}<span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}</dd></div>
+                <div><dt>Joined Date</dt><dd>{{ staff_member.created_at.strftime('%b %d, %Y') if staff_member.created_at else 'N/A' }}</dd></div>
+            </dl>
             <form method="post" action="/admin/staff/{{ staff_member.id }}/role" class="admin-inline-form">
                 <label for="role_code" class="admin-inline-label">Change role</label>
                 <select id="role_code" name="role_code" class="admin-filter-select">
@@ -41,10 +34,14 @@
             </form>
             <p class="admin-form-hint admin-team-hint">Their role on existing cases doesn't change; it's the default when they're assigned to new ones.</p>
         </div>
+    </section>
 
-        <!-- Filings Handled Card -->
-        <div class="admin-card">
-            <h3 class="admin-card-title">Assigned cases ({{ filings | length }})</h3>
+    <!-- Assigned cases -->
+    <section class="admin-section" aria-labelledby="cases-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Workload</span><h2 id="cases-title">Assigned cases ({{ filings | length }})</h2></div>
+        </div>
+        <div class="admin-table-panel">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -56,37 +53,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if filings %}
                     {% for f in filings %}
                     <tr>
-                        <td>
-                            <a href="/admin/cases/{{ f.id }}" class="link-primary">
-                                {{ f.case_id }}
-                            </a>
-                        </td>
-                        <td>
-                            <a href="/admin/clients/{{ f.client_id }}" class="link-primary">
-                                👤 {{ f.client_name }}
-                            </a>
-                        </td>
+                        <td><a href="/admin/cases/{{ f.id }}" class="link-primary">{{ f.case_id }}</a></td>
+                        <td><a href="/admin/clients/{{ f.client_id }}" class="link-primary">👤 {{ f.client_name }}</a></td>
                         <td>{{ f.tax_year }}</td>
                         <td>{{ f.roles | join(', ') }}</td>
-                        <td>
-                            <span class="status-pill-subtle">
-                                {{ stage_labels.get(f.status, f.status.replace('_', ' ').title()) }}
-                            </span>
-                        </td>
+                        <td><span class="status-pill-subtle">{{ stage_labels.get(f.status, f.status.replace('_', ' ').title()) }}</span></td>
                     </tr>
-                    {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="5" class="empty-cell">Not assigned to any case yet. Assign cases from a case page or the <a href="/admin/cases?assigned=none" class="link-primary">unassigned queue</a>.</td>
+                        <td colspan="5" class="admin-empty">Not assigned to any case yet. Assign cases from a case page or the <a href="/admin/cases?assigned=none" class="link-primary">unassigned queue</a>.</td>
                     </tr>
-                    {% endif %}
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 
     {% include "admin/partials/account_controls.html" %}
 {% endblock %}

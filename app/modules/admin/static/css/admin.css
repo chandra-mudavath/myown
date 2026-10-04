@@ -818,3 +818,9 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-eye-btn:hover { border-color: var(--brand); background: var(--brand-soft); }
 .admin-eye-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .admin-eye-btn .ci { width: 18px; height: 18px; }
+
+/* ── Horizontal facts row (staff Personal Details) ── */
+.admin-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 1rem 1.5rem; margin: 0 0 1.2rem; }
+.admin-facts > div { min-width: 0; padding-left: .8rem; border-left: 2px solid var(--brand-soft); }
+.admin-facts dt { margin-bottom: .3rem; color: var(--muted); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.admin-facts dd { margin: 0; overflow-wrap: anywhere; color: var(--ink); font-size: .9rem; font-weight: 600; }
