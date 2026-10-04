@@ -20,38 +20,42 @@
         </div>
     </section>
 
-    <!-- Filing Details & Documents Grid -->
-    <div class="admin-detail-grid">
-        <!-- Case Overview Card -->
+    <!-- Filing Summary: one horizontal row of facts -->
+    <section class="admin-section" aria-labelledby="summary-title">
         <div class="admin-card">
-            <h3 class="admin-card-title">Filing Summary</h3>
-            <div class="admin-card-dl">
-                <div><strong>Case ID:</strong> {{ case_number }}</div>
-                <div><strong>Client:</strong> {% if client %}<a href="/admin/clients/{{ client.id }}" class="link-primary">{{ client.first_name }} {{ client.last_name or '' }}</a>{% else %}{{ filing.first_name }} {{ filing.last_name }}{% endif %}</div>
-                <div><strong>Tax Year:</strong> {{ filing.tax_year }}</div>
-                <div><strong>Filing Type:</strong> {{ filing.filing_type or 'Federal & State' }}</div>
-                <div><strong>Status:</strong> {{ stage_labels.get(filing.status, filing.status.replace('_', ' ').title()) }}</div>
-                <div><strong>Created At:</strong> {{ filing.created_at.strftime('%Y-%m-%d %H:%M') if filing.created_at else 'N/A' }}</div>
-            </div>
+            <h3 class="admin-card-title" id="summary-title">Filing Summary</h3>
+            <dl class="admin-facts">
+                <div><dt>Case ID</dt><dd>{{ case_number }}</dd></div>
+                <div><dt>Client</dt><dd>{% if client %}<a href="/admin/clients/{{ client.id }}" class="link-primary">{{ client.first_name }} {{ client.last_name or '' }}</a>{% else %}{{ filing.first_name }} {{ filing.last_name }}{% endif %}</dd></div>
+                <div><dt>Tax Year</dt><dd>{{ filing.tax_year }}</dd></div>
+                <div><dt>Filing Type</dt><dd>{{ (filing.filing_type or 'Federal & State') | capitalize }}</dd></div>
+                <div><dt>Stage</dt><dd><span class="admin-role-badge">{{ stage_labels.get(filing.status, filing.status.replace('_', ' ').title()) }}</span></dd></div>
+                <div><dt>Created</dt><dd title="{{ filing.created_at.strftime('%b %d, %Y · %H:%M') if filing.created_at else '' }}">{{ filing.created_at.strftime('%b %d, %Y') if filing.created_at else 'N/A' }}</dd></div>
+            </dl>
         </div>
+    </section>
 
-        <!-- Workflow Card -->
-        <div class="admin-card admin-settings-block" id="workflow">
-            <h3 class="admin-card-title">Workflow</h3>
+    <!-- Workflow: move control and a horizontal stage history -->
+    <section class="admin-section admin-settings-block" id="workflow" aria-labelledby="workflow-title">
+        <div class="admin-card">
+            <h3 class="admin-card-title" id="workflow-title">Workflow</h3>
             {% if area == 'workflow' %}{% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
             {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}{% endif %}
-            <div class="admin-card-dl">
-                <div><strong>Current stage:</strong> <span class="admin-role-badge">{{ stage_labels.get(filing.status, filing.status.replace('_', ' ').title()) }}</span></div>
+            <div class="admin-workflow-bar">
+                <div class="admin-workflow-current">
+                    <span>Current stage</span>
+                    <span class="admin-role-badge">{{ stage_labels.get(filing.status, filing.status.replace('_', ' ').title()) }}</span>
+                </div>
+                <form method="post" action="/admin/cases/{{ filing.id }}/stage" class="admin-inline-form">
+                    <label for="to" class="admin-inline-label">Move to</label>
+                    <select id="to" name="to" class="admin-filter-select">
+                        {% for s in stages %}<option value="{{ s.code }}" {% if s.code == filing.status %}selected{% endif %}>{{ loop.index }}. {{ s.name }}</option>{% endfor %}
+                    </select>
+                    <button type="submit" class="admin-filter-btn">Move</button>
+                </form>
             </div>
-            <form method="post" action="/admin/cases/{{ filing.id }}/stage" class="admin-inline-form">
-                <label for="to" class="admin-inline-label">Move to</label>
-                <select id="to" name="to" class="admin-filter-select">
-                    {% for s in stages %}<option value="{{ s.code }}" {% if s.code == filing.status %}selected{% endif %}>{{ loop.index }}. {{ s.name }}</option>{% endfor %}
-                </select>
-                <button type="submit" class="admin-filter-btn">Move</button>
-            </form>
-            <h4 class="admin-subhead">Stage history</h4>
-            <ul class="admin-history">
+            <h4 class="admin-subhead">Stage history <small class="admin-muted admin-inline">· newest first</small></h4>
+            <ol class="admin-history admin-history--row">
                 {% for h in history %}
                 <li>
                     <span>{% if h.from %}{{ stage_labels.get(h.from, h.from) }} → {% endif %}<strong>{{ stage_labels.get(h.to, h.to) }}</strong></span>
@@ -60,9 +64,9 @@
                 {% else %}
                 <li class="admin-muted">Not moved yet — still in its first stage.</li>
                 {% endfor %}
-            </ul>
+            </ol>
         </div>
-    </div>
+    </section>
 
     {% set doc_tone = {'pending_review': 'amber', 'accepted': 'green', 'rejected_reupload_requested': 'coral', 'superseded': 'slate'} %}
     {% set doc_label = {'pending_review': 'Pending review', 'accepted': 'Accepted', 'rejected_reupload_requested': 'Re-upload requested', 'superseded': 'Superseded'} %}

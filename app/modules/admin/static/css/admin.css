@@ -844,3 +844,11 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-edit-row__fields .modal-form-group { margin-bottom: 0; }
 .admin-edit-row__fields .admin-form-submit { height: 40px; white-space: nowrap; }
 @media (max-width: 760px) { .admin-facts--five { grid-template-columns: repeat(2, minmax(0, 1fr)); } .admin-edit-row__fields { grid-template-columns: 1fr; gap: .8rem; } }
+
+/* ── Case page: workflow bar + horizontal stage history ── */
+.admin-workflow-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem 1.5rem; }
+.admin-workflow-bar .admin-inline-form { margin-top: 0; }
+.admin-workflow-current { display: inline-flex; align-items: center; gap: .6rem; color: var(--muted); font-size: .82rem; font-weight: 600; }
+.admin-history--row { display: flex; flex-wrap: wrap; gap: .6rem; }
+.admin-history--row li { flex: 0 1 230px; padding: .55rem .75rem; border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 10px; background: var(--surface); }
+.admin-history--row li.admin-muted { flex-basis: auto; border-left-color: var(--line); }
