@@ -53,7 +53,7 @@
                         </td>
                         <td>{% if e.filing %}<span class="admin-doc-number">{{ e.case_id }}</span>{% else %}—{% endif %}</td>
                         <td class="admin-detail-cell">{{ e.detail }}</td>
-                        <td class="admin-nowrap">{% if e.href %}<a href="{{ e.href }}" class="admin-open-btn" aria-label="Open {{ e.label | lower }}{{ ' for ' ~ e.client_name if e.filing else '' }}">Open <span aria-hidden="true">→</span></a>{% else %}<span class="admin-muted admin-inline">—</span>{% endif %}</td>
+                        <td class="admin-nowrap">{% if e.href %}<a href="{{ e.href }}" class="admin-open-btn" aria-label="Open {{ e.label | lower }}{{ ' for ' ~ e.client_name if e.filing else '' }}">Open</a>{% else %}<span class="admin-muted admin-inline">—</span>{% endif %}</td>
                     </tr>
                     {% else %}
                     <tr><td colspan="6" class="admin-empty">Nothing here yet.</td></tr>
