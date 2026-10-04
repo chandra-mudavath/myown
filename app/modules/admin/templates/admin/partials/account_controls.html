@@ -1,0 +1,50 @@
+{#- Account status and admin actions for a client or staff login. Needs `target` (AuthAccount),
+    `locked_until`, and optionally `temp_password` (only right after a reset), `saved`, `error`. -#}
+<section class="admin-section admin-settings-block" id="account" aria-labelledby="account-title">
+    <div class="admin-section-heading">
+        <div><span class="admin-kicker">Sign-in</span><h2 id="account-title">Account</h2></div>
+    </div>
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+    {% if temp_password %}
+    <div class="admin-temp-password" role="status">
+        <strong>Temporary password</strong>
+        <code>{{ temp_password }}</code>
+        <span>Share it with {{ target.email }} securely. It's shown only this once. They've been signed out everywhere.</span>
+    </div>
+    {% endif %}
+
+    {% if target %}
+    <div class="admin-card admin-account-card">
+        <div class="admin-card-dl">
+            <div><strong>Status:</strong>
+                {% if not target.is_active %}<span class="admin-pill admin-pill--coral">Inactive</span>
+                {% elif locked_until %}<span class="admin-pill admin-pill--amber">Locked until {{ locked_until.strftime('%H:%M') }} UTC</span>
+                {% else %}<span class="admin-pill admin-pill--green">Active</span>{% endif %}
+            </div>
+            <div><strong>Sign-in email:</strong> {{ target.email }}</div>
+            <div><strong>Last sign-in:</strong> {{ target.last_login_at.strftime('%b %d, %Y · %H:%M') if target.last_login_at else 'Never' }}</div>
+            <div><strong>Failed sign-ins:</strong> {{ target.failed_login_count or 0 }}</div>
+        </div>
+        <div class="admin-account-actions">
+            {% if target.is_active %}
+            <form method="post" action="/admin/accounts/{{ target.id }}/deactivate" data-confirm="Deactivate {{ target.email }}? They'll be signed out and can't sign in until you reactivate them.{{ ' Their case assignments will end.' if target.account_type.value == 'STAFF' else '' }}" onsubmit="return confirm(this.dataset.confirm);">
+                <button type="submit" class="admin-mini-btn admin-mini-btn--danger">Deactivate</button>
+            </form>
+            {% else %}
+            <form method="post" action="/admin/accounts/{{ target.id }}/activate">
+                <button type="submit" class="admin-mini-btn">Activate</button>
+            </form>
+            {% endif %}
+            <form method="post" action="/admin/accounts/{{ target.id }}/reset-password" data-confirm="Reset the password for {{ target.email }}? Their current password stops working and they're signed out." onsubmit="return confirm(this.dataset.confirm);">
+                <button type="submit" class="admin-mini-btn">Reset password</button>
+            </form>
+            {% if locked_until or target.failed_login_count %}
+            <form method="post" action="/admin/accounts/{{ target.id }}/unlock">
+                <button type="submit" class="admin-mini-btn">Unlock</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</section>

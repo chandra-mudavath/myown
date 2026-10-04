@@ -22,12 +22,30 @@
                 <div><strong>Full Name:</strong> {{ client.first_name }} {{ client.last_name or '' }}</div>
                 <div><strong>Email:</strong> {{ client.account.email if client.account else 'N/A' }}</div>
                 <div><strong>Phone:</strong> {{ client.phone or 'N/A' }}</div>
-                <div><strong>SSN / ITIN:</strong> {{ client.ssn_itin or 'N/A' }}</div>
-                <div><strong>Date of Birth:</strong> {{ client.date_of_birth or 'N/A' }}</div>
-                <div><strong>Filing Status:</strong> {{ client.filing_status or 'N/A' }}</div>
-                <div><strong>Address:</strong> {{ client.street_address or 'N/A' }}, {{ client.city or '' }} {{ client.state or '' }} {{ client.zip_code or '' }}</div>
+                <div><strong>Date of Birth:</strong> {{ client.date_of_birth.strftime('%b %d, %Y') if client.date_of_birth else 'N/A' }}</div>
+                {% set address = [client.address_line_1, client.address_line_2, client.city, client.state_province, client.postal_code, client.country] | select | join(', ') %}
+                <div><strong>Address:</strong> {{ address or 'N/A' }}</div>
                 <div><strong>Created On:</strong> {{ client.created_at.strftime('%Y-%m-%d') if client.created_at else 'N/A' }}</div>
             </div>
+
+            <form method="post" action="/admin/clients/{{ client.id }}/edit" class="admin-form">
+                <h4>Edit details</h4>
+                <div class="admin-form-row">
+                    <div class="modal-form-group">
+                        <label for="first_name">First name</label>
+                        <input id="first_name" name="first_name" value="{{ client.first_name }}" maxlength="50" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="last_name">Last name</label>
+                        <input id="last_name" name="last_name" value="{{ client.last_name or '' }}" maxlength="50">
+                    </div>
+                </div>
+                <div class="modal-form-group">
+                    <label for="phone">Phone</label>
+                    <input id="phone" name="phone" value="{{ client.phone or '' }}" maxlength="25" required>
+                </div>
+                <button type="submit" class="modal-btn-submit admin-form-submit">Save details</button>
+            </form>
         </div>
 
         <!-- Client Filings Card -->
@@ -69,4 +87,6 @@
             </table>
         </div>
     </div>
+
+    {% include "admin/partials/account_controls.html" %}
 {% endblock %}

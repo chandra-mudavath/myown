@@ -779,3 +779,13 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 /* ── Case assignment ── */
 .admin-team-hint { margin-top: .6rem; }
 .admin-inline-form .admin-filter-select { height: 34px; font-size: .82rem; }
+
+/* ── Account controls ── */
+.admin-account-card { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem 2rem; }
+.admin-account-card .admin-card-dl { flex: 1 1 320px; }
+.admin-account-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.admin-account-actions form { margin: 0; }
+.admin-temp-password { display: grid; gap: .35rem; margin: 0 0 1rem; padding: 1rem 1.2rem; border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--amber) 9%, var(--surface)); color: var(--ink); }
+.admin-temp-password code { justify-self: start; padding: .35rem .7rem; border-radius: 8px; background: var(--surface); font: 700 1.05rem var(--font-mono); letter-spacing: .04em; user-select: all; }
+.admin-temp-password span { color: var(--muted); font-size: .82rem; }
+.admin-inline-label { color: var(--ink); font-size: .82rem; font-weight: 600; }

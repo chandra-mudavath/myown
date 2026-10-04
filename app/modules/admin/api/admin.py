@@ -29,6 +29,7 @@ from app.platform.services.catalog import (
 )
 from app.modules.admin.services.billing import list_invoices
 from app.platform.services import assignments
+from app.modules.admin.services.accounts import lock_state
 from app.modules.admin.services.reports import dashboard_progress
 from app.platform.services.storage_service import generate_uuid, save_document_file, save_profile_picture
 
@@ -148,6 +149,8 @@ def admin_clients_directory(
         .group_by(TaxFiling.client_id)
         .all()
     ) if client_ids else {}
+    inactive = {a for (a,) in db.query(AuthAccount.id).filter(
+        AuthAccount.id.in_([c.account_id for c in clients]), AuthAccount.is_active.is_(False))}
     emails = dict(
         db.query(AuthAccount.id, AuthAccount.email)
         .filter(AuthAccount.id.in_([c.account_id for c in clients]))
@@ -164,6 +167,7 @@ def admin_clients_directory(
             "last_name": c.last_name,
             "email": email,
             "phone": c.phone,
+            "is_active": c.account_id not in inactive,
             "filing_count": filing_count,
         })
 
@@ -186,8 +190,16 @@ def admin_client_detail(
     request: Request,
     client_id: str,
     account: AdminAccount,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    saved: str = "",
+    error: str = "",
 ):
+    return render_client_detail(request, client_id, account, db, saved=saved, error=error)
+
+
+def render_client_detail(request: Request, client_id: str, account, db: Session, saved: str = "", error: str = "",
+                         temp_password: str | None = None):
+    """The client page. temp_password is only passed by the reset-password action, never from the URL."""
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
@@ -214,6 +226,11 @@ def admin_client_detail(
             "admin": admin,
             "client": client,
             "filings": formatted_filings,
+            "target": client.account,
+            "locked_until": lock_state(client.account) if client.account else None,
+            "saved": saved,
+            "error": error,
+            "temp_password": temp_password,
             "active_nav": "clients",
             "app_name": settings.APP_NAME,
         },
@@ -359,6 +376,7 @@ def admin_staff_directory(
             "role": s.role,
             "created_at": s.created_at,
             "active_cases": load.get(s.id, 0),
+            "is_active": bool(s.account and s.account.is_active),
         })
 
     return templates.TemplateResponse(
@@ -380,8 +398,16 @@ def admin_staff_detail(
     request: Request,
     staff_id: str,
     account: AdminAccount,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    saved: str = "",
+    error: str = "",
 ):
+    return render_staff_detail(request, staff_id, account, db, saved=saved, error=error)
+
+
+def render_staff_detail(request: Request, staff_id: str, account, db: Session, saved: str = "", error: str = "",
+                        temp_password: str | None = None):
+    """The staff page. temp_password is only passed by the reset-password action, never from the URL."""
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
     staff_member = db.query(Staff).filter(Staff.id == staff_id).first()
     if not staff_member:
@@ -416,6 +442,12 @@ def admin_staff_detail(
             "admin": admin,
             "staff_member": staff_member,
             "filings": formatted_filings,
+            "target": staff_member.account,
+            "locked_until": lock_state(staff_member.account) if staff_member.account else None,
+            "case_roles": staff_roles(db),
+            "saved": saved,
+            "error": error,
+            "temp_password": temp_password,
             "active_nav": "staff",
             "app_name": settings.APP_NAME,
         },

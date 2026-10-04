@@ -64,7 +64,7 @@
                         <td>
                             <a href="/admin/staff/{{ s.id }}" class="link-primary">
                                 👔 {{ s.first_name }} {{ s.last_name or '' }}
-                            </a>
+                            </a>{% if not s.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
                         </td>
                         <td>{{ s.email }}</td>
                         <td>

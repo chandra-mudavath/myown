@@ -62,7 +62,7 @@
                             </a>
                         </td>
                         <td>
-                            <strong>👤 {{ c.first_name }} {{ c.last_name or '' }}</strong>
+                            <strong>👤 {{ c.first_name }} {{ c.last_name or '' }}</strong>{% if not c.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
                         </td>
                         <td>{{ c.email }}</td>
                         <td>{{ c.phone or 'N/A' }}</td>

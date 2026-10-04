@@ -27,11 +27,19 @@
                         {{ staff_member.role.value if staff_member.role else 'INITIATOR' }}
                     </span>
                 </div>
-                <div><strong>Account Status:</strong> 
-                    <span class="admin-status-active">Active</span>
+                <div><strong>Account Status:</strong>
+                    {% if target and target.is_active %}<span class="admin-status-active">Active</span>{% else %}<span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
                 </div>
                 <div><strong>Joined Date:</strong> {{ staff_member.created_at.strftime('%Y-%m-%d') if staff_member.created_at else 'N/A' }}</div>
             </div>
+            <form method="post" action="/admin/staff/{{ staff_member.id }}/role" class="admin-inline-form">
+                <label for="role_code" class="admin-inline-label">Change role</label>
+                <select id="role_code" name="role_code" class="admin-filter-select">
+                    {% for r in case_roles %}<option value="{{ r.code }}" {% if staff_member.role and staff_member.role.value == r.code %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="admin-filter-btn">Save role</button>
+            </form>
+            <p class="admin-form-hint admin-team-hint">Their role on existing cases doesn't change; it's the default when they're assigned to new ones.</p>
         </div>
 
         <!-- Filings Handled Card -->
@@ -79,4 +87,6 @@
             </table>
         </div>
     </div>
+
+    {% include "admin/partials/account_controls.html" %}
 {% endblock %}
