@@ -84,8 +84,7 @@ html[data-theme="dark"] .admin-nav-item.active span { color: #fff; background: r
 .admin-avatar { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; color: #fff; background: linear-gradient(135deg, var(--brand), var(--brand-dark)); font: 700 .75rem var(--font-heading); }
 .admin-welcome { margin-top: 22px; padding: 26px 28px; border-radius: 16px; background: var(--banner); box-shadow: 0 18px 36px -22px var(--glow); }
 .admin-kicker { display: block; margin-bottom: 8px; color: var(--accent-text); font-size: .68rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
-.admin-welcome .admin-kicker, .admin-welcome .admin-back-link { color: rgba(255, 255, 255, .85); }
-.admin-welcome .admin-back-link:hover { color: #fff; }
+.admin-welcome .admin-kicker { color: rgba(255, 255, 255, .85); }
 .admin-welcome h1 { margin: 0; color: #fff; font: 700 clamp(1.55rem, 2.4vw, 2rem)/1.15 var(--font-heading); letter-spacing: -.02em; }
 .admin-welcome p { margin: 9px 0 0; color: rgba(255, 255, 255, .92); font-size: .92rem; }
 .admin-section { margin-top: 24px; }
@@ -312,15 +311,6 @@ html[data-theme="dark"] .modal-box { background: #0f172a; }
 }
 .admin-page-topbar h1 {
     margin-top: 0.35rem;
-}
-.admin-back-link {
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-.admin-back-link:hover {
-    color: var(--brand);
 }
 .admin-btn-action {
     display: inline-flex;

@@ -6,11 +6,6 @@
     <section class="admin-welcome">
         <div class="admin-page-topbar">
             <div>
-                {% if client %}
-                <a href="/admin/clients/{{ client.id }}" class="admin-back-link">← Back to Client Details</a>
-                {% else %}
-                <a href="/admin/clients" class="admin-back-link">← Back to Clients</a>
-                {% endif %}
                 <h1>Filing Case: {{ case_number }}</h1>
                 <p>Tax Year {{ filing.tax_year }} | Status: <strong class="capitalize">{{ stage_labels.get(filing.status, filing.status.replace('_', ' ')) }}</strong></p>
             </div>
