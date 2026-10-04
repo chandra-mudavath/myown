@@ -1,4 +1,5 @@
 {% extends "admin/_layout.html" %}
+{% from "client/_icons.html" import ci %}
 {% block title %}Clients Directory - Admin - {{ app_name }}{% endblock %}
 {% set crumb = 'Clients' %}
 
@@ -44,8 +45,8 @@
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>Client #</th>
                         <th>Client Name</th>
+                        <th>Client #</th>
                         <th>Email Address</th>
                         <th>Phone</th>
                         <th>Total Filings</th>
@@ -57,20 +58,18 @@
                     {% for c in clients %}
                     <tr>
                         <td>
+                            <strong>👤 {{ c.first_name }} {{ c.last_name or '' }}</strong>{% if not c.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
+                        </td>
+                        <td>
                             <a href="/admin/clients/{{ c.id }}" class="link-primary">
                                 {{ c.client_number }}
                             </a>
-                        </td>
-                        <td>
-                            <strong>👤 {{ c.first_name }} {{ c.last_name or '' }}</strong>{% if not c.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
                         </td>
                         <td>{{ c.email }}</td>
                         <td>{{ c.phone or 'N/A' }}</td>
                         <td><strong>{{ c.filing_count }}</strong></td>
                         <td>
-                            <a href="/admin/clients/{{ c.id }}" class="admin-filter-clear">
-                                View Details →
-                            </a>
+                            <a href="/admin/clients/{{ c.id }}" class="admin-eye-btn" aria-label="View {{ c.first_name }} {{ c.last_name or '' }}" title="View client details">{{ ci("eye") }}</a>
                         </td>
                     </tr>
                     {% endfor %}

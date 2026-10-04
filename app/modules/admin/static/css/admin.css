@@ -812,3 +812,9 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-note p { margin: .2rem 0 0; color: var(--ink); white-space: pre-wrap; }
 .admin-note small { color: var(--muted); }
 .admin-note--client { background: color-mix(in srgb, #2563eb 8%, transparent); }
+
+/* ── View (eye) button in directory tables ── */
+.admin-eye-btn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--accent-text); transition: border-color .15s, background .15s; }
+.admin-eye-btn:hover { border-color: var(--brand); background: var(--brand-soft); }
+.admin-eye-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.admin-eye-btn .ci { width: 18px; height: 18px; }
