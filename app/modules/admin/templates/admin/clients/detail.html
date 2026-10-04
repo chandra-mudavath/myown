@@ -13,24 +13,24 @@
         </div>
     </section>
 
-    <!-- Profile & Filings Grid -->
-    <div class="admin-detail-grid">
-        <!-- Profile Info Card -->
+    <!-- Client Profile: one horizontal row of facts, edit form below -->
+    <section class="admin-section" aria-labelledby="profile-title">
         <div class="admin-card">
-            <h3 class="admin-card-title">Client Profile</h3>
-            <div class="admin-card-dl">
-                <div><strong>Full Name:</strong> {{ client.first_name }} {{ client.last_name or '' }}</div>
-                <div><strong>Email:</strong> {{ client.account.email if client.account else 'N/A' }}</div>
-                <div><strong>Phone:</strong> {{ client.phone or 'N/A' }}</div>
-                <div><strong>Date of Birth:</strong> {{ client.date_of_birth.strftime('%b %d, %Y') if client.date_of_birth else 'N/A' }}</div>
-                {% set address = [client.address_line_1, client.address_line_2, client.city, client.state_province, client.postal_code, client.country] | select | join(', ') %}
-                <div><strong>Address:</strong> {{ address or 'N/A' }}</div>
-                <div><strong>Created On:</strong> {{ client.created_at.strftime('%Y-%m-%d') if client.created_at else 'N/A' }}</div>
-            </div>
+            <h3 class="admin-card-title" id="profile-title">Client Profile</h3>
+            {% set address = [client.address_line_1, client.address_line_2, client.city, client.state_province, client.postal_code, client.country] | select | join(', ') %}
+            {% set email = client.account.email if client.account else '' %}
+            <dl class="admin-facts admin-facts--five">
+                <div><dt>Full Name</dt><dd>{{ client.first_name }} {{ client.last_name or '' }}</dd></div>
+                <div><dt>Email</dt><dd>{% if email %}{{ email.split('@')[0] }}@<wbr>{{ email.split('@', 1)[1] }}{% else %}N/A{% endif %}</dd></div>
+                <div><dt>Phone</dt><dd>{{ client.phone or 'N/A' }}</dd></div>
+                <div><dt>Date of Birth</dt><dd>{{ client.date_of_birth.strftime('%b %d, %Y') if client.date_of_birth else 'N/A' }}</dd></div>
+                <div><dt>Created On</dt><dd>{{ client.created_at.strftime('%b %d, %Y') if client.created_at else 'N/A' }}</dd></div>
+                <div class="admin-facts__full"><dt>Address</dt><dd>{{ address or 'N/A' }}</dd></div>
+            </dl>
 
-            <form method="post" action="/admin/clients/{{ client.id }}/edit" class="admin-form">
+            <form method="post" action="/admin/clients/{{ client.id }}/edit" class="admin-form admin-edit-row">
                 <h4>Edit details</h4>
-                <div class="admin-form-row">
+                <div class="admin-edit-row__fields">
                     <div class="modal-form-group">
                         <label for="first_name">First name</label>
                         <input id="first_name" name="first_name" value="{{ client.first_name }}" maxlength="50" required>
@@ -39,18 +39,22 @@
                         <label for="last_name">Last name</label>
                         <input id="last_name" name="last_name" value="{{ client.last_name or '' }}" maxlength="50">
                     </div>
+                    <div class="modal-form-group">
+                        <label for="phone">Phone</label>
+                        <input id="phone" name="phone" value="{{ client.phone or '' }}" maxlength="25" required>
+                    </div>
+                    <button type="submit" class="modal-btn-submit admin-form-submit">Save details</button>
                 </div>
-                <div class="modal-form-group">
-                    <label for="phone">Phone</label>
-                    <input id="phone" name="phone" value="{{ client.phone or '' }}" maxlength="25" required>
-                </div>
-                <button type="submit" class="modal-btn-submit admin-form-submit">Save details</button>
             </form>
         </div>
+    </section>
 
-        <!-- Client Filings Card -->
-        <div class="admin-card">
-            <h3 class="admin-card-title">Tax Filings History</h3>
+    <!-- Tax filings -->
+    <section class="admin-section" aria-labelledby="filings-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Cases</span><h2 id="filings-title">Tax Filings History ({{ filings | length }})</h2></div>
+        </div>
+        <div class="admin-table-panel">
             <table class="admin-table">
                 <thead>
                     <tr>
@@ -61,32 +65,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if filings %}
                     {% for f in filings %}
                     <tr>
-                        <td>
-                            <a href="/admin/cases/{{ f.id }}" class="link-primary">
-                                {{ f.case_id }}
-                            </a>
-                        </td>
+                        <td><a href="/admin/cases/{{ f.id }}" class="link-primary">{{ f.case_id }}</a></td>
                         <td>{{ f.tax_year }}</td>
                         <td>{{ f.filing_type or 'Federal & State' }}</td>
-                        <td>
-                            <span class="status-pill-subtle">
-                                {{ stage_labels.get(f.status, f.status.replace('_', ' ').title()) }}
-                            </span>
-                        </td>
+                        <td><span class="status-pill-subtle">{{ stage_labels.get(f.status, f.status.replace('_', ' ').title()) }}</span></td>
                     </tr>
-                    {% endfor %}
                     {% else %}
-                    <tr>
-                        <td colspan="4" class="empty-cell">No tax filings found for this client.</td>
-                    </tr>
-                    {% endif %}
+                    <tr><td colspan="4" class="admin-empty">No tax filings found for this client.</td></tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 
     {% include "admin/partials/account_controls.html" %}
 {% endblock %}

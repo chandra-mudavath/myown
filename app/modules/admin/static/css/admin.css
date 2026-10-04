@@ -835,3 +835,12 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-bulk-hint { flex-basis: 100%; color: var(--muted); font-size: .76rem; }
 .admin-check-col { width: 42px; }
 .admin-check-col input { width: 17px; height: 17px; accent-color: var(--brand); cursor: pointer; }
+
+/* ── Client page: wide address fact + one-row edit form ── */
+.admin-facts--five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.admin-facts--five dd { overflow-wrap: break-word; }
+.admin-facts__full { grid-column: 1 / -1; }
+.admin-edit-row__fields { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)) auto; align-items: end; gap: 0 .9rem; }
+.admin-edit-row__fields .modal-form-group { margin-bottom: 0; }
+.admin-edit-row__fields .admin-form-submit { height: 40px; white-space: nowrap; }
+@media (max-width: 760px) { .admin-facts--five { grid-template-columns: repeat(2, minmax(0, 1fr)); } .admin-edit-row__fields { grid-template-columns: 1fr; gap: .8rem; } }
