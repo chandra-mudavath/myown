@@ -852,3 +852,8 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-history--row { display: flex; flex-wrap: wrap; gap: .6rem; }
 .admin-history--row li { flex: 0 1 230px; padding: .55rem .75rem; border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 10px; background: var(--surface); }
 .admin-history--row li.admin-muted { flex-basis: auto; border-left-color: var(--line); }
+
+/* ── Open button (Notifications) ── */
+.admin-open-btn { display: inline-flex; align-items: center; gap: .35rem; height: 32px; padding: 0 .85rem; border: 1px solid var(--brand); border-radius: 8px; background: var(--brand); color: #fff; font: 600 .78rem var(--font-body); text-decoration: none; white-space: nowrap; transition: background .15s, border-color .15s; }
+.admin-open-btn:hover { border-color: var(--brand-dark); background: var(--brand-dark); color: #fff; }
+.admin-open-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
