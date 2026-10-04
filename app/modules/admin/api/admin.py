@@ -370,6 +370,8 @@ def admin_staff_directory(
     request: Request,
     account: AdminAccount,
     q: str | None = None,
+    saved: str = "",
+    error: str = "",
     db: Session = Depends(get_db)
 ):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
@@ -408,6 +410,10 @@ def admin_staff_directory(
             "account": account,
             "admin": admin,
             "staff_list": formatted_staff,
+            "case_roles": staff_roles(db),
+            "saved": saved,
+            "error": error,
+            "current_url": "/admin/staff" + (f"?{urlencode({'q': q})}" if q else ""),
             "active_nav": "staff",
             "q": q or "",
             "app_name": settings.APP_NAME,

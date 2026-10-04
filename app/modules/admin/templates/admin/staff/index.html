@@ -41,8 +41,10 @@
             </div>
         </form>
 
+        {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+        {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
         <div class="admin-table-panel">
-            <table class="admin-table">
+            <table class="admin-table admin-table--compact">
                 <thead>
                     <tr>
                         <th>Staff Name</th>
@@ -58,21 +60,25 @@
                     {% if staff_list %}
                     {% for s in staff_list %}
                     <tr>
-                        <td>
+                        <td class="admin-nowrap">
                             <a href="/admin/staff/{{ s.id }}" class="link-primary">
                                 👔 {{ s.first_name }} {{ s.last_name or '' }}
                             </a>{% if not s.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
                         </td>
-                        <td>
+                        <td class="admin-nowrap">
                             <a href="/admin/staff/{{ s.id }}" class="link-primary">
                                 {{ s.staff_number }}
                             </a>
                         </td>
                         <td>{{ s.email }}</td>
                         <td>
-                            <span class="admin-role-badge">
-                                {{ s.role.value if s.role else 'INITIATOR' }}
-                            </span>
+                            <form method="post" action="/admin/staff/{{ s.id }}/role" class="admin-role-form">
+                                <input type="hidden" name="next" value="{{ current_url }}">
+                                <select name="role_code" class="admin-filter-select" aria-label="Role for {{ s.first_name }} {{ s.last_name or '' }}">
+                                    {% for r in case_roles %}<option value="{{ r.code }}" {% if s.role and s.role.value == r.code %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+                                </select>
+                                <button type="submit" class="admin-mini-btn">Save</button>
+                            </form>
                         </td>
                         <td>{% if s.active_cases %}<a href="/admin/cases?assigned={{ s.id }}" class="link-primary">{{ s.active_cases }}</a>{% else %}0{% endif %}</td>
                         <td>{{ s.created_at.strftime('%b %d, %Y') if s.created_at else 'N/A' }}</td>

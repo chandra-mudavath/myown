@@ -71,11 +71,18 @@ def account_reset_password(account_id: str, request: Request, account: AdminAcco
 
 
 @router.post("/staff/{staff_id}/role")
-def staff_role(staff_id: str, account: AdminAccount, db: Session = Depends(get_db), role_code: str = Form("")):
+def staff_role(staff_id: str, account: AdminAccount, db: Session = Depends(get_db), role_code: str = Form(""),
+               next: str = Form("")):
     staff = db.get(Staff, staff_id)
     if not staff:
         raise HTTPException(status_code=404, detail="Staff member not found.")
-    return _back(f"/admin/staff/{staff_id}", svc.change_staff_role(db, account.id, staff, role_code), "Role updated.")
+    err = svc.change_staff_role(db, account.id, staff, role_code)
+    if next.startswith("/admin/staff") and not next.startswith("//") and "#" not in next:
+        # from the staff directory: back to the same list view, message naming the person
+        who = f"{staff.first_name} {staff.last_name or ''}".strip()
+        params = {"error": err} if err else {"saved": f"{who}'s role is now {staff.role.value.title()}."}
+        return RedirectResponse(f"{next}{'&' if '?' in next else '?'}{urlencode(params)}", status_code=303)
+    return _back(f"/admin/staff/{staff_id}", err, "Role updated.")
 
 
 @router.post("/clients/{client_id}/edit")
