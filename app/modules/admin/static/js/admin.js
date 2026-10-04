@@ -473,3 +473,26 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+// ── Work Queue: select cases and assign them in one go ──
+(function () {
+    const bar = document.querySelector("[data-bulk-assign]");
+    if (!bar) return;
+    const all = document.querySelector("[data-select-all]");
+    const rows = () => [...document.querySelectorAll("[data-select-row]")];
+    const count = bar.querySelector("[data-bulk-count]");
+    const submit = bar.querySelector("[data-bulk-submit]");
+    function refresh() {
+        const n = rows().filter((r) => r.checked).length;
+        count.textContent = n ? `${n} case${n === 1 ? "" : "s"} selected` : "No cases selected";
+        submit.disabled = n === 0;
+        bar.classList.toggle("has-selection", n > 0);
+        if (all) {
+            all.checked = n > 0 && n === rows().length;
+            all.indeterminate = n > 0 && n < rows().length;
+        }
+    }
+    all?.addEventListener("change", () => { rows().forEach((r) => { r.checked = all.checked; }); refresh(); });
+    rows().forEach((r) => r.addEventListener("change", refresh));
+    refresh();
+})();

@@ -824,3 +824,14 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-facts > div { min-width: 0; padding-left: .8rem; border-left: 2px solid var(--brand-soft); }
 .admin-facts dt { margin-bottom: .3rem; color: var(--muted); font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .admin-facts dd { margin: 0; overflow-wrap: anywhere; color: var(--ink); font-size: .9rem; font-weight: 600; }
+
+/* ── Work Queue bulk assign ── */
+.admin-bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--admin-shadow); }
+.admin-bulk-bar.has-selection { border-color: var(--brand); background: color-mix(in srgb, var(--brand-soft) 60%, var(--surface)); }
+.admin-bulk-count { min-width: 9.5rem; color: var(--ink); font-size: .85rem; }
+.admin-bulk-bar .admin-filter-select { height: 36px; font-size: .82rem; }
+.admin-bulk-bar .admin-filter-btn { height: 36px; }
+.admin-bulk-bar .admin-filter-btn:disabled { opacity: .45; cursor: not-allowed; }
+.admin-bulk-hint { flex-basis: 100%; color: var(--muted); font-size: .76rem; }
+.admin-check-col { width: 42px; }
+.admin-check-col input { width: 17px; height: 17px; accent-color: var(--brand); cursor: pointer; }

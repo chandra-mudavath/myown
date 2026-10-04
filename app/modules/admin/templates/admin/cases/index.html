@@ -49,10 +49,31 @@
             </div>
         </form>
 
+        {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+        {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+        {% if filings %}
+        <form method="post" action="/admin/cases/assign-bulk" id="bulk-assign" class="admin-bulk-bar" data-bulk-assign>
+            <input type="hidden" name="next" value="{{ current_url }}">
+            <strong class="admin-bulk-count" data-bulk-count>No cases selected</strong>
+            <select name="staff_id" class="admin-filter-select" required aria-label="Assign to">
+                <option value="">Assign to…</option>
+                {% for s in assignable %}<option value="{{ s.id }}">{{ s.name }} · {{ (s.role or '').title() }} · {{ s.cases }} active case{{ 's' if s.cases != 1 else '' }}</option>{% endfor %}
+            </select>
+            <select name="role_code" class="admin-filter-select" aria-label="Role on the cases">
+                <option value="">Their own role</option>
+                {% for r in case_roles %}<option value="{{ r.code }}">{{ r.name }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="admin-filter-btn" data-bulk-submit>Assign selected</button>
+            <span class="admin-bulk-hint">Tick cases below, choose a staff member, then assign. They'll see the cases under My Cases.</span>
+        </form>
+        {% endif %}
+
         <div class="admin-table-panel">
             <table class="admin-table">
                 <thead>
                     <tr>
+                        <th class="admin-check-col"><input type="checkbox" data-select-all aria-label="Select all cases on this page"></th>
                         <th>Case ID</th>
                         <th>Client Name</th>
                         <th>Tax Year</th>
@@ -66,6 +87,7 @@
                     {% if filings %}
                     {% for f in filings %}
                     <tr>
+                        <td class="admin-check-col"><input type="checkbox" name="case_ids" value="{{ f.id }}" form="bulk-assign" data-select-row aria-label="Select {{ f.case_id }}"></td>
                         <td>
                             <a href="/admin/cases/{{ f.id }}" class="link-primary">
                                 {{ f.case_id }}
@@ -89,8 +111,8 @@
                     {% endfor %}
                     {% else %}
                     <tr>
-                        <td colspan="7" class="empty-cell">
-                            No tax filings found in the queue.
+                        <td colspan="8" class="empty-cell">
+                            {% if assigned == 'none' and not q and not selected_status %}Every filing has someone assigned. New filings will appear here until they're assigned.{% else %}No tax filings found in the queue.{% endif %}
                         </td>
                     </tr>
                     {% endif %}

@@ -1,5 +1,6 @@
 import secrets
 import string
+from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy import func
@@ -246,6 +247,8 @@ def admin_cases_queue(
     status: str | None = None,
     q: str | None = None,
     assigned: str = "",
+    saved: str = "",
+    error: str = "",
     db: Session = Depends(get_db)
 ):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
@@ -299,6 +302,12 @@ def admin_cases_queue(
             "selected_status": status or "",
             "assigned": assigned,
             "assignable": assignments.assignable_staff(db),
+            "case_roles": staff_roles(db),
+            "saved": saved,
+            "error": error,
+            # where the bulk-assign form returns to: this view, without old messages
+            "current_url": request.url.path + ("?" + urlencode(kept) if (kept := {k: v for k, v in request.query_params.items()
+                                                                                   if k not in ("saved", "error")}) else ""),
             "q": q or "",
             "app_name": settings.APP_NAME,
         },

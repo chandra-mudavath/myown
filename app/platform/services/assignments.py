@@ -134,6 +134,24 @@ def assign(db: Session, actor_id: str, case_id: str, staff_id: str, role_code: s
     return None
 
 
+def assign_many(db: Session, actor_id: str, case_ids: list[str], staff_id: str, role_code: str | None) -> tuple[int, list[str]]:
+    """Assign one staff member to several cases (the Work Queue's bulk assign).
+
+    Each case goes through assign(), so the same rules apply. Returns (number assigned,
+    ["FLI_… : reason", ...] for the ones skipped).
+    """
+    done, skipped = 0, []
+    for case_id in dict.fromkeys(case_ids):  # de-duplicate, keep order
+        err = assign(db, actor_id, case_id, staff_id, role_code)
+        if err:
+            db.rollback()
+            filing = db.get(TaxFiling, case_id)
+            skipped.append(f"{filing.case_number if filing else 'Unknown case'}: {err}")
+        else:
+            done += 1
+    return done, skipped
+
+
 def unassign(db: Session, actor_id: str, assignment_id: str, case_id: str) -> str | None:
     a = db.get(CaseAssignment, assignment_id)
     if not a or a.case_id != case_id:
