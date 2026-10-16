@@ -1,4 +1,9 @@
 {% from "client/_icons.html" import ci %}
+{#- Hidden from the menu for now (client feedback, Oct 2026); the pages still work. To bring one back,
+    put its line back in nav_groups:
+        Review & file: ("update_stage", "/client/update-stage", "stage", "Filing Status"),
+        Account:       ("summary_records", "/client/summary-records", "archive", "Summary Records"),
+-#}
 {%- set nav_groups = [
     ("Overview", [
         ("dashboard", "/client/dashboard", "dashboard", "Dashboard"),
@@ -18,13 +23,11 @@
         ("review_documents", "/client/review-documents", "eye", "Review Documents"),
         ("efile_authorization", "/client/efile-authorization", "sign", "E-File Authorization"),
         ("final_documents", "/client/final-documents", "download", "Download Tax Docs"),
-        ("update_stage", "/client/update-stage", "stage", "Filing Status"),
     ]),
     ("Account", [
         ("refund_request", "/client/refund-request", "refund", "Refund Status"),
         ("update_contact", "/client/update-contact", "phone", "Email & Mobile"),
         ("referrals", "/client/referrals", "gift", "Refer & Earn"),
-        ("summary_records", "/client/summary-records", "archive", "Summary Records"),
     ]),
 ] -%}
 {%- set nav_alias = {"profile": "personal_info", "all_documents": "documents"} -%}
@@ -32,7 +35,7 @@
 
 <aside class="cx-sidebar" id="cx-sidebar" data-cx-sidebar>
     <a class="cx-brand" href="/client/dashboard" aria-label="{{ app_name }} dashboard">
-        <span class="cx-brand__mark" aria-hidden="true">UT</span>
+        <span class="cx-brand__mark" aria-hidden="true">CT</span>
         <span class="cx-brand__name">{{ app_name }}</span>
     </a>
 

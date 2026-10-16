@@ -14,11 +14,11 @@ import app.db_models  # noqa: F401 — registers the readable-number hooks
 def seed_data():
     db = SessionLocal()
     try:
-        # 1. Staff 1: staff@urtax.com (INITIATOR)
-        staff_1_acc = db.query(AuthAccount).filter_by(email="staff@urtax.com").first()
+        # 1. Staff 1: staff@covrenttax.com (INITIATOR)
+        staff_1_acc = db.query(AuthAccount).filter_by(email="staff@covrenttax.com").first()
         if not staff_1_acc:
             staff_1_acc = AuthAccount(
-                email="staff@urtax.com",
+                email="staff@covrenttax.com",
                 password_hash=hash_password("password123"),
                 account_type=AccountType.STAFF,
                 is_active=True,
@@ -34,17 +34,17 @@ def seed_data():
                 role=StaffRole.INITIATOR
             )
             db.add(staff_1)
-            print("Seeded staff: staff@urtax.com / password123 (INITIATOR)")
+            print("Seeded staff: staff@covrenttax.com / password123 (INITIATOR)")
         else:
             staff_1_record = db.query(Staff).filter_by(account_id=staff_1_acc.id).first()
             if staff_1_record:
                 staff_1_record.role = StaffRole.INITIATOR
 
-        # 2. Staff 2: naik4312@urtax.com (INITIATOR)
-        staff_2_acc = db.query(AuthAccount).filter_by(email="naik4312@urtax.com").first()
+        # 2. Staff 2: naik4312@covrenttax.com (INITIATOR)
+        staff_2_acc = db.query(AuthAccount).filter_by(email="naik4312@covrenttax.com").first()
         if not staff_2_acc:
             staff_2_acc = AuthAccount(
-                email="naik4312@urtax.com",
+                email="naik4312@covrenttax.com",
                 password_hash=hash_password("password123"),
                 account_type=AccountType.STAFF,
                 is_active=True,
@@ -60,16 +60,16 @@ def seed_data():
                 role=StaffRole.INITIATOR
             )
             db.add(staff_2)
-            print("Seeded staff: naik4312@urtax.com / password123 (INITIATOR)")
+            print("Seeded staff: naik4312@covrenttax.com / password123 (INITIATOR)")
         else:
             staff_2_record = db.query(Staff).filter_by(account_id=staff_2_acc.id).first()
             if staff_2_record:
                 staff_2_record.role = StaffRole.INITIATOR
 
         # Check if admin exists
-        if not db.query(AuthAccount).filter_by(email="admin@urtax.com").first():
+        if not db.query(AuthAccount).filter_by(email="admin@covrenttax.com").first():
             admin_acc = AuthAccount(
-                email="admin@urtax.com",
+                email="admin@covrenttax.com",
                 password_hash=hash_password("password123"),
                 account_type=AccountType.ADMIN,
                 is_active=True,
@@ -83,7 +83,7 @@ def seed_data():
                 last_name="Admin"
             )
             db.add(admin)
-            print("Seeded admin: admin@urtax.com / password123")
+            print("Seeded admin: admin@covrenttax.com / password123")
         
         db.commit()
         print("Done seeding.")

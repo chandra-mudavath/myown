@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -12,11 +12,12 @@ from app.core.deps import AdminAccount
 from app.core.templates import templates
 from app.modules.admin.services import billing
 from app.modules.admin.services.profile_service import current_admin
-from app.platform.models.billing import Invoice
+from app.platform.models.billing import Invoice, Payment
+from app.platform.services import payments as client_payments
 
 router = APIRouter(prefix="/admin/payments", tags=["admin"])
 
-FILTERS = [("", "All"), ("draft", "Draft"), ("issued", "Issued"), ("partially_paid", "Partly paid"),
+FILTERS = [("", "All"), ("awaiting", "Awaiting verification"), ("draft", "Draft"), ("issued", "Issued"), ("partially_paid", "Partly paid"),
            ("overdue", "Overdue"), ("paid", "Paid"), ("void", "Void")]
 
 
@@ -40,6 +41,7 @@ def _invoice_or_404(db: Session, invoice_id: str) -> Invoice:
 def payments_home(request: Request, account: AdminAccount, db: Session = Depends(get_db), status: str = "", q: str = ""):
     return templates.TemplateResponse("admin/payments/index.html", _ctx(
         request, account, db, summary=billing.summary(db), invoices=billing.list_invoices(db, status, q),
+        pending=client_payments.pending_payments(db),
         filters=FILTERS, status=status, q=q))
 
 
@@ -95,3 +97,33 @@ def invoice_payment(invoice_id: str, account: AdminAccount, db: Session = Depend
     inv = _invoice_or_404(db, invoice_id)
     err = billing.record_payment(db, account.id, inv, amount, payment_method, transaction_reference, paid_on)
     return _to_invoice(inv.id, err, "Payment recorded.")
+
+
+# ── Payments submitted by clients (UPI / bank transfer) ──────────────────────
+
+def _payment_or_404(db: Session, payment_id: str) -> Payment:
+    pay = db.get(Payment, payment_id)
+    if not pay:
+        raise HTTPException(status_code=404, detail="Payment not found.")
+    return pay
+
+
+@router.post("/payments/{payment_id}/verify")
+def payment_verify(payment_id: str, account: AdminAccount, db: Session = Depends(get_db)):
+    pay = _payment_or_404(db, payment_id)
+    return _to_invoice(pay.invoice_id, client_payments.verify(db, account.id, pay), "Payment verified.")
+
+
+@router.post("/payments/{payment_id}/reject")
+def payment_reject(payment_id: str, account: AdminAccount, db: Session = Depends(get_db), reason: str = Form("")):
+    pay = _payment_or_404(db, payment_id)
+    return _to_invoice(pay.invoice_id, client_payments.reject(db, account.id, pay, reason), "Payment rejected; the client can see why.")
+
+
+@router.get("/payments/{payment_id}/proof", name="admin_payment_proof")
+def payment_proof(payment_id: str, account: AdminAccount, db: Session = Depends(get_db)):
+    pay = _payment_or_404(db, payment_id)
+    if not pay.proof_path:
+        raise HTTPException(status_code=404, detail="No proof was attached.")
+    return FileResponse(pay.proof_path, media_type=pay.proof_mime, filename=pay.proof_filename,
+                        content_disposition_type="inline")

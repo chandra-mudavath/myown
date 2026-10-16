@@ -1,4 +1,4 @@
-# UrTax — Final Data Model (revision 2)
+# CovrentTax — Final Data Model (revision 2)
 
 Status: **final reconciled proposal, revision 2 (2026-10-01)**. This file is the authoritative **table
 catalog**. Access policies (per table and operation) and indexing are in

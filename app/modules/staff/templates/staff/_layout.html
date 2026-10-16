@@ -2,7 +2,7 @@
     Pages extend this, set `active_nav`, and fill `main`.
     Optional: `main_class`, `extra_styles`, and `page_scripts` (defaults to staff-page.js). -#}
 {% extends "base.html" %}
-{% set app_name = app_name or 'UrTax' %}
+{% set app_name = app_name or 'CovrentTax' %}
 {% set first_name = staff.first_name if staff and staff.first_name else 'Staff member' %}
 {% set last_name = staff.last_name if staff and staff.last_name else '' %}
 {% set initials = (first_name[0] ~ (last_name[0] if last_name else '')) | upper %}

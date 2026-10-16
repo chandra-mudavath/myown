@@ -44,6 +44,16 @@ def _generate_temp_password(length: int = 10) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
+def _status_groups(db: Session) -> dict[str, tuple[str, list[str]]]:
+    """Dashboard status cards: queue filter value -> (label, stage codes). Payment Pending has its own card."""
+    in_progress = stage_codes_for_client_status(db, "In Progress")
+    return {
+        "group:submitted": ("Submitted", stage_codes_for_client_status(db, "Submitted")),
+        "group:in_review": ("In Review", [c for c in in_progress if c != "payment_pending"]),
+        "group:completed": ("Completed", stage_codes_for_client_status(db, "Completed")),
+    }
+
+
 @router.get("/dashboard", response_class=HTMLResponse, name="admin_dashboard")
 def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depends(get_db)):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
@@ -54,11 +64,11 @@ def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depen
     def _count_in(codes: list[str]) -> int:
         return db.query(TaxFiling).filter(TaxFiling.status.in_(codes)).count() if codes else 0
 
-    in_progress_codes = stage_codes_for_client_status(db, "In Progress")
-    submitted_count = _count_in(stage_codes_for_client_status(db, "Submitted"))
+    groups = _status_groups(db)
+    submitted_count = _count_in(groups["group:submitted"][1])
     payment_pending_count = _count_in(["payment_pending"])
-    in_review_count = _count_in([c for c in in_progress_codes if c != "payment_pending"])
-    completed_count = _count_in(stage_codes_for_client_status(db, "Completed"))
+    in_review_count = _count_in(groups["group:in_review"][1])
+    completed_count = _count_in(groups["group:completed"][1])
     labels = stage_labels(db)
 
     # Calculate business overview counts
@@ -86,7 +96,8 @@ def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depen
             "description": f"Filing status: {labels.get(f.status, f.status.replace('_', ' ').title())} ({f.get_case_id(db)})",
             "time": time_str,
             "tone": "teal" if f.status == "complete" else ("amber" if "pending" in f.status else "blue"),
-            "case_id": f.id
+            "case_id": f.id,
+            "client_id": f.client_id,
         })
 
     clients_list = db.query(Client).all()
@@ -254,8 +265,12 @@ def admin_cases_queue(
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
 
     query = db.query(TaxFiling)
+    status_groups = _status_groups(db)
 
-    if status and status.strip():
+    # status is a stage code, or one of the dashboard card groups ("group:in_review", ...)
+    if status and status.strip() in status_groups:
+        query = query.filter(TaxFiling.status.in_(status_groups[status.strip()][1] or [""]))
+    elif status and status.strip():
         query = query.filter(TaxFiling.status == status.strip())
 
     if q and q.strip():
@@ -295,6 +310,7 @@ def admin_cases_queue(
             "request": request,
             "stage_labels": stage_labels(db),
             "stages": case_stages(db),
+            "status_groups": {k: label for k, (label, _) in status_groups.items()},
             "account": account,
             "admin": admin,
             "filings": formatted_filings,

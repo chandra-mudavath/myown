@@ -27,6 +27,31 @@
         </div>
     </section>
 
+    {% if pending %}
+    <section class="admin-section" aria-labelledby="awaiting-title">
+        <div class="admin-section-heading"><div><span class="admin-kicker">Submitted by clients</span><h2 id="awaiting-title">Awaiting verification ({{ pending | length }})</h2></div></div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--money">
+                <thead><tr><th>Payment</th><th>Client</th><th>Invoice</th><th>Submitted</th><th>Method</th><th>Client sent</th><th>Amount</th><th></th></tr></thead>
+                <tbody>
+                    {% for r in pending %}
+                    <tr>
+                        <td>{{ r.payment.payment_number }}<small class="admin-muted">Ref: {{ r.payment.transaction_reference }}</small></td>
+                        <td>{{ r.client_name }}</td>
+                        <td><a href="/admin/payments/invoices/{{ r.invoice.id }}" class="link-primary">{{ r.invoice.invoice_number }}</a><small class="admin-muted">{{ r.filing.case_number }}</small></td>
+                        <td class="admin-nowrap">{{ r.payment.created_at.strftime('%b %d, %Y') }}</td>
+                        <td>{{ r.payment.payment_method | replace('_', ' ') | capitalize if r.payment.payment_method != 'upi' else 'UPI' }}</td>
+                        <td>{% if r.payment.original_amount %}{{ '{:,.2f}'.format(r.payment.original_amount) }} {{ r.payment.original_currency }}{% else %}—{% endif %}</td>
+                        <td>${{ '{:,.2f}'.format(r.payment.amount) }}</td>
+                        <td><div class="admin-doc-actions"><a href="/admin/payments/invoices/{{ r.invoice.id }}" class="admin-mini-btn">Review</a></div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+
     <section class="admin-section">
         <form method="get" action="/admin/payments" class="admin-filter-bar">
             <input type="hidden" name="status" value="{{ status }}">

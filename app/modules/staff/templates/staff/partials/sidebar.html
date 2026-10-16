@@ -5,9 +5,9 @@
 <div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
 <aside class="dashboard-sidebar staff-sidebar" id="dashboard-sidebar">
     <div class="staff-sidebar-heading">
-        <a class="staff-sidebar-brand staff-brand" href="/staff/dashboard" aria-label="{{ app_name or 'UrTax' }} staff dashboard">
-            <span class="staff-brand-mark" aria-hidden="true">UT</span>
-            <span class="staff-brand-text"><strong>{{ app_name or 'UrTax' }}</strong><small>Staff workspace</small></span>
+        <a class="staff-sidebar-brand staff-brand" href="/staff/dashboard" aria-label="{{ app_name or 'CovrentTax' }} staff dashboard">
+            <span class="staff-brand-mark" aria-hidden="true">CT</span>
+            <span class="staff-brand-text"><strong>{{ app_name or 'CovrentTax' }}</strong><small>Staff workspace</small></span>
         </a>
         <button type="button" class="sidebar-toggle staff-sidebar-collapse" data-sidebar-collapse aria-controls="dashboard-sidebar" aria-label="Close menu">
             <span aria-hidden="true"></span>
@@ -20,6 +20,7 @@
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("dashboard") }}</span> Dashboard
         </a>
 
+        {# Cases (My Cases / All Cases) and Clients: hidden for now (client feedback, Oct 2026). The pages still work.
         <div class="sidebar-dropdown-wrap">
             <button
                 type="button"
@@ -42,19 +43,22 @@
         <a class="sidebar-nav-item{% if active_nav == 'clients' %} active{% endif %}" href="/staff/clients">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("users") }}</span> Clients
         </a>
+        #}
         <a class="sidebar-nav-item{% if active_nav == 'messages' %} active{% endif %}" href="/staff/messages">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("send") }}</span> Messages
             <span class="staff-unread-pill" data-chat-unread hidden style="display:none"></span>
         </a>
+        {# Notifications: hidden for now (client feedback, Oct 2026)
         <a class="sidebar-nav-item{% if active_nav == 'notifications' %} active{% endif %}" href="/staff/notifications">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("mail") }}</span> Notifications
             {% if unread_count is defined and unread_count %}<span class="staff-unread-pill" aria-label="{{ unread_count }} new">{{ '99+' if unread_count > 99 else unread_count }}</span>{% endif %}
         </a>
+        #}
 
         {% if stages %}
         <p class="sidebar-nav-label">Stages</p>
         <ul class="staff-stage-list">
-            {% for stage in stages %}
+            {% for stage in stages if stage.slug != 'in_progress' %}{# In Progress: hidden for now (client feedback, Oct 2026) #}
             <li>
                 <a class="sidebar-nav-item staff-stage-item{% if current_stage == stage.slug %} active{% endif %}"
                    href="/staff/cases?stage={{ stage.slug }}"

@@ -933,6 +933,7 @@ body.cx-body::before { display: none; } /* legacy dotted overlay from profile.cs
 .cx-choice:has(input:checked) .cx-choice__icon { background: var(--cx-brand); color: #fff; }
 .cx-choice:has(input:checked) .cx-choice__tick { border-color: var(--cx-brand); background: var(--cx-brand); color: #fff; }
 .cx-choice:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--cx-brand-ring); }
+.cx-choice--soon { cursor: not-allowed; opacity: 0.55; }
 
 /* ── Questionnaire ────────────────────── */
 .cx-qlist { margin: 0; padding: 0; list-style: none; counter-reset: q; }
@@ -965,6 +966,16 @@ body.cx-body::before { display: none; } /* legacy dotted overlay from profile.cs
 .cx-q__text { flex: 1; font-size: 0.92rem; }
 .cx-q__text small { display: block; margin-top: 0.1rem; color: var(--cx-muted); font-size: 0.8rem; }
 .cx-q:has(input[value="yes"]:checked)::before { background: var(--cx-brand); color: #fff; }
+
+/* Details table under a question answered Yes (Tax Notes) */
+.cx-q { flex-wrap: wrap; }
+.cx-qdetail { display: grid; gap: 0.6rem; flex-basis: 100%; justify-items: start; padding-left: calc(28px + 1rem); }
+.cx-qdetail[hidden] { display: none; }
+.cx-qdetail .cx-table-wrap { width: 100%; border: 1px solid var(--cx-border); border-radius: 10px; }
+.cx-table--form th, .cx-table--form td { padding: 0.45rem 0.5rem; }
+.cx-table--form .cx-input, .cx-table--form .cx-select { min-width: 8rem; padding-block: 0.4rem; }
+.cx-table--form td:last-child { width: 1%; }
+@media (max-width: 640px) { .cx-qdetail { padding-left: 0; } }
 
 .cx-q--lead { margin-bottom: 0.25rem; padding: 0.9rem 1rem; border: 1px solid var(--cx-border); border-radius: 12px; background: var(--cx-card-2); }
 .cx-q--lead::before { content: "★"; }
@@ -1495,3 +1506,22 @@ html[data-theme="dark"] .cx-body .cx-helpcard strong { color: #ffffff; }
 .cx-docthread__file:focus-within { outline: 2px solid var(--cx-brand); outline-offset: 2px; }
 .cx-docthread__error { margin: 0; color: var(--cx-red); font-size: 0.8rem; }
 .cx-doccard__note { display: flex; align-items: center; gap: 0.35rem; margin: 0.5rem 0 0; color: var(--cx-red); font-size: 0.78rem; font-weight: 600; }
+
+/* Refund Status: official government link cards */
+.cx-govlink { display: flex; flex-direction: column; gap: 0.4rem; padding: 1.1rem 1.2rem; color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+.cx-govlink:hover { border-color: var(--cx-brand); transform: translateY(-2px); }
+.cx-govlink:focus-visible { outline: 2px solid var(--cx-brand); outline-offset: 2px; }
+.cx-govlink strong { font-size: 0.98rem; }
+.cx-govlink .cx-muted { flex: 1; font-size: 0.84rem; }
+.cx-govlink .cx-link { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.84rem; font-weight: 600; }
+.cx-govlink__agency { color: var(--cx-brand); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* Review Documents: filing confirmation */
+.cx-confirmlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem 1.5rem; margin: 0; }
+.cx-confirmlist div { display: flex; flex-direction: column; gap: 0.15rem; padding-bottom: 0.6rem; border-bottom: 1px dashed var(--cx-border); }
+.cx-confirmlist dt { color: var(--cx-muted); font-size: 0.74rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.cx-confirmlist dd { margin: 0; font-weight: 600; }
+@media (max-width: 640px) { .cx-confirmlist { grid-template-columns: 1fr; } }
+@media print {
+    .cx-sidebar, .cx-topbar, [data-cx-noprint] { display: none !important; }
+}

@@ -136,7 +136,7 @@ def register(
     # Staff / Admin — account created but email verification is required
     # Show a pending message on the register page
     msg = (
-        "Account created! Since you\'re using an internal @urtax.com address, "
+        "Account created! Since you\'re using an internal @covrenttax.com address, "
         "your account needs to be verified by an administrator before you can log in."
     )
     return templates.TemplateResponse("auth/register.html", _ctx(request, msg=msg, signup_role=signup_role))
@@ -174,7 +174,7 @@ def _login(
             status_code=status.HTTP_403_FORBIDDEN,
         )
 
-    # Internal @urtax.com accounts (Staff/Admin) require email verification
+    # Internal @covrenttax.com accounts (Staff/Admin) require email verification
     # TODO: Re-enable when company domain email is configured
     # if not account.is_verified and account.account_type != AccountType.CLIENT:
     #     return templates.TemplateResponse(

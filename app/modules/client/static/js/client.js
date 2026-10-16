@@ -106,7 +106,10 @@
         buttons.forEach((btn, idx) => {
             btn.addEventListener("click", () => {
                 activate(tabs, btn.getAttribute("aria-controls"));
-                if (tabs.hasAttribute("data-cx-hash")) history.replaceState(null, "", "#" + btn.getAttribute("aria-controls"));
+                if (tabs.hasAttribute("data-cx-hash")) {
+                    history.replaceState(null, "", "#" + btn.getAttribute("aria-controls"));
+                    syncSidebarToHash();
+                }
             });
             btn.addEventListener("keydown", (e) => {
                 const dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -122,6 +125,30 @@
             if (initial) activate(tabs, initial.getAttribute("aria-controls"));
         }
     });
+
+    // Sidebar links like /client/tax-summary#payment only change the hash when you're already on the
+    // page, so switch the tab on hashchange too, and highlight the matching sidebar item.
+    function syncSidebarToHash() {
+        const hash = window.location.hash;
+        const items = [...document.querySelectorAll(".cx-nav__item[href]")];
+        const path = window.location.pathname;
+        if (!items.some((a) => a.getAttribute("href").startsWith(path + "#"))) return;
+        const target = (hash && items.find((a) => a.getAttribute("href") === path + hash))
+            || items.find((a) => a.getAttribute("href") === path);
+        if (!target) return;
+        items.forEach((a) => {
+            const on = a === target;
+            a.classList.toggle("is-active", on);
+            if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+        });
+    }
+    window.addEventListener("hashchange", () => {
+        const id = window.location.hash.slice(1);
+        const tabs = id && document.getElementById(id)?.closest("[data-cx-tabs][data-cx-hash]");
+        if (tabs && activate(tabs, id)) tabs.scrollIntoView({ behavior: "smooth", block: "start" });
+        syncSidebarToHash();
+    });
+    syncSidebarToHash();
 
     document.addEventListener("click", (e) => {
         const go = e.target.closest("[data-cx-goto]");
@@ -151,6 +178,31 @@
         document.addEventListener("change", refreshConditionals);
         refreshConditionals();
     }
+
+    // ── Repeatable rows ────────────────────────────────
+    // [data-cx-add-row] copies the first row of the nearby [data-cx-rows] (emptied); [data-cx-remove-row]
+    // removes its row, or just clears it when it's the only one left.
+    const clearRow = (row) => {
+        row.querySelectorAll("input").forEach((f) => { f.value = f.defaultValue; });
+        row.querySelectorAll("select").forEach((f) => { f.selectedIndex = 0; });
+    };
+    document.addEventListener("click", (e) => {
+        const add = e.target.closest("[data-cx-add-row]");
+        if (add) {
+            const body = add.parentElement.querySelector("[data-cx-rows]");
+            if (!body?.rows.length) return;
+            const row = body.rows[0].cloneNode(true);
+            clearRow(row);
+            body.append(row);
+            row.querySelector("input")?.focus();
+            return;
+        }
+        const remove = e.target.closest("[data-cx-remove-row]");
+        if (remove) {
+            const row = remove.closest("tr");
+            if (row.parentElement.rows.length > 1) row.remove(); else clearRow(row);
+        }
+    });
 
     // ── Dropzones ──────────────────────────────────────
     document.querySelectorAll("[data-cx-dropzone]").forEach((zone) => {

@@ -3,7 +3,7 @@
     Optional: `layout_class`, `extra_styles`, `extra_scripts`, `header` (dashboard), and `no_rail = true`
     for wide pages (hides the right rail and gives its width to the content). -#}
 {% extends "base.html" %}
-{% set app_name = app_name or 'UrTax' %}
+{% set app_name = app_name or 'CovrentTax' %}
 {% set admin_name = admin.first_name if admin and admin.first_name else 'Administrator' %}
 {% set admin_last_name = admin.last_name if admin and admin.last_name else '' %}
 {% set initials = (admin_name[0] ~ (admin_last_name[0] if admin_last_name else '')) | upper %}

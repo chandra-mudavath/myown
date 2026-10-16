@@ -1,5 +1,5 @@
 -- =====================================================================
--- UrTax schema — revision 2 target
+-- CovrentTax schema — revision 2 target
 -- Source of truth: Data Models/Final-Data-Model.md (revision 2)
 -- Diagram:         Data Models/schema-map.html
 --

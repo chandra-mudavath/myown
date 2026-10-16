@@ -28,8 +28,8 @@
                 <li>
                     <span class="activity-dot {{ item.tone if item.tone else 'teal' }}"></span>
                     <div>
-                        <strong>{{ item.name }}</strong>
-                        <p>{{ item.description }}</p>
+                        {% if item.client_id %}<a class="admin-activity-name" href="/admin/clients/{{ item.client_id }}"><strong>{{ item.name }}</strong></a>{% else %}<strong>{{ item.name }}</strong>{% endif %}
+                        {% if item.case_id %}<p><a class="admin-activity-link" href="/admin/cases/{{ item.case_id }}">{{ item.description }}</a></p>{% else %}<p>{{ item.description }}</p>{% endif %}
                         <time>{{ item.time }}</time>
                     </div>
                 </li>

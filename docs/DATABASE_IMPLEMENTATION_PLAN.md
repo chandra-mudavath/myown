@@ -1,4 +1,4 @@
-# UrTax — Database & Access-Control Implementation Plan
+# CovrentTax — Database & Access-Control Implementation Plan
 
 Status: **proposal / design phase** — no schema changes have been applied yet.
 

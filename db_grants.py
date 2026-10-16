@@ -1,16 +1,16 @@
-"""Print the SQL that creates UrTax's three database users and their table permissions.
+"""Print the SQL that creates CovrentTax's three database users and their table permissions.
 
     python db_grants.py mysql --database myown
-    python db_grants.py postgresql --database urtax
+    python db_grants.py postgresql --database covrenttax
 
 Nothing is executed: review the output, set real passwords, and run it as the database
 admin. Re-run it after every migration that adds a table (MySQL has no default privileges,
 so new tables need their grants added). See docs/DATABASE_POLICIES.md.
 
 Users:
-  urtax_migrate   owns the tables; Alembic only (MIGRATION_DATABASE_URL)
-  urtax_app       the running app (DATABASE_URL): read / insert / update, delete only where listed
-  urtax_readonly  backend developers and audit (e.g. hidden chats): read only
+  covrenttax_migrate   owns the tables; Alembic only (MIGRATION_DATABASE_URL)
+  covrenttax_app       the running app (DATABASE_URL): read / insert / update, delete only where listed
+  covrenttax_readonly  backend developers and audit (e.g. hidden chats): read only
 """
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ DELETE_ALLOWED = {
     "staff_role_assignments",
 }
 
-USERS = ("urtax_migrate", "urtax_app", "urtax_readonly")
+USERS = ("covrenttax_migrate", "covrenttax_app", "covrenttax_readonly")
 
 
 def app_privileges(table: str) -> str:
@@ -55,10 +55,10 @@ def mysql(database: str, tables: list[str]) -> list[str]:
     host = "'%'"  # narrow to the app server's host in production
     out = [f"-- MySQL: run as root. Database `{database}`."]
     out += [f"CREATE USER IF NOT EXISTS '{u}'@{host} IDENTIFIED BY 'CHANGE_ME';" for u in USERS]
-    out.append(f"GRANT ALL PRIVILEGES ON `{database}`.* TO 'urtax_migrate'@{host};")
-    out.append(f"GRANT SELECT ON `{database}`.* TO 'urtax_readonly'@{host};")
+    out.append(f"GRANT ALL PRIVILEGES ON `{database}`.* TO 'covrenttax_migrate'@{host};")
+    out.append(f"GRANT SELECT ON `{database}`.* TO 'covrenttax_readonly'@{host};")
     for t in tables:
-        out.append(f"GRANT {app_privileges(t)} ON `{database}`.`{t}` TO 'urtax_app'@{host};")
+        out.append(f"GRANT {app_privileges(t)} ON `{database}`.`{t}` TO 'covrenttax_app'@{host};")
     out.append("FLUSH PRIVILEGES;")
     return out
 
@@ -68,19 +68,19 @@ def postgresql(database: str, tables: list[str]) -> list[str]:
     out += [f"DO $$ BEGIN CREATE ROLE {u} LOGIN PASSWORD 'CHANGE_ME'; "
             f"EXCEPTION WHEN duplicate_object THEN NULL; END $$;" for u in USERS]
     out += [
-        f'GRANT CONNECT ON DATABASE "{database}" TO urtax_app, urtax_readonly;',
-        "GRANT USAGE, CREATE ON SCHEMA public TO urtax_migrate;",
-        "GRANT USAGE ON SCHEMA public TO urtax_app, urtax_readonly;",
-        "-- Tables must be owned by urtax_migrate, not by urtax_app: an owner bypasses row level security.",
-        "-- If an earlier deploy created them as another user, run once: REASSIGN OWNED BY <old_owner> TO urtax_migrate;",
-        "GRANT SELECT ON ALL TABLES IN SCHEMA public TO urtax_readonly;",
-        "ALTER DEFAULT PRIVILEGES FOR ROLE urtax_migrate IN SCHEMA public GRANT SELECT ON TABLES TO urtax_readonly;",
+        f'GRANT CONNECT ON DATABASE "{database}" TO covrenttax_app, covrenttax_readonly;',
+        "GRANT USAGE, CREATE ON SCHEMA public TO covrenttax_migrate;",
+        "GRANT USAGE ON SCHEMA public TO covrenttax_app, covrenttax_readonly;",
+        "-- Tables must be owned by covrenttax_migrate, not by covrenttax_app: an owner bypasses row level security.",
+        "-- If an earlier deploy created them as another user, run once: REASSIGN OWNED BY <old_owner> TO covrenttax_migrate;",
+        "GRANT SELECT ON ALL TABLES IN SCHEMA public TO covrenttax_readonly;",
+        "ALTER DEFAULT PRIVILEGES FOR ROLE covrenttax_migrate IN SCHEMA public GRANT SELECT ON TABLES TO covrenttax_readonly;",
         "-- New tables get read / insert / update by default; re-run this script to apply the special cases.",
-        "ALTER DEFAULT PRIVILEGES FOR ROLE urtax_migrate IN SCHEMA public GRANT SELECT, INSERT, UPDATE ON TABLES TO urtax_app;",
-        "REVOKE ALL ON alembic_version FROM urtax_app;",
+        "ALTER DEFAULT PRIVILEGES FOR ROLE covrenttax_migrate IN SCHEMA public GRANT SELECT, INSERT, UPDATE ON TABLES TO covrenttax_app;",
+        "REVOKE ALL ON alembic_version FROM covrenttax_app;",
     ]
     for t in tables:
-        out.append(f"REVOKE ALL ON {t} FROM urtax_app; GRANT {app_privileges(t)} ON {t} TO urtax_app;")
+        out.append(f"REVOKE ALL ON {t} FROM covrenttax_app; GRANT {app_privileges(t)} ON {t} TO covrenttax_app;")
     return out
 
 

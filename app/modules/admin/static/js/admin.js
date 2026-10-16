@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
                 <div class="modal-form-group">
                     <label>Email Address *</label>
-                    <input type="email" name="email" required placeholder="staff@urtax.com">
+                    <input type="email" name="email" required placeholder="staff@covrenttax.com">
                 </div>
                 <div class="modal-form-group">
                     <label>Role *</label>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Access Required - UrTax{% endblock %}
+{% block title %}Access Required - CovrentTax{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ asset('platform', 'css/errors.css') }}" />
@@ -10,7 +10,7 @@
 
 {% block content %}
 <main class="message-card" aria-labelledby="access-title">
-  <div class="message-mark" aria-hidden="true">UT</div>
+  <div class="message-mark" aria-hidden="true">CT</div>
   <h1 id="access-title">{% if status_code == 403 %}Access Denied (403){% else %}Sign-in Required (401){% endif %}</h1>
   <p>{{ message or 'Your account must be authenticated with proper role privileges to access this area.' }}</p>
   <a href="{{ login_url or '/auth/login' }}">Go to Sign In</a>

@@ -31,7 +31,12 @@
                 >
                 <select name="status" class="admin-filter-select">
                     <option value="">All Statuses</option>
+                    <optgroup label="Groups">
+                        {% for key, label in status_groups.items() %}<option value="{{ key }}" {% if selected_status == key %}selected{% endif %}>{{ label }} (all stages)</option>{% endfor %}
+                    </optgroup>
+                    <optgroup label="Stages">
                     {% for stage in stages %}<option value="{{ stage.code }}" {% if selected_status == stage.code %}selected{% endif %}>{{ stage.name }}</option>{% endfor %}
+                    </optgroup>
                 </select>
                 <select name="assigned" class="admin-filter-select" aria-label="Assigned to">
                     <option value="">Anyone or no one</option>

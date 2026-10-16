@@ -4,13 +4,14 @@
 {% set page_section = "Tax Summary" %}
 {% set page_title = "Tax Summary & Fees" %}
 {% set page_subtitle = "Review your estimated tax position and the most suitable planning options, then pay to receive your return for review." %}
-{% set amount_due = 0 %}
 
 {% block page %}
 <div data-cx-tabs data-cx-hash>
     <div class="cx-tabs__list" role="tablist" aria-label="Tax summary sections">
         <button class="cx-tab" role="tab" aria-selected="true" aria-controls="summary">{{ ci("calculator") }} Tax summary</button>
+        {# Hidden for now (client feedback, Oct 2026):
         <button class="cx-tab" role="tab" aria-controls="additional">{{ ci("notes") }} Additional summary</button>
+        #}
         <button class="cx-tab" role="tab" aria-controls="payment">{{ ci("card") }} Make payment</button>
         <button class="cx-tab" role="tab" aria-controls="payment-details">{{ ci("history") }} Payment details</button>
     </div>
@@ -33,7 +34,7 @@
         </div>
     </section>
 
-    {# ── Additional ────────────────────────── #}
+    {# ── Additional: hidden for now (client feedback, Oct 2026) ──
     <section class="cx-panel cx-card" role="tabpanel" id="additional" aria-label="Additional summary" hidden>
         <div class="cx-empty">
             <span class="cx-empty__icon">{{ ci("notes") }}</span>
@@ -41,6 +42,7 @@
             <p>State returns, amendments and planning notes from your preparer will be listed here.</p>
         </div>
     </section>
+    #}
 
     {# ── Payment ───────────────────────────── #}
     <section class="cx-panel cx-card" role="tabpanel" id="payment" aria-labelledby="pay-title" hidden>
@@ -52,78 +54,171 @@
             <span class="cx-secure">{{ ci("shield") }} Secure checkout</span>
         </div>
         <div class="cx-card__body cx-stack">
+            {% if pay_error %}<div class="cx-alert cx-alert--error" role="alert">{{ ci("alert") }}<p>{{ pay_error }}</p></div>{% endif %}
+
+            {# Amount due block: hidden for now (client feedback, Oct 2026). The terms line moved next to the pay buttons.
             <div class="cx-amount">
                 <div>
                     <span class="cx-amount__label">Amount due</span>
-                    <div class="cx-amount__value">${{ "%.2f" | format(amount_due) }}</div>
+                    <div class="cx-amount__value">${{ "{:,.2f}".format(amount_due | default(0)) }}</div>
+                    {% for row in open_invoices | default([]) %}
+                    <small class="cx-muted" style="display:block;">Invoice {{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }}{% if row.invoice.due_date %} · due {{ row.invoice.due_date.strftime('%b %d, %Y') }}{% endif %}</small>
+                    {% endfor %}
                 </div>
                 <p class="cx-muted" style="margin:0; max-width: 46ch; font-size: 0.86rem;">
                     By paying, you confirm you have <strong>carefully reviewed your tax estimate / summary</strong> and agree to the
                     <a class="cx-link" href="/terms-and-conditions" target="_blank" rel="noopener">Terms of Service</a>.
                 </p>
             </div>
+            #}
 
+            {% set payable = (open_invoices | default([])) | rejectattr("pending") | list %}
             {% if not amount_due %}
             <div class="cx-alert">{{ ci("info") }}<p>No payment is due yet. Your fee appears here once your preparer publishes the tax summary.</p></div>
-            {% endif %}
+            {% elif not payable %}
+            <div class="cx-alert cx-alert--success">{{ ci("clock") }}<p>We've received your payment details and are verifying them. You'll see the result under <strong>Payment details</strong>.</p></div>
+            {% else %}
+            {% set one = payable[0] if payable | length == 1 else none %}
+            <form method="post" action="/client/payments/manual" enctype="multipart/form-data">
+                {% if one %}
+                <input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" />
+                {% else %}
+                <div class="cx-field" style="margin-bottom: 1rem;">
+                    <label class="cx-label" for="pay-invoice">Invoice<span class="cx-req">*</span></label>
+                    <select class="cx-select" id="pay-invoice" name="invoice_id" required>
+                        {% for row in payable %}<option value="{{ row.invoice.id }}">{{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }}</option>{% endfor %}
+                    </select>
+                </div>
+                {% endif %}
 
-            <form data-cx-demo="Payment details submitted. We'll confirm once it is verified.">
+                <div class="cx-field" style="margin-bottom: 1rem; max-width: 22rem;">
+                    <label class="cx-label" for="pay-amount">Amount to pay (USD)<span class="cx-req">*</span></label>
+                    <input class="cx-input" id="pay-amount" name="pay_amount" type="number" min="1" step="0.01" required
+                           {% if one %}max="{{ '%.2f' | format(one.balance) }}" value="{{ '%.2f' | format(one.balance) }}"{% endif %} />
+                    <span class="cx-hint">Filled in with the full balance. You can change it to pay part now and the rest later.</span>
+                </div>
+
                 <h3 class="cx-legend">Choose a payment method</h3>
                 <div class="cx-choices">
+                    {% if paypal_on %}
                     <label class="cx-choice">
-                        <input type="radio" name="pay_method" value="usd" checked />
+                        <input type="radio" name="payment_method" value="paypal" checked />
                         <span class="cx-choice__icon">{{ ci("card") }}</span>
-                        <span><strong>Pay in USD</strong><small>Visa, Mastercard &amp; more via card gateway</small></span>
+                        <span><strong>PayPal <span class="cx-badge cx-badge--complete cx-badge--plain">Recommended</span></strong><small>PayPal, Venmo, Pay Later or any debit / credit card</small></span>
+                        <span class="cx-choice__tick">{{ ci("check") }}</span>
+                    </label>
+                    {% endif %}
+                    <label class="cx-choice">
+                        <input type="radio" name="payment_method" value="bank_transfer" {% if not paypal_on %}checked{% endif %} />
+                        <span class="cx-choice__icon">{{ ci("bank") }}</span>
+                        <span><strong>Bank transfer / wire</strong><small>ACH or wire in the US, SWIFT or Wise from abroad</small></span>
                         <span class="cx-choice__tick">{{ ci("check") }}</span>
                     </label>
                     <label class="cx-choice">
-                        <input type="radio" name="pay_method" value="inr" />
+                        <input type="radio" name="payment_method" value="upi" />
                         <span class="cx-choice__icon">{{ ci("qr") }}</span>
                         <span><strong>Pay in INR</strong><small>Scan &amp; pay with any UPI app</small></span>
                         <span class="cx-choice__tick">{{ ci("check") }}</span>
                     </label>
                 </div>
 
-                <div data-cx-show-when="pay_method=usd" style="margin-top: 1.25rem;">
+                {% if paypal_on %}
+                <div data-cx-show-when="payment_method=paypal" style="margin-top: 1.25rem;">
                     <div class="cx-confirm" style="align-items:center; justify-content: space-between; flex-wrap: wrap;">
                         <div>
-                            <strong>Card payment</strong>
-                            <div class="cx-muted" style="font-size: 0.84rem;">You'll be redirected to the payment gateway to complete the payment.</div>
+                            <strong>Pay securely with PayPal</strong>
+                            <div class="cx-muted" style="font-size: 0.84rem;">You'll go to PayPal to log in or pay by card as a guest, then come straight back here. No PayPal account needed.</div>
                         </div>
-                        <button type="button" class="cx-btn cx-btn--primary cx-btn--lg" {% if not amount_due %}disabled{% endif %}>{{ ci("lock", "ci ci--sm") }} Pay ${{ "%.2f" | format(amount_due) }} now</button>
+                        <button type="submit" class="cx-btn cx-btn--primary cx-btn--lg" formaction="/client/payments/paypal/start" formenctype="application/x-www-form-urlencoded">{{ ci("lock", "ci ci--sm") }} Pay with PayPal</button>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div data-cx-show-when="payment_method=bank_transfer" style="margin-top: 1.25rem;" {% if paypal_on %}hidden{% endif %}>
+                    <div class="cx-upi">
+                        <div class="cx-qr">
+                            <strong style="font-size: 0.9rem;">Send your payment to</strong>
+                            {% if bank_lines %}
+                            <div id="bank-details" class="cx-mono" style="text-align:left; white-space: pre-line; font-size: 0.8rem;">{{ bank_lines | join("\n") }}</div>
+                            <button type="button" class="cx-btn cx-btn--soft" data-cx-copy="bank-details">{{ ci("copy", "ci ci--sm") }} Copy details</button>
+                            {% else %}
+                            <small>Bank details are shared by your tax team</small>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <ol class="cx-numsteps">
+                                <li>Send the amount above from your bank (ACH, wire, SWIFT or Wise).</li>
+                                <li>Put your invoice number in the payment note.</li>
+                                <li>Enter the bank reference and the amount you sent below.</li>
+                            </ol>
+                            <div class="cx-form-grid">
+                                <div class="cx-field">
+                                    <label class="cx-label" for="bt-ref">Bank / transfer reference<span class="cx-req">*</span></label>
+                                    <input class="cx-input cx-mono" id="bt-ref" name="transaction_reference" required minlength="4" maxlength="100" placeholder="e.g. FED REF 20261006…" />
+                                </div>
+                                <div class="cx-field">
+                                    <label class="cx-label" for="bt-amt">Amount sent<span class="cx-req">*</span></label>
+                                    <div style="display:flex; gap: 0.5rem;">
+                                        <select class="cx-select" name="sent_currency" aria-label="Currency sent" style="max-width: 6.5rem;">
+                                            {% for c in currencies %}<option {% if c == "USD" %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                                        </select>
+                                        <input class="cx-input" id="bt-amt" name="sent_amount" type="number" min="0.01" step="0.01" required value="{{ '%.2f' | format(one.balance) if one else '' }}" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div data-cx-show-when="pay_method=inr" style="margin-top: 1.25rem;" hidden>
+                <div data-cx-show-when="payment_method=upi" style="margin-top: 1.25rem;" hidden>
                     <div class="cx-upi">
                         <div class="cx-qr">
                             <strong style="font-size: 0.9rem;">Scan &amp; pay</strong>
                             <div class="cx-qr__box">{{ ci("qr") }}</div>
+                            {% if upi_id %}
+                            <small>UPI ID: <span id="upi-id" class="cx-mono">{{ upi_id }}</span>{% if upi_payee %} ({{ upi_payee }}){% endif %}</small>
+                            <button type="button" class="cx-btn cx-btn--soft" data-cx-copy="upi-id">{{ ci("copy", "ci ci--sm") }} Copy UPI ID</button>
+                            {% else %}
                             <small>UPI QR code is shared by your tax team</small>
+                            {% endif %}
                         </div>
                         <div>
                             <ol class="cx-numsteps">
                                 <li>Open any UPI app on your phone.</li>
-                                <li>Scan the QR code and pay the amount due.</li>
+                                <li>Scan the QR code (or pay the UPI ID) and pay the INR equivalent of the amount above.</li>
                                 <li>Enter the UPI transaction ID and the amount paid below.</li>
                             </ol>
                             <div class="cx-form-grid">
                                 <div class="cx-field">
                                     <label class="cx-label" for="upi-txn">UPI transaction ID<span class="cx-req">*</span></label>
-                                    <input class="cx-input cx-mono" id="upi-txn" name="upi_txn" required placeholder="e.g. 412345678901" />
+                                    <input class="cx-input cx-mono" id="upi-txn" name="transaction_reference" required minlength="4" maxlength="100" placeholder="e.g. 412345678901" />
                                 </div>
                                 <div class="cx-field">
                                     <label class="cx-label" for="upi-amt">Amount paid (₹)<span class="cx-req">*</span></label>
-                                    <input class="cx-input" id="upi-amt" name="upi_amount" type="number" min="1" step="0.01" required />
+                                    <input type="hidden" name="sent_currency" value="INR" />
+                                    <input class="cx-input" id="upi-amt" name="sent_amount" type="number" min="1" step="0.01" required />
                                 </div>
-                            </div>
-                            <div style="margin-top: 1rem; display:flex; justify-content:flex-end;">
-                                <button type="submit" class="cx-btn cx-btn--primary">{{ ci("send", "ci ci--sm") }} Submit payment details</button>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div data-cx-show-when="payment_method=bank_transfer|upi" {% if paypal_on %}hidden{% endif %}>
+                <div class="cx-field" style="margin-top: 1rem;">
+                    <label class="cx-label" for="pay-proof">Payment screenshot or bank slip<span class="cx-opt">Optional</span></label>
+                    <input class="cx-input" id="pay-proof" name="proof" type="file" accept=".pdf,.png,.jpg,.jpeg" />
+                    <span class="cx-hint">PDF, PNG or JPG. It helps us confirm your payment faster.</span>
+                </div>
+                <div style="margin-top: 1rem; display:flex; justify-content:flex-end;">
+                    <button type="submit" class="cx-btn cx-btn--primary">{{ ci("send", "ci ci--sm") }} Submit payment details</button>
+                </div>
+                </div>
+                <p class="cx-muted" style="margin: 1rem 0 0; font-size: 0.84rem;">
+                    By paying, you confirm you have <strong>carefully reviewed your tax estimate / summary</strong> and agree to the
+                    <a class="cx-link" href="/terms-and-conditions" target="_blank" rel="noopener">Terms of Service</a>.
+                </p>
             </form>
+            {% endif %}
         </div>
     </section>
 
@@ -132,16 +227,48 @@
         <div class="cx-card__head">
             <h2 class="cx-card__title" id="ph-title">{{ ci("history") }} Payment <span class="cx-accent">history</span></h2>
         </div>
+        {% if pay_saved %}<div class="cx-card__body"><div class="cx-alert cx-alert--success" role="status">{{ ci("check-circle") }}<p>{{ pay_saved }}</p></div></div>{% endif %}
+        {% set pay_badge = {"pending": "pending", "succeeded": "complete", "failed": "rejected", "refunded": "plain"} %}
         <div class="cx-table-wrap">
             <table class="cx-table">
                 <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Amount</th><th>Status</th></tr></thead>
+                {% if payments %}
+                <tbody>
+                    {% for r in payments %}
+                    <tr>
+                        <td>{{ (r.payment.paid_at or r.payment.created_at).strftime('%b %d, %Y') }}</td>
+                        <td>{{ r.method_label }}</td>
+                        <td><span class="cx-mono">{{ r.payment.transaction_reference or "—" }}</span><br /><small class="cx-muted">{{ r.payment.payment_number }} · {{ r.invoice.invoice_number }}</small></td>
+                        <td>${{ "{:,.2f}".format(r.payment.amount) }}{% if r.payment.original_amount and r.payment.original_currency != "USD" %}<br /><small class="cx-muted">sent {{ "{:,.2f}".format(r.payment.original_amount) }} {{ r.payment.original_currency }}</small>{% endif %}</td>
+                        <td>
+                            <span class="cx-badge cx-badge--{{ pay_badge.get(r.payment.status, 'plain') }}">{{ r.status_label }}</span>
+                            {% if r.payment.failure_reason %}<br /><small class="cx-muted">{{ r.payment.failure_reason }}</small>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% endif %}
             </table>
         </div>
+        {% if not payments %}
         <div class="cx-empty">
             <span class="cx-empty__icon">{{ ci("card") }}</span>
             <h3>No <span class="cx-accent">payments yet</span></h3>
             <p>Payments you make for tax year {{ selected_year }} will be listed here with their receipts.</p>
         </div>
+        {% endif %}
     </section>
 </div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    const pay = document.getElementById("pay-amount");
+    const sent = document.getElementById("bt-amt");
+    const cur = sent && sent.parentElement.querySelector('select[name="sent_currency"]');
+    if (!pay || !sent || !cur) return;
+    pay.addEventListener("input", () => { if (cur.value === "USD") sent.value = pay.value; });
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,6 @@
 <aside class="admin-sidebar">
     <a class="admin-brand" href="/admin/dashboard" aria-label="{{ app_name }} admin dashboard">
-        <span>UT</span><strong>{{ app_name }}</strong>
+        <span>CT</span><strong>{{ app_name }}</strong>
     </a>
     <div class="admin-profile">
         <div class="admin-avatar-wrapper">
@@ -24,12 +24,14 @@
         <a class="admin-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/admin/dashboard">
             <span aria-hidden="true">&#9635;</span>Dashboard
         </a>
+        {# Clients and Staff: hidden for now (client feedback, Oct 2026). Open them from the dashboard's Business overview tiles.
         <a class="admin-nav-item{% if active_nav == 'clients' %} active{% endif %}" href="/admin/clients">
             <span aria-hidden="true">&#128101;</span>Clients
         </a>
         <a class="admin-nav-item{% if active_nav == 'staff' %} active{% endif %}" href="/admin/staff">
             <span aria-hidden="true">&#128100;</span>Staff
         </a>
+        #}
         <a class="admin-nav-item{% if active_nav == 'queue' %} active{% endif %}" href="/admin/cases">
             <span aria-hidden="true">&#128203;</span>Work Queue
         </a>
@@ -60,4 +62,4 @@
     <form class="admin-logout" action="/auth/logout" method="post">
         <button type="submit"><span aria-hidden="true">&#8630;</span>Logout</button>
     </form>
-</aside>
+</aside>

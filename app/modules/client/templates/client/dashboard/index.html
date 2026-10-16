@@ -34,12 +34,13 @@
         </div>
     </section>
 
-    <div class="cx-grid cx-grid--4">
+    <div class="cx-grid cx-grid--2">
         <div class="cx-stat">
             <span class="cx-stat__icon">{{ ci("calendar") }}</span>
             <div><span class="cx-stat__label">Tax year</span><strong class="cx-stat__value">{{ selected_year }}</strong></div>
             <a class="cx-stat__meta cx-link" href="/client/years">Change</a>
         </div>
+        {# Filing status and Stages done cards: hidden for now (client feedback, Oct 2026)
         <div class="cx-stat">
             <span class="cx-stat__icon cx-stat__icon--amber">{{ ci("clock") }}</span>
             <div><span class="cx-stat__label">Filing status</span><strong class="cx-stat__value">{{ f.status if f else "Not started" }}</strong></div>
@@ -48,6 +49,7 @@
             <span class="cx-stat__icon cx-stat__icon--green">{{ ci("check-circle") }}</span>
             <div><span class="cx-stat__label">Stages done</span><strong class="cx-stat__value">{{ dashboard.stages_done }} / {{ dashboard.filing_stages | length }}</strong></div>
         </div>
+        #}
         <div class="cx-stat">
             <span class="cx-stat__icon cx-stat__icon--violet">{{ ci("folder") }}</span>
             <div><span class="cx-stat__label">Documents</span><strong class="cx-stat__value">{{ dashboard.document_count }}</strong></div>

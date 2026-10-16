@@ -90,7 +90,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return item?.matches("[data-service-item]") ? item : null;
         };
 
-        const setServiceState = (item, isOpen) => {
+        // instant: close without the collapse animation, so the page doesn't shift after we scroll.
+        const setServiceState = (item, isOpen, instant = false) => {
             const trigger = item.querySelector(".service-trigger");
             const panel = item.querySelector(".service-panel");
             const toggle = item.querySelector(".service-toggle");
@@ -102,6 +103,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (isOpen) {
                 panel.hidden = false;
+            } else if (instant) {
+                panel.hidden = true;
             } else {
                 window.setTimeout(() => {
                     if (!item.classList.contains("is-open")) panel.hidden = true;
@@ -134,19 +137,30 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
+        // Linked straight to a service (globe, header menu): open only that one and bring its heading
+        // just below the navbar. Others close instantly; we scroll again once the panel has opened.
+        const scrollToItem = (item) => {
+            const trigger = item.querySelector(".service-trigger");
+            if (!trigger) return;
+            const top = window.scrollY + trigger.getBoundingClientRect().top - (navbarHeight() + 16);
+            window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+        };
+        const openFromHash = (item) => {
+            serviceItems.forEach((serviceItem) => setServiceState(serviceItem, serviceItem === item, true));
+            window.requestAnimationFrame(() => scrollToItem(item));
+            window.setTimeout(() => scrollToItem(item), 650);
+        };
+
         const hashItem = serviceFromHash();
         if (hashItem) {
-            serviceItems.forEach((item) => setServiceState(item, item === hashItem));
-            window.requestAnimationFrame(() => {
-                window.requestAnimationFrame(() => scrollToItemIfNeeded(hashItem));
-            });
+            if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+            openFromHash(hashItem);
+            window.addEventListener("load", () => scrollToItem(hashItem), { once: true });
         }
 
         window.addEventListener("hashchange", () => {
             const item = serviceFromHash();
-            if (!item) return;
-            serviceItems.forEach((serviceItem) => setServiceState(serviceItem, serviceItem === item));
-            window.setTimeout(() => scrollToItemIfNeeded(item), 650);
+            if (item) openFromHash(item);
         });
     }
 
@@ -177,6 +191,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const target = document.querySelector(link.getAttribute("href"));
             if (!target) return;
             event.preventDefault();
+            // Home goes to the very top: the hero sits below the fixed header, so scrolling to the
+            // element itself would hide its heading behind the header.
+            if (target.id === "hero") {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                return;
+            }
             target.scrollIntoView({ behavior: "smooth" });
         });
     });

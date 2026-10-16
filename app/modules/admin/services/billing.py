@@ -1,6 +1,8 @@
 """Admin Payments: invoices built from the service price list, and payments received offline.
 
-Record-only: nothing is charged online and the case workflow is not affected.
+Nothing is charged online. Admins record payments received offline here; clients can also submit
+UPI / bank-transfer details, which arrive as pending payments for an admin to verify
+(app/platform/services/payments.py). An invoice paid in full moves its case on from payment_pending.
 Statuses follow the database checks: invoices draft / issued / partially_paid / paid / void,
 payments succeeded (recorded here) / pending / failed / refunded.
 Money is Decimal, rounded to cents. Every change is written to audit_logs.
@@ -15,9 +17,10 @@ from app.modules.client.models.client import Client
 from app.platform.models.billing import CaseService, Invoice, Payment, Service
 from app.platform.models.system import AuditLog
 from app.platform.models.tax_filing import TaxFiling
+from app.platform.services import payments as client_payments
 
 CENT = Decimal("0.01")
-METHODS = [("bank_transfer", "Bank transfer"), ("card", "Card"), ("cash", "Cash"), ("check", "Check"), ("other", "Other")]
+METHODS = [("bank_transfer", "Bank transfer"), ("upi", "UPI"), ("paypal", "PayPal"), ("card", "Card"), ("cash", "Cash"), ("check", "Check"), ("other", "Other")]
 METHOD_LABELS = dict(METHODS)
 OPEN = ("issued", "partially_paid")
 STATUS_LABELS = {"draft": "Draft", "issued": "Issued", "partially_paid": "Partly paid", "paid": "Paid", "void": "Void"}
@@ -136,6 +139,9 @@ def void_invoice(db: Session, actor_id: str, inv: Invoice) -> str | None:
         return "This invoice is already void."
     if paid_amount(db, inv.id) > 0:
         return "An invoice with payments can't be voided."
+    if db.query(Payment).filter(Payment.invoice_id == inv.id, Payment.status == "pending",
+                                Payment.gateway == "manual").first():
+        return "The client has submitted a payment for this invoice; verify or reject it first."
     old = inv.status
     inv.status = "void"
     _audit(db, actor_id, "invoice_voided", "invoice", inv.id, {"status": old}, {"status": "void"})
@@ -172,6 +178,7 @@ def record_payment(db: Session, actor_id: str, inv: Invoice, amount: str, method
            {"payment_number": pay.payment_number, "invoice": inv.invoice_number, "amount": str(amt), "method": method,
             "invoice_status": inv.status})
     db.commit()
+    client_payments.advance_case_if_paid(db, inv, actor_id)
     return None
 
 
@@ -191,6 +198,7 @@ def summary(db: Session) -> dict:
         "overdue": sum((_money(i.total_amount) - paid.get(i.id, Decimal("0")) for i in overdue), Decimal("0")).quantize(CENT),
         "overdue_count": len(overdue), "collected_month": _money(collected), "month": today.strftime("%B %Y"),
         "draft_count": db.query(Invoice).filter(Invoice.status == "draft").count(),
+        "awaiting_count": db.query(Payment).filter(Payment.status == "pending", Payment.gateway == "manual").count(),
     }
 
 
@@ -207,6 +215,8 @@ def list_invoices(db: Session, status: str = "", q: str = "", case_id: str = "")
     query = db.query(Invoice, TaxFiling).join(TaxFiling, TaxFiling.id == Invoice.case_id)
     if status == "overdue":
         query = query.filter(Invoice.status.in_(OPEN), Invoice.due_date < today)
+    elif status == "awaiting":  # a client has submitted a payment that needs checking
+        query = query.filter(Invoice.id.in_(db.query(Payment.invoice_id).filter(Payment.status == "pending", Payment.gateway == "manual")))
     elif status in STATUS_LABELS:
         query = query.filter(Invoice.status == status)
     if case_id:

@@ -28,6 +28,88 @@
     ("health_ins", "Were you covered by health insurance?", ""),
     ("marketplace", "Do you have Marketplace health insurance (Form 1095-A)?", ""),
 ] %}
+{#- Every question asks for details when answered Yes: one row per entry, with "Add another".
+    field: (name, label, input type, placeholder). Type "select" takes its options in the placeholder, split by "|".
+    Questions in single_row get one row and no "Add another". -#}
+{% set money = ("amount", "Amount ($)", "number", "0.00") %}
+{% set country = ("country", "Country", "text", "e.g. USA, India") %}
+{% set q_details = {
+    "married": [("spouse_name", "Spouse full name", "text", ""), ("marriage_date", "Date of marriage", "date", ""),
+                ("spouse_id", "Spouse SSN / ITIN", "select", "Has SSN|Has ITIN|Needs ITIN|Neither"),
+                ("spouse_country", "Spouse lives in", "text", "e.g. USA, India")],
+
+    "inc_stayed_usa": [("year", "Year", "number", y), ("state", "State", "text", "e.g. Texas"),
+                       ("from", "From date", "date", ""), ("to", "To date", "date", ""), ("rent", "Rent amount ($)", "number", "0.00")],
+    "inc_rental": [("location", "Property location", "text", "City, state / country"), country,
+                   ("rent", "Rent received ($)", "number", "0.00"), ("expenses", "Expenses ($)", "number", "0.00")],
+    "inc_india_salary": [("employer", "Employer", "text", ""), ("from", "From date", "date", ""), ("to", "To date", "date", ""),
+                         ("salary", "Gross salary (₹)", "number", "0.00"), ("tds", "Tax deducted / TDS (₹)", "number", "0.00")],
+    "inc_interest": [("payer", "Bank / institution", "text", "e.g. Chase, SBI NRO"),
+                     ("type", "Account type", "select", "Savings|Fixed deposit (FD)|NRE|NRO|Bond|Other"), country, money],
+    "inc_dividend": [("payer", "Company / broker", "text", "e.g. Fidelity"), country, money],
+    "inc_distributions": [("plan", "Plan", "select", "HSA|Traditional IRA|Roth IRA|401(k)|Other"), ("provider", "Provider", "text", "e.g. Vanguard"),
+                          ("form", "Form", "select", "1099-R|1099-SA|Don't know"), money],
+    "inc_prev_return": [("year", "Tax year", "number", y - 1 if y is number else y), ("name", "Filed under name", "text", ""),
+                        ("email", "Email used", "email", "")],
+
+    "exp_student_visa": [("visa", "Visa type", "select", "F-1|J-1|M-1|Q-1"), ("arrival", "First arrival in the US", "date", ""),
+                         ("school", "School / program", "text", ""), ("years", "Years in US on this visa", "number", "0")],
+    "exp_tuition": [("institution", "Institution", "text", "College / university"), ("student", "Student name", "text", ""),
+                    ("form", "Form 1098-T received?", "select", "Yes|No"), ("amount", "Amount paid ($)", "number", "0.00")],
+    "exp_edu_loan": [("lender", "Lender", "text", "e.g. Sallie Mae"), ("student", "Student name", "text", ""),
+                     ("amount", "Interest paid ($)", "number", "0.00")],
+    "exp_mortgage": [("lender", "Lender", "text", "e.g. Wells Fargo"), ("property", "Property address", "text", ""),
+                     ("amount", "Interest paid ($)", "number", "0.00"), ("tax", "Property tax paid ($)", "number", "0.00")],
+    "exp_hsa_ira": [("account", "Account", "select", "HSA|Traditional IRA|Roth IRA"), ("provider", "Provider", "text", "e.g. Fidelity"),
+                    ("amount", "Amount contributed ($)", "number", "0.00")],
+    "exp_stock_sales": [("broker", "Broker", "text", "e.g. Robinhood, Zerodha"), country,
+                        ("gain", "Gain / (loss) ($)", "number", "0.00"), ("carry", "Carry-forward loss ($)", "number", "0.00")],
+    "exp_foreign_mf": [("fund", "Fund name", "text", ""), country, ("value", "Value at year end ($)", "number", "0.00"),
+                       ("income", "Income received ($)", "number", "0.00")],
+    "exp_medical": [("description", "Description", "text", "e.g. Dental, prescriptions"), ("paid_to", "Paid to", "text", ""), money],
+    "exp_charity": [("org", "Organization", "text", "e.g. Red Cross"), ("date", "Date", "date", ""),
+                    ("kind", "Type", "select", "Cash|Goods"), money],
+    "exp_health_ins": [("provider", "Insurer / plan", "text", "e.g. Aetna"), ("through", "Through", "select", "Employer|Marketplace|Private|Government"),
+                       ("from", "Covered from", "date", ""), ("to", "Covered to", "date", ""), ("people", "People covered", "text", "e.g. Self, spouse")],
+    "exp_marketplace": [("exchange", "Marketplace / state exchange", "text", "e.g. HealthCare.gov"), ("policy", "Policy number", "text", ""),
+                        ("months", "Months covered", "number", "12"), ("premium", "Premium paid ($)", "number", "0.00")],
+} %}
+{% set single_row = ["married"] %}
+
+{% macro detail_rows(qname) -%}
+{%- set fields = q_details.get(qname) -%}
+{%- if fields %}
+<div class="cx-qdetail" data-cx-show-when="{{ qname }}=yes" hidden>
+    <div class="cx-table-wrap">
+        <table class="cx-table cx-table--form">
+            <thead><tr>{% for name, label, kind, ph in fields %}<th>{{ label }}</th>{% endfor %}{% if qname not in single_row %}<th><span class="sr-only">Remove</span></th>{% endif %}</tr></thead>
+            <tbody data-cx-rows>
+                <tr>
+                    {% for name, label, kind, ph in fields %}
+                    <td>
+                        {%- if kind == "select" %}
+                        <select class="cx-select" name="{{ qname }}_{{ name }}[]" aria-label="{{ label }}">
+                            <option value="">Select</option>
+                            {% for opt in ph.split("|") %}<option>{{ opt }}</option>{% endfor %}
+                        </select>
+                        {%- else %}
+                        <input class="cx-input" name="{{ qname }}_{{ name }}[]" type="{{ kind }}" aria-label="{{ label }}"
+                               {% if kind == "number" %}min="0" step="{{ '1' if name in ('year', 'years', 'months') else '0.01' }}"{% endif %}
+                               {% if name == "year" %}value="{{ ph }}"{% elif ph %}placeholder="{{ ph }}"{% endif %} />
+                        {%- endif %}
+                    </td>
+                    {% endfor %}
+                    {% if qname not in single_row %}<td><button type="button" class="cx-btn cx-btn--sm cx-btn--ghost" data-cx-remove-row aria-label="Remove row">{{ ci("x", "ci ci--sm") }}</button></td>{% endif %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% if qname not in single_row %}<button type="button" class="cx-btn cx-btn--sm cx-btn--soft" data-cx-add-row>{{ ci("plus", "ci ci--sm") }} Add another</button>{% endif %}
+</div>
+{%- endif %}
+{%- endmacro %}
+
+{#- Misc sheet: hidden for now (client feedback, Oct 2026). Kept with its tab and panel below. #}
 {% set misc_items = [
     ("Income documents", "Upload W-2s and any 1099 forms in the Upload Documents section."),
     ("Partnerships & S-corps", "Upload Schedule K-1, Form 1099-MISC or other income statements."),
@@ -45,14 +127,14 @@
 <div class="cx-stack">
     <div class="cx-alert">
         {{ ci("info") }}
-        <p><strong>Tip:</strong> Answer every question with Yes or No. For each Yes, upload the matching document in <a class="cx-link" href="/client/documents">Upload Documents</a>.</p>
+        <p><strong>Tip:</strong> Answer every question with Yes or No. Some Yes answers ask for a few details; use <strong>Add another</strong> for each extra entry. Upload the matching documents in <a class="cx-link" href="/client/documents">Upload Documents</a>.</p>
     </div>
 
     <div data-cx-tabs data-cx-hash>
         <div class="cx-tabs__list" role="tablist" aria-label="Tax notes sheets">
             <button class="cx-tab" role="tab" aria-selected="true" aria-controls="income"><span class="cx-tab__num">1</span> Income sheet</button>
             <button class="cx-tab" role="tab" aria-controls="expenses"><span class="cx-tab__num">2</span> Expenses sheet</button>
-            <button class="cx-tab" role="tab" aria-controls="misc"><span class="cx-tab__num">3</span> Misc sheet</button>
+            {# <button class="cx-tab" role="tab" aria-controls="misc"><span class="cx-tab__num">3</span> Misc sheet</button> #}
         </div>
 
         <section class="cx-panel cx-card" role="tabpanel" id="income" aria-labelledby="income-title">
@@ -68,6 +150,7 @@
                     <div class="cx-q cx-q--lead">
                         <span class="cx-q__text"><strong>Are you married?</strong><small>As of December 31, {{ y }}.</small></span>
                         {{ yes_no("married") }}
+                        {{ detail_rows("married") }}
                     </div>
 
                     <h3 class="cx-legend">Income questions</h3>
@@ -76,14 +159,17 @@
                         <li class="cx-q">
                             <span class="cx-q__text">{{ q }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
                             {{ yes_no("inc_" ~ key) }}
+                            {{ detail_rows("inc_" ~ key) }}
                         </li>
                         {% endfor %}
                     </ol>
 
+                    {# "Anything else" box: hidden for now (client feedback, Oct 2026)
                     <div class="cx-field" style="margin-top: 1rem;">
                         <label class="cx-label" for="income-other">Anything else we should know?<span class="cx-opt">Optional</span></label>
                         <textarea class="cx-textarea" id="income-other" name="income_other" placeholder="Please list point-wise: 1. … 2. … 3. …"></textarea>
                     </div>
+                    #}
                 </div>
                 <div class="cx-card__foot">
                     <button class="cx-btn cx-btn--primary" type="submit">Save &amp; next {{ ci("arrow-right", "ci ci--sm") }}</button>
@@ -92,7 +178,7 @@
         </section>
 
         <section class="cx-panel cx-card" role="tabpanel" id="expenses" aria-labelledby="exp-title" hidden>
-            <form data-cx-demo="Tax notes submitted to your preparer." data-cx-next="misc">
+            <form data-cx-demo="Tax notes submitted to your preparer.">
                 <div class="cx-card__head">
                     <div>
                         <h2 class="cx-card__title" id="exp-title">{{ ci("calculator") }} Expenses <span class="cx-accent">sheet</span></h2>
@@ -105,16 +191,19 @@
                         <li class="cx-q">
                             <span class="cx-q__text">{{ q }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
                             {{ yes_no("exp_" ~ key) }}
+                            {{ detail_rows("exp_" ~ key) }}
                         </li>
                         {% endfor %}
                     </ol>
 
+                    {# "Anything else" box: hidden for now (client feedback, Oct 2026)
                     <div class="cx-field" style="margin: 1rem 0;">
                         <label class="cx-label" for="exp-other">Anything else we should know?<span class="cx-opt">Optional</span></label>
                         <textarea class="cx-textarea" id="exp-other" name="expenses_other" placeholder="Please list point-wise: 1. … 2. … 3. …"></textarea>
                     </div>
+                    #}
 
-                    <label class="cx-check cx-confirm">
+                    <label class="cx-check cx-confirm" style="margin-top: 1rem;">
                         <input type="checkbox" name="confirm" required />
                         <span><strong>I confirm that all income and expense details are correct.</strong><br /><span class="cx-muted">Your preparer will rely on these answers to build your return.</span></span>
                     </label>
@@ -126,6 +215,7 @@
             </form>
         </section>
 
+        {# Misc sheet panel: hidden for now (client feedback, Oct 2026)
         <section class="cx-panel cx-card" role="tabpanel" id="misc" aria-labelledby="misc-title" hidden>
             <div class="cx-card__head">
                 <div>
@@ -142,6 +232,7 @@
                 </ul>
             </div>
         </section>
+        #}
     </div>
 </div>
 {% endblock %}

@@ -32,9 +32,9 @@ from app.modules.admin.models.admin import Admin
 from app.platform.schemas.auth import RegisterRequest
 
 # Internal staff domain
-_INTERNAL_DOMAIN = "urtax.com"
-_ADMIN_SUFFIXES = (".admin", ".info")   # e.g. chandra.n.admin@urtax.com
-_HR_SUFFIX = ".hr"                       # e.g. chandra.n.hr@urtax.com
+_INTERNAL_DOMAIN = "covrenttax.com"
+_ADMIN_SUFFIXES = (".admin", ".info")   # e.g. chandra.n.admin@covrenttax.com
+_HR_SUFFIX = ".hr"                       # e.g. chandra.n.hr@covrenttax.com
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
@@ -55,10 +55,10 @@ def get_account_by_email(db: Session, email: str) -> Optional[AuthAccount]:
 def register_by_email_domain(db: Session, data: RegisterRequest) -> tuple[AuthAccount, object]:
     """
     Inspect the email domain/suffix and create the correct account type:
-      - Non-@urtax.com  → Client  (is_verified=True, no email check needed)
-      - @urtax.com + .admin/.info suffix → Admin  (is_verified=False, requires email verification)
-      - @urtax.com + .hr suffix           → Staff[HR]  (is_verified=False)
-      - @urtax.com (plain)                → Staff[INITIATOR]  (is_verified=False)
+      - Non-@covrenttax.com  → Client  (is_verified=True, no email check needed)
+      - @covrenttax.com + .admin/.info suffix → Admin  (is_verified=False, requires email verification)
+      - @covrenttax.com + .hr suffix           → Staff[HR]  (is_verified=False)
+      - @covrenttax.com (plain)                → Staff[INITIATOR]  (is_verified=False)
     Returns (account, profile_record).
     """
     email_lower = data.email.lower().strip()
@@ -67,7 +67,7 @@ def register_by_email_domain(db: Session, data: RegisterRequest) -> tuple[AuthAc
     if domain != _INTERNAL_DOMAIN:
         return _register_client(db, data, email_lower)
 
-    # Internal @urtax.com domain
+    # Internal @covrenttax.com domain
     if any(local_part.endswith(s) for s in _ADMIN_SUFFIXES):
         return _register_admin(db, data, email_lower)
 
@@ -251,7 +251,10 @@ def authenticate(
         _record_attempt(False, "account_inactive")
         return None, "account_inactive"
 
-    if account.locked_until and account.locked_until > now:
+    locked_until = account.locked_until
+    if locked_until is not None and locked_until.tzinfo is None:  # MySQL hands back naive UTC
+        locked_until = locked_until.replace(tzinfo=timezone.utc)
+    if locked_until and locked_until > now:
         _record_attempt(False, "account_locked")
         return None, "account_locked"
 

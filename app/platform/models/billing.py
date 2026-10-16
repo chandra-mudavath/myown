@@ -93,5 +93,20 @@ class Payment(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    # How the payment arrived: "manual" (recorded by admin, or submitted by the client for checking)
+    # or an online gateway later. A client submission stays "pending" until an admin verifies it.
+    gateway: Mapped[str] = mapped_column(String(20), default="manual", nullable=False)
+    gateway_payment_id: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
+    submitted_by_account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="SET NULL"), nullable=True)
+    # What the client actually sent when it wasn't the invoice currency (e.g. INR over UPI).
+    original_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    original_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    # Optional screenshot / bank slip, kept in private storage (never under /storage).
+    proof_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    proof_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    proof_mime: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    verified_by_account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="SET NULL"), nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)  # why a submission was rejected
 
     invoice: Mapped["Invoice"] = relationship("Invoice", back_populates="payments")

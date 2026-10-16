@@ -1,4 +1,4 @@
-# UrTax: Database access policies and indexing
+# CovrentTax: Database access policies and indexing
 
 Status: **adopted 2026-10-02.** Replaces §5 (RLS) and §6 (indexing) of
 [DATABASE_IMPLEMENTATION_PLAN.md](DATABASE_IMPLEMENTATION_PLAN.md), which were written for revision 1 and for
@@ -122,7 +122,7 @@ HR is a later phase; its column records the agreed intent.
 | `chat_attachments` | S I with their message | S I; U `filing_document_id` (save to case documents) | — | never |
 
 HR has no access to CASE / QUERY threads (`account_types.has_case_access = false`). Hidden threads are read only by
-admins (audit view) and backend developers (`urtax_readonly`).
+admins (audit view) and backend developers (`covrenttax_readonly`).
 
 ---
 
@@ -149,9 +149,9 @@ python db_grants.py postgresql --database <prod>  # production
 
 | User | Used by | Permissions |
 |---|---|---|
-| `urtax_migrate` | Alembic (`MIGRATION_DATABASE_URL`) | owns the tables; create / alter / drop |
-| `urtax_app` | the app (`DATABASE_URL`) | S I U on every table; **no U** on append-only tables; **D** only on login tokens and `staff_role_assignments` |
-| `urtax_readonly` | backend developers, audit | S only |
+| `covrenttax_migrate` | Alembic (`MIGRATION_DATABASE_URL`) | owns the tables; create / alter / drop |
+| `covrenttax_app` | the app (`DATABASE_URL`) | S I U on every table; **no U** on append-only tables; **D** only on login tokens and `staff_role_assignments` |
+| `covrenttax_readonly` | backend developers, audit | S only |
 
 The script prints SQL and runs nothing. Review it, replace `CHANGE_ME` passwords, and run it as the database admin.
 On MySQL, re-run it after each migration that adds a table. On PostgreSQL, default privileges cover new tables, and
@@ -159,17 +159,17 @@ a re-run applies their special cases.
 
 **Order to switch over:**
 1. Run the script for the target database.
-2. Set `MIGRATION_DATABASE_URL` to `urtax_migrate`, and run `alembic upgrade head`.
-3. Set `DATABASE_URL` to `urtax_app` and restart the app.
+2. Set `MIGRATION_DATABASE_URL` to `covrenttax_migrate`, and run `alembic upgrade head`.
+3. Set `DATABASE_URL` to `covrenttax_app` and restart the app.
 
-`app/main.py` runs `create_all()` on startup. With `urtax_app` it can no longer create tables, so **run migrations
+`app/main.py` runs `create_all()` on startup. With `covrenttax_app` it can no longer create tables, so **run migrations
 before deploying code that adds a table**. Running `create_all()` only in development is the cleaner fix.
 
 ## 6. Layer 3: row level security (PostgreSQL production, later phase)
 
 Add it after layer 1 helpers and denial tests exist, and test it on PostgreSQL before enabling. Outline:
 
-1. The app connects as `urtax_app`, which does **not** own the tables (owners bypass RLS).
+1. The app connects as `covrenttax_app`, which does **not** own the tables (owners bypass RLS).
 2. At the start of each request transaction the app sets who is asking:
    ```python
    # app/core/database.py: SQLAlchemy "after_begin" event, PostgreSQL only

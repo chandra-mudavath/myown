@@ -4,6 +4,8 @@
 {% set no_rail = true %}
 {% set tone = {'draft': 'slate', 'issued': 'blue', 'partially_paid': 'amber', 'paid': 'green', 'void': 'slate'} %}
 {% set money = '${:,.2f}' %}
+{% set pay_tone = {'pending': 'amber', 'succeeded': 'green', 'failed': 'coral', 'refunded': 'slate'} %}
+{% set pay_label = {'pending': 'Awaiting verification', 'succeeded': 'Received', 'failed': 'Rejected', 'refunded': 'Refunded'} %}
 
 {% block main %}
     <section class="admin-welcome">
@@ -67,17 +69,42 @@
             <h3 class="admin-card-title">Payments</h3>
             <div class="admin-table-panel">
                 <table class="admin-table admin-table--money">
-                    <thead><tr><th>Payment</th><th>Date</th><th>Method</th><th>Amount</th></tr></thead>
+                    <thead><tr><th>Payment</th><th>Date</th><th>Method</th><th>Status</th><th>Amount</th></tr></thead>
                     <tbody>
                         {% for p in payments %}
                         <tr>
-                            <td>{{ p.payment_number }}{% if p.transaction_reference %}<small class="admin-muted">Ref: {{ p.transaction_reference }}</small>{% endif %}</td>
-                            <td class="admin-nowrap">{{ p.paid_at.strftime('%b %d, %Y') if p.paid_at else '—' }}</td>
+                            <td>
+                                {{ p.payment_number }}{% if p.transaction_reference %}<small class="admin-muted">Ref: {{ p.transaction_reference }}</small>{% endif %}
+                                {% if p.gateway == 'paypal' and p.gateway_payment_id %}<small class="admin-muted">PayPal order {{ p.gateway_payment_id }}</small>{% elif p.submitted_by_account_id %}<small class="admin-muted">Submitted by client{% if p.original_amount %} · sent {{ '{:,.2f}'.format(p.original_amount) }} {{ p.original_currency }}{% endif %}</small>{% endif %}
+                                {% if p.failure_reason %}<small class="admin-doc-reason">Rejected: {{ p.failure_reason }}</small>{% endif %}
+                            </td>
+                            <td class="admin-nowrap">{{ (p.paid_at or p.created_at).strftime('%b %d, %Y') }}</td>
                             <td>{{ method_labels.get(p.payment_method, p.payment_method) }}</td>
+                            <td>
+                                <span class="admin-pill admin-pill--{{ pay_tone.get(p.status, 'slate') }}">{{ ('Processing at PayPal' if p.transaction_reference else 'Checkout started') if p.gateway == 'paypal' and p.status == 'pending' else pay_label.get(p.status, p.status) }}</span>
+                                {% if (p.status == 'pending' and p.gateway == 'manual') or p.proof_path %}
+                                <div class="admin-doc-actions">
+                                    {% if p.proof_path %}<a class="admin-mini-btn" href="/admin/payments/payments/{{ p.id }}/proof" target="_blank" rel="noopener">Proof</a>{% endif %}
+                                    {% if p.status == 'pending' and p.gateway == 'manual' %}
+                                    <form method="post" action="/admin/payments/payments/{{ p.id }}/verify" onsubmit="return confirm('Confirm {{ money.format(p.amount) }} was received for {{ invoice.invoice_number }}?');">
+                                        <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Verify</button>
+                                    </form>
+                                    <details class="admin-doc-pop">
+                                        <summary class="admin-mini-btn admin-mini-btn--danger">Reject</summary>
+                                        <form method="post" action="/admin/payments/payments/{{ p.id }}/reject" class="admin-pop-form">
+                                            <label for="reason-{{ p.id }}">Why isn't this payment accepted?</label>
+                                            <textarea id="reason-{{ p.id }}" name="reason" rows="3" maxlength="500" required placeholder="e.g. No payment found with this reference."></textarea>
+                                            <button type="submit" class="admin-filter-btn">Reject payment</button>
+                                        </form>
+                                    </details>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </td>
                             <td>{{ money.format(p.amount) }}</td>
                         </tr>
                         {% else %}
-                        <tr><td colspan="4" class="admin-empty">No payments recorded.</td></tr>
+                        <tr><td colspan="5" class="admin-empty">No payments recorded.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

@@ -1,4 +1,5 @@
 from typing import List, Optional
+from urllib.parse import urlencode
 from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, File, Request, UploadFile, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from app.platform.models.filing_document import FilingDocument
 from app.platform.models.lookups import CaseStage
 from app.platform.models.tax_filing import TaxFiling
 from app.modules.client.schemas.tax_filing import TaxFilingCreate
+from app.platform.services import payments, paypal
 from app.platform.services.catalog import document_categories, open_tax_years, tax_types
 from app.platform.services.document_review import account_names, add_comment, comment_threads, store_upload
 from app.platform.services.storage_service import generate_uuid, save_document_file
@@ -509,7 +511,8 @@ async def download_client_document(
     return FileResponse(path=doc.file_path, filename=doc.original_filename, media_type=doc.mime_type)
 
 
-def _render_client_section(template_name: str, request: Request, account: ClientAccount, db: Session, tax_year: str | None, active_nav: str):
+def _render_client_section(template_name: str, request: Request, account: ClientAccount, db: Session, tax_year: str | None, active_nav: str,
+                           extra=None):
     shell = client_shell_context(db, account, tax_year)
     client = shell["client"]
     has_active_filing = False
@@ -533,6 +536,7 @@ def _render_client_section(template_name: str, request: Request, account: Client
             # The filing's workflow stage (name + the status the client sees), from case_stages
             "stage": db.query(CaseStage).filter(CaseStage.code == filing.status).first() if filing else None,
             "active_nav": active_nav,
+            **(extra(client, filing) if extra and client else {}),
         },
     )
 
@@ -544,7 +548,70 @@ async def client_tax_notes(request: Request, account: ClientAccount, db: Session
 
 @router.get("/tax-summary", response_class=HTMLResponse, name="client_tax_summary")
 async def client_tax_summary(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/tax_summary.html", request, account, db, tax_year, "tax_summary")
+    def billing(client, filing):
+        return {**payments.client_billing(db, client.id, filing), "pay_methods": payments.CLIENT_METHODS,
+                "currencies": payments.CURRENCIES, "paypal_on": paypal.enabled(), "upi_id": settings.PAYMENT_UPI_ID, "upi_payee": settings.PAYMENT_UPI_PAYEE,
+                "bank_lines": [line for line in settings.PAYMENT_BANK_DETAILS.splitlines() if line.strip()],
+                "pay_saved": request.query_params.get("saved", ""), "pay_error": request.query_params.get("error", "")}
+    return _render_client_section("client/tax_summary.html", request, account, db, tax_year, "tax_summary", extra=billing)
+
+
+@router.post("/payments/manual", name="client_payment_manual")
+async def client_payment_manual(
+    account: ClientAccount,
+    db: Session = Depends(get_db),
+    invoice_id: str = Form(""),
+    payment_method: str = Form(""),
+    transaction_reference: str = Form(""),
+    sent_amount: str = Form(""),
+    sent_currency: str = Form(""),
+    pay_amount: str = Form(""),
+    proof: UploadFile | None = File(None),
+):
+    """The client paid by UPI or bank transfer and sends the reference for us to verify."""
+    client = _own_client(db, account)
+    err = payments.submit_manual(db, account.id, client.id, invoice_id, payment_method, transaction_reference,
+                                 sent_amount, sent_currency, proof, pay_amount)
+    return _back_to_payments(err, "Thanks! We've received your payment details and will confirm once verified.")
+
+
+def _back_to_payments(err: str | None, saved: str) -> RedirectResponse:
+    query = urlencode({"error": err} if err else {"saved": saved})
+    return RedirectResponse(f"/client/tax-summary?{query}#{'payment' if err else 'payment-details'}", status_code=303)
+
+
+def _own_client(db: Session, account) -> Client:
+    client = db.query(Client).filter(Client.account_id == account.id).first()
+    if not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Client profile not found.")
+    return client
+
+
+@router.post("/payments/paypal/start", name="client_paypal_start")
+async def client_paypal_start(request: Request, account: ClientAccount, db: Session = Depends(get_db), invoice_id: str = Form(""),
+                             pay_amount: str = Form("")):
+    """Create a PayPal order for the invoice and send the client to PayPal to approve it."""
+    client = _own_client(db, account)
+    base = (settings.PUBLIC_BASE_URL or str(request.base_url)).rstrip("/")
+    link, err = payments.start_paypal(db, account.id, client.id, invoice_id,
+                                      return_url=f"{base}/client/payments/paypal/return",
+                                      cancel_url=f"{base}/client/payments/paypal/cancel", pay_amount=pay_amount)
+    if err:
+        return _back_to_payments(err, "")
+    return RedirectResponse(link, status_code=303)
+
+
+@router.get("/payments/paypal/return", name="client_paypal_return")
+async def client_paypal_return(account: ClientAccount, db: Session = Depends(get_db), token: str = ""):
+    """PayPal sends the client back here after they approve; capture the payment now."""
+    err = payments.finish_paypal(db, token, _own_client(db, account).id)
+    return _back_to_payments(err, "Thank you! Your PayPal payment was received.")
+
+
+@router.get("/payments/paypal/cancel", name="client_paypal_cancel")
+async def client_paypal_cancel(account: ClientAccount, db: Session = Depends(get_db), token: str = ""):
+    payments.cancel_paypal(db, token, _own_client(db, account).id)
+    return _back_to_payments("PayPal checkout was cancelled. You were not charged.", "")
 
 
 @router.get("/bank-details", response_class=HTMLResponse, name="client_bank_details")
@@ -554,7 +621,9 @@ async def client_bank_details(request: Request, account: ClientAccount, db: Sess
 
 @router.get("/review-documents", response_class=HTMLResponse, name="client_review_documents")
 async def client_review_documents(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/review_documents.html", request, account, db, tax_year, "review_documents")
+    def billing(client, filing):
+        return payments.client_billing(db, client.id, filing)
+    return _render_client_section("client/review_documents.html", request, account, db, tax_year, "review_documents", extra=billing)
 
 
 @router.get("/efile-authorization", response_class=HTMLResponse, name="client_efile_authorization")

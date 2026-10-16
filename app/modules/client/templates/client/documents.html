@@ -53,7 +53,7 @@
                 </div>
                 <label class="cx-check cx-confirm" style="margin-top: 1rem;">
                     <input type="checkbox" required />
-                    <span>I have checked the <a class="cx-link" href="/client/tax-notes#misc">document checklist</a> and provided the documents required to file my tax return.</span>
+                    <span>I have checked the <a class="cx-link" href="/client/tax-notes">tax notes</a> and provided the documents required to file my tax return.</span>
                 </label>
             </div>
             <div class="cx-card__foot">
@@ -88,6 +88,17 @@
         </div>
 
         <div class="cx-card__body" style="padding-bottom: 0.25rem;">
+            <div class="cx-field" style="max-width: 20rem;">
+                <label class="cx-label" for="categorySelect">Document type</label>
+                <select class="cx-select" id="categorySelect" onchange="filterDocuments()">
+                    <option value="All">All ({{ ns.total }})</option>
+                    {% for key, label in category_labels.items() %}
+                    {% set n = documents_by_category.get(key, []) | length %}
+                    {% if n %}<option value="{{ key }}">{{ label }} ({{ n }})</option>{% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            {# Category chips: replaced by the dropdown above (client feedback, Oct 2026)
             <input type="hidden" id="categorySelect" value="All" />
             <div class="cx-chips" role="group" aria-label="Filter by category">
                 <button type="button" class="cx-chip folder-card is-active" data-cat-filter="All" onclick="selectCategoryFolder('All')">All <b>{{ ns.total }}</b></button>
@@ -98,6 +109,7 @@
                 {% endif %}
                 {% endfor %}
             </div>
+            #}
         </div>
 
         {% if ns.total %}

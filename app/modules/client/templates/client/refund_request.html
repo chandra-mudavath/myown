@@ -3,9 +3,37 @@
 {% set active_nav = "refund_request" %}
 {% set page_section = "Account" %}
 {% set page_title = "Refund Status" %}
-{% set page_subtitle = "Track your federal and state refunds, or raise a question with your tax team." %}
+{% set page_subtitle = "Check your federal and state refunds on the official government websites." %}
+
+{% set gov_links = [
+    ("Where's My Refund?", "IRS", "Federal refund status, usually ready 24 hours after e-file acceptance.", "https://www.irs.gov/wheres-my-refund"),
+    ("Where's My Amended Return?", "IRS", "Status of an amended return (Form 1040-X), about 3 weeks after filing.", "https://www.irs.gov/filing/wheres-my-amended-return"),
+    ("IRS online account", "IRS", "Balances, payments, notices and transcripts for your account.", "https://www.irs.gov/payments/your-online-account"),
+    ("IRS2Go mobile app", "IRS", "Check your refund and make payments from your phone.", "https://www.irs.gov/help/irs2goapp"),
+    ("State tax agencies", "IRS", "Find your state's tax website to check a state refund.", "https://www.irs.gov/businesses/small-businesses-self-employed/state-government-websites"),
+    ("Treasury Offset Program", "U.S. Treasury", "Find out if a refund was reduced to pay a past-due debt.", "https://www.fiscal.treasury.gov/top/"),
+    ("Taxpayer Advocate Service", "IRS", "Free help if your refund is delayed and the usual channels haven't worked.", "https://www.taxpayeradvocate.irs.gov/"),
+] %}
 
 {% block page %}
+<div class="cx-stack">
+    <div class="cx-alert">
+        {{ ci("info") }}
+        <p>Keep your SSN or ITIN, filing status and the exact refund amount from your return handy. These are official government websites and open in a new tab.</p>
+    </div>
+    <div class="cx-grid cx-grid--3">
+        {% for title, agency, text, url in gov_links %}
+        <a class="cx-card cx-govlink" href="{{ url }}" target="_blank" rel="noopener">
+            <span class="cx-govlink__agency">{{ agency }}</span>
+            <strong>{{ title }}</strong>
+            <span class="cx-muted">{{ text }}</span>
+            <span class="cx-link">Open {{ ci("arrow-right", "ci ci--sm") }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+{# Refund stats and inquiry form: hidden for now (client feedback, Oct 2026)
 <div class="cx-stack">
     <div class="cx-grid cx-grid--3">
         <div class="cx-stat"><span class="cx-stat__icon">{{ ci("bank") }}</span><div><span class="cx-stat__label">Federal refund</span><strong class="cx-stat__value">Not filed yet</strong></div></div>
@@ -51,4 +79,5 @@
         </aside>
     </div>
 </div>
+#}
 {% endblock %}

@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # App
-    APP_NAME: str = "UrTax"
+    APP_NAME: str = "CovrentTax"
     APP_ENV: str = "development"
     DEBUG: bool = True
     SECRET_KEY: str = "dev-secret-key-please-change-in-production-32bytes"
@@ -39,6 +39,18 @@ class Settings(BaseSettings):
     CLIENT_DOCUMENTS_DIR: str = "storage/client_documents"
     MAX_UPLOAD_SIZE_MB: int = 10
     ALLOWED_EXTENSIONS: list[str] = [".pdf", ".png", ".jpg", ".jpeg", ".csv", ".docx", ".xlsx", ".txt"]
+
+    # Payments: where clients send manual payments. Blank values hide that option's details.
+    PAYMENT_UPI_ID: str = ""             # e.g. "covrenttax@icici"
+    PAYMENT_UPI_PAYEE: str = ""          # name shown in the UPI app
+    PAYMENT_BANK_DETAILS: str = ""       # wire / ACH instructions, one item per line (a quoted multi-line value in .env)
+    PAYMENT_PROOFS_DIR: str = "private_storage/payment_proofs"  # not under the public /storage mount
+    # PayPal Checkout (main online option). Blank client id / secret hides it.
+    PAYPAL_MODE: str = "sandbox"         # sandbox | live
+    PAYPAL_CLIENT_ID: str = ""
+    PAYPAL_CLIENT_SECRET: str = ""
+    PAYPAL_WEBHOOK_ID: str = ""          # from the app's Webhooks settings; needed to verify webhook events
+    PUBLIC_BASE_URL: str = ""            # e.g. "https://app.covrenttax.com"; blank uses the request's own host
 
     # Chat
     CHAT_HIDE_AFTER_DAYS: int = 90  # threads are hidden (kept for audit) this long after they close

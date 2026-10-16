@@ -1,7 +1,7 @@
 const filingForm = document.querySelector("[data-filing-accordion]");
 
 if (filingForm) {
-    const storageKey = "urtax-new-filing-draft";
+    const storageKey = "covrenttax-new-filing-draft";
     const sections = [...filingForm.querySelectorAll("[data-filing-section]")];
 
     const getSectionFields = (section) => [...section.querySelectorAll("input, select, textarea")].filter((field) => field.name);

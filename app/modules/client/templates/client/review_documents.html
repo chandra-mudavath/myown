@@ -5,7 +5,74 @@
 {% set page_title = "Review Documents" %}
 {% set page_subtitle = "Review the draft return prepared by your tax team before you authorize e-filing." %}
 
+{% macro label(value) -%}{{ value.replace("_", " ") | title if value else "—" }}{%- endmacro %}
+
 {% block page %}
+<div class="cx-stack">
+{% if filing %}
+{# Filing confirmation: everything on the return the client should check before e-filing. #}
+{% set pays = payments | default([]) %}
+{% set paid = pays | selectattr("payment.status", "equalto", "succeeded") | map(attribute="payment.amount") | sum %}
+<section class="cx-card" aria-labelledby="confirm-title">
+    <div class="cx-card__head">
+        <div>
+            <h2 class="cx-card__title" id="confirm-title">{{ ci("check-circle") }} Filing <span class="cx-accent">confirmation</span></h2>
+            <p class="cx-card__sub">Check these details before you sign the e-file authorization.</p>
+        </div>
+        <button type="button" class="cx-btn cx-btn--sm cx-btn--soft" onclick="window.print()" data-cx-noprint>{{ ci("download", "ci ci--sm") }} Print / save PDF</button>
+    </div>
+    <div class="cx-card__body cx-stack">
+        <h3 class="cx-legend">Return</h3>
+        <dl class="cx-confirmlist">
+            <div><dt>Case ID</dt><dd class="cx-mono">{{ filing.case_number or "—" }}</dd></div>
+            <div><dt>Tax year</dt><dd>{{ filing.tax_year }}</dd></div>
+            <div><dt>Return type</dt><dd>{{ filing.filing_type or "—" }}</dd></div>
+            <div><dt>Current stage</dt><dd>{{ stage.client_status if stage and stage.client_status else label(filing.status) }}</dd></div>
+            <div><dt>Taxpayer</dt><dd>{{ filing.first_name }} {{ filing.last_name }}</dd></div>
+            <div><dt>Filing status</dt><dd>{{ label(filing.filing_status) }}</dd></div>
+            <div><dt>Residency status</dt><dd>{{ label(filing.us_tax_residency_status) }}</dd></div>
+            {% if filing.spouse_first_name %}<div><dt>Spouse</dt><dd>{{ filing.spouse_first_name }} {{ filing.spouse_last_name or "" }}</dd></div>{% endif %}
+            <div><dt>Dependents</dt><dd>{{ filing.dependents | length if filing.dependents else 0 }}</dd></div>
+            <div><dt>Address</dt><dd>{{ [filing.address_line_1, filing.city, filing.state_province, filing.postal_code] | select | join(", ") or "—" }}</dd></div>
+        </dl>
+
+        <h3 class="cx-legend">Refund</h3>
+        <dl class="cx-confirmlist">
+            <div><dt>Federal refund / amount owed</dt><dd>Shown on your draft return</dd></div>
+            <div><dt>State refund / amount owed</dt><dd>Shown on your draft return</dd></div>
+            <div><dt>Refund deposit</dt><dd><a class="cx-link" href="/client/bank-details">Bank details</a></dd></div>
+            <div><dt>Track your refund</dt><dd><a class="cx-link" href="/client/refund-request">Refund status links</a></dd></div>
+        </dl>
+
+        <h3 class="cx-legend">Fees &amp; payments</h3>
+        <dl class="cx-confirmlist">
+            <div><dt>Paid</dt><dd>${{ "{:,.2f}".format(paid) }}</dd></div>
+            <div><dt>Balance due</dt><dd>${{ "{:,.2f}".format(amount_due | default(0)) }}{% if amount_due %} · <a class="cx-link" href="/client/tax-summary#payment">Pay now</a>{% endif %}</dd></div>
+        </dl>
+        {% if pays %}
+        <div class="cx-table-wrap" style="border: 1px solid var(--cx-border); border-radius: 10px;">
+            <table class="cx-table">
+                <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Amount</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for r in pays %}
+                    <tr>
+                        <td>{{ (r.payment.paid_at or r.payment.created_at).strftime('%b %d, %Y') }}</td>
+                        <td>{{ r.method_label }}</td>
+                        <td class="cx-mono">{{ r.payment.transaction_reference or r.payment.payment_number }}</td>
+                        <td>${{ "{:,.2f}".format(r.payment.amount) }}</td>
+                        <td>{{ r.status_label }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="cx-muted" style="margin: 0; font-size: 0.86rem;">No payments yet for tax year {{ selected_year }}.</p>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
 <div class="cx-grid cx-grid--main">
     <section class="cx-card" aria-labelledby="drafts-title">
         <div class="cx-card__head">
@@ -35,5 +102,6 @@
             </ol>
         </div>
     </aside>
+</div>
 </div>
 {% endblock %}
