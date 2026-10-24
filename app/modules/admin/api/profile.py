@@ -9,7 +9,8 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import AdminAccount
 from app.core.templates import templates
-from app.modules.admin.services.profile_service import change_password, current_admin, update_name
+from app.modules.admin.services.profile_service import current_admin, update_name
+from app.platform.services.auth_service import change_password
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -22,7 +23,7 @@ def _back(**params) -> RedirectResponse:
 @router.get("/profile", response_class=HTMLResponse, name="admin_profile")
 def admin_profile(request: Request, account: AdminAccount, db: Session = Depends(get_db),
                   saved: str = "", error: str = ""):
-    return templates.TemplateResponse("admin/profile.html", {
+    return templates.TemplateResponse(request, "admin/profile.html", {
         "request": request, "account": account, "admin": current_admin(db, account), "app_name": settings.APP_NAME,
         "active_nav": "profile", "saved": saved, "error": error,
     })

@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.core.config import settings
+from app.core.files import mime_for
 from app.modules.admin.models.admin import Admin
 from app.platform.models.auth import AuthAccount
 from app.platform.models.case_workflow import CaseAssignment
@@ -236,7 +237,7 @@ def _validate_files(files: list[UploadFile]) -> list[tuple[UploadFile, bytes, st
         if ext not in settings.ALLOWED_EXTENSIONS:
             raise _fail(status.HTTP_400_BAD_REQUEST,
                         f"{f.filename}: this file type isn't allowed. Use {', '.join(settings.ALLOWED_EXTENSIONS)}.")
-        data = f.file.read()
+        data = f.file.read(limit + 1)  # never pull more than the limit into memory
         if len(data) > limit:
             raise _fail(status.HTTP_400_BAD_REQUEST, f"{f.filename} is larger than {settings.MAX_UPLOAD_SIZE_MB} MB.")
         checked.append((f, data, ext))
@@ -247,13 +248,13 @@ def _store_attachments(db: Session, thread: ChatThread, message: ChatMessage, fi
     for f, data, ext in files:
         stored = f"{uuid.uuid4().hex}{ext}"
         key = str(Path(settings.CHAT_ATTACHMENTS_DIR) / thread.id / stored)
-        path = storage_provider.save(io.BytesIO(data), key, content_type=f.content_type)
+        path = storage_provider.save(io.BytesIO(data), key, content_type=mime_for(stored))
         db.add(ChatAttachment(
             message_id=message.id,
             original_filename=os.path.basename(f.filename)[:255],
             stored_filename=stored,
             file_path=path,
-            mime_type=f.content_type or "application/octet-stream",
+            mime_type=mime_for(stored),  # from the extension, never the browser's claim
             file_size=len(data),
         ))
 

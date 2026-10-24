@@ -133,6 +133,25 @@ document.addEventListener("DOMContentLoaded", () => {
         })
     );
 
+    // Coming back with the browser's Back button restores this page from the back/forward cache exactly
+    // as it was when a service was clicked: still paused, with focus on that link, and the pointerleave /
+    // focusout that would resume it never fire. Clear that state and start spinning again; moving the
+    // pointer onto the globe pauses it as usual.
+    window.addEventListener("pageshow", (event) => {
+        if (!event.persisted) return;
+        if (globe.contains(document.activeElement)) document.activeElement.blur();
+        dragStart = null;
+        dragged = false;
+        globe.classList.remove("is-dragging");
+        if (!reduceMotion) targetSpeed = AUTO_SPEED;
+    });
+
+    // Safety net for any other way the pause can get stuck (e.g. a missed pointerleave): once the
+    // pointer moves somewhere that isn't the globe, resume.
+    window.addEventListener("pointermove", (event) => {
+        if (!dragStart && targetSpeed === 0 && !globe.contains(event.target)) resume();
+    }, { passive: true });
+
     new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; }).observe(globe);
     new MutationObserver(() => { readColor(); render(); }).observe(document.documentElement, {
         attributes: true,

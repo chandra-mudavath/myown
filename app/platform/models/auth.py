@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    false,
     BigInteger,
     Boolean,
     DateTime,
@@ -47,6 +48,9 @@ class AuthAccount(Base):
     account_type: Mapped[AccountType] = mapped_column(Enum(AccountType), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Set when an admin creates the account or resets its password: the person must choose their own
+    # password before any other page opens (deps.require_verified, /auth/change-password)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false(), nullable=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     failed_login_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -146,3 +150,23 @@ class AuthLoginAttempt(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
     account: Mapped[AuthAccount | None] = relationship("AuthAccount", back_populates="login_attempts")
+
+
+# ─────────────────────────────────────────────
+# 7. auth_login_otps: email codes for staff/admin sign-in and sign-up
+# ─────────────────────────────────────────────
+class AuthLoginOtp(Base):
+    """One pending code. The browser holds the raw challenge in a cookie; only hashes are stored."""
+    __tablename__ = "auth_login_otps"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    account_id: Mapped[str] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    challenge_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(10), nullable=False)  # login | signup
+    attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    sends: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)

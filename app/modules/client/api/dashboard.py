@@ -10,7 +10,9 @@ from app.core.deps import ClientAccount
 from app.core.templates import templates
 from app.modules.client.models.client import Client
 from app.platform.models.filing_document import FilingDocument
+from app.platform.models.lookups import CaseStage
 from app.platform.models.tax_filing import TaxFiling
+from app.platform.services import intake
 from app.platform.services.catalog import case_stages, default_tax_year, open_tax_years
 
 router = APIRouter(prefix="/client", tags=["client-dashboard"])
@@ -57,20 +59,24 @@ def _merge_status(statuses: list[str]) -> str:
     return "not_started"
 
 
-def build_filing_stages(f: TaxFiling | None, section_statuses: list[dict], has_documents: bool) -> list[dict]:
-    """Client-facing filing journey, in the order the client works through it."""
+def build_filing_stages(f: TaxFiling | None, section_statuses: list[dict], has_documents: bool,
+                        personal_status: str | None = None, notes_status: str | None = None) -> list[dict]:
+    """Client-facing filing journey, in the order the client works through it.
+
+    personal_status / notes_status (client feedback, Oct 2026): with no New filing form, Personal Info is scored
+    from the client's profile and Tax Notes from the saved answers. Without them, the old form's sections are used."""
     by_num = {s["number"]: s["status"] for s in section_statuses}
     done = f is not None and f.status == "complete"
     later = "complete" if done else "not_started"
     return [
         {"label": "Personal Information", "url": "/client/personal-info",
-         "status": _merge_status([by_num.get(n, "not_started") for n in ("01", "02", "03", "04")]) if f else "not_started"},
+         "status": personal_status or (_merge_status([by_num.get(n, "not_started") for n in ("01", "02", "03", "04")]) if f else "not_started")},
         {"label": "Tax Notes", "url": "/client/tax-notes",
-         "status": _merge_status([by_num.get(n, "not_started") for n in ("05", "06", "08")]) if f else "not_started"},
+         "status": notes_status or (_merge_status([by_num.get(n, "not_started") for n in ("05", "06", "08")]) if f else "not_started")},
         {"label": "Upload Documents", "url": "/client/documents",
          "status": "complete" if has_documents else "not_started"},
         {"label": "Estimated Tax Summary", "url": "/client/tax-summary", "status": later},
-        {"label": "Preparation Charges Paid", "url": "/client/tax-summary#payment", "status": later},
+        {"label": "Preparation Charges Paid", "url": "/client/make-payment", "status": later},
         {"label": "Tax Return for Review", "url": "/client/review-documents", "status": later},
         {"label": "E-File Authorization", "url": "/client/efile-authorization", "status": later},
         {"label": "E-Filing / Paper Filing", "url": "/client/update-stage", "status": later},
@@ -155,17 +161,45 @@ def select_year_page(
                     "year": filing.tax_year,
                     "filing_type": filing.filing_type,
                     "status": _STATUS_LABEL.get(filing.status, filing.status),
+                    "status_key": "complete" if filing.status == "complete" else "progress",
                     "filed_date": f"{filing.created_at:%B} {filing.created_at.day}, {filing.created_at:%Y}",
                 }
             )
 
+    # Year cards (client feedback, Oct 2026), newest first, each with the status the client sees.
+    years = _available_tax_years(db)
+    default = default_tax_year(db)
+    default = default if default in years else years[0]
+    latest: dict[int, TaxFiling] = {}
+    if client:
+        for f in (db.query(TaxFiling).filter(TaxFiling.client_id == client.id)
+                  .order_by(TaxFiling.created_at).all()):
+            latest[f.tax_year] = f  # oldest → newest, so the last one wins
+    client_status = dict(db.query(CaseStage.code, CaseStage.client_status).all())
+    year_cards = []
+    # Cards: the current (default) year plus every year the client has filed; any other open year is
+    # picked from the dropdown.
+    for year in sorted({default} | set(latest), reverse=True):
+        f = latest.get(year)
+        if f:
+            label = client_status.get(f.status, f.status.replace("_", " ").title())
+            key = "complete" if f.status == "complete" else "progress"
+            detail = f"{(f.filing_type or 'individual').replace('_', ' ').title()} · started {f.created_at:%b} {f.created_at.day}, {f.created_at:%Y}"
+        else:
+            label, key, detail = "Not started", "none", f"Start your {year} tax filing"
+        year_cards.append({"year": year, "status": label, "status_key": key, "detail": detail,
+                           "is_default": year == default, "open": year in years})
+
     return templates.TemplateResponse(
-        "client/dashboard/select-year.html",
+        request, "client/dashboard/select-year.html",
         {
             "request": request,
             "app_name": settings.APP_NAME,
             "years": _available_tax_years(db),
             "previous_filings": previous_filings,
+            "first_name": client.first_name if client else "",
+            "year_cards": year_cards,
+            "default_year": default,
         },
     )
 
@@ -195,7 +229,7 @@ def select_year_submit(
     # Year switcher in the sidebar posts the current page so the client stays where they were.
     target = next if next and next.startswith("/client/") and not next.startswith("//") else str(request.url_for("client_dashboard"))
     resp = RedirectResponse(url=target, status_code=status.HTTP_303_SEE_OTHER)
-    resp.set_cookie(TAX_YEAR_COOKIE, str(tax_year), max_age=180 * 86400, httponly=True, samesite="lax", secure=False)
+    resp.set_cookie(TAX_YEAR_COOKIE, str(tax_year), max_age=180 * 86400, httponly=True, samesite="lax", secure=settings.is_production)
     return resp
 
 
@@ -284,7 +318,13 @@ def client_dashboard(
         if filing_record
         else 0
     )
-    filing_stages = build_filing_stages(filing_record, section_statuses, document_count > 0)
+    # Personal Info from the profile; Tax Notes from the saved answers (submitted = both sheets done)
+    profile_fields = [client.first_name, client.phone, client.date_of_birth, client.address_line_1, client.city, client.country] if client else []
+    filled = sum(1 for v in profile_fields if v)
+    personal_status = "complete" if profile_fields and filled == len(profile_fields) else "in_progress" if filled else "not_started"
+    notes_row = intake.section(db, filing_record, intake.TAX_NOTES)
+    notes_status = "complete" if notes_row and notes_row.submitted_at else "in_progress" if notes_row else "not_started"
+    filing_stages = build_filing_stages(filing_record, section_statuses, document_count > 0, personal_status, notes_status)
     stages_done = sum(1 for s in filing_stages if s["status"] == "complete")
 
     dashboard = {
@@ -307,7 +347,7 @@ def client_dashboard(
         "stages_pct": int(stages_done / len(filing_stages) * 100),
     }
     return templates.TemplateResponse(
-        "client/dashboard/index.html",
+        request, "client/dashboard/index.html",
         {
             "request": request,
             "account": account,

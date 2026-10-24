@@ -975,6 +975,8 @@ body.cx-body::before { display: none; } /* legacy dotted overlay from profile.cs
 .cx-table--form th, .cx-table--form td { padding: 0.45rem 0.5rem; }
 .cx-table--form .cx-input, .cx-table--form .cx-select { min-width: 8rem; padding-block: 0.4rem; }
 .cx-table--form td:last-child { width: 1%; }
+.cx-qnote { gap: 0.3rem; justify-items: stretch; }
+.cx-qnote .cx-textarea { min-height: 3.2rem; }
 @media (max-width: 640px) { .cx-qdetail { padding-left: 0; } }
 
 .cx-q--lead { margin-bottom: 0.25rem; padding: 0.9rem 1rem; border: 1px solid var(--cx-border); border-radius: 12px; background: var(--cx-card-2); }
@@ -1525,3 +1527,115 @@ html[data-theme="dark"] .cx-body .cx-helpcard strong { color: #ffffff; }
 @media print {
     .cx-sidebar, .cx-topbar, [data-cx-noprint] { display: none !important; }
 }
+
+/* Tax Summary with only the Est. refund card left (client feedback, Oct 2026) */
+.cx-grid--4.cx-grid--single { grid-template-columns: minmax(0, 20rem); }
+
+/* ── Review Documents: documents sent by the tax team for approval (client feedback, Oct 2026) ── */
+.cx-reviewlist { display: grid; gap: 0.9rem; margin: 0; padding: 1rem 1.35rem 1.35rem; list-style: none; }
+.cx-reviewdoc { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--cx-border); border-radius: 12px; background: var(--cx-card-2); }
+.cx-reviewdoc__head { display: flex; align-items: center; gap: 0.75rem; }
+.cx-reviewdoc__head > div { display: grid; flex: 1; }
+.cx-reviewdoc__head strong { color: var(--cx-ink); }
+.cx-reviewdoc__head .cx-muted { font-size: 0.8rem; }
+.cx-reviewdoc__preview summary { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--cx-brand); font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+.cx-reviewdoc__preview iframe { width: 100%; height: 26rem; margin-top: 0.6rem; border: 1px solid var(--cx-border); border-radius: 10px; background: #fff; }
+.cx-reviewdoc__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.cx-reviewdoc__form { display: grid; gap: 0.4rem; padding-top: 0.75rem; border-top: 1px dashed var(--cx-border); }
+.cx-reviewdoc__form .cx-textarea { min-height: 0; background: var(--cx-card); }
+.cx-reviewdoc__buttons { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 0.5rem; }
+.cx-btn--danger { border-color: color-mix(in srgb, var(--cx-red) 40%, transparent); background: var(--cx-red-soft); color: var(--cx-red); }
+.cx-btn--danger:hover { background: var(--cx-red); color: #fff; }
+
+/* ── Refund Status checker (client feedback, Oct 2026) ── */
+.cx-refundcheck { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem; }
+.cx-refundcheck .cx-field { flex: 1; min-width: 16rem; max-width: 26rem; }
+.cx-refundphones { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px dashed var(--cx-border); }
+.cx-refundphones > div { display: grid; gap: 0.2rem; font-size: 0.86rem; }
+
+/* Tax Notes: one Notes box after the 7 income questions (client feedback, Oct 2026) */
+.cx-qnotes-end { margin-top: 1rem; }
+
+/* Tax Notes: Taxpayer / Spouse grid, e.g. rental property (client feedback, Oct 2026) */
+.cx-table--grid tbody th { padding: 0.45rem 0.75rem; color: var(--cx-ink); font-size: 0.86rem; font-weight: 500; text-align: left; text-transform: none; letter-spacing: 0; }
+.cx-table--grid thead th:not(:first-child) { width: 13rem; text-align: center; }
+.cx-table--grid td .cx-input { width: 100%; min-width: 10rem; }
+
+/* Tax Notes: red upload reminders and table captions, like the reference portal (client feedback, Oct 2026) */
+.cx-qhint { margin: 0; color: var(--cx-red); font-size: 0.86rem; }
+.cx-qcaption { margin: 0; color: var(--cx-red); font-size: 0.86rem; font-weight: 600; }
+.cx-qdetail.cx-qhint { display: block; }
+.cx-qdetail.cx-qhint[hidden] { display: none; }
+
+/* Tax Notes: short fields on one line, e.g. student visa (client feedback, Oct 2026) */
+.cx-qdetail.cx-qinline { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; }
+.cx-qdetail.cx-qinline[hidden] { display: none; }
+.cx-qinline__field { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: var(--cx-ink); }
+.cx-qinline__field .cx-input { width: 12rem; }
+
+/* Refer & Earn: the client's referrals (client feedback, Oct 2026) */
+.cx-reflist { display: grid; margin: 0; padding: 0 1.35rem 1rem; list-style: none; }
+.cx-reflist li { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.7rem 0; border-bottom: 1px solid var(--cx-border); }
+.cx-reflist li:last-child { border-bottom: 0; }
+.cx-reflist li > div { display: grid; min-width: 0; }
+.cx-reflist strong { color: var(--cx-ink); font-size: 0.92rem; }
+.cx-reflist .cx-muted { font-size: 0.78rem; }
+
+/* Upload Documents with no filing for the year: browse types, but no file picker (client feedback, Oct 2026) */
+.cx-upload--locked .cx-dropzone { opacity: .5; cursor: not-allowed; }
+.cx-upload--locked .cx-dropzone input { cursor: not-allowed; }
+.cx-upload--locked .cx-card__foot .cx-btn[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* Upload Documents: documents the Tax Notes answers ask for (client feedback, Oct 2026) */
+.cx-needlist { display: grid; margin: 0; padding: 0 1.35rem 1.1rem; list-style: none; }
+.cx-needlist li { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0; border-bottom: 1px solid var(--cx-border); }
+.cx-needlist li:last-child { border-bottom: 0; }
+.cx-needlist li > div { display: grid; flex: 1; min-width: 0; }
+.cx-needlist strong { color: var(--cx-ink); font-size: 0.92rem; }
+.cx-needlist .cx-muted { font-size: 0.78rem; overflow-wrap: anywhere; }
+.cx-needlist__mark { display: grid; place-items: center; flex-shrink: 0; width: 1.5rem; height: 1.5rem; border: 2px solid var(--cx-border); border-radius: 50%; color: #fff; }
+.cx-needlist li.is-done .cx-needlist__mark { border-color: #16a34a; background: #16a34a; }
+.cx-needlist li.is-done strong { color: var(--cx-muted); }
+
+/* ── Make Payment: Pay in USD / Pay in INR, like the reference portal (client feedback, Oct 2026) ── */
+.cx-pay__due { margin: 0; color: #b91c1c; font-weight: 700; }
+.cx-pay__due strong { font-size: 1.05rem; }
+.cx-pay__terms { margin: 0; color: var(--cx-muted); font-size: .86rem; }
+.cx-pay__terms strong { color: #b91c1c; }
+.cx-pay__split { display: grid; grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr); border: 1px solid var(--cx-border); border-radius: 14px; overflow: hidden; }
+@media (max-width: 760px) { .cx-pay__split { grid-template-columns: minmax(0, 1fr); } }
+.cx-pay__options { display: grid; align-content: start; border-right: 1px solid var(--cx-border); background: var(--cx-card-2); }
+.cx-pay__option { display: flex; align-items: flex-start; gap: .65rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--cx-border); cursor: pointer; }
+.cx-pay__option input { margin-top: .2rem; accent-color: var(--cx-brand); }
+.cx-pay__option span { display: grid; gap: .15rem; }
+.cx-pay__option strong { color: var(--cx-ink); }
+.cx-pay__option small { color: var(--cx-muted); font-size: .78rem; }
+.cx-pay__option.is-on { background: var(--cx-card); box-shadow: inset 3px 0 0 var(--cx-brand); }
+.cx-pay__option.is-on strong { color: #b91c1c; }
+.cx-pay__panel { padding: 1.4rem; min-width: 0; }
+.cx-pay__now { width: 100%; padding: 1.1rem; border: 0; border-radius: 12px; background: #2563eb; color: #fff; font: 800 1.15rem var(--font-heading, inherit); letter-spacing: .04em; cursor: pointer; box-shadow: 0 14px 28px -14px rgba(37, 99, 235, .9); }
+.cx-pay__now:hover { background: #1d4ed8; }
+.cx-pay__brands { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; color: var(--cx-muted); font-size: .78rem; font-weight: 600; }
+
+.cx-paydlg { width: min(46rem, calc(100vw - 2rem)); padding: 0; border: 0; border-radius: 16px; background: var(--cx-card); color: var(--cx-ink); box-shadow: 0 30px 80px -20px rgba(15, 23, 42, .5); }
+.cx-paydlg::backdrop { background: rgba(15, 23, 42, .55); }
+.cx-paydlg__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); min-height: 26rem; margin: 0; }
+@media (max-width: 640px) { .cx-paydlg__grid { grid-template-columns: minmax(0, 1fr); } }
+.cx-paydlg__brand { display: flex; flex-direction: column; gap: .4rem; padding: 1.6rem; background: #0b66d0; color: #fff; }
+.cx-paydlg__brand strong { font-size: 1rem; }
+.cx-paydlg__logo { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 10px; background: #fff; color: #0b66d0; font-weight: 800; }
+.cx-paydlg__paying { margin: 1.2rem 0 0; font-size: .68rem; font-weight: 700; letter-spacing: .08em; opacity: .85; }
+.cx-paydlg__amount { margin: 0; font-size: 1.6rem; font-weight: 800; }
+.cx-paydlg__secure { display: flex; align-items: center; gap: .4rem; margin: auto 0 0; font-size: .72rem; font-weight: 700; letter-spacing: .03em; opacity: .9; }
+.cx-paydlg__main { display: flex; flex-direction: column; gap: .9rem; padding: 1.3rem 1.5rem 1.5rem; }
+.cx-paydlg__head { display: flex; align-items: center; justify-content: space-between; margin: -1.3rem -1.5rem .2rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--cx-border); }
+.cx-paydlg__head h2 { margin: 0; font-size: 1rem; }
+.cx-paydlg__close { border: 0; background: none; color: var(--cx-ink); cursor: pointer; }
+.cx-paydlg__money { display: flex; align-items: center; border: 1px solid var(--cx-border); border-radius: 10px; overflow: hidden; }
+.cx-paydlg__money span { padding: 0 .8rem; color: var(--cx-muted); font-weight: 700; border-right: 1px solid var(--cx-border); }
+.cx-paydlg__money .cx-input { border: 0; border-radius: 0; }
+.cx-paydlg__go { width: 100%; justify-content: center; margin-top: auto; padding-block: .85rem; }
+.cx-paydlg__note { margin: 0; font-size: .8rem; color: var(--cx-muted); }
+.cx-paydlg__note--off { color: #b45309; }
+.cx-paydlg, .cx-paydlg__main { background: #ffffff; }
+html[data-theme="dark"] .cx-paydlg, html[data-theme="dark"] .cx-paydlg__main { background: #0f172a; }

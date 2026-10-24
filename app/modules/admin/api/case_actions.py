@@ -2,15 +2,16 @@
 Same rules as the staff portal (platform/services/case_actions.py)."""
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Form, HTTPException
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.files import send_file
 from app.core.deps import AdminAccount
 from app.platform.models.filing_document import FilingDocument
 from app.platform.models.tax_filing import TaxFiling
-from app.platform.services import case_actions
+from app.platform.services import access_log, case_actions
 
 router = APIRouter(prefix="/admin/cases", tags=["admin"])
 
@@ -60,7 +61,9 @@ def case_comment_document(case_id: str, doc_id: str, account: AdminAccount, db: 
 
 
 @router.get("/{case_id}/documents/{doc_id}/file", name="admin_case_document_file")
-def case_document_file(case_id: str, doc_id: str, account: AdminAccount, db: Session = Depends(get_db), download: bool = False):
+def case_document_file(case_id: str, doc_id: str, request: Request, account: AdminAccount, db: Session = Depends(get_db),
+                       download: bool = False):
     d = _document(db, case_id, doc_id)
-    return FileResponse(path=d.file_path, filename=d.original_filename, media_type=d.mime_type,
-                        content_disposition_type="attachment" if download else "inline")
+    access_log.record(db, request, account.id, "document_downloaded" if download else "document_viewed", "filing_document", d.id,
+                      case_id=case_id, name=d.original_filename)
+    return send_file(d.file_path, d.original_filename, d.mime_type, inline=not download)

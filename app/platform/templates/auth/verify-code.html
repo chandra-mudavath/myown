@@ -1,0 +1,31 @@
+{% extends "auth/_layout.html" %}
+{% from "auth/_icons.html" import icon %}
+{% block title %}Enter Code - {{ app_name }}{% endblock %}
+{% block auth_heading %}{% if purpose == "signup" %}Confirm your <span>email</span>{% else %}Check your <span>email</span>{% endif %}{% endblock %}
+{% block auth_subtitle %}We sent a 6-digit code to {{ masked_email }}. It expires in {{ minutes }} minutes.{% endblock %}
+{% block auth_form %}
+<form class="au-fields" method="POST" action="/auth/verify-code">
+    {% if error %}
+    <div class="alert alert--error">{{ error }}</div>
+    {% endif %}
+    {% if msg %}
+    <div class="alert alert--success">{{ msg }}</div>
+    {% endif %}
+
+    <div class="au-input">
+        <label class="au-sr" for="code">6-digit code</label>
+        {{ icon("key") }}
+        <input name="code" id="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+            placeholder="Enter 6-digit code" class="form-input" autocomplete="one-time-code" required autofocus />
+    </div>
+
+    <button type="submit" class="au-btn">{{ icon("sign-in", "au-btn__icon") }}{% if purpose == "signup" %}Confirm and continue{% else %}Verify and sign in{% endif %}</button>
+</form>
+
+<form class="au-fields" method="POST" action="/auth/verify-code/resend">
+    <p class="au-foot">
+        Didn't get it? Check Spam, or <button type="submit" class="au-link">send a new code</button>
+    </p>
+    <p class="au-foot"><a href="/auth/login" class="au-link">Back to sign in</a></p>
+</form>
+{% endblock %}

@@ -82,10 +82,10 @@
                             <td>{{ method_labels.get(p.payment_method, p.payment_method) }}</td>
                             <td>
                                 <span class="admin-pill admin-pill--{{ pay_tone.get(p.status, 'slate') }}">{{ ('Processing at PayPal' if p.transaction_reference else 'Checkout started') if p.gateway == 'paypal' and p.status == 'pending' else pay_label.get(p.status, p.status) }}</span>
-                                {% if (p.status == 'pending' and p.gateway == 'manual') or p.proof_path %}
+                                {% if (p.status == 'pending' and (p.gateway == 'manual' or p.transaction_reference)) or p.proof_path %}
                                 <div class="admin-doc-actions">
                                     {% if p.proof_path %}<a class="admin-mini-btn" href="/admin/payments/payments/{{ p.id }}/proof" target="_blank" rel="noopener">Proof</a>{% endif %}
-                                    {% if p.status == 'pending' and p.gateway == 'manual' %}
+                                    {% if p.status == 'pending' and (p.gateway == 'manual' or p.transaction_reference) %}
                                     <form method="post" action="/admin/payments/payments/{{ p.id }}/verify" onsubmit="return confirm('Confirm {{ money.format(p.amount) }} was received for {{ invoice.invoice_number }}?');">
                                         <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Verify</button>
                                     </form>

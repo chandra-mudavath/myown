@@ -1,6 +1,9 @@
+import io
 from abc import ABC, abstractmethod
 from typing import BinaryIO, Optional
 from pathlib import Path
+
+from app.core.crypto import decrypt_bytes, encrypt_bytes
 
 
 class BaseStorageProvider(ABC):
@@ -32,9 +35,8 @@ class LocalLocalStorageProvider(BaseStorageProvider):
         destination = Path(storage_key)
         destination.parent.mkdir(parents=True, exist_ok=True)
 
-        file_bytes = file_obj.read()
-        with open(destination, "wb") as f:
-            f.write(file_bytes)
+        # Encrypted at rest (app/core/crypto.py); send_file decrypts on the way out
+        destination.write_bytes(encrypt_bytes(file_obj.read()))
 
         try:
             return str(destination.resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
@@ -42,7 +44,8 @@ class LocalLocalStorageProvider(BaseStorageProvider):
             return str(destination).replace("\\", "/")
 
     def open(self, storage_key: str) -> BinaryIO:
-        return open(storage_key, "rb")
+        """The file's original (decrypted) bytes."""
+        return io.BytesIO(decrypt_bytes(Path(storage_key).read_bytes()))
 
     def delete(self, storage_key: str) -> bool:
         p = Path(storage_key)

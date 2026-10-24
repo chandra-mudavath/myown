@@ -182,6 +182,8 @@
                 stageDialog.querySelector("[data-stage-current]").textContent = button.dataset.current;
                 [...select.options].forEach((o) => { o.disabled = o.value === button.dataset.currentKey; });
                 select.value = button.dataset.next || select.options[0].value;
+                const comment = form.querySelector("textarea[name=comment]");
+                if (comment) comment.value = "";
                 form.dataset.caseLabel = button.dataset.case.split(" · ")[0];
                 stageDialog.showModal();
                 select.focus();
@@ -196,13 +198,21 @@
         });
     }
 
-    // One-shot confirmation message after a redirect (e.g. a stage move)
+    // One-shot confirmation message after a redirect (e.g. a stage move). A refused move comes back
+    // with ?move_error=… instead, which replaces the "moved" message.
     try {
-        const flash = sessionStorage.getItem("staff-flash");
+        const params = new URLSearchParams(window.location.search);
+        const moveError = params.get("move_error");
+        let flash = sessionStorage.getItem("staff-flash");
+        if (moveError) {
+            flash = moveError;
+            params.delete("move_error");
+            history.replaceState(null, "", window.location.pathname + (params.toString() ? "?" + params : "") + window.location.hash);
+        }
         if (flash) {
             sessionStorage.removeItem("staff-flash");
             const toast = document.createElement("div");
-            toast.className = "staff-toast";
+            toast.className = "staff-toast" + (moveError ? " staff-toast--error" : "");
             toast.setAttribute("role", "status");
             toast.textContent = flash;
             document.body.append(toast);

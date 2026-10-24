@@ -6,9 +6,12 @@
 {% set page_subtitle = "IRS Form 8879: sign electronically so your tax team can transmit your " ~ selected_year ~ " return." %}
 
 {% block page %}
+{% if form_error %}<div class="cx-alert cx-alert--error" role="alert" style="margin-bottom:1rem;">{{ ci("alert") }}<p>{{ form_error }}</p></div>{% endif %}
+{% if form_saved %}<div class="cx-alert cx-alert--success" role="status" style="margin-bottom:1rem;">{{ ci("check-circle") }}<p>{{ form_saved }}</p></div>
+{% elif efile_row %}<div class="cx-alert" role="status" style="margin-bottom:1rem;">{{ ci("info") }}<p>You signed Form 8879 for {{ selected_year }} on {{ efile_row.submitted_at.strftime('%b %d, %Y') }}. Sign again only if your tax team asks you to.</p></div>{% endif %}
 <div class="cx-grid cx-grid--main">
     <section class="cx-card" aria-labelledby="sign-title">
-        <form data-cx-demo="Form 8879 authorization submitted.">
+        <form method="post" action="/client/efile-authorization">{# was data-cx-demo (nothing saved) #}
             <div class="cx-card__head">
                 <div>
                     <h2 class="cx-card__title" id="sign-title">{{ ci("sign") }} Electronic <span class="cx-accent">signature</span></h2>
@@ -48,7 +51,7 @@
                 <dl class="cx-kv">
                     <div><dt>Tax year</dt><dd>{{ selected_year }}</dd></div>
                     <div><dt>Form</dt><dd>8879</dd></div>
-                    <div><dt>Status</dt><dd>Awaiting signature</dd></div>
+                    <div><dt>Status</dt><dd>{% if efile_row %}Signed {{ efile_row.submitted_at.strftime('%b %d, %Y') }}{% else %}Awaiting signature{% endif %}</dd></div>
                 </dl>
             </div>
         </section>

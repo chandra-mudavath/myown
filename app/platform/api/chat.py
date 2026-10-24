@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,7 @@ from app.modules.client.api.dashboard import client_shell_context
 from app.modules.staff.api.staff import _nav_context
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.files import send_file
 from app.core.deps import AdminAccount, ClientAccount, StaffAccount, VerifiedAccount
 from app.core.templates import templates
 from app.modules.admin.models.admin import Admin
@@ -34,7 +35,7 @@ def _chat_context(request: Request, thread: str | None, case: str | None) -> dic
 def staff_messages(request: Request, account: StaffAccount, thread: str | None = None, case: str | None = None,
                    db: Session = Depends(get_db)):
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
-    return templates.TemplateResponse("staff/messages.html", {
+    return templates.TemplateResponse(request, "staff/messages.html", {
         **_chat_context(request, thread, case), "account": account, "staff": staff,
         **_nav_context(db, staff), "active_nav": "messages",
     })
@@ -44,7 +45,7 @@ def staff_messages(request: Request, account: StaffAccount, thread: str | None =
 def admin_messages(request: Request, account: AdminAccount, thread: str | None = None, case: str | None = None,
                    db: Session = Depends(get_db)):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
-    return templates.TemplateResponse("admin/messages.html", {
+    return templates.TemplateResponse(request, "admin/messages.html", {
         **_chat_context(request, thread, case), "account": account, "admin": admin, "active_nav": "messages",
     })
 
@@ -52,7 +53,7 @@ def admin_messages(request: Request, account: AdminAccount, thread: str | None =
 @router.get("/client/messages", response_class=HTMLResponse, name="client_messages")
 def client_messages(request: Request, account: ClientAccount, thread: str | None = None, case: str | None = None,
                     tax_year: str | None = None, db: Session = Depends(get_db)):
-    return templates.TemplateResponse("client/messages.html", {
+    return templates.TemplateResponse(request, "client/messages.html", {
         **_chat_context(request, thread, case), **client_shell_context(db, account, tax_year), "active_nav": "messages",
     })
 
@@ -251,5 +252,4 @@ def api_topics(account: VerifiedAccount, db: Session = Depends(get_db)):
 @router.get("/chat/attachments/{attachment_id}")
 def chat_attachment(attachment_id: str, account: VerifiedAccount, download: bool = False, db: Session = Depends(get_db)):
     a = chat.attachment_for(db, _viewer(db, account), attachment_id)
-    return FileResponse(path=a.file_path, filename=a.original_filename, media_type=a.mime_type,
-                        content_disposition_type="attachment" if download else "inline")
+    return send_file(a.file_path, a.original_filename, a.mime_type, inline=not download)

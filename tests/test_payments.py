@@ -93,10 +93,11 @@ def submit(client: TestClient, invoice_id: str, ref: str = "UTR412345678901", **
 
 
 def test_client_sees_amount_due(env):
-    page = as_(env, "client").get("/client/tax-summary")
+    page = as_(env, "client").get("/client/make-payment")
     assert page.status_code == 200
-    # The amount to pay starts at the full balance; the client can change it.
-    assert 'name="pay_amount"' in page.text and 'value="150.00"' in page.text
+    # Make Payment is its own page: Pay in USD or Pay in INR, and the client types the amount (blank, up to the balance).
+    assert 'name="pay_option" value="usd"' in page.text and 'name="pay_option" value="inr"' in page.text
+    assert 'name="pay_amount"' in page.text and 'max="150.00"' in page.text and 'value="150.00"' not in page.text
     assert 'action="/client/payments/manual"' in page.text
 
 
@@ -112,7 +113,7 @@ def test_partial_payment_leaves_the_rest_due(env):
     db.expire_all()
     assert db.get(Invoice, env["invoice_id"]).status == "partially_paid"
     assert db.get(TaxFiling, env["filing_id"]).status == "payment_pending"  # not paid in full yet
-    assert 'value="50.00"' in client.get("/client/tax-summary").text
+    assert 'max="50.00"' in client.get("/client/make-payment").text
     db.close()
 
 
@@ -173,7 +174,7 @@ def test_rejects_bad_input(env):
 
 class FakePayPal:
     def __init__(self):
-        self.orders, self.captured = {}, []
+        self.orders, self.captured, self.capture_status = {}, [], "COMPLETED"
 
     def create_order(self, *, amount, custom_id, **_):
         order_id = f"ORDER{len(self.orders) + 1}"
@@ -184,7 +185,7 @@ class FakePayPal:
         self.captured.append(order_id)
         o = self.orders[order_id]
         return {"purchase_units": [{"payments": {"captures": [
-            {"id": f"CAP-{order_id}", "status": "COMPLETED", "custom_id": o["custom_id"],
+            {"id": f"CAP-{order_id}", "status": self.capture_status, "custom_id": o["custom_id"],
              "amount": {"value": f"{o['amount']:.2f}", "currency_code": "USD"}}]}}]}
 
 
@@ -196,13 +197,13 @@ def fake_paypal(monkeypatch):
     monkeypatch.setattr(settings, "PAYPAL_CLIENT_SECRET", "secret")
     monkeypatch.setattr(paypal, "create_order", fake.create_order)
     monkeypatch.setattr(paypal, "capture_order", fake.capture_order)
-    monkeypatch.setattr(paypal, "verify_webhook", lambda headers, event: headers.get("paypal-transmission-sig") == "ok")
     return fake
 
 
-def test_paypal_is_the_default_when_configured(env, fake_paypal):
-    page = as_(env, "client").get("/client/tax-summary").text
-    assert 'value="paypal" checked' in page and "/client/payments/paypal/start" in page
+def test_paypal_is_offered_under_pay_in_us_when_configured(env, fake_paypal):
+    page = as_(env, "client").get("/client/make-payment").text
+    # Pay in USD → Pay now → the "Complete your payment" window posts to PayPal's checkout
+    assert "data-pay-open" in page and 'action="/client/payments/paypal/start"' in page and "Continue to payment" in page
 
 
 def test_paypal_checkout_capture(env, fake_paypal):
@@ -239,20 +240,33 @@ def test_paypal_cancel_and_other_clients(env, fake_paypal):
     db.close()
 
 
-def test_paypal_webhooks(env, fake_paypal):
-    client, hook = as_(env, "client"), TestClient(app)
+def test_no_webhook_endpoint(env):
+    assert TestClient(app).post("/webhooks/paypal", json={}).status_code == 404
+
+
+def test_paypal_pending_capture_is_verified_by_admin(env, fake_paypal):
+    """Without webhooks, a capture PayPal leaves pending is checked in PayPal and verified by an admin."""
+    client, admin = as_(env, "client"), as_(env, "admin")
+    fake_paypal.capture_status = "PENDING"
     client.post("/client/payments/paypal/start", data={"invoice_id": env["invoice_id"]}, follow_redirects=False)
-    approved = {"event_type": "CHECKOUT.ORDER.APPROVED", "resource": {"id": "ORDER1"}}
-    assert hook.post("/webhooks/paypal", json=approved, headers={"paypal-transmission-sig": "forged"}).status_code == 400
-    # the client closed the browser after approving; the webhook captures it
-    assert hook.post("/webhooks/paypal", json=approved, headers={"paypal-transmission-sig": "ok"}).status_code == 200
+    client.get("/client/payments/paypal/return?token=ORDER1", follow_redirects=False)
     db = env["Session"]()
     pay = db.query(Payment).one()
-    assert pay.status == "succeeded" and db.get(Invoice, env["invoice_id"]).status == "paid"
-    refund = {"event_type": "PAYMENT.CAPTURE.REFUNDED", "resource": {
-        "id": "REF1", "custom_id": pay.id, "amount": {"value": "150.00", "currency_code": "USD"},
-        "links": [{"rel": "up", "href": "https://api.paypal.test/v2/payments/captures/CAP-ORDER1"}]}}
-    hook.post("/webhooks/paypal", json=refund, headers={"paypal-transmission-sig": "ok"})
+    assert pay.status == "pending" and pay.transaction_reference == "CAP-ORDER1"
+    assert db.get(Invoice, env["invoice_id"]).status == "issued"
+    assert "Awaiting verification" in admin.get("/admin/payments").text
+    admin.post(f"/admin/payments/payments/{pay.id}/verify", follow_redirects=False)
     db.expire_all()
-    assert db.get(Payment, pay.id).status == "refunded" and db.get(Invoice, env["invoice_id"]).status == "issued"
+    assert db.get(Payment, pay.id).status == "succeeded" and db.get(Invoice, env["invoice_id"]).status == "paid"
+    db.close()
+
+
+def test_unfinished_paypal_checkout_is_not_reviewable(env, fake_paypal):
+    client, admin = as_(env, "client"), as_(env, "admin")
+    client.post("/client/payments/paypal/start", data={"invoice_id": env["invoice_id"]}, follow_redirects=False)
+    db = env["Session"]()
+    pay = db.query(Payment).one()
+    assert "error=" in admin.post(f"/admin/payments/payments/{pay.id}/verify", follow_redirects=False).headers["location"]
+    db.expire_all()
+    assert db.get(Payment, pay.id).status == "pending"
     db.close()

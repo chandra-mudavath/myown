@@ -3,17 +3,18 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.files import send_file
 from app.core.deps import AdminAccount
 from app.core.templates import templates
 from app.modules.admin.services import billing
 from app.modules.admin.services.profile_service import current_admin
 from app.platform.models.billing import Invoice, Payment
-from app.platform.services import payments as client_payments
+from app.platform.services import access_log, payments as client_payments
 
 router = APIRouter(prefix="/admin/payments", tags=["admin"])
 
@@ -39,7 +40,7 @@ def _invoice_or_404(db: Session, invoice_id: str) -> Invoice:
 
 @router.get("", response_class=HTMLResponse, name="admin_payments")
 def payments_home(request: Request, account: AdminAccount, db: Session = Depends(get_db), status: str = "", q: str = ""):
-    return templates.TemplateResponse("admin/payments/index.html", _ctx(
+    return templates.TemplateResponse(request, "admin/payments/index.html", _ctx(
         request, account, db, summary=billing.summary(db), invoices=billing.list_invoices(db, status, q),
         pending=client_payments.pending_payments(db),
         filters=FILTERS, status=status, q=q))
@@ -48,7 +49,7 @@ def payments_home(request: Request, account: AdminAccount, db: Session = Depends
 @router.get("/invoices/new", response_class=HTMLResponse, name="admin_invoice_new")
 def invoice_new(request: Request, account: AdminAccount, db: Session = Depends(get_db), case_id: str = "", error: str = ""):
     today = datetime.now(timezone.utc).date()
-    return templates.TemplateResponse("admin/payments/new.html", _ctx(
+    return templates.TemplateResponse(request, "admin/payments/new.html", _ctx(
         request, account, db, **billing.form_options(db), case_id=case_id, error=error,
         today=today.isoformat(), due=(today + timedelta(days=14)).isoformat(), form={}))
 
@@ -61,7 +62,7 @@ async def invoice_create(request: Request, account: AdminAccount, db: Session = 
                                       str(form.get("tax", "")), str(form.get("invoice_date", "")), str(form.get("due_date", "")))
     if err:
         # show the form again with what was entered
-        return templates.TemplateResponse("admin/payments/new.html", _ctx(
+        return templates.TemplateResponse(request, "admin/payments/new.html", _ctx(
             request, account, db, **billing.form_options(db), case_id=str(form.get("case_id", "")), error=err,
             today=str(form.get("invoice_date", "")), due=str(form.get("due_date", "")), form=dict(form)), status_code=422)
     return _to_invoice(inv.id, None, "Invoice created as a draft.")
@@ -73,7 +74,7 @@ def invoice_view(invoice_id: str, request: Request, account: AdminAccount, db: S
     detail = billing.invoice_detail(db, invoice_id)
     if not detail:
         raise HTTPException(status_code=404, detail="Invoice not found.")
-    return templates.TemplateResponse("admin/payments/invoice.html", _ctx(
+    return templates.TemplateResponse(request, "admin/payments/invoice.html", _ctx(
         request, account, db, **detail, methods=billing.METHODS, method_labels=billing.METHOD_LABELS,
         today=datetime.now(timezone.utc).date().isoformat(), saved=saved, error=error))
 
@@ -121,9 +122,9 @@ def payment_reject(payment_id: str, account: AdminAccount, db: Session = Depends
 
 
 @router.get("/payments/{payment_id}/proof", name="admin_payment_proof")
-def payment_proof(payment_id: str, account: AdminAccount, db: Session = Depends(get_db)):
+def payment_proof(payment_id: str, request: Request, account: AdminAccount, db: Session = Depends(get_db)):
     pay = _payment_or_404(db, payment_id)
     if not pay.proof_path:
         raise HTTPException(status_code=404, detail="No proof was attached.")
-    return FileResponse(pay.proof_path, media_type=pay.proof_mime, filename=pay.proof_filename,
-                        content_disposition_type="inline")
+    access_log.record(db, request, account.id, "payment_proof_viewed", "payment", pay.id)
+    return send_file(pay.proof_path, pay.proof_filename, pay.proof_mime, inline=True)

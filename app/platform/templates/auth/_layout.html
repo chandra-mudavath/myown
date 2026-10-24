@@ -1,3 +1,4 @@
+{% from "partials/brand_name.html" import brand_name %}
 {% extends "base.html" %}
 {#- Shared shell for every auth page: full-page photo, twinkling stars, landing-page colors.
     Form column on the left (centered logo + one-line heading, icon inputs), headline + trust copy on the right.
@@ -18,7 +19,7 @@
 
         <div class="au-form{% block form_modifier %}{% endblock %}">
             <div class="au-form__head">
-                <a class="au-logo" href="/">{{ app_name }}</a>
+                <a class="au-logo" href="/">{{ brand_name(app_name) }}</a>
                 <h1 class="au-title">{% block auth_heading %}{% endblock %}</h1>
                 {% if self.auth_subtitle()|trim %}
                 <p class="au-subtitle">{% block auth_subtitle %}{% endblock %}</p>

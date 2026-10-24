@@ -3,6 +3,7 @@ from app.platform.models.auth import (  # noqa: F401
     AuthAccount,
     AuthEmailVerificationToken,
     AuthLoginAttempt,
+    AuthLoginOtp,
     AuthPasswordResetToken,
     AuthRefreshToken,
     AuthSession,
@@ -33,7 +34,9 @@ from app.modules.staff.models.staff_records import (  # noqa: F401
 )
 from app.platform.models.case_workflow import Acknowledgment, CaseAssignment, CaseStageHistory, IrsSubmission  # noqa: F401
 from app.platform.models.billing import CaseService, Invoice, Payment, Service  # noqa: F401
-from app.platform.models.system import AuditLog, Notification  # noqa: F401
+from app.platform.models.system import AppSetting, AuditLog, Notification  # noqa: F401
+from app.platform.models.referral import ReferralFollowUp, ReferralLead  # noqa: F401
+from app.platform.models.filing_intake import FilingIntake  # noqa: F401
 from app.platform.models.id_sequence import IdSequence  # noqa: F401
 from app.platform.models.chat import ChatAttachment, ChatMessage, ChatParticipant, ChatThread  # noqa: F401
 

@@ -16,9 +16,12 @@
         </button>
     </div>
     <nav class="sidebar-nav" aria-label="Staff navigation">
+        {#- HR accounts never see clients or cases: only Messages and Profile -#}
+        {% if not is_hr %}
         <a class="sidebar-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/staff/dashboard">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("dashboard") }}</span> Dashboard
         </a>
+        {% endif %}
 
         {# Cases (My Cases / All Cases) and Clients: hidden for now (client feedback, Oct 2026). The pages still work.
         <div class="sidebar-dropdown-wrap">
@@ -48,6 +51,11 @@
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("send") }}</span> Messages
             <span class="staff-unread-pill" data-chat-unread hidden style="display:none"></span>
         </a>
+        {% if not is_hr %}
+        <a class="sidebar-nav-item{% if active_nav == 'referrals' %} active{% endif %}" href="/staff/referrals">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("phone") }}</span> Referrals
+        </a>
+        {% endif %}
         {# Notifications: hidden for now (client feedback, Oct 2026)
         <a class="sidebar-nav-item{% if active_nav == 'notifications' %} active{% endif %}" href="/staff/notifications">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("mail") }}</span> Notifications
@@ -55,7 +63,44 @@
         </a>
         #}
 
-        {% if stages %}
+        {#- Client view (client feedback, Oct 2026): opening a client from their readable number shows the
+            tax year, the client number, then that client's information, in place of the stage list.
+            One "Documents" link (client feedback, Oct 2026): the page has both the client's uploads and the
+            drafts sent for review. The separate link was:
+                ("review", case_url ~ "/documents#review-docs", "eye", "Review documents"), -#}
+        {% set cn = client_nav if client_nav is defined else none %}
+        {% if cn %}
+        {% set case_url = "/staff/cases/" ~ cn.case_id %}
+        <div class="staff-clientnav" aria-label="Client information">
+            <label class="sidebar-nav-label" for="clientnav-year">Tax year</label>
+            <select id="clientnav-year" class="staff-select staff-clientnav__year" onchange="if (this.value) window.location = this.value">
+                {% for year, case_id in cn.years %}
+                <option value="/staff/cases/{{ case_id }}" {% if year == cn.tax_year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+            <div class="staff-clientnav__who">
+                <span class="staff-id-chip">{{ cn.client_number or '—' }}</span>
+                <strong>{{ cn.client_name }}</strong>
+            </div>
+            {% for key, href, icon, label in [
+                ("personal", case_url ~ "#sec-01", "user", "Personal details"),
+                ("filing", case_url ~ "#sec-02", "file", "Filing details"),
+                ("family", case_url ~ "#sec-03", "users", "Spouse & dependents"),
+                ("income", case_url ~ "#sec-notes", "refund", "Tax notes"),
+                ("previous", case_url ~ "#sec-07", "history", "Previous tax info"),
+                ("documents", case_url ~ "/documents", "folder", "Documents"),
+                ("bank", case_url ~ "#sec-bank", "bank", "Bank details"),
+                ("profile", "/staff/clients/" ~ cn.client_id, "user", "Client profile"),
+                ("message", "/staff/messages?case=" ~ cn.case_id, "send", "Message client"),
+            ] %}
+            <a class="sidebar-nav-item staff-clientnav__item{% if (key == 'documents' and cn.section == 'documents') or (key == 'personal' and cn.section == 'case') %} active{% endif %}" href="{{ href }}">
+                <span class="sidebar-nav-icon" aria-hidden="true">{{ ci(icon) }}</span> {{ label }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if stages and not cn and not is_hr %}
         <p class="sidebar-nav-label">Stages</p>
         <ul class="staff-stage-list">
             {% for stage in stages if stage.slug != 'in_progress' %}{# In Progress: hidden for now (client feedback, Oct 2026) #}

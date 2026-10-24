@@ -1,22 +1,27 @@
+import re
+from datetime import datetime, timezone
 from typing import List, Optional
 from urllib.parse import urlencode
 from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, File, Request, UploadFile, status
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.modules.client.api.dashboard import client_shell_context, resolve_tax_year
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.files import send_file
 from app.core.deps import ClientAccount
 from app.core.templates import templates
 from app.modules.client.models.client import Client
 from app.platform.models.filing_document import FilingDocument
-from app.platform.models.lookups import CaseStage
+from app.platform.models.lookups import CaseStage, ChatQueryTopic
 from app.platform.models.tax_filing import TaxFiling
 from app.modules.client.schemas.tax_filing import TaxFilingCreate
-from app.platform.services import payments, paypal
-from app.platform.services.catalog import document_categories, open_tax_years, tax_types
-from app.platform.services.document_review import account_names, add_comment, comment_threads, store_upload
+from app.platform.services import chat_service, intake, payments, paypal, referrals
+from app.platform.models.auth import AuthAccount
+from app.platform.services.catalog import case_document_types, document_categories, open_tax_years, tax_types
+from app.platform.services.document_review import (REVIEW_CATEGORY, account_names, add_comment, comment_threads, review_documents,
+                                                   store_upload)
 from app.platform.services.storage_service import generate_uuid, save_document_file
 
 router = APIRouter(prefix="/client", tags=["client"])
@@ -104,7 +109,7 @@ async def my_filings_page(
         }
 
     return templates.TemplateResponse(
-        "client/filings.html",
+        request, "client/filings.html",
         {
             "request": request,
             **client_shell_context(db, account, tax_year),
@@ -123,9 +128,14 @@ async def new_filing_page(
     db: Session = Depends(get_db),
     tax_year: str | None = Cookie(None),
 ):
+    # No longer used (client feedback, Oct 2026): clients fill Personal Info, Tax Notes, Upload Documents and
+    # Bank Details instead, and the year's case is created on their first save. Old links land on Personal Info.
+    # The form below (client/new_filing.html) is kept, switched off.
+    if True:
+        return RedirectResponse("/client/personal-info", status_code=status.HTTP_303_SEE_OTHER)
     shell = client_shell_context(db, account, tax_year)
     return templates.TemplateResponse(
-        "client/new_filing.html",
+        request, "client/new_filing.html",
         {
             "request": request,
             **shell,
@@ -281,6 +291,7 @@ async def client_documents_page(
     has_active_filing: bool = False
     uploaders: dict[str, str] = {}
     threads: dict = {}
+    filing = None
 
     if client:
         # Check if client has any filing for the selected year
@@ -303,7 +314,8 @@ async def client_documents_page(
             current_filing_id = filing.id
             docs = (
                 db.query(FilingDocument)
-                .filter(FilingDocument.filing_id == filing.id, FilingDocument.is_latest == True)
+                .filter(FilingDocument.filing_id == filing.id, FilingDocument.is_latest == True,
+                        FilingDocument.category != REVIEW_CATEGORY)  # those are on Review Documents
                 .order_by(FilingDocument.uploaded_at.desc())
                 .all()
             )
@@ -320,7 +332,7 @@ async def client_documents_page(
             threads = comment_threads(db, filing.id)
 
     return templates.TemplateResponse(
-        "client/documents.html",
+        request, "client/documents.html",
         {
             "request": request,
             **client_shell_context(db, account, tax_year),
@@ -328,6 +340,9 @@ async def client_documents_page(
             "selected_year": selected_year,
             "documents_by_category": documents_by_category,
             "category_labels": category_labels,
+            "document_types": case_document_types(db),
+            "checklist": intake.checklist(db, filing) if client and filing else None,
+            "upload_saved": request.query_params.get("saved", ""),
             "current_filing_id": current_filing_id,
             "has_active_filing": has_active_filing,
             "uploaders": uploaders,
@@ -388,6 +403,34 @@ async def client_reply_document(
         )
     db.commit()
     return RedirectResponse(f"/client/documents#doc-{doc.document_group_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/documents/upload", name="upload_client_document_for_year")
+async def upload_client_document_for_year(
+    account: ClientAccount,
+    category: str = Form(...),
+    document_name: Optional[str] = Form(None),
+    document_type: Optional[str] = Form(None),
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    tax_year: str | None = Cookie(None),
+):
+    """Upload for the selected tax year. The year's case is created on the first upload if needed
+    (client feedback, Oct 2026: no separate New filing step)."""
+    client = _own_client(db, account)
+    year = resolve_tax_year(db, tax_year)
+    filing = intake.ensure_filing(db, client, db.get(AuthAccount, account.id), year)
+    codes = {t.code for t in case_document_types(db)}
+    saved = []
+    for file in files:
+        if not file.filename:
+            continue
+        saved.append(store_upload(db, client=client, filing=filing, file=file, category=category, document_name=document_name,
+                                  document_group_id=None, uploaded_by_type="client", uploaded_by_id=account.id,
+                                  document_type=document_type if document_type in codes else None))
+    db.commit()
+    return JSONResponse(status_code=status.HTTP_201_CREATED,
+                        content={"message": f"Successfully uploaded {len(saved)} file(s).", "filing_id": filing.id})
 
 
 @router.post("/filings/{filing_id}/upload", name="upload_client_document")
@@ -492,6 +535,7 @@ async def download_client_document(
     filing_id: str,
     doc_id: str,
     account: ClientAccount,
+    inline: bool = False,
     db: Session = Depends(get_db),
 ):
     client = db.query(Client).filter(Client.account_id == account.id).first()
@@ -508,7 +552,7 @@ async def download_client_document(
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
-    return FileResponse(path=doc.file_path, filename=doc.original_filename, media_type=doc.mime_type)
+    return send_file(doc.file_path, doc.original_filename, doc.mime_type, inline=inline)  # inline: preview on Review Documents
 
 
 def _render_client_section(template_name: str, request: Request, account: ClientAccount, db: Session, tax_year: str | None, active_nav: str,
@@ -527,7 +571,7 @@ def _render_client_section(template_name: str, request: Request, account: Client
         )
 
     return templates.TemplateResponse(
-        template_name,
+        request, template_name,
         {
             "request": request,
             **shell,
@@ -543,17 +587,45 @@ def _render_client_section(template_name: str, request: Request, account: Client
 
 @router.get("/tax-notes", response_class=HTMLResponse, name="client_tax_notes")
 async def client_tax_notes(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/tax_notes.html", request, account, db, tax_year, "tax_notes")
+    def extra(client, filing):
+        row = intake.section(db, filing, intake.TAX_NOTES)
+        return {"notes": (row.data if row else {}) or {}, "notes_row": row, "notes_saved": request.query_params.get("saved", "")}
+    return _render_client_section("client/tax_notes.html", request, account, db, tax_year, "tax_notes", extra=extra)
 
 
-@router.get("/tax-summary", response_class=HTMLResponse, name="client_tax_summary")
-async def client_tax_summary(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+@router.post("/tax-notes", name="client_save_tax_notes")
+async def client_save_tax_notes(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    """Save one Tax Notes sheet (income or expenses). The first save creates the year's case."""
+    form = await request.form()
+    sheet = form.get("sheet")
+    client = _own_client(db, account)
+    filing = intake.ensure_filing(db, client, db.get(AuthAccount, account.id), resolve_tax_year(db, tax_year))
+    data = intake.form_to_dict(form, skip={"sheet", "confirm"})
+    intake.save_section(db, filing, intake.TAX_NOTES, data, account.id, merge=True, submitted=sheet == "expenses")
+    if sheet == "expenses":
+        # Both sheets done: show the documents their answers ask for
+        return RedirectResponse("/client/documents?saved=notes#checklist", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse("/client/tax-notes?saved=income#expenses", status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _billing_extra(request: Request, db: Session):
     def billing(client, filing):
         return {**payments.client_billing(db, client.id, filing), "pay_methods": payments.CLIENT_METHODS,
                 "currencies": payments.CURRENCIES, "paypal_on": paypal.enabled(), "upi_id": settings.PAYMENT_UPI_ID, "upi_payee": settings.PAYMENT_UPI_PAYEE,
                 "bank_lines": [line for line in settings.PAYMENT_BANK_DETAILS.splitlines() if line.strip()],
                 "pay_saved": request.query_params.get("saved", ""), "pay_error": request.query_params.get("error", "")}
-    return _render_client_section("client/tax_summary.html", request, account, db, tax_year, "tax_summary", extra=billing)
+    return billing
+
+
+@router.get("/tax-summary", response_class=HTMLResponse, name="client_tax_summary")
+async def client_tax_summary(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    return _render_client_section("client/tax_summary.html", request, account, db, tax_year, "tax_summary", extra=_billing_extra(request, db))
+
+
+@router.get("/make-payment", response_class=HTMLResponse, name="client_make_payment")
+async def client_make_payment(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    """Make Payment as its own page, separate from Tax Summary (client feedback, Oct 2026)."""
+    return _render_client_section("client/make_payment.html", request, account, db, tax_year, "make_payment", extra=_billing_extra(request, db))
 
 
 @router.post("/payments/manual", name="client_payment_manual")
@@ -577,7 +649,11 @@ async def client_payment_manual(
 
 def _back_to_payments(err: str | None, saved: str) -> RedirectResponse:
     query = urlencode({"error": err} if err else {"saved": saved})
-    return RedirectResponse(f"/client/tax-summary?{query}#{'payment' if err else 'payment-details'}", status_code=303)
+    # Errors go back to the payment form; a saved payment shows in the history on Tax Summary.
+    # Was: f"/client/tax-summary?{query}#{'payment' if err else 'payment-details'}" (before Make Payment had its own page)
+    if err:
+        return RedirectResponse(f"/client/make-payment?{query}", status_code=303)
+    return RedirectResponse(f"/client/tax-summary?{query}#payment-details", status_code=303)
 
 
 def _own_client(db: Session, account) -> Client:
@@ -616,19 +692,115 @@ async def client_paypal_cancel(account: ClientAccount, db: Session = Depends(get
 
 @router.get("/bank-details", response_class=HTMLResponse, name="client_bank_details")
 async def client_bank_details(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/bank_details.html", request, account, db, tax_year, "bank_details")
+    def extra(client, filing):
+        row = intake.section(db, filing, intake.BANK)
+        return {"bank": (row.data if row else {}) or {}, "bank_row": row, "bank_saved": request.query_params.get("saved", ""),
+                "bank_error": request.query_params.get("error", "")}
+    return _render_client_section("client/bank_details.html", request, account, db, tax_year, "bank_details", extra=extra)
+
+
+@router.post("/bank-details", name="client_save_bank_details")
+async def client_save_bank_details(account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None),
+                                   refund_method: str = Form("direct"), bank_name: str = Form(""), account_type: str = Form(""),
+                                   routing_number: str = Form(""), account_number: str = Form(""), holder_name: str = Form("")):
+    """Save the refund bank details for the selected year. The first save creates the year's case."""
+    method = "check" if refund_method == "check" else "direct"
+    data = {"refund_method": method}
+    if method == "direct":
+        routing, number = re.sub(r"\D", "", routing_number), re.sub(r"\D", "", account_number)
+        err = None
+        if not bank_name.strip() or account_type not in ("checking", "savings") or not holder_name.strip():
+            err = "Fill in the bank name, account type and account holder name."
+        elif len(routing) != 9:
+            err = "The routing number (electronic) must be 9 digits."
+        elif not 4 <= len(number) <= 17:
+            err = "The account number must be 4 to 17 digits."
+        if err:
+            return RedirectResponse(f"/client/bank-details?{urlencode({'error': err})}", status_code=status.HTTP_303_SEE_OTHER)
+        data.update(bank_name=bank_name.strip()[:120], account_type=account_type, routing_number=routing, account_number=number,
+                    holder_name=holder_name.strip()[:120])
+    client = _own_client(db, account)
+    filing = intake.ensure_filing(db, client, db.get(AuthAccount, account.id), resolve_tax_year(db, tax_year))
+    intake.save_section(db, filing, intake.BANK, data, account.id, submitted=True)
+    return RedirectResponse(f"/client/bank-details?{urlencode({'saved': 'Bank details saved.'})}", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/review-documents", response_class=HTMLResponse, name="client_review_documents")
 async def client_review_documents(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
     def billing(client, filing):
-        return payments.client_billing(db, client.id, filing)
+        extra = payments.client_billing(db, client.id, filing)
+        if filing:
+            extra["review_docs"] = review_documents(db, filing.id)
+        extra["review_error"] = request.query_params.get("error", "")
+        extra["review_saved"] = request.query_params.get("saved", "")
+        return extra
     return _render_client_section("client/review_documents.html", request, account, db, tax_year, "review_documents", extra=billing)
+
+
+@router.post("/review-documents/{doc_id}/decision", name="client_review_decision")
+async def client_review_decision(doc_id: str, account: ClientAccount, db: Session = Depends(get_db),
+                                 action: str = Form(""), comment: str = Form("")):
+    """The client approves a document the tax team prepared, or rejects it with a comment for the team."""
+    client = _own_client(db, account)
+    doc = (
+        db.query(FilingDocument)
+        .join(TaxFiling, TaxFiling.id == FilingDocument.filing_id)
+        .filter(FilingDocument.id == doc_id, TaxFiling.client_id == client.id, FilingDocument.category == REVIEW_CATEGORY,
+                FilingDocument.is_latest.is_(True))
+        .first()
+    )
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
+    if action not in ("approve", "reject"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown action.")
+    comment = comment.strip()
+    if action == "reject" and not comment:
+        return RedirectResponse(f"/client/review-documents?error={doc_id}#rd-{doc_id}", status_code=status.HTTP_303_SEE_OTHER)
+    doc.status = "client_approved" if action == "approve" else "client_rejected"
+    doc.rejection_reason = comment[:1000] if action == "reject" else None
+    doc.reviewed_at = datetime.now(timezone.utc)
+    doc.reviewed_by_id = account.id
+    add_comment(db, document=doc, kind="client_rejection" if action == "reject" else "client_approval",
+                body=comment or "Approved.", author_type="client", author_account_id=account.id)
+    db.commit()
+    saved = "approved" if action == "approve" else "rejected"
+    return RedirectResponse(f"/client/review-documents?saved={saved}#rd-{doc_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _feedback(request: Request) -> dict:
+    """?saved= / ?error= from the redirect after a form post."""
+    return {"form_saved": request.query_params.get("saved", ""), "form_error": request.query_params.get("error", "")}
+
+
+def _redirect(url: str, err: str | None, saved: str, anchor: str = "", **extra) -> RedirectResponse:
+    query = urlencode({"error": err} if err else {"saved": saved, **extra})
+    return RedirectResponse(f"{url}?{query}{anchor}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _year_case(db: Session, account, tax_year: str | None) -> TaxFiling:
+    """The selected year's case; created on the first save, like Tax Notes and Bank Details."""
+    client = _own_client(db, account)
+    return intake.ensure_filing(db, client, db.get(AuthAccount, account.id), resolve_tax_year(db, tax_year))
 
 
 @router.get("/efile-authorization", response_class=HTMLResponse, name="client_efile_authorization")
 async def client_efile_authorization(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/efile_authorization.html", request, account, db, tax_year, "efile_authorization")
+    def extra(client, filing):
+        return {"efile_row": intake.section(db, filing, intake.EFILE), **_feedback(request)}
+    return _render_client_section("client/efile_authorization.html", request, account, db, tax_year, "efile_authorization", extra=extra)
+
+
+@router.post("/efile-authorization", name="client_save_efile_authorization")
+async def client_save_efile_authorization(request: Request, account: ClientAccount, db: Session = Depends(get_db),
+                                          tax_year: str | None = Cookie(None)):
+    """Form 8879: the client's self-select PIN(s) and consent, so the tax team can e-file the return."""
+    form = await request.form()
+    data, err = intake.efile_from_form(form)
+    if err:
+        return _redirect("/client/efile-authorization", err, "")
+    data["ip_address"] = request.client.host if request.client else ""
+    intake.save_section(db, _year_case(db, account, tax_year), intake.EFILE, data, account.id, submitted=True)
+    return _redirect("/client/efile-authorization", None, "Thank you. Your e-file authorization was sent to your tax team.")
 
 
 @router.get("/final-documents", response_class=HTMLResponse, name="client_final_documents")
@@ -638,7 +810,35 @@ async def client_final_documents(request: Request, account: ClientAccount, db: S
 
 @router.get("/update-stage", response_class=HTMLResponse, name="client_update_stage")
 async def client_update_stage(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/update_stage.html", request, account, db, tax_year, "update_stage")
+    def extra(client, filing):
+        return {**_feedback(request), "request_thread": request.query_params.get("thread", "")}
+    return _render_client_section("client/update_stage.html", request, account, db, tax_year, "update_stage", extra=extra)
+
+
+STAGE_REQUESTS = {"status_check": "General status check", "expedite": "Expedited review request",
+                  "question": "Question about my stage"}
+
+
+@router.post("/update-stage/request", name="client_stage_request")
+async def client_stage_request(account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None),
+                               request_type: str = Form("status_check"), stage_comments: str = Form("")):
+    """Request an update: sent to the tax team as a question in Messages, linked to the year's case."""
+    if not stage_comments.strip():
+        return _redirect("/client/update-stage", "Write a message for your tax team.", "", "#req-title")
+    client = _own_client(db, account)
+    year = resolve_tax_year(db, tax_year)
+    filing = intake.filing_for(db, client, year)
+    topics = db.query(ChatQueryTopic).filter(ChatQueryTopic.is_active.is_(True))
+    topic = topics.filter(ChatQueryTopic.code == "FILING_STATUS").first() or topics.order_by(ChatQueryTopic.sort_order).first()
+    if not topic:
+        return _redirect("/client/update-stage", "Messaging isn't available right now. Please try again later.", "", "#req-title")
+    viewer = chat_service.viewer_for(db, db.get(AuthAccount, account.id))
+    subject = f"{STAGE_REQUESTS.get(request_type, STAGE_REQUESTS['status_check'])} · {year}"
+    try:
+        thread = chat_service.create_query(db, viewer, topic.id, subject, stage_comments, case_id=filing.id if filing else None)
+    except HTTPException as e:
+        return _redirect("/client/update-stage", str(e.detail), "", "#req-title")
+    return _redirect("/client/update-stage", None, "Request sent to your tax team.", "#req-title", thread=thread.id)
 
 
 @router.get("/update-contact", response_class=HTMLResponse, name="client_update_contact")
@@ -653,12 +853,81 @@ async def client_refund_request(request: Request, account: ClientAccount, db: Se
 
 @router.get("/fbar", response_class=HTMLResponse, name="client_fbar")
 async def client_fbar(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/fbar.html", request, account, db, tax_year, "fbar")
+    def extra(client, filing):
+        row = intake.section(db, filing, intake.FBAR)
+        return {"fbar": intake.fbar_summary(row.data if row else None), "fbar_row": row, **_feedback(request)}
+    return _render_client_section("client/fbar.html", request, account, db, tax_year, "fbar", extra=extra)
+
+
+@router.post("/fbar", name="client_save_fbar")
+async def client_save_fbar(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
+    """One FBAR step: Part I filer details, add / remove an account (Parts II, III), or Part IV submit."""
+    form = await request.form()
+    part = str(form.get("part") or "")
+    client = _own_client(db, account)
+    filing = intake.filing_for(db, client, resolve_tax_year(db, tax_year))
+    row = intake.section(db, filing, intake.FBAR)
+    data = dict(row.data) if row else {}
+    accounts = list(data.get("accounts") or [])
+    back = "/client/fbar"
+    panel = {"sep": "#part2", "joint": "#part3"}
+
+    if part == "filer":
+        filer, err = intake.fbar_filer_from_form(form, data.get("filer") or {})
+        if err:
+            return _redirect(back, err, "", "#part1")
+        update, saved, anchor = {"filer": filer}, "Part I saved.", "#part2"
+    elif part in panel:
+        flag = "no_separate" if part == "sep" else "no_joint"
+        if form.get(part) == "no":
+            update, saved, anchor = {flag: True}, "Saved.", "#part3" if part == "sep" else "#part4"
+        else:
+            acct, err = intake.fbar_account_from_form(form, part)
+            if not err and len(accounts) >= intake.MAX_FBAR_ACCOUNTS:
+                err = f"You can add up to {intake.MAX_FBAR_ACCOUNTS} accounts. Tell your tax team about the rest."
+            if err:
+                return _redirect(back, err, "", panel[part])
+            update, saved, anchor = {"accounts": accounts + [acct], flag: False}, "Account saved. Add another, or continue.", panel[part]
+    elif part == "remove":
+        index = str(form.get("index") or "")
+        if not (index.isdigit() and int(index) < len(accounts)):
+            return _redirect(back, "That account was already removed.", "", "#part2")
+        removed = accounts.pop(int(index))
+        update, saved, anchor = {"accounts": accounts}, "Account removed.", panel.get(removed.get("kind"), "#part2")
+    elif part == "submit":
+        if not data.get("filer"):
+            return _redirect(back, "Fill in Part I (filer information) first.", "", "#part1")
+        if form.get("confirm") is None:
+            return _redirect(back, "Tick the confirmation to submit.", "", "#part4")
+        intake.save_section(db, filing, intake.FBAR, {}, account.id, merge=True, submitted=True)
+        return _redirect(back, None, "FBAR details submitted to your tax team.", "#part4")
+    else:
+        return _redirect(back, "Something went wrong. Please try again.", "")
+
+    intake.save_section(db, filing or _year_case(db, account, tax_year), intake.FBAR, update, account.id, merge=True)
+    return _redirect(back, None, saved, anchor)
 
 
 @router.get("/referrals", response_class=HTMLResponse, name="client_referrals")
 async def client_referrals(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/referrals.html", request, account, db, tax_year, "referrals")
+    def extra(client, filing):
+        rows = referrals.client_referrals(db, client)
+        return {"referral_rows": rows, "ref_code": referrals.referral_code(client), "relationships": referrals.RELATIONSHIPS,
+                "ref_saved": request.query_params.get("saved", ""), "ref_error": request.query_params.get("error", ""),
+                "ref_counts": {"all": len(rows), "pending": sum(1 for r in rows if r["lead"].status in referrals.OPEN_STATUSES),
+                               "joined": sum(1 for r in rows if r["lead"].status in ("signed_up", "filed"))}}
+    return _render_client_section("client/referrals.html", request, account, db, tax_year, "referrals", extra=extra)
+
+
+@router.post("/referrals", name="client_add_referral")
+async def client_add_referral(account: ClientAccount, db: Session = Depends(get_db), name: str = Form(""), phone: str = Form(""),
+                              email: str = Form(""), relationship: str = Form(""), note: str = Form("")):
+    """The client refers a colleague; the tax team follows it up from the staff and admin Referrals pages."""
+    client = _own_client(db, account)
+    err = referrals.add_lead(db, referrer=client, name=name, phone=phone, email=email, relationship=relationship, note=note,
+                             source="form", actor_account_id=account.id)
+    query = urlencode({"error": err} if err else {"saved": f"Thanks! We'll get in touch with {' '.join(name.split())}."})
+    return RedirectResponse(f"/client/referrals?{query}#refer-form", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/summary-records", response_class=HTMLResponse, name="client_summary_records")

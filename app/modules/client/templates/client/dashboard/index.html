@@ -29,7 +29,9 @@
                 <div class="cx-ring__label"><strong>{{ dashboard.stages_pct }}%</strong><span>complete</span></div>
             </div>
             {% else %}
-            <a class="cx-btn cx-btn--lg" href="{{ url_for('new_filing_page') }}">{{ ci("plus") }} Start {{ selected_year }} filing</a>
+            {#- No New filing form any more (client feedback, Oct 2026): start with Personal Info, then Tax Notes.
+                Was: url_for('new_filing_page') "Start filing" -#}
+            <a class="cx-btn cx-btn--lg" href="/client/personal-info">{{ ci("plus") }} Start your {{ selected_year }} return</a>
             {% endif %}
         </div>
     </section>
@@ -133,8 +135,9 @@
                     <div class="cx-empty" style="padding: 1rem 0;">
                         <span class="cx-empty__icon">{{ ci("file") }}</span>
                         <h3>No filing <span class="cx-accent">for {{ selected_year }}</span></h3>
-                        <p>Start a filing to open your case and unlock document uploads.</p>
-                        <a class="cx-btn cx-btn--primary" href="{{ url_for('new_filing_page') }}">{{ ci("plus") }} New filing</a>
+                        <p>Fill in Personal Info, Tax Notes, Upload Documents and Bank Details. Your first save starts your {{ selected_year }} return.</p>
+                        {# Was: <a href="{{ url_for('new_filing_page') }}">New filing</a> #}
+                        <a class="cx-btn cx-btn--primary" href="/client/tax-notes">{{ ci("notes") }} Answer Tax Notes</a>
                     </div>
                     {% endif %}
                 </div>

@@ -1,0 +1,7 @@
+{% extends "emails/_layout.html" %}
+{% block body %}
+<p>{% if purpose == "signup" %}Use this code to confirm your email address and finish creating your {{ app_name }} account:{% else %}Use this code to finish signing in to {{ app_name }}:{% endif %}</p>
+<p style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#1f2937;background:#eff6ff;border-radius:6px;padding:14px 0;text-align:center;margin:16px 0;">{{ code }}</p>
+<p>The code expires in {{ minutes }} minutes and works once. Never share it with anyone, including {{ app_name }} staff.</p>
+<p>{% if purpose == "signup" %}If you didn't create this account, you can ignore this email.{% else %}If you didn't try to sign in, someone may know your password. Change it now using "Forgot password" on the sign-in page.{% endif %}</p>
+{% endblock %}

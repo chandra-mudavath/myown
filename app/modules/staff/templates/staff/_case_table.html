@@ -78,9 +78,11 @@
             <thead>
                 <tr>
                     <th scope="col" class="col-sno">S.No</th>
-                    {{ sort_th("case", "Filing ID") }}
-                    {{ sort_th("name", "Client name") }}
                     {{ sort_th("customer", "Customer no") }}
+                    {# Filing ID column: hidden for now (client feedback, Oct 2026); Customer no opens the case.
+                    {{ sort_th("case", "Filing ID") }}
+                    #}
+                    {{ sort_th("name", "Client name") }}
                     {{ sort_th("email", "Email") }}
                     {{ sort_th("year", "Tax year") }}
                     {{ sort_th("stage", "Stage") }}
@@ -93,27 +95,36 @@
                 {% for c in t.cases %}
                 <tr>
                     <td class="col-sno">{{ c.sno }}</td>
-                    <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ c.id }}">{{ c.case_id }}</a></td>
+                    {#- Customer no opens the client's information with the client sidebar (client feedback, Oct 2026) #}
+                    <td class="col-mono">{% if c.customer_no %}<a class="staff-cell-link is-mono" href="/staff/cases/{{ c.id }}" title="Open {{ c.client_name }} · {{ c.case_id }}">{{ c.customer_no }}</a>{% else %}<a class="staff-cell-link is-mono" href="/staff/cases/{{ c.id }}">{{ c.case_id }}</a>{% endif %}</td>
+                    {# <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ c.id }}">{{ c.case_id }}</a></td> #}
                     <td class="staff-cell-strong">{{ c.client_name }}</td>
-                    <td class="col-mono">{{ c.customer_no or '—' }}</td>
                     <td class="col-email">{{ c.email }}</td>
                     <td>{{ c.tax_year }}</td>
                     <td><span class="staff-stage-pill tone-{{ c.stage_tone }}">{{ c.stage }}</span></td>
-                    <td>{% if c.staff %}{{ c.staff }}{% else %}<span class="staff-cell-muted">Unassigned</span>{% endif %}</td>
+                    <td>{% if c.staff %}{{ c.staff }}{% else %}<span class="staff-cell-muted">Unassigned</span>{% if c.needs_assignment %}<br /><small class="staff-assign-hint">Assign before moving</small>{% endif %}{% endif %}</td>
                     <td class="col-comment">{% if c.comment %}{{ c.comment }}{% else %}<span class="staff-cell-muted">—</span>{% endif %}</td>
                     <td class="col-actions">
                         <a class="staff-row-action" href="/staff/cases/{{ c.id }}/documents" title="Documents">{{ ci("file", "ci ci--sm") }}<span>{{ c.doc_count }}</span></a>
+                        {% if c.needs_assignment %}
+                        {#- Registered cases stay put until a staff member is assigned (client feedback, Oct 2026) #}
+                        <button type="button" class="staff-row-action staff-row-action--primary" disabled aria-disabled="true"
+                                title="Assign a staff member before moving this case out of Registered">
+                            Move {{ ci("arrow-right", "ci ci--sm") }}
+                        </button>
+                        {% else %}
                         <button type="button" class="staff-row-action staff-row-action--primary" data-move-stage
                                 data-action="/staff/cases/{{ c.id }}/stage" data-case="{{ c.case_id }} · {{ c.client_name }}"
                                 data-current="{{ c.stage }}" data-current-key="{{ c.stage_key }}" data-next="{{ c.next_stage or '' }}"
                                 title="{{ 'Move to ' ~ stage_labels[c.next_stage] if c.next_stage else 'Move stage' }}">
                             Move {{ ci("arrow-right", "ci ci--sm") }}
                         </button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="10" class="staff-empty">
+                    <td colspan="9" class="staff-empty">
                         {{ ci("search") }}
                         <strong>No cases found</strong>
                         <span>{% if t.q or t.stage or t.year %}Try a different search or clear the filters.{% elif t.mine %}No cases are assigned to you yet. An admin assigns cases from the case page.{% else %}New filings will appear here as clients submit them.{% endif %}</span>

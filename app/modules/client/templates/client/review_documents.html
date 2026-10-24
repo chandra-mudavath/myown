@@ -9,6 +9,8 @@
 
 {% block page %}
 <div class="cx-stack">
+{#- Filing confirmation section: hidden for now (client feedback, Oct 2026: keep only "Drafts awaiting your review") -#}
+{% if false %}
 {% if filing %}
 {# Filing confirmation: everything on the return the client should check before e-filing. #}
 {% set pays = payments | default([]) %}
@@ -47,7 +49,7 @@
         <h3 class="cx-legend">Fees &amp; payments</h3>
         <dl class="cx-confirmlist">
             <div><dt>Paid</dt><dd>${{ "{:,.2f}".format(paid) }}</dd></div>
-            <div><dt>Balance due</dt><dd>${{ "{:,.2f}".format(amount_due | default(0)) }}{% if amount_due %} · <a class="cx-link" href="/client/tax-summary#payment">Pay now</a>{% endif %}</dd></div>
+            <div><dt>Balance due</dt><dd>${{ "{:,.2f}".format(amount_due | default(0)) }}{% if amount_due %} · <a class="cx-link" href="/client/make-payment">Pay now</a>{% endif %}</dd></div>
         </dl>
         {% if pays %}
         <div class="cx-table-wrap" style="border: 1px solid var(--cx-border); border-radius: 10px;">
@@ -72,8 +74,9 @@
     </div>
 </section>
 {% endif %}
+{% endif %}
 
-<div class="cx-grid cx-grid--main">
+<div class="cx-grid">{# was cx-grid--main (two columns with the "How review works" panel) #}
     <section class="cx-card" aria-labelledby="drafts-title">
         <div class="cx-card__head">
             <div>
@@ -81,14 +84,77 @@
                 <p class="cx-card__sub">Tax year {{ selected_year }}</p>
             </div>
         </div>
+        {#- Documents the tax team filled in and sent for approval (client feedback, Oct 2026).
+            Approve, or reject with a comment; the team sees the comment and uploads a corrected version. -#}
+        {% set rdocs = review_docs | default([]) %}
+        {% if review_saved %}
+        <div class="cx-card__body" style="padding-bottom:0;"><div class="cx-alert cx-alert--success" role="status">{{ ci("check-circle") }}<p>{{ "Thanks! You approved the document." if review_saved == "approved" else "Your comments were sent to your tax team. They will upload a corrected version." }}</p></div></div>
+        {% endif %}
+        {% if rdocs %}
+        <ul class="cx-reviewlist">
+            {% for r in rdocs %}
+            {% set d = r.doc %}
+            {% set view = "/client/filings/" ~ d.filing_id ~ "/documents/" ~ d.id ~ "/download" %}
+            <li class="cx-reviewdoc" id="rd-{{ d.id }}">
+                <div class="cx-reviewdoc__head">
+                    <span class="cx-fileicon">{{ ci("file") }}</span>
+                    <div style="min-width:0;">
+                        <strong>{{ d.document_name }}</strong>
+                        <span class="cx-muted">{{ d.original_filename }} · version {{ d.version }} · sent {{ d.uploaded_at.strftime('%b %d, %Y') }}</span>
+                    </div>
+                    <span class="cx-badge cx-badge--{{ {'amber': 'pending_review', 'green': 'complete', 'coral': 'rejected'}.get(r.status[1], 'plain') }}">{{ r.status[0] }}</span>
+                </div>
+                <details class="cx-reviewdoc__preview" {% if loop.first and d.status == 'client_review_pending' %}open{% endif %}>
+                    <summary>{{ ci("eye", "ci ci--sm") }} Preview</summary>
+                    {% if d.mime_type == "application/pdf" or d.mime_type.startswith("image/") %}
+                    <iframe src="{{ view }}?inline=1" title="Preview of {{ d.document_name }}" loading="lazy"></iframe>
+                    {% else %}
+                    <p class="cx-muted">This file type can't be previewed here. Download it to open it.</p>
+                    {% endif %}
+                </details>
+                {% if r.comments %}
+                <ol class="cx-docthread__list">
+                    {% for c in r.comments %}
+                    <li class="{{ 'is-me' if c.author_type == 'client' else 'is-team' }}">
+                        <strong>{{ 'You' if c.author_type == 'client' else c.author_name ~ ' · Tax team' }}{% if c.kind == 'client_rejection' %} · rejected{% elif c.kind == 'client_approval' %} · approved{% endif %}</strong>
+                        <time>{{ c.created_at.strftime('%b %d, %Y · %H:%M') }}</time>
+                        <p>{{ c.body }}</p>
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% endif %}
+                <div class="cx-reviewdoc__actions">
+                    <a class="cx-btn cx-btn--sm cx-btn--ghost" href="{{ view }}?inline=1" target="_blank" rel="noopener">{{ ci("eye", "ci ci--sm") }} Open</a>
+                    <a class="cx-btn cx-btn--sm cx-btn--soft" href="{{ view }}" download>{{ ci("download", "ci ci--sm") }} Download</a>
+                </div>
+                {% if d.status == "client_review_pending" %}
+                <form class="cx-reviewdoc__form" method="post" action="/client/review-documents/{{ d.id }}/decision">
+                    <label class="cx-label" for="rc-{{ d.id }}">Comments<span class="cx-opt">Required to reject</span></label>
+                    <textarea class="cx-textarea" id="rc-{{ d.id }}" name="comment" rows="2" maxlength="1000" placeholder="e.g. My W-2 wages on line 1 should be $98,450, not $89,450."></textarea>
+                    {% if review_error == d.id %}<p class="cx-docthread__error" role="alert">Write a comment so your tax team knows what to change.</p>{% endif %}
+                    <div class="cx-reviewdoc__buttons">
+                        <button type="submit" name="action" value="reject" class="cx-btn cx-btn--sm cx-btn--danger">{{ ci("x", "ci ci--sm") }} Reject with comment</button>
+                        <button type="submit" name="action" value="approve" class="cx-btn cx-btn--sm cx-btn--primary">{{ ci("check", "ci ci--sm") }} Approve</button>
+                    </div>
+                </form>
+                {% elif d.status == "client_rejected" %}
+                <p class="cx-muted" style="margin:0; font-size:0.86rem;">Your tax team has your comments and will upload a corrected version here.</p>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
         <div class="cx-empty">
             <span class="cx-empty__icon">{{ ci("file") }}</span>
             <h3>Nothing to <span class="cx-accent">review yet</span></h3>
             <p>When your preparer finishes the draft return, the PDF appears here for you to review, comment on and approve.</p>
             <a class="cx-btn cx-btn--soft" href="/client/dashboard">{{ ci("stage", "ci ci--sm") }} View filing progress</a>
         </div>
+        {% endif %}
     </section>
 
+    {#- "How review works" panel: hidden for now (client feedback, Oct 2026) -#}
+    {% if false %}
     <aside class="cx-card">
         <div class="cx-card__head cx-card__head--plain">
             <h2 class="cx-card__title">{{ ci("check-circle") }} How <span class="cx-accent">review works</span></h2>
@@ -102,6 +168,7 @@
             </ol>
         </div>
     </aside>
+    {% endif %}
 </div>
 </div>
 {% endblock %}

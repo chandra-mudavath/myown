@@ -53,7 +53,7 @@ def admin_notifications(request: Request, account: AdminAccount, db: Session = D
     else:
         kind = "all"
 
-    response = templates.TemplateResponse("admin/notifications.html", {
+    response = templates.TemplateResponse(request, "admin/notifications.html", {
         "request": request, "account": account, "admin": admin, "app_name": settings.APP_NAME,
         "active_nav": "notifications", "events": events, "kinds": KINDS, "kind": kind,
         "counts": counts, "new_count": new_count, "total": total,

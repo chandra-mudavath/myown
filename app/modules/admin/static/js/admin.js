@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <p><strong>Email:</strong> ${data.email}</p>
                             <p style="margin-top:0.75rem;"><strong>Auto-Generated Temporary Password:</strong></p>
                             <p><span class="cred-highlight">${data.temp_password}</span></p>
-                            <small style="display:block; margin-top:0.75rem; color:#166534;">Please share these credentials securely with the client.</small>
+                            <small style="display:block; margin-top:0.75rem; color:#166534;">Please share these credentials securely with the client. They'll choose their own password at their first sign-in.</small>
                             <button type="button" id="btn-close-and-refresh" class="modal-btn-submit" style="margin-top: 1rem; background: #166534;">Done & Refresh Dashboard</button>
                         </div>
                     `;
@@ -166,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             <p><strong>Email:</strong> ${data.email}</p>
                             <p style="margin-top:0.75rem;"><strong>Auto-Generated Temporary Password:</strong></p>
                             <p><span class="cred-highlight">${data.temp_password}</span></p>
-                            <small style="display:block; margin-top:0.75rem; color:#166534;">Please share these credentials with the new staff member.</small>
+                            <small style="display:block; margin-top:0.75rem; color:#166534;">Please share these credentials with the new staff member. They'll choose their own password at their first sign-in.</small>
                             <button type="button" id="btn-close-and-refresh-staff" class="modal-btn-submit" style="margin-top: 1rem; background: #166534;">Done & Refresh Dashboard</button>
                         </div>
                     `;
@@ -496,3 +496,17 @@ document.addEventListener("DOMContentLoaded", function () {
     rows().forEach((r) => r.addEventListener("change", refresh));
     refresh();
 })();
+
+// Settings: a row's fields post through a hidden form (form="…"); highlight that row's Save button once
+// anything in it changes, so it's clear the change isn't saved yet.
+document.querySelectorAll(".admin-settings-block [form]:not(button)").forEach((field) => {
+    const mark = () => {
+        const btn = document.querySelector(`button[type="submit"][form="${field.getAttribute("form")}"]`);
+        if (!btn) return;
+        btn.classList.add("is-dirty");
+        btn.textContent = "Save changes";
+        btn.closest("tr")?.classList.add("is-dirty");
+    };
+    field.addEventListener("change", mark);
+    field.addEventListener("input", mark);
+});

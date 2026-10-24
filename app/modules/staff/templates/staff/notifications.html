@@ -11,7 +11,7 @@
             <h1>Notifications</h1>
         </div>
         <p class="staff-pagehead__meta">
-            {% if new_count %}<strong class="notif-newcount">{{ new_count }} new</strong> since your last visit{% else %}You're all caught up{% endif %}
+            {% if new_count %}<strong class="notif-newcount">{{ new_count }} latest</strong>: new since your last visit or not assigned yet{% else %}You're all caught up{% endif %}
         </p>
     </div>
 
@@ -23,7 +23,10 @@
             </div>
             <div class="doc-toolbar">
                 <div class="doc-filter" role="group" aria-label="Filter by activity" data-notif-filter>
-                    {% for key, label in [('all', 'All'), ('new', 'New'), ('filing', 'Filings'), ('upload', 'Uploads'), ('reupload', 'Re-uploads'), ('reply', 'Replies')] %}
+                    {#- Client feedback, Oct 2026: "New" is now "Latest", "Filings" is "Registered"; Re-uploads and Replies are
+                        hidden from the filters (those rows still show under All). Was:
+                        [('all', 'All'), ('new', 'New'), ('filing', 'Filings'), ('upload', 'Uploads'), ('reupload', 'Re-uploads'), ('reply', 'Replies')] -#}
+                    {% for key, label in [('all', 'All'), ('new', 'Latest'), ('filing', 'Registered'), ('upload', 'Uploads')] %}
                     <button type="button" class="doc-filter__btn{% if loop.first %} is-active{% endif %}" data-filter="{{ key }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">
                         {{ label }} <span>{{ events | length if key == 'all' else new_count if key == 'new' else counts[key] }}</span>
                     </button>
@@ -36,14 +39,17 @@
             <table class="staff-table staff-cases-table notif-table">
                 <thead>
                     <tr>
+                        {#- Column order (client feedback, Oct 2026): S.No, Client name, Customer no, Email, Activity, When.
+                            Filing ID column hidden; Assigned column added. -#}
                         <th scope="col" class="col-sno">S.No</th>
-                        <th scope="col">When</th>
                         <th scope="col">Client name</th>
                         <th scope="col">Customer no</th>
                         <th scope="col">Email</th>
-                        <th scope="col">Filing ID</th>
+                        {# <th scope="col">Filing ID</th> #}
                         <th scope="col">Activity</th>
+                        <th scope="col">When</th>
                         <th scope="col">Details</th>
+                        <th scope="col">Assigned</th>
                         <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
                     </tr>
                 </thead>
@@ -51,16 +57,17 @@
                     {% for e in events %}
                     <tr data-notif-row data-kind="{{ e.kind }}" data-new="{{ 'yes' if e.is_new else 'no' }}" class="{{ 'is-new' if e.is_new else '' }}">
                         <td class="col-sno">{{ loop.index }}</td>
+                        <td><a class="staff-cell-link" href="/staff/clients/{{ e.client_id }}">{{ e.client_name }}</a></td>
+                        <td class="col-mono">{% if e.customer_no %}<a class="staff-cell-link is-mono" href="/staff/cases/{{ e.filing_id }}">{{ e.customer_no }}</a>{% else %}—{% endif %}</td>
+                        <td class="col-email">{{ e.email }}</td>
+                        {# <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ e.filing_id }}">{{ e.case_id }}</a></td> #}
+                        <td><span class="staff-stage-pill tone-{{ kind_tone[e.kind] }}">{{ 'Registered' if e.kind == 'filing' else e.label }}</span></td>
                         <td class="notif-when">
-                            {% if e.is_new %}<span class="notif-dot" aria-label="New"></span>{% endif %}
+                            {% if e.is_new %}<span class="notif-dot" aria-label="Latest"></span>{% endif %}
                             <span class="staff-cell-muted">{{ e.time }}</span>
                         </td>
-                        <td><a class="staff-cell-link" href="/staff/clients/{{ e.client_id }}">{{ e.client_name }}</a></td>
-                        <td class="col-mono">{{ e.customer_no or '—' }}</td>
-                        <td class="col-email">{{ e.email }}</td>
-                        <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ e.filing_id }}">{{ e.case_id }}</a></td>
-                        <td><span class="staff-stage-pill tone-{{ kind_tone[e.kind] }}">{{ e.label }}</span></td>
                         <td class="notif-detail" title="{{ e.detail }}">{{ e.detail }}</td>
+                        <td class="notif-assigned">{% if e.assigned %}{{ e.assigned | join(', ') }}{% else %}<span class="staff-assign-hint">Not assigned</span>{% endif %}</td>
                         <td class="col-actions"><a class="staff-row-action staff-row-action--primary" href="{{ e.href }}">Open</a></td>
                     </tr>
                     {% else %}

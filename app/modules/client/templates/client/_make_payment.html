@@ -1,0 +1,144 @@
+{#- Make Payment (client feedback, Oct 2026), laid out like the client's reference portal: two options,
+    Pay in USD and Pay in INR.
+    - Pay in USD: "Pay now" opens a "Complete your payment" window (amount, phone, email), then hands over
+      to the card gateway's secure page. The gateway is PayPal for now (cards without a PayPal account);
+      card details are never entered on our site.
+    - Pay in INR: UPI, as before.
+    The previous form (India / US, then method, with bank transfer) is kept in _make_payment_v1.html.
+    Needs the billing context from _billing_extra() in app/modules/client/api/client.py. -#}
+{% from "client/_icons.html" import ci %}
+{% set payable = (open_invoices | default([])) | rejectattr("pending") | list %}
+{% set one = payable[0] if payable | length == 1 else none %}
+{% set due = payable | sum(attribute="balance") if payable else 0 %}
+<section class="cx-card cx-pay" aria-labelledby="pay-title">
+    <div class="cx-card__head">
+        <div>
+            <h2 class="cx-card__title" id="pay-title">{{ ci("card") }} Make <span class="cx-accent">payment</span></h2>
+            <p class="cx-card__sub">Make your payment with the option that suits you best, to view and review your tax return.</p>
+        </div>
+        <span class="cx-secure">{{ ci("shield") }} Secure checkout</span>
+    </div>
+    <div class="cx-card__body cx-stack">
+        {% if pay_error %}<div class="cx-alert cx-alert--error" role="alert">{{ ci("alert") }}<p>{{ pay_error }}</p></div>{% endif %}
+
+        <p class="cx-pay__due">Your payment is in the amount of <strong>${{ "{:,.2f}".format(due) }}</strong></p>
+        <p class="cx-pay__terms">By proceeding with payment, <strong>you confirm</strong> that you have <strong>carefully reviewed your Tax Estimate / Summary</strong>
+            and agree to the <a class="cx-link" href="/terms-and-conditions" target="_blank" rel="noopener">Terms of Service</a>.</p>
+
+        {% if not amount_due %}
+        <div class="cx-alert">{{ ci("info") }}<p>No payment is due yet. Your fee appears here once your preparer publishes the tax summary.</p></div>
+        {% elif not payable %}
+        <div class="cx-alert cx-alert--success">{{ ci("clock") }}<p>We've received your payment details and are verifying them. You'll see the result under <a class="cx-link" href="/client/tax-summary#payment-details">Payment details</a>.</p></div>
+        {% else %}
+        <div class="cx-pay__split">
+            {#- Left: the two options -#}
+            <div class="cx-pay__options" role="radiogroup" aria-label="Payment option">
+                <label class="cx-pay__option">
+                    <input type="radio" name="pay_option" value="usd" checked data-pay-option />
+                    <span><strong>Pay in USD</strong><small>Card, Google Pay, Apple Pay or PayPal</small></span>
+                </label>
+                <label class="cx-pay__option">
+                    <input type="radio" name="pay_option" value="inr" data-pay-option />
+                    <span><strong>Pay in INR</strong><small>UPI from any Indian bank app</small></span>
+                </label>
+            </div>
+
+            {#- Right: what the chosen option needs -#}
+            <div class="cx-pay__panel">
+                <div data-pay-panel="usd">
+                    <button type="button" class="cx-pay__now" data-pay-open>PAY NOW</button>
+                    <div class="cx-pay__brands"><span>VISA · Mastercard · Amex &amp; more</span><span>Secured by PayPal</span></div>
+                </div>
+
+                <div data-pay-panel="inr" hidden>
+                    <form method="post" action="/client/payments/manual" enctype="multipart/form-data" class="cx-stack">
+                        <input type="hidden" name="payment_method" value="upi" />
+                        <input type="hidden" name="sent_currency" value="INR" />
+                        {% if one %}<input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" />
+                        {% else %}
+                        <div class="cx-field"><label class="cx-label" for="inr-invoice">Invoice<span class="cx-req">*</span></label>
+                            <select class="cx-select" id="inr-invoice" name="invoice_id" required>{% for row in payable %}<option value="{{ row.invoice.id }}">{{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }}</option>{% endfor %}</select></div>
+                        {% endif %}
+                        <div class="cx-upi">
+                            <div class="cx-qr">
+                                <strong style="font-size: 0.9rem;">Scan &amp; pay</strong>
+                                <div class="cx-qr__box">{{ ci("qr") }}</div>
+                                {% if upi_id %}
+                                <small>UPI ID: <span id="upi-id" class="cx-mono">{{ upi_id }}</span>{% if upi_payee %} ({{ upi_payee }}){% endif %}</small>
+                                <button type="button" class="cx-btn cx-btn--soft" data-cx-copy="upi-id">{{ ci("copy", "ci ci--sm") }} Copy UPI ID</button>
+                                {% else %}
+                                <small>UPI QR code is shared by your tax team</small>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <ol class="cx-numsteps">
+                                    <li>Open any UPI app and pay the INR equivalent of the amount above.</li>
+                                    <li>Enter the amount it covers in USD, the rupees you paid, and the UPI transaction ID.</li>
+                                </ol>
+                                <div class="cx-form-grid">
+                                    <div class="cx-field"><label class="cx-label" for="inr-usd">Amount it covers (USD)<span class="cx-req">*</span></label>
+                                        <input class="cx-input" id="inr-usd" name="pay_amount" type="number" min="1" step="0.01" required placeholder="0.00" {% if one %}max="{{ '%.2f' | format(one.balance) }}"{% endif %} /></div>
+                                    <div class="cx-field"><label class="cx-label" for="upi-amt">Amount paid (₹)<span class="cx-req">*</span></label>
+                                        <input class="cx-input" id="upi-amt" name="sent_amount" type="number" min="1" step="0.01" required placeholder="0.00" /></div>
+                                    <div class="cx-field cx-span-2"><label class="cx-label" for="upi-txn">UPI transaction ID<span class="cx-req">*</span></label>
+                                        <input class="cx-input cx-mono" id="upi-txn" name="transaction_reference" required minlength="4" maxlength="100" placeholder="e.g. 412345678901" /></div>
+                                    <div class="cx-field cx-span-2"><label class="cx-label" for="pay-proof">Payment screenshot<span class="cx-opt">Optional</span></label>
+                                        <input class="cx-input" id="pay-proof" name="proof" type="file" accept=".pdf,.png,.jpg,.jpeg" /></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:flex-end;"><button type="submit" class="cx-btn cx-btn--primary">{{ ci("send", "ci ci--sm") }} Submit payment details</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% if payable %}
+{#- Pay in USD: "Complete your payment", then the gateway's secure page takes the card -#}
+<dialog class="cx-paydlg" data-pay-dialog aria-labelledby="paydlg-title">
+    <form method="post" action="/client/payments/paypal/start" class="cx-paydlg__grid" data-pay-form>
+        <aside class="cx-paydlg__brand">
+            <span class="cx-paydlg__logo">CT</span><strong>{{ app_name }}</strong>
+            <p class="cx-paydlg__paying">PAYING</p>
+            <p class="cx-paydlg__amount">$<span data-pay-show>0.00</span> USD</p>
+            <p class="cx-paydlg__secure">{{ ci("shield", "ci ci--sm") }} This payment is secured with 256-bit encryption</p>
+        </aside>
+        <div class="cx-paydlg__main">
+            <header class="cx-paydlg__head">
+                <h2 id="paydlg-title">Complete your payment</h2>
+                <button type="button" class="cx-paydlg__close" data-pay-close aria-label="Close">{{ ci("x") }}</button>
+            </header>
+            {% if one %}<input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" />
+            {% else %}
+            <div class="cx-field"><label class="cx-label" for="usd-invoice">Invoice</label>
+                <select class="cx-select" id="usd-invoice" name="invoice_id" required>{% for row in payable %}<option value="{{ row.invoice.id }}" data-balance="{{ '%.2f' | format(row.balance) }}">{{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }} due</option>{% endfor %}</select></div>
+            {% endif %}
+            <div class="cx-field">
+                <label class="cx-label" for="usd-amount">Amount</label>
+                <div class="cx-paydlg__money"><span>$</span>
+                    <input class="cx-input" id="usd-amount" name="pay_amount" type="number" min="1" step="0.01" required placeholder="00.00"
+                           {% if one %}max="{{ '%.2f' | format(one.balance) }}"{% endif %} data-pay-amount /></div>
+                <span class="cx-hint">Up to ${{ "{:,.2f}".format(one.balance if one else due) }}. You can pay part now and the rest later.</span>
+            </div>
+            <div class="cx-field">
+                <label class="cx-label" for="usd-phone">Phone number</label>
+                <input class="cx-input" id="usd-phone" name="phone" type="tel" maxlength="25" placeholder="+1 998 XXX X654" value="{{ client.phone if client and client.phone else '' }}" />
+            </div>
+            <div class="cx-field">
+                <label class="cx-label" for="usd-email">Email</label>
+                <input class="cx-input" id="usd-email" name="email" type="email" maxlength="255" value="{{ account_email }}" />
+            </div>
+            {% if paypal_on %}
+            <button type="submit" class="cx-btn cx-btn--primary cx-paydlg__go">Continue to payment</button>
+            <p class="cx-muted cx-paydlg__note">Next, you'll enter your card (or pay with PayPal) on PayPal's secure page, then come straight back here.</p>
+            {% else %}
+            <button type="button" class="cx-btn cx-btn--primary cx-paydlg__go" disabled>Continue to payment</button>
+            <p class="cx-paydlg__note cx-paydlg__note--off">Card payment isn't switched on yet. Please use <strong>Pay in INR</strong>, or contact your tax team.</p>
+            {% endif %}
+        </div>
+    </form>
+</dialog>
+{% endif %}

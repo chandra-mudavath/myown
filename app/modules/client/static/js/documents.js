@@ -49,13 +49,20 @@ async function handleQuickUpload(e) {
     const button = form.querySelector('button[type="submit"]');
     const formData = new FormData(form);
     const filingId = formData.get("filing_id");
+    // No description: name the file after its document type (e.g. "Form 1099-INT (interest)")
+    const type = form.querySelector("[data-doc-type]")?.selectedOptions[0];
+    if (!formData.get("document_name") && type?.dataset.name) formData.set("document_name", type.dataset.name);
     if (!formData.get("document_name")) formData.delete("document_name");
+    if (!formData.get("document_type")) formData.delete("document_type");
 
     button.disabled = true;
     const label = button.innerHTML;
     button.textContent = "Uploading…";
     try {
-        const response = await fetch(`/client/filings/${filingId}/upload`, { method: "POST", body: formData });
+        // Uploads go to the selected tax year; the server starts the year's case on the first one.
+        // Was: /client/filings/${filingId}/upload (needed a filing to exist first)
+        formData.delete("filing_id");
+        const response = await fetch("/client/documents/upload", { method: "POST", body: formData });
         if (response.ok) {
             window.location.reload();
             return;
@@ -68,6 +75,32 @@ async function handleQuickUpload(e) {
     button.disabled = false;
     button.innerHTML = label;
 }
+
+// Category first, then Document type: the type list shows only the chosen category's types.
+// Picking a type directly (e.g. from the checklist) still sets its category.
+const docCat = document.querySelector("[data-doc-cat]");
+const docType = document.querySelector("[data-doc-type]");
+function filterTypes() {
+    if (!docCat || !docType) return;
+    const cat = docCat.value;
+    docType.querySelectorAll("optgroup").forEach((group) => {
+        const show = !cat || [...group.children].some((o) => o.dataset.category === cat);
+        group.hidden = !show;
+        group.disabled = !show;
+    });
+    const picked = docType.selectedOptions[0];
+    if (picked?.value && cat && picked.dataset.category !== cat) docType.value = "";
+    docType.disabled = !cat;
+}
+docCat?.addEventListener("change", filterTypes);
+docType?.addEventListener("change", () => {
+    const category = docType.selectedOptions[0]?.dataset.category;
+    if (category && docCat && docCat.value !== category) {
+        docCat.value = category;
+        filterTypes();
+    }
+});
+filterTypes();
 
 // Reply forms: show the chosen file's name on the attach button
 document.querySelectorAll("[data-reply-file]").forEach((input) => {
@@ -84,3 +117,16 @@ window.filterDocuments = filterDocuments;
 window.selectCategoryFolder = selectCategoryFolder;
 window.switchView = switchView;
 window.handleQuickUpload = handleQuickUpload;
+
+// Checklist "Upload" buttons pick that document type in the upload form
+document.querySelectorAll("[data-need-type]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+        const select = document.querySelector("[data-doc-type]");
+        if (!select) return;
+        select.disabled = false;
+        select.value = btn.dataset.needType;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        select.closest("form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        select.focus();
+    })
+);

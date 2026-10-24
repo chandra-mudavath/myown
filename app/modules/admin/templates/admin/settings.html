@@ -30,7 +30,7 @@
         <div hidden>{% for ty in tax_years %}<form method="post" action="/admin/settings/tax-years/{{ ty.id }}" id="ty-{{ ty.id }}"></form>{% endfor %}</div>
         <div class="admin-table-panel">
             <table class="admin-table">
-                <thead><tr><th>Year</th><th>Open</th><th>Default</th><th>Filing deadline</th><th><span class="sr-only">Save</span></th></tr></thead>
+                <thead><tr><th>Year</th><th>Open</th><th>Default</th><th>Filing deadline</th><th class="admin-save-col">Save</th></tr></thead>
                 <tbody>
                     {% for ty in tax_years %}
                     <tr>
@@ -94,7 +94,7 @@
         <p class="admin-form-hint">Inactive types are hidden from upload choices. Leave max size empty to use the app default ({{ max_upload_mb }} MB).</p>
         <div class="admin-table-panel">
             <table class="admin-table">
-                <thead><tr><th>Name</th><th>Category</th><th>Active</th><th>Max size (MB)</th><th><span class="sr-only">Save</span></th></tr></thead>
+                <thead><tr><th>Name</th><th>Category</th><th>Active</th><th>Max size (MB)</th><th class="admin-save-col">Save</th></tr></thead>
                 <tbody>
                     {% for dt in document_types %}
                     <tr>
@@ -119,7 +119,7 @@
         <div hidden>{% for tp in chat_topics %}<form method="post" action="/admin/settings/chat-topics/{{ tp.id }}" id="tp-{{ tp.id }}"></form>{% endfor %}</div>
         <div class="admin-table-panel">
             <table class="admin-table">
-                <thead><tr><th>Name</th><th>Code</th><th>Active</th><th><span class="sr-only">Save</span></th></tr></thead>
+                <thead><tr><th>Name</th><th>Code</th><th>Active</th><th class="admin-save-col">Save</th></tr></thead>
                 <tbody>
                     {% for tp in chat_topics %}
                     <tr>
@@ -147,7 +147,7 @@
         <div hidden>{% for sv in services %}<form method="post" action="/admin/settings/services/{{ sv.id }}" id="sv-{{ sv.id }}"></form>{% endfor %}</div>
         <div class="admin-table-panel">
             <table class="admin-table">
-                <thead><tr><th>Service</th><th>Code</th><th>Price (USD)</th><th>Active</th><th><span class="sr-only">Save</span></th></tr></thead>
+                <thead><tr><th>Service</th><th>Code</th><th>Price (USD)</th><th>Active</th><th class="admin-save-col">Save</th></tr></thead>
                 <tbody>
                     {% for sv in services %}
                     <tr>
@@ -168,6 +168,25 @@
             <input name="base_price" inputmode="decimal" placeholder="Price, e.g. 150" class="admin-filter-input admin-input-xs" required aria-label="New service price">
             <input name="description" maxlength="255" placeholder="Description (optional)" class="admin-filter-input admin-input-sm" aria-label="New service description">
             <button type="submit" class="admin-filter-btn">Add service</button>
+        </form>
+    </section>
+
+    {# ── Admin sign-up link (client feedback, Oct 2026): admins can only sign up from this separate URL ── #}
+    <section class="admin-section admin-settings-block" id="admin-signup">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Access</span><h2>Admin sign-up link</h2></div>
+        </div>
+        <p class="admin-form-hint">New admins create their account only from this link, and only with a company email address (@covrenttax.com). Share it privately. Generating a new link makes the old one stop working.</p>
+        {% if admin_signup_url %}
+        <div class="admin-inline-form">
+            <input id="admin-signup-url" class="admin-filter-input" style="flex:1; min-width: 18rem; font-family: var(--font-mono, monospace);" value="{{ admin_signup_url }}" readonly aria-label="Admin sign-up link" onclick="this.select()">
+            <button type="button" class="admin-mini-btn" onclick="navigator.clipboard?.writeText(document.getElementById('admin-signup-url').value); this.textContent = 'Copied';">Copy</button>
+        </div>
+        {% else %}
+        <p class="admin-form-hint"><strong>No link yet.</strong> Generate one to invite a new admin.</p>
+        {% endif %}
+        <form method="post" action="/admin/settings/admin-signup" class="admin-inline-form" {% if admin_signup_url %}onsubmit="return confirm('Generate a new link? The current link will stop working.')"{% endif %}>
+            <button type="submit" class="admin-filter-btn">{{ 'Generate new link' if admin_signup_url else 'Generate link' }}</button>
         </form>
     </section>
 {% endblock %}

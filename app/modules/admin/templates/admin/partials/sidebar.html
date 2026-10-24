@@ -45,12 +45,17 @@
         <a class="admin-nav-item{% if active_nav == 'analytics' %} active{% endif %}" href="/admin/analytics">
             <span aria-hidden="true">&#128200;</span>Analytics
         </a>
+        <a class="admin-nav-item{% if active_nav == 'referrals' %} active{% endif %}" href="/admin/referrals">
+            <span aria-hidden="true">&#128222;</span>Referrals
+        </a>
         <a class="admin-nav-item{% if active_nav == 'payments' %} active{% endif %}" href="/admin/payments">
             <span aria-hidden="true">&#128176;</span>Payments
         </a>
+        {# Notifications: hidden for now (client feedback, Oct 2026); the bell in the page header opens it.
         <a class="admin-nav-item{% if active_nav == 'notifications' %} active{% endif %}" href="/admin/notifications">
             <span aria-hidden="true">&#128276;</span>Notifications
         </a>
+        #}
         <a class="admin-nav-item{% if active_nav == 'settings' %} active{% endif %}" href="/admin/settings">
             <span aria-hidden="true">&#9881;</span>Settings
         </a>

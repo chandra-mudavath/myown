@@ -34,16 +34,18 @@
             {% endfor %}
         </ol>
         {% if not filing %}
-        <div class="cx-card__foot"><a class="cx-btn cx-btn--primary" href="/client/filings/new">{{ ci("plus", "ci ci--sm") }} Start {{ selected_year }} filing</a></div>
+        <div class="cx-card__foot"><a class="cx-btn cx-btn--primary" href="/client/tax-notes">{{ ci("notes", "ci ci--sm") }} Answer Tax Notes</a></div>
         {% endif %}
     </section>
 
     <section class="cx-card" aria-labelledby="req-title">
-        <form data-cx-demo="Request sent to your tax team.">
+        <form method="post" action="/client/update-stage/request">{# was data-cx-demo (nothing sent); now a question in Messages #}
             <div class="cx-card__head cx-card__head--plain">
                 <h2 class="cx-card__title" id="req-title">{{ ci("send") }} Request <span class="cx-accent">an update</span></h2>
             </div>
             <div class="cx-card__body cx-stack">
+                {% if form_error %}<div class="cx-alert cx-alert--error" role="alert">{{ ci("alert") }}<p>{{ form_error }}</p></div>{% endif %}
+                {% if form_saved %}<div class="cx-alert cx-alert--success" role="status">{{ ci("check-circle") }}<p>{{ form_saved }} Their reply will appear in <a class="cx-link" href="/client/messages{{ '?thread=' ~ request_thread if request_thread }}">Messages</a>.</p></div>{% endif %}
                 <div class="cx-field">
                     <label class="cx-label" for="request_type">Request type</label>
                     <select class="cx-select" id="request_type" name="request_type">

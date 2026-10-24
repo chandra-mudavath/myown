@@ -36,6 +36,7 @@ class Client(Base):
     postal_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
     country: Mapped[str | None] = mapped_column(String(80), nullable=True)
     profile_picture: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    referred_by_client_id: Mapped[str | None] = mapped_column(String(36), nullable=True)  # signed up with this client's referral link
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

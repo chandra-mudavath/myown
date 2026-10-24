@@ -1,0 +1,18 @@
+{#- Documents the client's Tax Notes answers ask for, with uploaded / missing state (client feedback, Oct 2026).
+    Used on the case page and the case documents page. -#}
+{%- macro need_list(checklist) -%}
+{% if checklist is none %}
+<p class="case-none">The client hasn't saved Tax Notes yet, so there's no documents checklist.</p>
+{% elif not checklist %}
+<p class="case-none">The client's Tax Notes answers don't call for any specific forms.</p>
+{% else %}
+<ul class="case-needs">
+    {% for item in checklist %}
+    <li class="{{ 'is-done' if item.done else '' }}">
+        <span class="staff-stage-pill tone-{{ 'green' if item.done else 'amber' }}">{{ 'Uploaded' if item.done else 'Missing' }}</span>
+        <span>{{ item.label }}{% if item.done %} <small class="staff-cell-muted">· {{ item.files | map(attribute='original_filename') | join(', ') }}</small>{% endif %}</span>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{%- endmacro -%}

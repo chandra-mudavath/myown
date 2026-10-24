@@ -1,5 +1,6 @@
 {# Shared header for all public pages. On the home page, section links stay as bare "#id" anchors
    so landing.js can smooth-scroll and highlight the active section. #}
+{% from "partials/brand_name.html" import brand_name %}
 {% set path = request.url.path %}
 {% set on_home = path == '/' %}
 {% set home_prefix = '' if on_home else '/' %}
@@ -8,7 +9,7 @@
         <div class="container xl:max-w-6xl mx-auto px-4">
             <div class="nav-shell flex flex-wrap lg:flex-nowrap items-center justify-between">
                 <div class="nav-brand-wrap order-1">
-                    <a class="brand-mark" href="/">{{ app_name }}</a>
+                    <a class="brand-mark" href="/">{{ brand_name(app_name) }}</a>
                 </div>
                 <ul id="landing-menu"
                     class="navbar bg-white lg:bg-transparent w-full lg:w-auto hidden lg:flex flex-col lg:flex-row items-center text-sm font-bold order-3 lg:order-2">

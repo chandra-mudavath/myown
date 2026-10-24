@@ -884,3 +884,126 @@ html[data-theme="dark"] .staff-header .staff-user__text strong, html[data-theme=
 html[data-theme="dark"] .staff-header .staff-user__text small, html[data-theme="dark"] .staff-header .staff-user__caret { color: rgba(255, 255, 255, 0.72); }
 html[data-theme="dark"] .staff-header .staff-brand-text small { color: #60a5fa; }
 html[data-theme="dark"] .staff-header-divider { background: rgba(255, 255, 255, 0.18); }
+
+/* ── Documents for client review (client feedback, Oct 2026) ── */
+.staff-input { height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font: 500 0.875rem var(--font-body); }
+.staff-input[type="file"] { padding: 6px 8px; }
+.review-docs { margin-bottom: 20px; }
+.review-docs__upload { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 0 20px 18px; }
+.review-docs__upload label { display: grid; gap: 5px; color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.review-docs__upload label em { font-style: normal; font-weight: 500; text-transform: none; }
+.review-docs__upload .staff-input { min-width: 220px; text-transform: none; letter-spacing: 0; }
+.review-docs__note { flex: 1; }
+.review-docs__note .staff-input { width: 100%; }
+.review-docs__list { display: grid; gap: 12px; margin: 0; padding: 0 20px 20px; list-style: none; }
+.review-docs__item { padding: 14px 16px; border: 1px solid var(--line); border-left-width: 4px; border-radius: 10px; background: var(--surface); }
+.review-docs__item.tone-coral { border-left-color: #dc2626; }
+.review-docs__item.tone-green { border-left-color: #16a34a; }
+.review-docs__item.tone-amber { border-left-color: #d97706; }
+.review-docs__top { display: flex; align-items: center; gap: 12px; }
+.review-docs__top > div { display: grid; flex: 1; }
+.review-docs__thread { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.review-docs__thread li { padding: 8px 12px; border-radius: 8px; background: var(--brand-soft, rgba(37, 99, 235, .08)); font-size: .85rem; }
+.review-docs__thread li.is-client { background: rgba(220, 38, 38, .08); }
+.review-docs__thread time { margin-left: 6px; color: var(--muted); font-size: .72rem; }
+.review-docs__thread p { margin: 3px 0 0; white-space: pre-line; }
+.review-docs__upload--again { margin-top: 12px; padding: 12px 0 0; border-top: 1px dashed var(--line); }
+
+/* ── Registered cases wait for an assignment before moving (client feedback, Oct 2026) ── */
+.staff-row-action[disabled] { opacity: .45; cursor: not-allowed; }
+.staff-assign-hint { color: #b45309; font-size: .72rem; font-weight: 600; }
+.staff-toast--error, html[data-theme="dark"] .staff-toast--error { color: #fff; background: #b91c1c; }
+.staff-textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font: 500 .875rem var(--font-body); resize: vertical; }
+.case-assign-note { margin: 8px 0 0; color: #b45309; font-size: .8rem; font-weight: 600; max-width: 22ch; text-align: right; }
+
+/* ── Client view in the sidebar (client feedback, Oct 2026) ── */
+.staff-clientnav { display: grid; gap: 4px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.staff-clientnav__year { width: 100%; min-width: 0; margin: 2px 0 10px; }
+.staff-clientnav__who { display: grid; gap: 4px; justify-items: start; margin-bottom: 8px; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.staff-clientnav__who strong { color: var(--ink); font-size: .9rem; }
+.staff-clientnav__item { font-size: .88rem; }
+
+.staff-client-filters { border-top: 0; }
+
+/* Dashboard comment + notifications Assigned columns wrap instead of overflowing (client feedback, Oct 2026) */
+.staff-table td.col-comment { min-width: 14rem; max-width: 20rem; white-space: normal; }
+.staff-table td.notif-assigned { min-width: 15rem; max-width: 20rem; white-space: normal; font-size: .82rem; }
+
+/* ── Referrals follow-up (client feedback, Oct 2026) ── */
+.staff-stage-pill.tone-teal { color: #0f766e; background: rgba(13, 148, 136, 0.12); }
+.staff-stage-pill.tone-slate { color: #475569; background: rgba(100, 116, 139, 0.14); }
+html[data-theme="dark"] .staff-stage-pill.tone-teal { color: #5eead4; background: rgba(45, 212, 191, 0.14); }
+html[data-theme="dark"] .staff-stage-pill.tone-slate { color: #cbd5e1; background: rgba(148, 163, 184, 0.16); }
+.ref-flash { margin: 0 0 16px; padding: 10px 14px; border: 1px solid rgba(22, 163, 74, 0.35); border-radius: 10px; background: rgba(22, 163, 74, 0.08); color: var(--ink); font-size: .9rem; }
+.ref-flash--error { border-color: rgba(220, 38, 38, 0.35); background: rgba(220, 38, 38, 0.08); }
+.ref-card--due .staff-summary-card__value { color: #b45309; }
+.staff-summary-card.is-active { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.ref-mine { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: .85rem; white-space: nowrap; }
+.ref-filter { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 20px; border-bottom: 1px solid var(--line); }
+.ref-filter a { text-decoration: none; }
+.ref-sub { display: block; font-size: .75rem; }
+.ref-call { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid rgba(22, 163, 74, 0.35); border-radius: 999px; color: #15803d; background: rgba(22, 163, 74, 0.08); text-decoration: none; font-weight: 600; white-space: nowrap; }
+.ref-call:hover { background: #16a34a; color: #fff; }
+html[data-theme="dark"] .ref-call { color: #4ade80; }
+.ref-overdue { color: #b91c1c; font-weight: 600; }
+.ref-today { color: #b45309; font-weight: 600; }
+html[data-theme="dark"] .ref-overdue { color: #f87171; }
+html[data-theme="dark"] .ref-today { color: #fbbf24; }
+.ref-add__note { flex: 1; min-width: 220px; }
+.ref-add__note .staff-input { width: 100%; }
+.ref-add label { display: grid; gap: 4px; }
+.ref-add label > span { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+
+.ref-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px; margin-bottom: 20px; padding: 22px 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.ref-head__main { min-width: 0; flex: 1; }
+.ref-head h1 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 4px 0 14px; font-size: 1.6rem; }
+.ref-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px 24px; margin: 0; }
+.ref-facts dt { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.ref-facts dd { margin: 2px 0 0; color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.ref-note { margin: 14px 0 0; padding: 10px 14px; border-radius: 10px; background: var(--brand-soft, rgba(37, 99, 235, .08)); font-size: .9rem; }
+.ref-head__call { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.ref-callbtn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 12px; background: #16a34a; color: #fff; font-weight: 700; font-size: 1rem; text-decoration: none; box-shadow: 0 12px 24px -12px rgba(22, 163, 74, .8); }
+.ref-callbtn:hover { background: #15803d; }
+.ref-callbtn .ci { width: 1.2rem; height: 1.2rem; }
+
+.ref-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 960px) { .ref-layout { grid-template-columns: minmax(0, 1fr); } .ref-head__call { align-items: flex-start; } }
+.ref-log, .ref-history { padding: 20px 22px; }
+.ref-log h2, .ref-history h2 { margin: 0 0 14px; font-size: 1.1rem; }
+.ref-log__form { display: grid; gap: 12px; }
+.ref-log__form fieldset { margin: 0; padding: 0; border: 0; }
+.ref-log__form legend, .ref-log__form > label, .ref-log__row label { color: var(--muted); font-size: .75rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.ref-outcomes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.ref-outcome { position: relative; }
+.ref-outcome input { position: absolute; opacity: 0; }
+.ref-outcome span { display: inline-block; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); font-size: .85rem; font-weight: 600; cursor: pointer; text-transform: none; letter-spacing: 0; }
+.ref-outcome input:checked + span { border-color: var(--brand); background: var(--brand); color: #fff; }
+.ref-outcome input:focus-visible + span { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ref-log__row { display: flex; flex-wrap: wrap; gap: 14px; }
+.ref-log__row label { display: grid; gap: 4px; }
+.ref-log__row .staff-select, .ref-log__row .staff-input { text-transform: none; letter-spacing: 0; }
+.ref-timeline { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.ref-timeline__item { position: relative; padding: 0 0 16px 22px; border-left: 2px solid var(--line); margin-left: 6px; }
+.ref-timeline__item::before { content: ""; position: absolute; left: -7px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--brand); }
+.ref-timeline__item.is-call::before { background: #16a34a; border-color: #16a34a; }
+.ref-timeline__item.is-status::before, .ref-timeline__item.is-assign::before { border-color: var(--muted); }
+.ref-timeline__item strong { display: block; color: var(--ink); font-size: .92rem; }
+.ref-timeline__item p { margin: 4px 0 0; color: var(--ink); font-size: .88rem; white-space: pre-line; }
+
+.ref-filter--source { align-items: center; padding-top: 0; }
+.ref-filter--source .staff-cell-muted { margin-right: 4px; font-size: .78rem; font-weight: 700; }
+
+/* Referrals: one filter bar */
+.ref-filters label { display: grid; gap: 5px; color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.ref-filters .staff-select, .ref-filters .staff-input { text-transform: none; letter-spacing: 0; }
+.ref-filters__search { flex: 1; min-width: 220px; }
+.ref-filters__search .staff-input { width: 100%; box-sizing: border-box; }
+.ref-filters__check { display: inline-flex !important; align-items: center; gap: 6px; padding-bottom: 10px; color: var(--ink) !important; font-size: .86rem !important; text-transform: none !important; letter-spacing: 0 !important; }
+.ref-filters .ref-filters__check { flex-direction: row !important; align-items: center !important; }
+
+/* Case page: the client's saved Tax Notes and documents checklist (client feedback, Oct 2026) */
+.case-notes__detail { display: block; color: var(--muted); font-size: .78rem; font-weight: 500; }
+.case-subhead { margin: 18px 0 8px; font-size: .95rem; }
+.case-needs { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.case-needs li { display: flex; align-items: center; gap: 10px; font-size: .9rem; color: var(--ink); }
+.case-needs-panel { margin-bottom: 20px; }

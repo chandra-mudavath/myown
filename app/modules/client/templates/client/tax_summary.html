@@ -12,16 +12,20 @@
         {# Hidden for now (client feedback, Oct 2026):
         <button class="cx-tab" role="tab" aria-controls="additional">{{ ci("notes") }} Additional summary</button>
         #}
+        {# Make payment: moved to its own page, /client/make-payment (client feedback, Oct 2026)
         <button class="cx-tab" role="tab" aria-controls="payment">{{ ci("card") }} Make payment</button>
+        #}
         <button class="cx-tab" role="tab" aria-controls="payment-details">{{ ci("history") }} Payment details</button>
     </div>
 
     {# ── Summary ───────────────────────────── #}
     <section class="cx-panel cx-stack" role="tabpanel" id="summary" aria-label="Tax summary">
-        <div class="cx-grid cx-grid--4">
+        <div class="cx-grid cx-grid--4 cx-grid--single">
+            {# Gross income, Deductions and Tax liability cards: hidden for now (client feedback, Oct 2026)
             <div class="cx-stat"><span class="cx-stat__icon">{{ ci("refund") }}</span><div><span class="cx-stat__label">Gross income</span><strong class="cx-stat__value">—</strong></div></div>
             <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--green">{{ ci("check-circle") }}</span><div><span class="cx-stat__label">Deductions</span><strong class="cx-stat__value">—</strong></div></div>
             <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--amber">{{ ci("calculator") }}</span><div><span class="cx-stat__label">Tax liability</span><strong class="cx-stat__value">—</strong></div></div>
+            #}
             <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--violet">{{ ci("sparkle") }}</span><div><span class="cx-stat__label">Est. refund</span><strong class="cx-stat__value">—</strong></div></div>
         </div>
         <div class="cx-card">
@@ -44,7 +48,9 @@
     </section>
     #}
 
-    {# ── Payment ───────────────────────────── #}
+    {# ── Payment: hidden here for now (client feedback, Oct 2026). It is its own page now, /client/make-payment
+          (client/make_payment.html + client/_make_payment.html). Kept below, switched off. ── #}
+    {% if false %}
     <section class="cx-panel cx-card" role="tabpanel" id="payment" aria-labelledby="pay-title" hidden>
         <div class="cx-card__head">
             <div>
@@ -221,6 +227,7 @@
             {% endif %}
         </div>
     </section>
+    {% endif %}
 
     {# ── Payment history ───────────────────── #}
     <section class="cx-panel cx-card" role="tabpanel" id="payment-details" aria-labelledby="ph-title" hidden>
@@ -263,6 +270,8 @@
 
 {% block page_scripts %}
 <script>
+// Old links to the payment tab (/client/tax-summary#payment) go to the Make Payment page now
+if (window.location.hash === "#payment") window.location.replace("/client/make-payment");
 (function () {
     const pay = document.getElementById("pay-amount");
     const sent = document.getElementById("bt-amt");

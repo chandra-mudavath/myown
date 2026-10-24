@@ -16,6 +16,8 @@
 {% endif %}
 {%- endmacro -%}
 
+{% from "staff/_need_list.html" import need_list %}
+
 {%- macro section_head(num, title, status) -%}
 <header class="case-section__head">
     <span class="case-section__num">{{ num }}</span>
@@ -48,11 +50,20 @@
             <span class="case-file__stage-label">Current stage</span>
             <span class="staff-stage-pill tone-{{ case.stage_tone }} case-file__pill">{{ case.stage }}</span>
             {% if case.stage_number %}<span class="case-file__stage-step">Step {{ case.stage_number }} of {{ case.stage_total }}</span>{% endif %}
+            {% if case.needs_assignment %}
+            {#- Registered cases stay put until a staff member is assigned (client feedback, Oct 2026) #}
+            <button type="button" class="staff-btn staff-btn--primary case-file__move" disabled aria-disabled="true"
+                    title="Assign a staff member before moving this case out of Registered">
+                {% if case.next_stage_label %}Move to {{ case.next_stage_label }}{% else %}Move stage{% endif %} {{ ci("arrow-right", "ci ci--sm") }}
+            </button>
+            <p class="case-assign-note">Not assigned yet. An admin assigns a staff member before this case can move on.</p>
+            {% else %}
             <button type="button" class="staff-btn staff-btn--primary case-file__move" data-move-stage
                     data-action="/staff/cases/{{ case.id }}/stage" data-case="{{ case.case_id }} · {{ case.client_name }}"
                     data-current="{{ case.stage }}" data-current-key="{{ case.stage_key }}" data-next="{{ case.next_stage or '' }}">
                 {% if case.next_stage_label %}Move to {{ case.next_stage_label }}{% else %}Move stage{% endif %} {{ ci("arrow-right", "ci ci--sm") }}
             </button>
+            {% endif %}
         </div>
         <dl class="case-file__meta">
             <div><dt>Filing type</dt><dd>{{ case.filing_type or '—' }}</dd></div>
@@ -168,6 +179,108 @@
                 <p class="case-none">The client hasn't uploaded any documents yet.</p>
                 {% endif %}
                 <a class="staff-btn staff-btn--ghost case-docs__open" href="/staff/cases/{{ case.id }}/documents">{{ ci("folder", "ci ci--sm") }} Open document review</a>
+            </section>
+
+            {#- What the client saved on Tax Notes, and the documents those answers call for (client feedback, Oct 2026) -#}
+            <section class="case-section" id="sec-notes">
+                {{ section_head("10", "Tax notes", 'complete' if tax_notes_row and tax_notes_row.submitted_at else 'in_progress' if tax_notes_row else 'not_started') }}
+                {% if tax_notes %}
+                <p class="staff-cell-muted" style="margin:0 0 10px;">{{ 'Submitted' if tax_notes_row.submitted_at else 'Saved (Expenses sheet not submitted yet)' }} · last saved {{ tax_notes_row.updated_at.strftime('%b %d, %Y · %H:%M') }}</p>
+                <ul class="case-answers case-notes">
+                    {% for a in tax_notes.answers %}
+                    <li class="{{ 'is-yes' if a.answer == 'yes' else '' }}">
+                        <span>{{ a.label }}{% for d in a.details %}<small class="case-notes__detail">{{ d }}</small>{% endfor %}</span>
+                        <strong>{{ a.answer | capitalize }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% if tax_notes.income_notes %}<p class="ref-note"><strong>Income notes:</strong> {{ tax_notes.income_notes }}</p>{% endif %}
+                {% if tax_notes.expenses_notes %}<p class="ref-note"><strong>Expenses notes:</strong> {{ tax_notes.expenses_notes }}</p>{% endif %}
+                <h3 class="case-subhead">Documents these answers need</h3>
+                {{ need_list(checklist) }}
+                {% else %}
+                <p class="case-none">The client hasn't saved Tax Notes for {{ case.tax_year }} yet.</p>
+                {% endif %}
+            </section>
+
+            {#- Refund bank details the client saved on Bank Details -#}
+            <section class="case-section" id="sec-bank">
+                {{ section_head("11", "Bank details", 'complete' if bank else 'not_started') }}
+                {% if bank %}
+                {% if bank.refund_method == 'check' %}
+                <p class="case-none">Refund by <strong>paper check</strong>, mailed to the address on file.</p>
+                {% else %}
+                {{ facts([("Refund by", "Direct deposit"), ("Bank", bank.bank_name), ("Account type", bank.account_type | capitalize),
+                          ("Routing number (electronic)", bank.routing_number), ("Account number", bank.account_masked),
+                          ("Account holder", bank.holder_name)]) }}
+                {% endif %}
+                <p class="staff-cell-muted" style="margin:8px 0 0;">Saved {{ bank_row.updated_at.strftime('%b %d, %Y') }}. Only the last 4 digits of the account number are shown here.</p>
+                {% else %}
+                <p class="case-none">The client hasn't saved refund bank details for {{ case.tax_year }} yet.</p>
+                {% endif %}
+            </section>
+
+            {#- Personal Info → Visa & residency and Dependents (saved per tax year) -#}
+            <section class="case-section" id="sec-residency">
+                {{ section_head("12", "Residency & dependents", 'complete' if residency else 'not_started') }}
+                {% if residency %}
+                {{ facts([("Nationality", residency.nationality), ("Visas held in " ~ case.tax_year, residency.visa_count),
+                          ("Current visa", residency.visa_type), ("First entry into the US", residency.first_entry),
+                          ("183+ days in the US", residency.days_183 | capitalize)]) }}
+                {% else %}
+                <p class="case-none">The client hasn't saved visa &amp; residency details for {{ case.tax_year }} yet.</p>
+                {% endif %}
+                <h3 class="case-subhead">Dependents</h3>
+                {% if dependents %}
+                <ul class="case-answers">
+                    {% for d in dependents %}
+                    <li><span>{{ d.first_name }} {{ d.last_name }}<small class="case-notes__detail">{{ d.relationship }}{% if d.date_of_birth %} · born {{ d.date_of_birth }}{% endif %} · ID: {{ d.id_type | upper if d.id_type != 'applying' else 'Applying' }}{% if d.months %} · {{ d.months }} months with the client{% endif %}</small></span></li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="case-none">No dependents added.</p>
+                {% endif %}
+            </section>
+
+            {#- FBAR (FinCEN 114): account numbers and TINs masked -#}
+            <section class="case-section" id="sec-fbar">
+                {{ section_head("13", "FBAR", 'complete' if fbar_row and fbar_row.submitted_at else 'in_progress' if fbar_row else 'not_started') }}
+                {% if fbar %}
+                {% set fl = fbar.filer %}
+                <p class="staff-cell-muted" style="margin:0 0 10px;">{{ 'Submitted ' ~ fbar_row.submitted_at.strftime('%b %d, %Y') if fbar_row.submitted_at else 'Saved, not submitted yet' }} · last saved {{ fbar_row.updated_at.strftime('%b %d, %Y · %H:%M') }}</p>
+                {% if fl.get('first_name') %}
+                {{ facts([("Filer", (fl.first_name ~ ' ' ~ (fl.middle_name or '') ~ ' ' ~ fl.last_name) | replace('  ', ' ')), ("Type of filer", fl.filer_type),
+                          ("US taxpayer ID", fl.tin_masked if fl.has_tin == 'yes' else 'None'),
+                          ("Foreign ID", ((fl.fid_type | capitalize) ~ ' ' ~ fl.fid_number ~ (' (' ~ fl.fid_country ~ ')' if fl.fid_country else '')) if fl.fid_number else ''),
+                          ("Date of birth", fl.dob), ("Address", [fl.address, fl.city, fl.state, fl.zip, fl.country] | select | join(', ')),
+                          ("25 or more accounts", fl.many_accounts | capitalize)]) }}
+                {% endif %}
+                {% for title, items, said_none in [("Owned separately", fbar.separate, fbar.no_separate), ("Owned jointly", fbar.joint, fbar.no_joint)] %}
+                <h3 class="case-subhead">{{ title }}</h3>
+                {% if items %}
+                <ul class="case-answers">
+                    {% for a in items %}
+                    <li><span>{{ a.institution }} · {{ a.number_masked }}<small class="case-notes__detail">{{ a.type }}{% if a.owner %} · {{ a.owner }}{% endif %}{% if a.joint_last %} · {{ a.joint_count }} joint owner(s), principal {{ a.joint_last }} (TIN {{ a.joint_tin_masked }}){% endif %} · {{ a.address }}</small></span><strong>${{ a.max_value }}</strong></li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="case-none">{{ 'The client said they have none.' if said_none else 'None added.' }}</p>
+                {% endif %}
+                {% endfor %}
+                {% else %}
+                <p class="case-none">The client hasn't filled in FBAR details for {{ case.tax_year }}.</p>
+                {% endif %}
+            </section>
+
+            {#- E-File Authorization (Form 8879): the PINs are needed to transmit the return -#}
+            <section class="case-section" id="sec-efile">
+                {{ section_head("14", "E-file authorization", 'complete' if efile_row else 'not_started') }}
+                {% if efile_row %}
+                {{ facts([("Signed", efile_row.submitted_at.strftime('%b %d, %Y · %H:%M')), ("Taxpayer PIN", efile_row.data.taxpayer_pin),
+                          ("Spouse PIN", efile_row.data.spouse_pin)]) }}
+                {% else %}
+                <p class="case-none">The client hasn't signed Form 8879 for {{ case.tax_year }} yet.</p>
+                {% endif %}
             </section>
         </div>
 

@@ -196,6 +196,13 @@ def test_stage_change_hides_and_admin_restores(env):
     client, staff, admin = as_(env, "client"), as_(env, "staff"), as_(env, "admin")
     fid = env["filing_id"]
     t = client.post(f"/chat/api/cases/{fid}/open").json()["thread_id"]
+    # A Registered case only moves on once someone is assigned to it
+    with env["Session"]() as db:
+        from app.platform.models.case_workflow import CaseAssignment
+        from app.platform.models.lookups import StaffRoleLookup
+        db.add(StaffRoleLookup(id=1, code="PREPARER", name="Preparer", sort_order=1))
+        db.add(CaseAssignment(case_id=fid, staff_id=env["staff"]["person"].id, role_id=1, status="active"))
+        db.commit()
     staff.post(f"/staff/cases/{fid}/stage", data={"to": "complete", "next": "/staff/cases"}, follow_redirects=False)
     with env["Session"]() as db:
         assert db.get(ChatThread, t).hide_after is not None
@@ -207,6 +214,14 @@ def test_stage_change_hides_and_admin_restores(env):
     assert staff.get("/chat/api/hidden").status_code == 403
     assert admin.post(f"/chat/api/threads/{t}/restore").status_code == 200
     assert client.get(f"/chat/api/threads/{t}").status_code == 200
+
+
+def test_registered_case_needs_an_assignment_to_move(env):
+    fid = env["filing_id"]
+    r = as_(env, "staff").post(f"/staff/cases/{fid}/stage", data={"to": "complete", "next": "/staff/cases"}, follow_redirects=False)
+    assert "move_error=" in r.headers["location"]
+    with env["Session"]() as db:
+        assert db.get(TaxFiling, fid).status == "pending_review"
 
 
 def test_pages_render(env):

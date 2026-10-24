@@ -11,11 +11,12 @@ from app.core.deps import AdminAccount
 from app.core.templates import templates
 from app.modules.admin.services import system_settings as svc
 from app.modules.admin.services.profile_service import current_admin
+from app.platform.services import admin_signup, email_service
 
 router = APIRouter(prefix="/admin/settings", tags=["admin"])
 
 SECTIONS = [("tax-years", "Tax years"), ("stages", "Case stages"), ("document-types", "Document types"),
-            ("chat-topics", "Chat topics"), ("services", "Services & prices")]
+            ("chat-topics", "Chat topics"), ("services", "Services & prices"), ("admin-signup", "Admin sign-up link")]
 
 
 def _back(section: str, err: str | None, saved: str) -> RedirectResponse:
@@ -25,9 +26,10 @@ def _back(section: str, err: str | None, saved: str) -> RedirectResponse:
 
 @router.get("", response_class=HTMLResponse, name="admin_settings")
 def admin_settings(request: Request, account: AdminAccount, db: Session = Depends(get_db), saved: str = "", error: str = ""):
-    return templates.TemplateResponse("admin/settings.html", {
+    return templates.TemplateResponse(request, "admin/settings.html", {
         "request": request, "account": account, "admin": current_admin(db, account), "app_name": settings.APP_NAME,
         "active_nav": "settings", "sections": SECTIONS, "max_upload_mb": settings.MAX_UPLOAD_SIZE_MB, "saved": saved, "error": error, **svc.overview(db),
+        "admin_signup_url": email_service.public_url(request, admin_signup.PATH + key) if (key := admin_signup.current_key(db)) else None,
     })
 
 
@@ -82,3 +84,10 @@ def service_update(service_id: str, account: AdminAccount, db: Session = Depends
                    name: str = Form(""), base_price: str = Form(""), is_active: bool = Form(False)):
     err = svc.update_service(db, account.id, service_id, name, base_price, is_active)
     return _back("services", err, "Service saved.")
+
+
+@router.post("/admin-signup")
+def admin_signup_generate(account: AdminAccount, db: Session = Depends(get_db)):
+    """Make a new admin-only sign-up link; the previous one stops working (client feedback, Oct 2026)."""
+    admin_signup.generate(db, account.id)
+    return _back("admin-signup", None, "New admin sign-up link generated. The previous link no longer works.")

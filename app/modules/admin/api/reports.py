@@ -25,7 +25,7 @@ def admin_reports(request: Request, account: AdminAccount, db: Session = Depends
                   days: int = 7, start: str = "", end: str = ""):
     days = _clamp_days(days)
     s, e = rpt.parse_range(start, end)
-    return templates.TemplateResponse("admin/reports.html", {
+    return templates.TemplateResponse(request, "admin/reports.html", {
         "request": request, "account": account, "admin": current_admin(db, account), "app_name": settings.APP_NAME,
         "active_nav": "reports", "days": days, "start": s.isoformat(), "end": e.isoformat(),
         "by_stage": rpt.filings_by_stage(db), "stuck": rpt.stuck_cases(db, days),
@@ -79,7 +79,7 @@ def admin_analytics(request: Request, account: AdminAccount, db: Session = Depen
     months = rpt.filings_per_month(db)
     avg = rpt.average_days_per_stage(db)
     split = rpt.client_status_split(db)
-    return templates.TemplateResponse("admin/analytics.html", {
+    return templates.TemplateResponse(request, "admin/analytics.html", {
         "request": request, "account": account, "admin": current_admin(db, account), "app_name": settings.APP_NAME,
         "active_nav": "analytics", "stages": stages, "stage_max": max([r["count"] for r in stages] or [0]) or 1,
         "months": months, "month_max": max([r["count"] for r in months] or [0]) or 1,

@@ -1,0 +1,88 @@
+{% extends "admin/_layout.html" %}
+{% set l = r.lead %}
+{% block title %}{{ l.name }} · Referral - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Referrals / ' ~ l.name %}
+{% set no_rail = true %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Referral · added {{ l.created_at.strftime('%b %d, %Y') }}</span>
+                <h1>{{ l.name }}</h1>
+                <p><span class="admin-pill admin-pill--{{ r.tone }}">{{ r.status_label }}</span>
+                   {% if r.referrer %} Referred by <a href="/admin/clients/{{ r.referrer.id }}" class="link-primary">{{ r.referrer_name }}</a> ({{ r.referrer.client_number }}){% endif %}</p>
+            </div>
+            {% if l.phone %}<div><a class="modal-btn-submit admin-btn-action admin-ref-callbtn" href="tel:{{ r.tel }}">&#128222; Call {{ l.phone }}</a></div>{% endif %}
+        </div>
+    </section>
+
+    {% if error %}<p class="admin-flash admin-flash--error" role="alert">{{ error }}</p>{% endif %}
+    {% if saved %}<p class="admin-flash" role="status">{{ saved }}</p>{% endif %}
+
+    <section class="admin-section">
+        <div class="admin-card">
+            <h3 class="admin-card-title">Contact &amp; follow-up</h3>
+            <dl class="admin-facts admin-facts--five admin-ref-facts">
+                <div><dt>Phone</dt><dd>{{ l.phone or '—' }}</dd></div>
+                <div><dt>Email</dt><dd>{{ l.email or '—' }}</dd></div>
+                <div><dt>How referred</dt><dd><span class="admin-pill admin-pill--{{ r.source_tone }}">{{ r.source_label }}</span></dd></div>
+                <div><dt>Relationship</dt><dd>{{ l.relationship or ('Signed up with the referral link' if l.source == 'link' else '—') }}</dd></div>
+                <div><dt>Next follow-up</dt><dd>{% if l.next_follow_up %}<span class="{{ 'admin-ref-overdue' if r.overdue else '' }}">{{ l.next_follow_up.strftime('%b %d, %Y') }}{% if r.overdue %} (overdue){% endif %}</span>{% else %}—{% endif %}</dd></div>
+                <div><dt>Client account</dt><dd>{% if r.signed_up %}<a href="/admin/clients/{{ r.signed_up.id }}" class="link-primary">{{ r.signed_up.client_number }}</a>{% else %}Not signed up{% endif %}</dd></div>
+                {% if l.note %}<div class="admin-facts__full"><dt>Note</dt><dd>{{ l.note }}</dd></div>{% endif %}
+            </dl>
+            <form method="post" action="/admin/referrals/{{ l.id }}/assign" class="admin-inline-form">
+                <label for="assign-staff" class="admin-muted">Assigned to</label>
+                <select id="assign-staff" name="staff_id" class="admin-filter-input admin-input-sm">
+                    <option value="">Not assigned</option>
+                    {% for s in staff_options %}<option value="{{ s.id }}" {% if l.assigned_staff_id == s.id %}selected{% endif %}>{{ s.name }}{% if s.role %} ({{ s.role }}){% endif %}</option>{% endfor %}
+                </select>
+                <button type="submit" class="admin-filter-btn">Save assignment</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="admin-section admin-ref-grid">
+        <div class="admin-card">
+            <h3 class="admin-card-title">Log a call</h3>
+            <form method="post" action="/admin/referrals/{{ l.id }}/log" class="admin-form">
+                <div class="modal-form-group">
+                    <label for="log-outcome">Call outcome</label>
+                    <select id="log-outcome" name="outcome"><option value="">No call, just a note</option>{% for key, label in outcomes %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="log-note">Notes</label>
+                    <textarea id="log-note" name="note" rows="3" maxlength="2000" placeholder="What did they say?"></textarea>
+                </div>
+                <div class="admin-ref-row">
+                    <div class="modal-form-group">
+                        <label for="log-status">Status</label>
+                        <select id="log-status" name="status"><option value="">Keep: {{ r.status_label }}</option>{% if l.status not in ('signed_up', 'filed') %}{% for key, label, tone in statuses if key != l.status %}<option value="{{ key }}">{{ label }}</option>{% endfor %}{% endif %}</select>
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="log-next">Next follow-up</label>
+                        <input id="log-next" type="date" name="next_follow_up" min="{{ today }}">
+                    </div>
+                </div>
+                <button type="submit" class="admin-filter-btn">Save follow-up</button>
+            </form>
+        </div>
+        <div class="admin-card">
+            <h3 class="admin-card-title">History</h3>
+            {% if r.history %}
+            <ol class="admin-ref-timeline">
+                {% for h in r.history %}
+                <li class="is-{{ h.kind }}">
+                    <strong>{% if h.kind == 'call' %}Call · {{ outcome_label.get(h.outcome, h.outcome) }}{% elif h.kind == 'note' %}Note{% elif h.kind == 'assign' %}Assignment{% else %}Update{% endif %}</strong>
+                    <small class="admin-muted">{{ h.author_name }} · {{ h.created_at.strftime('%b %d, %Y · %H:%M') }}</small>
+                    {% if h.note %}<p>{{ h.note }}</p>{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="admin-muted">No calls logged yet.</p>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

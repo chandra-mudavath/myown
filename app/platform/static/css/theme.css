@@ -77,6 +77,19 @@ html[data-theme="dark"] {
     --brand-soft:     rgba(37, 99, 235, 0.18);
 }
 
+/* Two-tone company name ("Covrent" + "Tax"), see partials/brand_name.html */
+.brand-accent { color: var(--brand); }
+html[data-theme="dark"] .brand-accent,
+.au-logo .brand-accent { color: #60a5fa; } /* lighter blue on dark backgrounds and the login photo */
+
+/* Notifications bell: same icon and colour in the staff and admin headers (partials/bell_icon.html) */
+a.notif-bell { color: #475569; }
+a.notif-bell:hover { color: #2563eb; }
+a.notif-bell.has-unread { color: #dc2626; }
+html[data-theme="dark"] a.notif-bell { color: #cbd5e1; }
+html[data-theme="dark"] a.notif-bell:hover { color: #60a5fa; }
+a.notif-bell .notif-bell__icon { width: 19px; height: 19px; }
+
 /* ── Global Body Styles (applies to ALL pages) ── */
 html,
 body {

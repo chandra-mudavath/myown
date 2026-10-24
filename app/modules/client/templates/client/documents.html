@@ -17,10 +17,48 @@
 
 {% block page %}
 <div class="cx-stack">
-    {% if current_filing_id %}
-    <section class="cx-card" aria-labelledby="upload-title">
+    {#- The upload form always shows, with the full document type list (client feedback, Oct 2026).
+        Uploads attach to the year's filing, so without one the file picker and Upload button are
+        switched off and the card says to start the filing first. -#}
+    {#- Uploads are always on now: the first upload starts the year's case (client feedback, Oct 2026: no New filing step).
+        Was: current_filing_id is not none and current_filing_id -#}
+    {% set can_upload = true %}
+
+    {% if upload_saved == "notes" %}
+    <div class="cx-alert cx-alert--success" role="status">{{ ci("check-circle") }}<p><strong>Tax notes submitted.</strong> Below are the documents your answers need. Upload each one.</p></div>
+    {% endif %}
+
+    {#- Documents we need from you: built from the Tax Notes Yes / No answers -#}
+    <section class="cx-card" id="checklist" aria-labelledby="checklist-title">
+        <div class="cx-card__head">
+            <div>
+                <h2 class="cx-card__title" id="checklist-title">{{ ci("check-circle") }} Documents we <span class="cx-accent">need from you</span></h2>
+                <p class="cx-card__sub">Based on your <a class="cx-link" href="/client/tax-notes">Tax Notes</a> answers for {{ selected_year }}. Each item is ticked when you upload it under that document type.</p>
+            </div>
+            {% if checklist %}<span class="cx-badge cx-badge--{{ 'complete' if checklist | selectattr('done') | list | length == checklist | length else 'pending_review' }}">{{ checklist | selectattr('done') | list | length }} of {{ checklist | length }} uploaded</span>{% endif %}
+        </div>
+        {% if checklist is none %}
+        <div class="cx-card__body"><p class="cx-muted" style="margin:0;">Answer your <a class="cx-link" href="/client/tax-notes">Tax Notes</a> first. We'll then list the documents we need, based on your answers.</p></div>
+        {% elif not checklist %}
+        <div class="cx-card__body"><p class="cx-muted" style="margin:0;">Your answers don't call for any specific forms. Upload your W-2s and anything else your tax team asks for.</p></div>
+        {% else %}
+        <ul class="cx-needlist">
+            {% for item in checklist %}
+            <li class="{{ 'is-done' if item.done else '' }}">
+                <span class="cx-needlist__mark" aria-hidden="true">{{ ci("check", "ci ci--sm") if item.done else "" }}</span>
+                <div>
+                    <strong>{{ item.label }}</strong>
+                    {% if item.done %}<span class="cx-muted">Uploaded: {{ item.files | map(attribute='original_filename') | join(', ') }}</span>{% endif %}
+                </div>
+                {% if not item.done %}<button type="button" class="cx-btn cx-btn--sm cx-btn--soft" data-need-type="{{ item.codes[0] }}">{{ ci("upload", "ci ci--sm") }} Upload</button>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </section>
+    <section class="cx-card{% if not can_upload %} cx-upload--locked{% endif %}" aria-labelledby="upload-title">
         <form id="quickUploadForm" onsubmit="handleQuickUpload(event)">
-            <input type="hidden" name="filing_id" value="{{ current_filing_id }}" />
+            <input type="hidden" name="filing_id" value="{{ current_filing_id or '' }}" />
             <div class="cx-card__head">
                 <div>
                     <h2 class="cx-card__title" id="upload-title">{{ ci("upload") }} Upload <span class="cx-accent">new documents</span></h2>
@@ -28,14 +66,45 @@
                 </div>
             </div>
             <div class="cx-card__body">
+                {% if not current_filing_id %}
+                <div class="cx-alert" style="margin-bottom: 1rem;">
+                    {{ ci("info") }}
+                    <p>Your first upload starts your {{ selected_year }} return with your tax team.</p>
+                </div>
+                {% endif %}
+                {% if not can_upload %}
+                <div class="cx-alert cx-alert--warn" style="margin-bottom: 1rem;">
+                    {{ ci("alert") }}
+                    <p><strong>No filing for {{ selected_year }} yet.</strong> You can look through the document types below. To upload, start your {{ selected_year }} filing first.
+                        <a class="cx-btn cx-btn--sm cx-btn--primary" href="/client/filings/new" style="margin-left: .5rem;">Start {{ selected_year }} filing</a></p>
+                </div>
+                {% endif %}
                 <div class="cx-grid cx-upload-grid">
                     <div class="cx-stack">
+                        {#- Category first, then Document type (client feedback, Oct 2026): the type list shows only the
+                            chosen category's types. Picking a type directly (e.g. from the checklist) still sets the category. -#}
                         <div class="cx-field">
-                            <label class="cx-label" for="up-cat">Document type<span class="cx-req">*</span></label>
-                            <select class="cx-select" id="up-cat" name="category" required>
+                            <label class="cx-label" for="up-cat">Category<span class="cx-req">*</span></label>
+                            <select class="cx-select" id="up-cat" name="category" required data-doc-cat>
+                                <option value="">Select the category</option>
                                 {% for key, label in category_labels.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
                             </select>
                         </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="up-type">Document type<span class="cx-req">*</span></label>
+                            <select class="cx-select" id="up-type" name="document_type" required data-doc-type>
+                                <option value="">Select the document type</option>
+                                {% for key, label in category_labels.items() %}
+                                {% set in_cat = document_types | selectattr("category", "equalto", key) | list %}
+                                {% if in_cat %}
+                                <optgroup label="{{ label }}">
+                                    {% for t in in_cat %}<option value="{{ t.code }}" data-category="{{ t.category }}" data-name="{{ t.name }}">{{ t.name }}</option>{% endfor %}
+                                </optgroup>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {# Category used to come after Document type (filled in from the type) #}
                         <div class="cx-field">
                             <label class="cx-label" for="up-name">Description<span class="cx-opt">Optional</span></label>
                             <input class="cx-input" id="up-name" name="document_name" placeholder="e.g. W-2 from Acme Corp" maxlength="120" />
@@ -43,7 +112,7 @@
                     </div>
                     <div>
                         <div class="cx-dropzone" data-cx-dropzone="up-files">
-                            <input type="file" name="files" multiple required aria-label="Choose files" />
+                            <input type="file" name="files" multiple required aria-label="Choose files" {% if not can_upload %}disabled{% endif %} />
                             <span class="cx-dropzone__icon">{{ ci("upload", "ci ci--lg") }}</span>
                             <strong>Drag &amp; drop files here, or click to browse</strong>
                             <span>Only you and your tax team can see these files</span>
@@ -57,16 +126,14 @@
                 </label>
             </div>
             <div class="cx-card__foot">
+                {% if can_upload %}
                 <button type="submit" class="cx-btn cx-btn--primary">{{ ci("upload", "ci ci--sm") }} Upload files</button>
+                {% else %}
+                <button type="button" class="cx-btn cx-btn--primary" disabled title="Start your {{ selected_year }} filing to upload">{{ ci("upload", "ci ci--sm") }} Upload files</button>
+                {% endif %}
             </div>
         </form>
     </section>
-    {% else %}
-    <div class="cx-alert cx-alert--warn">
-        {{ ci("alert") }}
-        <p><strong>No filing for {{ selected_year }} yet.</strong> Start a filing to enable uploads for this tax year. <a class="cx-link" href="/client/filings/new">Start filing →</a></p>
-    </div>
-    {% endif %}
 
     <section class="cx-card" aria-labelledby="docs-title">
         <div class="cx-card__head">

@@ -3,6 +3,7 @@
     put its line back in nav_groups:
         Review & file: ("update_stage", "/client/update-stage", "stage", "Filing Status"),
         Account:       ("summary_records", "/client/summary-records", "archive", "Summary Records"),
+    Make Payment used to open the Tax Summary tab (/client/tax-summary#payment); it is its own page now.
 -#}
 {%- set nav_groups = [
     ("Overview", [
@@ -15,7 +16,7 @@
         ("tax_notes", "/client/tax-notes", "notes", "Tax Notes"),
         ("documents", "/client/documents", "upload", "Upload Documents"),
         ("tax_summary", "/client/tax-summary", "calculator", "Tax Summary"),
-        ("payment", "/client/tax-summary#payment", "card", "Make Payment"),
+        ("make_payment", "/client/make-payment", "card", "Make Payment"),
         ("bank_details", "/client/bank-details", "bank", "Bank Details"),
         ("fbar", "/client/fbar", "globe", "FBAR"),
     ]),

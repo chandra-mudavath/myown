@@ -1,14 +1,37 @@
+import io
 import os
 import re
 import uuid
 from pathlib import Path
-from fastapi import UploadFile
+from fastapi import HTTPException, UploadFile, status
 from app.core.config import settings
+from app.core.errors import AppError
+from app.core.files import mime_for
 from app.platform.services.storage_provider import storage_provider
 
 # Categories come from the document_categories table; on disk each one is a folder, so only
 # plain names are allowed (no path separators or dots).
 _SAFE_CATEGORY = re.compile(r"^[A-Za-z0-9_]{1,50}$")
+
+AVATAR_MAX_MB = 5
+# Avatars must really be images: the file's first bytes, not just its name, decide.
+_IMAGE_SIGNATURES = {b"\x89PNG\r\n\x1a\n": ".png", b"\xff\xd8\xff": ".jpg", b"GIF87a": ".gif", b"GIF89a": ".gif"}
+
+
+def read_upload(file: UploadFile, max_mb: int | None = None) -> bytes:
+    """The uploaded bytes, refusing anything over the size limit (default MAX_UPLOAD_SIZE_MB)."""
+    limit = (max_mb or settings.MAX_UPLOAD_SIZE_MB) * 1024 * 1024
+    data = file.file.read(limit + 1)
+    if len(data) > limit:
+        raise AppError("SYS-008", f"{file.filename or 'The file'} is larger than {max_mb or settings.MAX_UPLOAD_SIZE_MB} MB.",
+                       max_mb=max_mb or settings.MAX_UPLOAD_SIZE_MB)
+    return data
+
+
+def _image_ext(data: bytes) -> str | None:
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ".webp"
+    return next((ext for sig, ext in _IMAGE_SIGNATURES.items() if data.startswith(sig)), None)
 
 
 def generate_uuid() -> str:
@@ -48,9 +71,15 @@ def save_document_file(
     if not _SAFE_CATEGORY.match(category or ""):
         category = "Other"
 
+    original_filename = file.filename or "uploaded_document"
+    ext = os.path.splitext(original_filename)[1].lower()
+    if ext not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"File extension {ext} not allowed. Supported: {', '.join(settings.ALLOWED_EXTENSIONS)}")
+    file_bytes = read_upload(file)
+
     target_dir = ensure_filing_storage_dir(client_id, tax_year, filing_id, category)
 
-    original_filename = file.filename or "uploaded_document"
     sanitized = sanitize_filename(original_filename)
     stem, ext = os.path.splitext(sanitized)
 
@@ -60,16 +89,12 @@ def save_document_file(
 
     destination = target_dir / stored_filename
 
-    # Read content length
-    file_bytes = file.file.read()
     file_size = len(file_bytes)
-    file.file.seek(0)
 
-    # Save via storage provider interface
+    # Save via storage provider interface. The stored type comes from the extension, not the browser.
+    mime_type = mime_for(stored_filename)
     storage_key = str(destination)
-    relative_path = storage_provider.save(file.file, storage_key, content_type=file.content_type)
-
-    mime_type = file.content_type or "application/octet-stream"
+    relative_path = storage_provider.save(io.BytesIO(file_bytes), storage_key, content_type=mime_type)
 
     return stored_filename, relative_path, mime_type, file_size
 
@@ -79,9 +104,10 @@ def save_profile_picture(file: UploadFile, user_id: str, role_type: str) -> str:
     Saves an uploaded profile picture into storage/{user_id}/avatar/{filename}.
     Returns the web URL path e.g. /storage/{user_id}/avatar/{filename}
     """
-    ext = os.path.splitext(file.filename or ".jpg")[1].lower()
-    if ext not in [".jpg", ".jpeg", ".png", ".webp", ".gif"]:
-        ext = ".jpg"
+    data = read_upload(file, AVATAR_MAX_MB)
+    ext = _image_ext(data)
+    if not ext:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The profile picture must be a PNG, JPG, GIF or WebP image.")
 
     avatar_dir = Path("storage") / str(user_id) / "avatar"
     avatar_dir.mkdir(parents=True, exist_ok=True)
@@ -89,7 +115,6 @@ def save_profile_picture(file: UploadFile, user_id: str, role_type: str) -> str:
     filename = f"avatar_{generate_uuid()[:8]}{ext}"
     file_path = avatar_dir / filename
 
-    with open(file_path, "wb") as buffer:
-        buffer.write(file.file.read())
+    file_path.write_bytes(data)
 
     return f"/storage/{user_id}/avatar/{filename}"

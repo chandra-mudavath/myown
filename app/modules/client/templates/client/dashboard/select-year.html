@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/brand_name.html" import brand_name %}
 
 {% block title %}Choose Tax Year - {{ app_name }}{% endblock %}
 
@@ -14,19 +15,77 @@
   <svg class="theme-icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path></svg>
 </button>
 
-<div class="year-selection-content">
+{#- Top bar: logo on the left, logout on the right (the theme switch sits beside it) -#}
+<header class="year-topbar">
+  <span class="year-topbar__brand">{{ brand_name(app_name) }}</span>
   <form action="/auth/logout" method="post" class="year-selection-logout">
     <button type="submit" class="back-link back-link--button">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17l5-5m0 0l-5-5m5 5H9m4 5v1a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h5a2 2 0 012 2v1" />
       </svg>
       Logout
     </button>
   </form>
+</header>
 
+{#- Year tiles (client feedback, Oct 2026): one card per tax year with its status; one click opens it. -#}
+<main class="year-tiles-page">
+  <div class="year-tiles-head fade-in">
+    {% if first_name %}<p class="year-hello">Welcome back, {{ first_name }}</p>{% endif %}
+    <h1 class="auth-header__title">Choose a <span class="auth-title-accent">Tax Year</span></h1>
+    <p class="auth-header__subtitle">Pick the year you want to work on. You can switch years any time from the sidebar.</p>
+  </div>
+
+  {#- Any open year from the dropdown; the matching card below is highlighted -#}
+  <form class="year-picker fade-in" method="POST" action="{{ url_for('select_year_submit') }}">
+    <label class="year-picker__label" for="tax_year">Tax year</label>
+    <select name="tax_year" id="tax_year" class="form-input year-select" required data-year-picker>
+      {% for year in years %}
+      <option value="{{ year }}" {% if year == default_year %}selected{% endif %}>{{ year }}{% if year == default_year %} (current){% endif %}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-submit btn-primary year-continue">Continue
+      <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6"/></svg>
+    </button>
+  </form>
+
+  <h2 class="year-cards-title">Your <span class="auth-title-accent">tax years</span></h2>
+
+  <div class="year-tiles">
+    {% for c in year_cards %}
+    <form method="post" action="{{ url_for('select_year_submit') }}" class="year-tile-form">
+      <input type="hidden" name="tax_year" value="{{ c.year }}" />
+      <button type="submit" class="year-tile year-tile--{{ c.status_key }}{% if c.is_default %} is-current{% endif %}" data-year="{{ c.year }}"
+              aria-label="Open tax year {{ c.year }}: {{ c.status }}">
+        <span class="year-tile__top">
+          <span class="year-tile__icon" aria-hidden="true">
+            {%- if c.status_key == 'complete' %}<svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            {%- elif c.status_key == 'progress' %}<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path stroke-linecap="round" d="M12 7.5V12l3 2"/></svg>
+            {%- else %}<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 6v12M6 12h12"/></svg>{% endif -%}
+          </span>
+          {% if c.is_default %}<span class="year-tile__tag">Current year</span>{% endif %}
+        </span>
+        <span class="year-tile__year">{{ c.year }}</span>
+        <span class="year-status year-status--{{ c.status_key }}">{{ c.status }}</span>
+        <span class="year-tile__detail">{{ c.detail }}</span>
+        <span class="year-tile__cta">{{ 'Start filing' if c.status_key == 'none' else 'Open year' }}
+          <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6"/></svg>
+        </span>
+      </button>
+    </form>
+    {% endfor %}
+  </div>
+</main>
+
+{#- Previous layout (dropdown + filing history list): switched off for the year tiles above. -#}
+{% if false %}
+<div class="year-selection-content">
   <div class="auth-card fade-in">
     <div class="auth-header">
-      <div class="brand-icon brand-icon--lg btn-primary mx-auto mb-4">CT</div>
+      <span class="year-hero-icon" aria-hidden="true">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="3"/><path stroke-linecap="round" d="M8 2.5v4M16 2.5v4M3 10h18M8 14h2M14 14h2M8 17.5h2"/></svg>
+      </span>
+      {% if first_name %}<p class="year-hello">Welcome back, {{ first_name }}</p>{% endif %}
       <h1 class="auth-header__title">Choose a <span class="auth-title-accent">Tax Year</span></h1>
       <p class="auth-header__subtitle">Select the filing year you'd like to view on your dashboard.</p>
     </div>
@@ -43,7 +102,9 @@
           </select>
         </div>
         <p id="year-preview" class="year-preview-text" style="display:none;"></p>
-        <button type="submit" class="btn-submit btn-primary">Continue</button>
+        <button type="submit" class="btn-submit btn-primary year-continue">Continue
+          <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14m-6-6 6 6-6 6"/></svg>
+        </button>
       </form>
     </div>
   </div>
@@ -65,10 +126,11 @@
       <div class="previous-filing-year">{{ filing.year }}</div>
       <div class="previous-filing-details">
         <strong>{{ filing.filing_type|replace('_', ' ')|title }}</strong>
-        <span>{{ filing.status }} · Filed {{ filing.filed_date }}</span>
+        <span><em class="year-status year-status--{{ filing.status_key }}">{{ filing.status }}</em> Filed {{ filing.filed_date }}</span>
       </div>
       <button type="submit" class="previous-filing-action" aria-label="Open {{ filing.year }} filing">
-        View year
+        View
+        <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
       </button>
     </form>
     {% endfor %}
@@ -78,9 +140,20 @@
   {% endif %}
   </section>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
+<script>
+// The highlighted card follows the year chosen in the dropdown
+(function () {
+  const picker = document.querySelector("[data-year-picker]");
+  if (!picker) return;
+  const sync = () => document.querySelectorAll(".year-tile[data-year]").forEach((t) => t.classList.toggle("is-current", t.dataset.year === picker.value));
+  picker.addEventListener("change", sync);
+  sync();
+})();
+</script>
 <script src="{{ asset('platform', 'js/country-picker.js') }}"></script>
 <script src="{{ asset('platform', 'js/auth.js') }}"></script>
 {% endblock %}

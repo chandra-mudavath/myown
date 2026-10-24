@@ -19,6 +19,8 @@
             {% endfor %}
         </select>
         <p class="stage-dialog__hint">The next stage in the workflow is selected for you.</p>
+        <label for="stage-comment">Comment <span class="staff-cell-muted">optional, shown in the Comments column</span></label>
+        <textarea id="stage-comment" name="comment" class="staff-textarea" rows="2" maxlength="1000" placeholder="e.g. Waiting for the client's 1099-B"></textarea>
         <div class="doc-dialog__foot">
             <button type="button" class="staff-btn staff-btn--ghost" data-dialog-close>Cancel</button>
             <button type="submit" class="staff-btn staff-btn--primary">Move filing</button>

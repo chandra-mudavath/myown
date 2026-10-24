@@ -15,8 +15,43 @@
     ("Taxpayer Advocate Service", "IRS", "Free help if your refund is delayed and the usual channels haven't worked.", "https://www.taxpayeradvocate.irs.gov/"),
 ] %}
 
+{#- Refund checker laid out like the client's reference site (client feedback, Oct 2026):
+    pick the return, then "Check Refund Status" opens the matching official site. -#}
+{% set refund_checks = [
+    ("federal", "Federal: regular return (Form 1040)", "https://www.irs.gov/wheres-my-refund"),
+    ("federal_amended", "Federal: amended return (Form 1040-X)", "https://www.irs.gov/filing/wheres-my-amended-return"),
+    ("state", "State return", "https://www.irs.gov/businesses/small-businesses-self-employed/state-government-websites"),
+] %}
+
 {% block page %}
 <div class="cx-stack">
+    <section class="cx-card" aria-labelledby="rs-title">
+        <div class="cx-card__head">
+            <div>
+                <h2 class="cx-card__title" id="rs-title">{{ ci("search") }} Check your refund status <span class="cx-accent">online</span></h2>
+                <p class="cx-card__sub">Refund status is usually available about 24 hours after your return is e-filed, or about 4 weeks after a paper return is mailed.</p>
+            </div>
+        </div>
+        <div class="cx-card__body">
+            <form class="cx-refundcheck" data-refund-check>
+                <div class="cx-field">
+                    <label class="cx-label" for="rs-type">Return type</label>
+                    <select class="cx-select" id="rs-type" name="return_type">
+                        {% for key, label, url in refund_checks %}<option value="{{ url }}">{{ label }}</option>{% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="cx-btn cx-btn--primary">{{ ci("search", "ci ci--sm") }} Check Refund Status</button>
+            </form>
+            <p class="cx-muted" style="margin: 0.75rem 0 0; font-size: 0.84rem;">For a state return, the IRS list of state tax websites opens; choose your state there.</p>
+            <div class="cx-grid cx-grid--3 cx-refundphones">
+                <div><span class="cx-muted">Current year refunds</span><strong><a class="cx-link" href="tel:18008291954">800-829-1954</a></strong></div>
+                <div><span class="cx-muted">Amended return refunds</span><strong><a class="cx-link" href="tel:18664642050">866-464-2050</a></strong></div>
+                <div><span class="cx-muted">Owe tax instead?</span><strong><a class="cx-link" href="https://www.irs.gov/payments" target="_blank" rel="noopener">Pay your IRS / state taxes online</a></strong></div>
+            </div>
+        </div>
+    </section>
+
+    <h2 class="cx-legend" style="margin: 0.5rem 0 0;">More official links</h2>
     <div class="cx-alert">
         {{ ci("info") }}
         <p>Keep your SSN or ITIN, filing status and the exact refund amount from your return handy. These are official government websites and open in a new tab.</p>
@@ -80,4 +115,13 @@
     </div>
 </div>
 #}
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+document.querySelector("[data-refund-check]")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    window.open(e.target.return_type.value, "_blank", "noopener");
+});
+</script>
 {% endblock %}

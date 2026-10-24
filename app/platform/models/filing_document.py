@@ -37,6 +37,7 @@ class FilingDocument(Base):
     document_group_id: Mapped[str] = mapped_column(String(36), index=True, nullable=False, default=_uuid)
 
     category: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g., Personal, Income, Deductions
+    document_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # document_types.code picked on upload, e.g. FORM_1099_DIV
     document_name: Mapped[str] = mapped_column(String(120), nullable=False)
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     stored_filename: Mapped[str] = mapped_column(String(255), nullable=False)

@@ -1,0 +1,51 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "make_payment" %}
+{% set page_section = "Make Payment" %}
+{% set page_title = "Make Payment" %}
+{% set page_subtitle = "Pay in USD by card, or in INR by UPI." %}
+
+{% block page %}
+<div class="cx-stack">
+    {% include "client/_make_payment.html" %}
+    <p class="cx-muted" style="margin: 0; font-size: 0.86rem;">Past payments and receipts are under <a class="cx-link" href="/client/tax-summary#payment-details">Tax Summary · Payment details</a>.</p>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+(function () {
+    // Pay in USD / Pay in INR: show the matching panel
+    const options = [...document.querySelectorAll("[data-pay-option]")];
+    const show = () => {
+        const picked = options.find((o) => o.checked)?.value || "usd";
+        document.querySelectorAll("[data-pay-panel]").forEach((p) => {
+            const on = p.dataset.payPanel === picked;
+            p.hidden = !on;
+            p.querySelectorAll("input, select, textarea, button").forEach((f) => { f.disabled = !on; });
+        });
+        document.querySelectorAll(".cx-pay__option").forEach((l) => l.classList.toggle("is-on", l.querySelector("input").checked));
+    };
+    options.forEach((o) => o.addEventListener("change", show));
+    show();
+
+    // Pay now: "Complete your payment" window; the left side shows the amount as it's typed
+    const dialog = document.querySelector("[data-pay-dialog]");
+    if (!dialog) return;
+    const amount = dialog.querySelector("[data-pay-amount]");
+    const shown = dialog.querySelector("[data-pay-show]");
+    const invoice = dialog.querySelector("#usd-invoice");
+    const sync = () => {
+        const v = parseFloat(amount.value);
+        shown.textContent = (isNaN(v) ? 0 : v).toFixed(2);
+    };
+    amount.addEventListener("input", sync);
+    invoice?.addEventListener("change", () => { amount.max = invoice.selectedOptions[0].dataset.balance; });
+    if (invoice) amount.max = invoice.selectedOptions[0].dataset.balance;
+    document.querySelector("[data-pay-open]")?.addEventListener("click", () => { dialog.showModal(); amount.focus(); });
+    dialog.querySelector("[data-pay-close]").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
+    sync();
+})();
+</script>
+{% endblock %}

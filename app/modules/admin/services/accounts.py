@@ -19,7 +19,7 @@ from app.modules.staff.models.staff import Staff, StaffRole
 from app.platform.models.auth import AccountType, AuthAccount, AuthRefreshToken
 from app.platform.models.case_workflow import CaseAssignment
 from app.platform.models.system import AuditLog
-from app.platform.services import chat_service
+from app.platform.services import auth_service, chat_service
 from app.platform.services.catalog import staff_roles
 
 _MANAGED = (AccountType.CLIENT, AccountType.STAFF)
@@ -87,13 +87,13 @@ def unlock(db: Session, actor_id: str, account: AuthAccount) -> str | None:
         return err
     if not lock_state(account) and not account.failed_login_count:
         return "The account isn't locked."
-    account.locked_until, account.failed_login_count = None, 0
+    auth_service.clear_failed_attempts(db, account)  # also lifts per-IP blocks for this email
     _audit(db, actor_id, "account_unlocked", "auth_account", account.id, None, None)
     db.commit()
     return None
 
 
-def _temp_password(length: int = 12) -> str:
+def temp_password(length: int = 12) -> str:
     """Meets the sign-up strength rules: upper, lower, digit and special character."""
     pools = [string.ascii_uppercase, string.ascii_lowercase, string.digits, "!@#$%^&*"]
     chars = [secrets.choice(p) for p in pools] + [secrets.choice("".join(pools)) for _ in range(length - len(pools))]
@@ -106,10 +106,11 @@ def reset_password(db: Session, actor_id: str, account: AuthAccount) -> tuple[st
     err = _check(actor_id, account)
     if err:
         return None, err
-    password = _temp_password()
+    password = temp_password()
     now = datetime.now(timezone.utc)
     account.password_hash = hash_password(password)
-    account.locked_until, account.failed_login_count = None, 0
+    account.must_change_password = True  # they choose their own at the next sign-in
+    auth_service.clear_failed_attempts(db, account)
     _revoke_sessions(db, account.id, now)
     _audit(db, actor_id, "password_reset_by_admin", "auth_account", account.id, None, None)
     db.commit()

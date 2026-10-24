@@ -4,7 +4,9 @@
 {% set page_section = "Account" %}
 {% set page_title = "Refer & Earn" %}
 {% set page_subtitle = "Share your link with friends and family and earn credits when they file with us." %}
-{% set ref_code = (client.id | string)[:8] | upper if client else "" %}
+{% set ref_code = ref_code | default((client.id | string)[:8] | upper if client else "") %}
+{% set rc = ref_counts | default({"all": 0, "pending": 0, "joined": 0}) %}
+{% set ref_badge = {"blue": "info", "amber": "pending_review", "teal": "info", "slate": "plain", "green": "complete"} %}
 
 {% block page %}
 <div class="cx-stack">
@@ -19,9 +21,80 @@
     </section>
 
     <div class="cx-grid cx-grid--3">
-        <div class="cx-stat"><span class="cx-stat__icon">{{ ci("users") }}</span><div><span class="cx-stat__label">Friends referred</span><strong class="cx-stat__value">0</strong></div></div>
-        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--amber">{{ ci("clock") }}</span><div><span class="cx-stat__label">Pending</span><strong class="cx-stat__value">0</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon">{{ ci("users") }}</span><div><span class="cx-stat__label">Friends referred</span><strong class="cx-stat__value">{{ rc.all }}</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--amber">{{ ci("clock") }}</span><div><span class="cx-stat__label">In follow-up</span><strong class="cx-stat__value">{{ rc.pending }}</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--green">{{ ci("check-circle") }}</span><div><span class="cx-stat__label">Signed up</span><strong class="cx-stat__value">{{ rc.joined }}</strong></div></div>
+        {# Credits earned: hidden until referral credits are calculated (client feedback, Oct 2026)
         <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--green">{{ ci("gift") }}</span><div><span class="cx-stat__label">Credits earned</span><strong class="cx-stat__value">$0.00</strong></div></div>
+        #}
+    </div>
+
+    {#- Refer a colleague (client feedback, Oct 2026): the tax team calls them and tracks the follow-up -#}
+    <div class="cx-grid cx-grid--main" id="refer-form">
+        <section class="cx-card" aria-labelledby="refer-form-title">
+            <form method="post" action="/client/referrals">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="refer-form-title">{{ ci("user") }} Refer a <span class="cx-accent">colleague</span></h2>
+                        <p class="cx-card__sub">Tell us who to contact. Our tax team will call them and look after their return.</p>
+                    </div>
+                </div>
+                <div class="cx-card__body cx-stack">
+                    {% if ref_error %}<div class="cx-alert cx-alert--error" role="alert">{{ ci("alert") }}<p>{{ ref_error }}</p></div>{% endif %}
+                    {% if ref_saved %}<div class="cx-alert cx-alert--success" role="status">{{ ci("check-circle") }}<p>{{ ref_saved }}</p></div>{% endif %}
+                    <div class="cx-form-grid">
+                        <div class="cx-field">
+                            <label class="cx-label" for="ref-name">Full name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="ref-name" name="name" required minlength="2" maxlength="120" placeholder="e.g. Rohan Mehta" />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="ref-relationship">How do you know them?</label>
+                            <select class="cx-select" id="ref-relationship" name="relationship">
+                                {% for r in relationships | default(["Colleague", "Friend", "Family", "Neighbour", "Other"]) %}<option>{{ r }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="ref-phone">Phone number<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="ref-phone" name="phone" type="tel" required maxlength="30" placeholder="+1 415 555 0142" />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="ref-email">Email<span class="cx-opt">Optional</span></label>
+                            <input class="cx-input" id="ref-email" name="email" type="email" maxlength="255" placeholder="name@example.com" />
+                        </div>
+                    </div>
+                    <span class="cx-hint">Full name and phone number are required. Prefer to share a link? Copy your referral link above; anyone who signs up with it is tracked too.</span>
+                    <div class="cx-field">
+                        <label class="cx-label" for="ref-note">Anything we should know?<span class="cx-opt">Optional</span></label>
+                        <textarea class="cx-textarea" id="ref-note" name="note" rows="2" maxlength="2000" placeholder="e.g. Works with me at Acme, new to the US this year, best to call after 6 pm."></textarea>
+                    </div>
+                    <label class="cx-check"><input type="checkbox" required /><span>My colleague is happy for {{ app_name }} to contact them.</span></label>
+                </div>
+                <div class="cx-card__foot">
+                    <button class="cx-btn cx-btn--primary" type="submit">{{ ci("send", "ci ci--sm") }} Send referral</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="cx-card" aria-labelledby="my-refs-title">
+            <div class="cx-card__head cx-card__head--plain">
+                <h2 class="cx-card__title" id="my-refs-title">{{ ci("users") }} Your <span class="cx-accent">referrals</span></h2>
+            </div>
+            {% if referral_rows %}
+            <ul class="cx-reflist">
+                {% for r in referral_rows %}
+                <li>
+                    <div>
+                        <strong>{{ r.lead.name }}</strong>
+                        <span class="cx-muted">{{ r.lead.relationship or ("Signed up with your link" if r.lead.source == "link" else "Referred") }} · {{ r.lead.created_at.strftime("%b %d, %Y") }}</span>
+                    </div>
+                    <span class="cx-badge cx-badge--{{ ref_badge.get(r.tone, 'plain') }}">{{ r.status_label }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="cx-card__body"><p class="cx-muted" style="margin:0;">No referrals yet. Share your link, or add a colleague with the form.</p></div>
+            {% endif %}
+        </section>
     </div>
 
     <section class="cx-card" aria-labelledby="how-title">

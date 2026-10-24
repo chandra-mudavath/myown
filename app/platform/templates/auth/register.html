@@ -11,6 +11,8 @@
 {% block auth_form %}
 <form id="register-form" class="au-fields" method="POST" action="/auth/register">
     <input type="hidden" name="signup_role" value="{{ signup_role }}" />
+    {% if admin_key %}<input type="hidden" name="admin_key" value="{{ admin_key }}" />{% endif %}
+    {% if ref %}<input type="hidden" name="ref" value="{{ ref }}" />{% endif %}
     {% if error %}
     <div class="alert alert--error">{{ error }}</div>
     {% endif %}
@@ -39,7 +41,7 @@
     <div class="au-input">
         <label class="au-sr" for="email">Email</label>
         {{ icon("mail") }}
-        <input name="email" id="email" type="email" placeholder="Enter your email *" class="form-input"
+        <input name="email" id="email" type="email" placeholder="{{ 'Company email (name@covrenttax.com) *' if admin_key else 'Enter your email *' }}" class="form-input"
             autocomplete="email" required />
     </div>
 

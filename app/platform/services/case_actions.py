@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.platform.models.case_workflow import CaseStageHistory
+from app.platform.models.case_workflow import CaseAssignment, CaseStageHistory
 from app.platform.models.filing_document import FilingDocument
 from app.platform.models.tax_filing import TaxFiling
 from app.platform.services import chat_service
@@ -15,10 +15,21 @@ from app.platform.services.catalog import case_stages, stage_labels
 from app.platform.services.document_review import add_comment
 
 
-def move_stage(db: Session, filing: TaxFiling, to: str, actor_account_id: str) -> str | None:
-    """Move a filing to another workflow stage and record it in case_stage_history."""
+# A new filing waits in this stage until someone is assigned to it (client feedback, Oct 2026).
+REGISTERED_STAGE = "pending_review"
+NOT_ASSIGNED_ERROR = "Assign a staff member to this case before moving it out of Registered."
+
+
+def is_assigned(db: Session, case_id: str) -> bool:
+    return db.query(CaseAssignment.id).filter(CaseAssignment.case_id == case_id, CaseAssignment.status == "active").first() is not None
+
+
+def move_stage(db: Session, filing: TaxFiling, to: str, actor_account_id: str, comment: str = "") -> str | None:
+    """Move a filing to another workflow stage and record it (with an optional comment) in case_stage_history."""
     if to not in {s.code for s in case_stages(db)}:
         return "Unknown stage."
+    if to != filing.status and filing.status == REGISTERED_STAGE and not is_assigned(db, filing.id):
+        return NOT_ASSIGNED_ERROR
     if to != filing.status:
         known = stage_labels(db)
         db.add(CaseStageHistory(
@@ -26,6 +37,7 @@ def move_stage(db: Session, filing: TaxFiling, to: str, actor_account_id: str) -
             from_stage_code=filing.status if filing.status in known else None,
             to_stage_code=to,
             changed_by_account_id=actor_account_id,
+            comment=(comment or "").strip()[:1000] or None,
         ))
         filing.status = to
         chat_service.on_case_stage_changed(db, filing)  # start / cancel the 3-month hiding timer

@@ -141,8 +141,9 @@
     <div class="cx-empty">
         <span class="cx-empty__icon">{{ ci("folder") }}</span>
         <h3>No filing <span class="cx-accent">found for {{ tax_year }}</span></h3>
-        <p>You haven't submitted a filing for tax year {{ tax_year }} yet. Start one now, or switch years from the sidebar.</p>
-        <a href="{{ url_for('new_filing_page') }}" class="cx-btn cx-btn--primary">{{ ci("plus", "ci ci--sm") }} Start new filing</a>
+        <p>Nothing filed for tax year {{ tax_year }} yet. Fill in Personal Info, Tax Notes, Upload Documents and Bank Details; your first save starts your return.</p>
+        {# Was: <a href="{{ url_for('new_filing_page') }}">Start new filing</a> (client feedback, Oct 2026) #}
+        <a href="/client/tax-notes" class="cx-btn cx-btn--primary">{{ ci("notes", "ci ci--sm") }} Answer Tax Notes</a>
     </div>
 </section>
 {% endif %}

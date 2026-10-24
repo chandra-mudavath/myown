@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<body style="margin:0;padding:24px;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:8px;padding:32px;">
+        <tr><td style="font-size:20px;font-weight:bold;color:#2563eb;padding-bottom:16px;">{{ app_name }}</td></tr>
+        <tr><td style="font-size:15px;line-height:1.6;">
+          {% block body %}{% endblock %}
+        </td></tr>
+        <tr><td style="font-size:12px;color:#6b7280;padding-top:24px;border-top:1px solid #e5e7eb;">
+          This is an automatic message from {{ app_name }}. If you have a question, reply to this email and our support team will get it.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

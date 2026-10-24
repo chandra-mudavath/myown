@@ -12,8 +12,11 @@
     <section class="cx-card" data-profile="{{ profile | tojson | forceescape }}" aria-labelledby="overview-title">
         <div class="cx-profile">
             <div class="cx-profile__pic">
+                {#- No picture: initials drawn here (was ui-avatars.com, which sent the client's name to another site) -#}
+                {% set ini = ((profile.first_name or 'U')[:1] ~ (profile.last_name or '')[:1]) | upper %}
+                {% set ini_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#2563eb"/><text x="32" y="32" dy=".35em" text-anchor="middle" font-family="Arial,sans-serif" font-size="26" fill="#fff">' ~ (ini | e) ~ '</text></svg>' %}
                 <img id="avatar-preview"
-                    src="{{ profile.profile_picture or ('https://ui-avatars.com/api/?name=' ~ (profile.first_name or 'U') ~ '+' ~ (profile.last_name or '') ~ '&background=2563eb&color=fff') }}"
+                    src="{{ profile.profile_picture or ('data:image/svg+xml,' ~ (ini_svg | urlencode)) }}"
                     alt="Profile picture" />
                 <label for="avatar-input" class="cx-profile__cam" title="Change profile picture">{{ ci("camera") }}<span class="sr-only">Change profile picture</span></label>
                 <input type="file" id="avatar-input" accept="image/*" hidden />
@@ -163,9 +166,9 @@
             </div>
         </section>
 
-        {# ── Type of return (UI only) ───────────── #}
+        {# ── Type of return: saved per tax year (was UI only) ── #}
         <section class="cx-panel cx-card" role="tabpanel" id="return-type" aria-labelledby="rt-title" hidden>
-            <form data-cx-demo="Residency details saved." data-cx-next="dependents">
+            <form method="post" action="/client/profile/residency">{# was data-cx-demo (nothing saved) #}
                 <div class="cx-card__head">
                     <div>
                         <h2 class="cx-card__title" id="rt-title">{{ ci("globe") }} Visa <span class="cx-accent">&amp; residency</span></h2>
@@ -173,19 +176,21 @@
                     </div>
                 </div>
                 <div class="cx-card__body">
+                    {% if form_for == "return-type" and form_error %}<div class="cx-alert cx-alert--error" role="alert" style="margin-bottom:1rem;">{{ ci("alert") }}<p>{{ form_error }}</p></div>{% endif %}
+                    {% if form_for == "return-type" and form_saved %}<div class="cx-alert cx-alert--success" role="status" style="margin-bottom:1rem;">{{ ci("check-circle") }}<p>{{ form_saved }} Your tax team can see it now.</p></div>{% endif %}
                     <h3 class="cx-legend">Visa type</h3>
                     <div class="cx-form-grid">
                         <div class="cx-field">
                             <label class="cx-label" for="rt-nat">Taxpayer nationality</label>
                             <select class="cx-select" id="rt-nat" name="nationality">
                                 <option value="">Select</option>
-                                <option>Indian</option><option>US citizen</option><option>Other</option>
+                                {% for n in nationalities %}<option{% if residency.get("nationality") == n %} selected{% endif %}>{{ n }}</option>{% endfor %}
                             </select>
                         </div>
                         <div class="cx-field">
                             <label class="cx-label" for="rt-count">Number of visas held in {{ selected_year }}<span class="cx-req">*</span></label>
                             <select class="cx-select" id="rt-count" name="visa_count" required>
-                                <option>1</option><option>2</option><option>3</option>
+                                {% for n in ("1", "2", "3") %}<option{% if residency.get("visa_count") == n %} selected{% endif %}>{{ n }}</option>{% endfor %}
                             </select>
                             <span class="cx-hint">Changed from F1 to H1B during the year? That counts as 2.</span>
                         </div>
@@ -193,13 +198,12 @@
                             <label class="cx-label" for="rt-visa">Current visa</label>
                             <select class="cx-select" id="rt-visa" name="visa_type">
                                 <option value="">Select</option>
-                                <option>H1B</option><option>H4</option><option>L1</option><option>L2</option>
-                                <option>F1</option><option>F1 – OPT</option><option>J1</option><option>Green card</option><option>Other</option>
+                                {% for v in visas %}<option{% if residency.get("visa_type") == v %} selected{% endif %}>{{ v }}</option>{% endfor %}
                             </select>
                         </div>
                         <div class="cx-field">
                             <label class="cx-label" for="rt-entry">Date of first entry into the US</label>
-                            <input class="cx-input" id="rt-entry" name="first_entry" type="date" />
+                            <input class="cx-input" id="rt-entry" name="first_entry" type="date" value="{{ residency.get('first_entry', '') }}" />
                             <span class="cx-hint">The first time you entered the US on a work or student visa.</span>
                         </div>
                     </div>
@@ -208,8 +212,8 @@
                     <div class="cx-q cx-q--lead" style="counter-increment: none;">
                         <span class="cx-q__text">Did you stay in the US for at least 183 days in {{ selected_year }}?<small>Counts days present under the substantial presence test.</small></span>
                         <div class="cx-seg" role="radiogroup">
-                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="yes" /><span>Yes</span></label>
-                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="no" /><span>No</span></label>
+                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="yes" {% if residency.get("days_183") == "yes" %}checked{% endif %} /><span>Yes</span></label>
+                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="no" {% if residency.get("days_183") == "no" %}checked{% endif %} /><span>No</span></label>
                         </div>
                     </div>
                 </div>
@@ -219,7 +223,7 @@
             </form>
         </section>
 
-        {# ── Dependents (UI only) ───────────────── #}
+        {# ── Dependents: saved per tax year (was UI only) ── #}
         <section class="cx-panel cx-card" role="tabpanel" id="dependents" aria-labelledby="dep-title" hidden>
             <div class="cx-card__head">
                 <div>
@@ -227,8 +231,24 @@
                     <p class="cx-card__sub">Children or relatives you support who may qualify for credits.</p>
                 </div>
             </div>
-            <form data-cx-demo="Dependent added.">
+            {% if dependents %}
+            <div class="cx-card__body">
+                <ul class="cx-checklist">
+                    {% for d in dependents %}
+                    <li>{{ ci("user") }}<div><strong>{{ d.first_name }} {{ d.last_name }}</strong><span>{{ d.relationship }}{% if d.date_of_birth %} · born {{ d.date_of_birth }}{% endif %}{% if d.months %} · {{ d.months }} months with you{% endif %}</span></div>
+                        <form method="post" action="/client/profile/dependents" style="margin-left:auto;">
+                            <input type="hidden" name="action" value="remove" /><input type="hidden" name="index" value="{{ loop.index0 }}" />
+                            <button class="cx-btn cx-btn--ghost cx-btn--sm" type="submit">Remove</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            <form method="post" action="/client/profile/dependents">{# was data-cx-demo (nothing saved) #}
                 <div class="cx-card__body">
+                    {% if form_for == "dependents" and form_error %}<div class="cx-alert cx-alert--error" role="alert" style="margin-bottom:1rem;">{{ ci("alert") }}<p>{{ form_error }}</p></div>{% endif %}
+                    {% if form_for == "dependents" and form_saved %}<div class="cx-alert cx-alert--success" role="status" style="margin-bottom:1rem;">{{ ci("check-circle") }}<p>{{ form_saved }} Your tax team can see it now.</p></div>{% endif %}
                     <div class="cx-form-grid cx-form-grid--3">
                         <div class="cx-field">
                             <label class="cx-label" for="dp-first">First name<span class="cx-req">*</span></label>

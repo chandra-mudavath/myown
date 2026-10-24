@@ -950,3 +950,276 @@ html[data-theme="dark"] .auth-theme-toggle .theme-icon-moon {
     margin: 0 auto;
     display: block;
 }
+
+
+/* ── Choose a Tax Year (/client/years): modern restyle, same pieces (client feedback, Oct 2026) ── */
+.year-selection-page {
+    min-height: 100vh;
+    padding: 0 0 3rem;
+    background:
+        radial-gradient(40rem 26rem at 12% -10%, rgba(37, 99, 235, 0.14), transparent 70%),
+        radial-gradient(34rem 24rem at 100% 0%, rgba(124, 58, 237, 0.10), transparent 70%),
+        var(--auth-bg, #f5f7fb);
+}
+.year-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.85rem 5.5rem 0.85rem 1.75rem;   /* room on the right for the theme switch */
+    border-bottom: 1px solid var(--auth-line);
+    background: color-mix(in srgb, var(--auth-surface) 82%, transparent);
+    backdrop-filter: blur(10px);
+}
+.year-topbar__brand { color: var(--auth-ink); font: 800 1.35rem var(--font-heading); letter-spacing: -0.02em; }
+.year-selection-page .auth-theme-toggle { top: 0.7rem; right: 1.25rem; z-index: 6; }
+.year-selection-logout { margin: 0; }
+.year-selection-logout .back-link {
+    position: static;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.95rem;
+    border: 1px solid var(--auth-line);
+    border-radius: 999px;
+    background: var(--auth-surface);
+    color: var(--auth-ink);
+    font-weight: 600;
+    font-size: 0.86rem;
+}
+.year-selection-logout .back-link:hover { border-color: #ef4444; color: #dc2626; }
+
+.year-selection-content {
+    display: grid;
+    grid-template-columns: minmax(0, 30rem);
+    justify-content: center;
+    gap: 1.25rem;
+    width: calc(100% - 2rem);
+    margin: 3rem auto 0;
+}
+.year-selection-page .auth-card,
+.year-selection-page .previous-filings-panel { grid-column: 1; grid-row: auto; width: 100%; margin: 0; }
+.year-selection-page .auth-card {
+    padding: 2rem 2rem 1.75rem;
+    border: 1px solid var(--auth-line);
+    border-radius: 20px;
+    background: var(--auth-surface);
+    box-shadow: 0 24px 60px -28px rgba(15, 23, 42, 0.35);
+}
+.year-selection-page .auth-header { margin-bottom: 1.25rem; }
+.year-hero-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: 0.9rem;
+    border-radius: 16px;
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    box-shadow: 0 12px 26px -10px rgba(37, 99, 235, 0.65);
+}
+.year-hero-icon svg { width: 1.7rem; height: 1.7rem; }
+.year-hello { margin: 0 0 0.25rem; color: var(--auth-primary); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.year-selection-page .auth-card .glass-strong { background: none; border: 0; box-shadow: none; margin: 0 !important; }
+.year-selection-page .auth-card .glass-strong form { padding: 0 !important; }
+.year-selection-page .year-select {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 3.25rem;
+    padding: 0 2.75rem 0 1rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    background: var(--auth-input) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 1rem center / 1.1rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.year-selection-page .year-select:focus { border-color: var(--auth-primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15); outline: none; }
+.year-preview-text { margin: 0; color: var(--auth-muted); font-size: 0.85rem; }
+.year-continue {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 3.1rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    box-shadow: 0 14px 28px -14px rgba(37, 99, 235, 0.9);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.year-continue:hover { transform: translateY(-1px); box-shadow: 0 18px 32px -14px rgba(37, 99, 235, 0.95); }
+.year-continue svg { width: 1.1rem; height: 1.1rem; }
+
+.year-selection-page .previous-filings-panel {
+    padding: 1.4rem 1.5rem;
+    border-radius: 20px;
+    background: var(--auth-surface);
+    box-shadow: 0 18px 44px -30px rgba(15, 23, 42, 0.35);
+}
+.year-selection-page .previous-filings-heading h2 { font-size: 1.1rem; font-weight: 700; }
+.year-selection-page .previous-filing-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 14px;
+    transition: border-color 0.15s, transform 0.15s;
+}
+.year-selection-page .previous-filing-row:hover { border-color: var(--auth-primary); transform: translateY(-1px); }
+.year-selection-page .previous-filing-year {
+    padding: 0.45rem 0.7rem;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    background: rgba(37, 99, 235, 0.10);
+    color: var(--auth-primary);
+}
+.year-selection-page .previous-filing-details span { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.year-status { padding: 0.1rem 0.55rem; border-radius: 999px; font-style: normal; font-weight: 700; font-size: 0.7rem; }
+.year-status--complete { background: rgba(22, 163, 74, 0.12); color: #15803d; }
+.year-status--progress { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+.year-selection-page .previous-filing-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--auth-primary);
+    border-color: rgba(37, 99, 235, 0.35);
+}
+.year-selection-page .previous-filing-action:hover { background: var(--auth-primary); color: #fff; }
+.year-selection-page .previous-filing-action svg { width: 0.9rem; height: 0.9rem; }
+
+html[data-theme="dark"] .year-selection-page {
+    background:
+        radial-gradient(40rem 26rem at 12% -10%, rgba(37, 99, 235, 0.22), transparent 70%),
+        radial-gradient(34rem 24rem at 100% 0%, rgba(124, 58, 237, 0.16), transparent 70%),
+        var(--auth-bg, #0b1220);
+}
+html[data-theme="dark"] .year-status--complete { color: #4ade80; }
+html[data-theme="dark"] .year-status--progress { color: #fbbf24; }
+
+@media (max-width: 520px) {
+    .year-topbar { padding-left: 1rem; }
+    .year-selection-content { margin-top: 1.75rem; }
+    .year-selection-page .auth-card { padding: 1.5rem 1.25rem; }
+    .year-selection-page .previous-filing-row { grid-template-columns: auto minmax(0, 1fr); }
+}
+.year-selection-page .auth-card,
+.year-selection-page .previous-filings-panel { max-width: none; box-sizing: border-box; }
+
+/* Choose a Tax Year: picker on the left, previous filings on the right (stacked on narrow screens) */
+@media (min-width: 900px) {
+    .year-selection-content {
+        grid-template-columns: minmax(0, 30rem) minmax(0, 30rem);
+        align-items: start;
+        gap: 1.75rem;
+        margin-top: 3.5rem;
+    }
+    .year-selection-page .auth-card { grid-column: 1; grid-row: 1; }
+    .year-selection-page .previous-filings-panel { grid-column: 2; grid-row: 1; }
+}
+
+
+/* ── Choose a Tax Year: year tiles (client feedback, Oct 2026) ── */
+.year-tiles-page { width: calc(100% - 2rem); max-width: 64rem; margin: 3.5rem auto 0; }
+.year-tiles-head { text-align: center; margin-bottom: 2.25rem; }
+.year-tiles-head .auth-header__title { font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0.35rem 0 0.5rem; }
+.year-tiles-head .auth-header__subtitle { margin: 0 auto; max-width: 34rem; }
+.year-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(14.5rem, 1fr)); gap: 1.25rem; }
+.year-tile-form { margin: 0; display: flex; }
+.year-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.55rem;
+    width: 100%;
+    padding: 1.4rem 1.4rem 1.25rem;
+    border: 1px solid var(--auth-line);
+    border-radius: 20px;
+    background: var(--auth-surface);
+    box-shadow: 0 18px 44px -30px rgba(15, 23, 42, 0.4);
+    color: var(--auth-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.year-tile:hover, .year-tile:focus-visible {
+    transform: translateY(-4px);
+    border-color: var(--auth-primary);
+    box-shadow: 0 26px 50px -26px rgba(37, 99, 235, 0.55);
+    outline: none;
+}
+.year-tile.is-current {
+    border-color: transparent;
+    color: #fff;
+    background: linear-gradient(140deg, #2563eb 0%, #4f46e5 100%);
+    box-shadow: 0 26px 50px -24px rgba(37, 99, 235, 0.8);
+}
+.year-tile__top { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 0.4rem; }
+.year-tile__icon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 12px; background: rgba(37, 99, 235, 0.1); color: var(--auth-primary); }
+.year-tile__icon svg { width: 1.3rem; height: 1.3rem; }
+.year-tile--complete .year-tile__icon { background: rgba(22, 163, 74, 0.12); color: #16a34a; }
+.year-tile--progress .year-tile__icon { background: rgba(217, 119, 6, 0.12); color: #d97706; }
+.year-tile.is-current .year-tile__icon { background: rgba(255, 255, 255, 0.18); color: #fff; }
+.year-tile__tag { padding: 0.2rem 0.6rem; border-radius: 999px; background: rgba(255, 255, 255, 0.2); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.year-tile__year { font: 800 2.4rem/1 var(--font-heading); letter-spacing: -0.03em; }
+.year-tile__detail { color: var(--auth-muted); font-size: 0.85rem; }
+.year-tile.is-current .year-tile__detail { color: rgba(255, 255, 255, 0.85); }
+.year-status--none { background: rgba(100, 116, 139, 0.12); color: #475569; }
+.year-tile.is-current .year-status { background: rgba(255, 255, 255, 0.2); color: #fff; }
+.year-tile__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: auto;
+    padding-top: 0.9rem;
+    color: var(--auth-primary);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+.year-tile__cta svg { width: 1rem; height: 1rem; transition: transform 0.18s ease; }
+.year-tile:hover .year-tile__cta svg { transform: translateX(3px); }
+.year-tile.is-current .year-tile__cta { color: #fff; }
+html[data-theme="dark"] .year-status--none { color: #cbd5e1; background: rgba(148, 163, 184, 0.16); }
+@media (max-width: 520px) {
+    .year-tiles-page { margin-top: 1.75rem; }
+    .year-tile__year { font-size: 2rem; }
+}
+.year-tiles-page { max-width: 78rem; }
+.year-tiles { grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr)); }
+
+/* Year picker above the year cards */
+.year-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 34rem;
+    margin: 0 auto 2.5rem;
+    padding: 0.6rem 0.6rem 0.6rem 1.1rem;
+    border: 1px solid var(--auth-line);
+    border-radius: 18px;
+    background: var(--auth-surface);
+    box-shadow: 0 18px 44px -30px rgba(15, 23, 42, 0.45);
+}
+.year-picker__label { color: var(--auth-muted); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.year-picker .year-select { flex: 1; min-width: 0; height: 3rem; margin: 0; }
+.year-picker .year-continue { width: auto; height: 3rem; margin: 0; padding: 0 1.4rem; white-space: nowrap; }
+.year-cards-title { margin: 0 0 1rem; color: var(--auth-ink); font: 700 1.15rem var(--font-heading); }
+.year-tiles { grid-template-columns: repeat(auto-fill, minmax(14rem, 17rem)); }
+@media (max-width: 560px) {
+    .year-picker { flex-wrap: wrap; padding: 0.9rem; }
+    .year-picker__label { width: 100%; }
+    .year-picker .year-continue { width: 100%; }
+    .year-tiles { grid-template-columns: 1fr; }
+}
+.year-tiles { justify-content: center; }
+.year-cards-title { text-align: center; }
+.year-tiles { display: flex; flex-wrap: wrap; justify-content: center; }
+.year-tile-form { width: 17rem; }
+@media (max-width: 560px) { .year-tile-form { width: 100%; } }

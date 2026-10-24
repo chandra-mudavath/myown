@@ -24,6 +24,72 @@
         </dl>
     </header>
 
+    {#- Documents for client review (client feedback, Oct 2026): staff upload the filled-in document,
+        the client approves or rejects it with a comment on Review Documents, and a rejected one is
+        re-uploaded here as a new version. -#}
+    {#- What the client's Tax Notes answers ask for, and what's been uploaded (client feedback, Oct 2026) -#}
+    {% from "staff/_need_list.html" import need_list %}
+    <section class="staff-panel review-docs case-needs-panel" aria-labelledby="needs-title">
+        <div class="staff-cases-head"><div class="staff-cases-title"><h2 id="needs-title">Documents needed (from Tax Notes)</h2>
+            {% if checklist %}<span class="staff-count-chip">{{ checklist | selectattr('done') | list | length }} / {{ checklist | length }}</span>{% endif %}</div></div>
+        <div style="padding: 0 20px 18px;">{{ need_list(checklist) }}</div>
+    </section>
+
+    <section class="staff-panel staff-cases review-docs" id="review-docs" aria-labelledby="review-docs-title">
+        <div class="staff-cases-head">
+            <div class="staff-cases-title">
+                <h2 id="review-docs-title">Documents for client review</h2>
+                <span class="staff-count-chip">{{ review_docs | length }}</span>
+            </div>
+        </div>
+        <form class="review-docs__upload" method="post" action="/staff/cases/{{ case.id }}/review-documents" enctype="multipart/form-data">
+            <label><span>Document name</span><input class="staff-input" name="document_name" maxlength="120" placeholder="e.g. Draft Form 1040 (2025)" /></label>
+            <label><span>File</span><input class="staff-input" type="file" name="file" required accept=".pdf,.png,.jpg,.jpeg" /></label>
+            <label class="review-docs__note"><span>Note to client <em>optional</em></span><input class="staff-input" name="note" maxlength="2000" placeholder="e.g. Please check your income on page 1." /></label>
+            <button type="submit" class="staff-btn staff-btn--primary">{{ ci("upload", "ci ci--sm") }} Send to client</button>
+        </form>
+        {% if error == 'review_file' %}<p class="doc-reject__error" style="margin: 0 1.25rem 1rem;">Choose a file to send.</p>{% endif %}
+        {% if review_docs %}
+        <ul class="review-docs__list">
+            {% for r in review_docs %}
+            {% set d = r.doc %}
+            <li class="review-docs__item tone-{{ r.status[1] }}">
+                <div class="review-docs__top">
+                    <div>
+                        <strong>{{ d.document_name }}</strong>
+                        <span class="staff-cell-muted">{{ d.document_number }} · v{{ d.version }} · sent {{ d.uploaded_at.strftime('%b %d, %Y · %H:%M') }}</span>
+                    </div>
+                    <span class="staff-stage-pill tone-{{ r.status[1] }}">{{ r.status[0] }}</span>
+                    <a class="staff-row-action" href="/staff/cases/{{ case.id }}/documents/{{ d.id }}/file" target="_blank" rel="noopener">{{ ci("eye", "ci ci--sm") }} View</a>
+                </div>
+                {% if r.comments %}
+                <ol class="review-docs__thread">
+                    {% for c in r.comments %}
+                    <li class="{{ 'is-client' if c.author_type == 'client' else '' }}">
+                        <strong>{{ c.author_name }}{% if c.author_type == 'client' %} (client){% endif %}{% if c.kind == 'client_rejection' %} · rejected{% elif c.kind == 'client_approval' %} · approved{% endif %}</strong>
+                        <time>{{ c.created_at.strftime('%b %d, %Y · %H:%M') }}</time>
+                        <p>{{ c.body }}</p>
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% endif %}
+                {% if d.status == 'client_rejected' %}
+                <form class="review-docs__upload review-docs__upload--again" method="post" action="/staff/cases/{{ case.id }}/review-documents" enctype="multipart/form-data">
+                    <input type="hidden" name="document_group_id" value="{{ d.document_group_id }}" />
+                    <input type="hidden" name="document_name" value="{{ d.document_name }}" />
+                    <label><span>Corrected file</span><input class="staff-input" type="file" name="file" required accept=".pdf,.png,.jpg,.jpeg" /></label>
+                    <label class="review-docs__note"><span>What changed <em>optional</em></span><input class="staff-input" name="note" maxlength="2000" placeholder="e.g. Corrected W-2 wages as you asked." /></label>
+                    <button type="submit" class="staff-btn staff-btn--primary">{{ ci("upload", "ci ci--sm") }} Upload corrected version</button>
+                </form>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="staff-cell-muted" style="margin: 0 1.25rem 1.25rem;">Nothing sent yet. Upload the filled-in return or form above; the client reviews it on their Review Documents page.</p>
+        {% endif %}
+    </section>
+
     <section class="staff-panel staff-cases" aria-labelledby="docs-title" data-loading-region>
         <div class="staff-cases-head">
             <div class="staff-cases-title">

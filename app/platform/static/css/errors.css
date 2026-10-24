@@ -1,56 +1,150 @@
+/* Error screens (errors/error.html): the landing-page look. Colors come from theme.css tokens, so
+   dark mode follows html[data-theme="dark"]; headings use Roboto Slab, buttons match .action-primary /
+   .action-secondary on the landing page. */
 .error-page {
+    --e-display: "Roboto Slab", Georgia, serif;
+    --e-coral-soft: rgba(220, 38, 38, 0.1);
+    --e-amber-soft: rgba(217, 119, 6, 0.12);
+    --e-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    --e-secondary-bg: rgba(255, 255, 255, 0.68);
+    margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background-color: #f8faff;
+    background-image: radial-gradient(var(--bg-dot-color) 1px, transparent 1px), var(--bg-gradient);
+    background-size: 22px 22px, cover;
+    background-attachment: fixed;
+}
+html[data-theme="dark"] .error-page {
+    --coral: #f87171;
+    --amber: #fbbf24;
+    --e-coral-soft: rgba(220, 38, 38, 0.16);
+    --e-amber-soft: rgba(217, 119, 6, 0.16);
+    --e-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+    --e-secondary-bg: rgba(15, 23, 42, 0.6);
+    background-color: #0a1124;
+}
+
+/* ── Slim top bar and footer ── */
+.e-bar,
+.e-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 14px max(28px, env(safe-area-inset-right, 0px)) 14px max(28px, env(safe-area-inset-left, 0px));
+    background: var(--surface);
+}
+.e-bar { border-bottom: 1px solid var(--line); }
+.e-foot { border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--muted); }
+.e-brand {
+    font: 700 1.35rem var(--e-display);
+    letter-spacing: -0.05em;
+    color: var(--ink);
+    text-decoration: none;
+}
+.e-home { font-size: 0.86rem; font-weight: 600; color: var(--muted); text-decoration: none; }
+.e-home:hover { color: var(--brand); }
+.e-foot a { color: var(--brand); font-weight: 600; text-decoration: none; }
+
+/* ── Card ── */
+.e-main {
+    flex: 1;
     display: grid;
     place-items: center;
-    padding: 24px;
-    color: #17324d;
-    background: linear-gradient(135deg, #edf5f2, #f8f5ed 54%, #edf3f7);
-    font-family: "DM Sans", sans-serif;
+    padding: 48px 24px;
 }
-.message-card {
-    width: min(100%, 480px);
-    padding: 42px 34px;
-    border: 1px solid #d8e5e8;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 18px 45px rgba(23, 50, 77, 0.08);
+.e-tone-brand { --e-tone: var(--brand); --e-tone-soft: var(--brand-soft); }
+.e-tone-coral { --e-tone: var(--coral); --e-tone-soft: var(--e-coral-soft); }
+.e-tone-amber { --e-tone: var(--amber); --e-tone-soft: var(--e-amber-soft); }
+.e-card {
+    width: min(100%, 560px);
+    display: grid;
+    justify-items: center;
+    padding: 48px 40px 40px;
     text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--e-shadow);
 }
-.message-mark {
+.e-icon {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 20px;
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
-    margin: 0 auto 22px;
-    color: #fff;
-    background: #087f79;
-    font:
-        700 0.85rem "Space Grotesk",
-        sans-serif;
+    border-radius: 50%;
+    color: var(--e-tone);
+    background: var(--e-tone-soft);
 }
-.message-card h1 {
+.e-icon svg { width: 32px; height: 32px; }
+.e-status {
+    margin: 0 0 8px;
+    font: 600 0.82rem var(--e-display);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--e-tone);
+}
+.e-card h1 {
     margin: 0;
-    font:
-        700 1.7rem "Space Grotesk",
-        sans-serif;
+    font: 700 clamp(1.5rem, 3.2vw, 2.1rem) / 1.2 var(--e-display);
+    color: var(--ink);
+    text-wrap: balance;
 }
-.message-card p {
-    margin: 13px 0 26px;
-    color: #64788b;
-    line-height: 1.55;
+.e-error,
+.e-todo { max-width: 46ch; line-height: 1.6; }
+.e-error { margin: 16px 0 0; font-size: 1rem; color: var(--ink); }
+.e-todo { margin: 6px 0 0; font-size: 0.95rem; color: var(--muted); }
+
+/* ── Buttons (landing .action-primary / .action-secondary) ── */
+.e-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 28px;
 }
-.message-card a {
+.e-actions form { margin: 0; display: contents; }
+.e-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 42px;
-    padding: 0 18px;
-    color: #fff;
-    background: #087f79;
-    font-weight: 700;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 0.8rem 1.35rem;
+    font: 700 0.9rem var(--font-body);
     text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
-.message-card a:focus-visible {
-    outline: 3px solid #e4ad50;
-    outline-offset: 3px;
+.e-btn--primary { background: var(--brand); color: #fff; }
+.e-btn--primary:hover { background: var(--brand-dark); transform: translateY(-2px); }
+.e-btn--secondary { background: var(--e-secondary-bg); border-color: var(--line); color: var(--ink); }
+.e-btn--secondary:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-2px); }
+.e-btn:focus-visible,
+.e-brand:focus-visible,
+.e-home:focus-visible,
+.e-foot a:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+
+/* ── Phone ── */
+@media (max-width: 480px) {
+    .e-bar,
+    .e-foot { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .e-foot { justify-content: center; text-align: center; }
+    .e-main { padding: 28px 16px; align-items: start; }
+    .e-card { padding: 32px 22px 26px; }
+    .e-card h1 { font-size: 1.45rem; }
+    .e-actions { flex-direction: column; justify-self: stretch; }
+    .e-btn { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .e-btn { transition: none; }
+    .e-btn:hover { transform: none; }
 }

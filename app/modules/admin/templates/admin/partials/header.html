@@ -5,6 +5,7 @@
         <span>{{ app_name }} / Admin{% if crumb %} / {{ crumb }}{% endif %}</span>
     </div>
     <div class="admin-header-actions">
+        <a class="admin-icon-button notif-bell" href="/admin/notifications" aria-label="View notifications" title="Notifications">{% include "partials/bell_icon.html" %}</a>
         <div class="account-menu-wrap">
             <button class="account-menu-button admin-avatar-btn" type="button" aria-expanded="false" aria-label="Open admin menu">
                 {% if admin and admin.profile_picture %}

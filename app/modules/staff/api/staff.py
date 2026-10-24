@@ -4,24 +4,27 @@ from math import ceil
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, Request, status
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.deps import StaffAccount
+from app.core.files import send_file
+from app.core.deps import CaseStaffAccount, StaffAccount, is_hr
 from app.modules.client.api.dashboard import _build_section_statuses
 from app.core.templates import templates
 from app.platform.models.auth import AuthAccount
+from app.platform.models.case_workflow import CaseStageHistory
 from app.modules.client.models.client import Client
 from app.platform.models.filing_document import DocumentComment, FilingDocument
-from app.modules.staff.models.staff import Staff
+from app.modules.staff.models.staff import Staff, StaffRole
 from app.platform.models.tax_filing import TaxFiling
-from app.platform.services import assignments, case_actions
+from app.platform.services import access_log, assignments, case_actions, intake, referrals
 from app.platform.services.activity_feed import client_activity
 from app.platform.services.catalog import case_stages, document_categories, stage_labels
-from app.platform.services.document_review import account_names, comment_threads
+from app.platform.services.document_review import (REVIEW_CATEGORY, account_names, add_comment, comment_threads, review_documents,
+                                                   store_upload)
 from app.platform.services.storage_service import save_profile_picture
 
 router = APIRouter(prefix="/staff", tags=["staff"])
@@ -50,17 +53,82 @@ def _unread_count(db: Session, staff: Staff | None) -> int:
         (db.query(func.count(FilingDocument.id)).filter(FilingDocument.uploaded_by_type == "client"), FilingDocument.uploaded_at),
         (db.query(func.count(DocumentComment.id)).filter(DocumentComment.author_type == "client", DocumentComment.kind == "reply"), DocumentComment.created_at),
     )
-    return sum((q.filter(col > seen) if seen else q).scalar() or 0 for q, col in queries)
+    new = sum((q.filter(col > seen) if seen else q).scalar() or 0 for q, col in queries)
+    # Registrations nobody is assigned to yet stay counted until they are (client feedback, Oct 2026)
+    if seen:
+        waiting = set(assignments.unassigned_case_ids(db))
+        new += db.query(func.count(TaxFiling.id)).filter(TaxFiling.id.in_(waiting or [""]), TaxFiling.status == case_actions.REGISTERED_STAGE, TaxFiling.created_at <= seen).scalar() or 0
+    return new
 
 
 def _nav_context(db: Session, staff: Staff | None) -> dict:
-    return {"stage_nav": _stage_nav(db), "unread_count": _unread_count(db, staff)}
+    if staff and staff.role == StaffRole.HR:  # no case links or counts in an HR sidebar
+        return {"stage_nav": [], "unread_count": 0, "is_hr": True}
+    return {"stage_nav": _stage_nav(db), "unread_count": _unread_count(db, staff), "is_hr": False}
 
 
 def _stage_nav(db: Session) -> list[dict]:
     """Sidebar stage links with a live filing count for each stage."""
     counts = dict(db.query(TaxFiling.status, func.count(TaxFiling.id)).group_by(TaxFiling.status).all())
     return [{"slug": slug, "label": label, "count": counts.get(slug, 0)} for slug, label in _stages(db)]
+def _latest_comments(db: Session, case_ids: list[str]) -> dict[str, str]:
+    """{case_id: the most recent comment left when the case changed stage}."""
+    if not case_ids:
+        return {}
+    rows = (
+        db.query(CaseStageHistory.case_id, CaseStageHistory.comment)
+        .filter(CaseStageHistory.case_id.in_(case_ids), CaseStageHistory.comment.isnot(None), CaseStageHistory.comment != "")
+        .order_by(CaseStageHistory.created_at)
+        .all()
+    )
+    return {case_id: comment for case_id, comment in rows}  # oldest → newest, so the last one wins
+
+
+def _intake_context(db: Session, filing: TaxFiling | None) -> dict:
+    """What the client saved for the year: Tax Notes (readable), bank details and FBAR (numbers masked), residency,
+    dependents and the Form 8879 e-file authorization."""
+    notes = intake.section(db, filing, intake.TAX_NOTES)
+    bank = intake.section(db, filing, intake.BANK)
+    bank_data = dict(bank.data) if bank else None
+    if bank_data:
+        bank_data["account_masked"] = intake.masked(bank_data.get("account_number"))
+    residency = intake.section(db, filing, intake.RESIDENCY)
+    dependents = intake.section(db, filing, intake.DEPENDENTS)
+    fbar = intake.section(db, filing, intake.FBAR)
+    return {
+        "tax_notes": intake.notes_summary(notes.data or {}) if notes else None, "tax_notes_row": notes,
+        "bank": bank_data, "bank_row": bank, "checklist": intake.checklist(db, filing) if filing else None,
+        "residency": residency.data if residency else None, "residency_row": residency,
+        "dependents": (dependents.data or {}).get("items") if dependents else None,
+        "fbar": intake.fbar_summary(fbar.data if fbar else None), "fbar_row": fbar,
+        "efile_row": intake.section(db, filing, intake.EFILE),
+    }
+
+
+def _client_nav(db: Session, filing: TaxFiling, section: str) -> dict:
+    """Sidebar context when staff open a client from their readable number (client feedback, Oct 2026):
+    tax year switcher, the client number, then links to each part of that client's information."""
+    client = db.query(Client).filter(Client.id == filing.client_id).first()
+    years = (
+        db.query(TaxFiling.tax_year, TaxFiling.id)
+        .filter(TaxFiling.client_id == filing.client_id)
+        .order_by(TaxFiling.tax_year.desc(), TaxFiling.created_at.desc())
+        .all()
+    )
+    seen: dict[int, str] = {}
+    for year, case_id in years:
+        seen.setdefault(year, case_id)
+    return {
+        "client_id": filing.client_id,
+        "client_number": client.client_number if client else None,
+        "client_name": f"{filing.first_name} {filing.last_name}",
+        "case_id": filing.id,
+        "tax_year": filing.tax_year,
+        "years": list(seen.items()),
+        "section": section,
+    }
+
+
 PER_PAGE_OPTIONS = (10, 25, 50, 100)
 _SORT_COLUMNS = {
     "created": TaxFiling.created_at,
@@ -166,6 +234,7 @@ def _case_table(
         .all()
     ) if ids else {}
     teams = assignments.team_names(db, ids)
+    comments = _latest_comments(db, ids)
 
     cases = [
         {
@@ -183,7 +252,9 @@ def _case_table(
             "next_stage": _next_stage(f.status, stage_keys),
             "doc_count": doc_counts.get(f.id, 0),
             "staff": ", ".join(teams.get(f.id, [])) or None,
-            "comment": None,  # TaxFiling has no case comments yet
+            # A Registered case can't move on until someone is assigned (case_actions.move_stage)
+            "needs_assignment": f.status == case_actions.REGISTERED_STAGE and not teams.get(f.id),
+            "comment": comments.get(f.id),  # latest stage-move comment
         }
         for i, (f, client_number) in enumerate(rows)
     ]
@@ -223,9 +294,15 @@ def _case_table(
     }
 
 
-def _client_rows(db: Session) -> list[dict]:
-    """Every client with login email, filing count and the stage of their latest filing."""
+def _client_rows(db: Session, year: str | None = None, stage: str | None = None) -> list[dict]:
+    """Every client with login email, filing count and the stage of their latest filing.
+
+    year / stage (staff dashboard filters) keep only clients with a filing in that tax year / stage,
+    and the row then shows that filing.
+    """
     labels = stage_labels(db)
+    year = year if (year and str(year).isdigit()) else ""
+    stage = (stage or "").strip()
     clients = (
         db.query(Client, AuthAccount.email)
         .outerjoin(AuthAccount, AuthAccount.id == Client.account_id)
@@ -233,16 +310,25 @@ def _client_rows(db: Session) -> list[dict]:
         .all()
     )
     filing_counts: dict[str, int] = {}
-    latest_status: dict[str, str] = {}
-    for client_id, status in db.query(TaxFiling.client_id, TaxFiling.status).order_by(TaxFiling.created_at).all():
+    latest: dict[str, tuple] = {}
+    query = db.query(TaxFiling.client_id, TaxFiling.status, TaxFiling.tax_year, TaxFiling.id).order_by(TaxFiling.created_at)
+    for client_id, status, tax_year, filing_id in query.all():
         filing_counts[client_id] = filing_counts.get(client_id, 0) + 1
-        latest_status[client_id] = status  # ordered oldest → newest, so the last one wins
+        if (year and tax_year != int(year)) or (stage and status != stage):
+            continue
+        latest[client_id] = (status, tax_year, filing_id)  # ordered oldest → newest, so the last one wins
+    comments = _latest_comments(db, [f for _, _, f in latest.values()])
 
     rows = []
-    for i, (c, email) in enumerate(clients):
-        status = latest_status.get(c.id)
+    for c, email in clients:
+        if (year or stage) and c.id not in latest:
+            continue
+        status, tax_year, filing_id = latest.get(c.id, (None, None, None))
         rows.append({
-            "sno": i + 1,
+            "sno": len(rows) + 1,
+            "tax_year": tax_year,
+            "filing_id": filing_id,
+            "comment": comments.get(filing_id),
             "id": c.id,
             "name": f"{c.first_name} {c.last_name or ''}".strip(),
             "customer_no": c.client_number,
@@ -269,9 +355,12 @@ def staff_dashboard(
     direction: str = Query("desc", alias="dir"),
     db: Session = Depends(get_db),
 ):
+    if is_hr(db, account):  # HR never see cases: their home is their profile
+        return RedirectResponse("/staff/profile", status_code=status.HTTP_303_SEE_OTHER)
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     stage_nav = _stage_nav(db)
     by_slug = {item["slug"]: item for item in stage_nav}
+    years = [y for (y,) in db.query(TaxFiling.tax_year).distinct().order_by(TaxFiling.tax_year.desc()).all()]
     summary_cards = [{"slug": "", "label": "Total cases", "count": db.query(TaxFiling).count()}] + [
         by_slug[slug]
         for slug in ("pending_review", "docs_pending", "payment_pending", "complete")
@@ -279,7 +368,7 @@ def staff_dashboard(
     ]
 
     return templates.TemplateResponse(
-        "staff/index.html",
+        request, "staff/index.html",
         {
             "request": request,
             "account": account,
@@ -289,7 +378,8 @@ def staff_dashboard(
             "unread_count": _unread_count(db, staff),
             "active_nav": "dashboard",
             "summary_cards": summary_cards,
-            "clients": _client_rows(db),
+            "clients": _client_rows(db, year=year, stage=stage),
+            "client_filters": {"year": year if (year and year.isdigit()) else "", "stage": (stage or "").strip(), "years": years},
             "table": _case_table(db, q=q, stage=stage, year=year, page=page, per_page=per_page, sort=sort, direction=direction),
         },
     )
@@ -298,7 +388,7 @@ def staff_dashboard(
 @router.get("/cases/my", response_class=HTMLResponse, name="staff_my_cases")
 def staff_my_cases(
     request: Request,
-    account: StaffAccount,
+    account: CaseStaffAccount,
     q: str | None = None,
     stage: str | None = None,
     year: str | None = None,
@@ -310,7 +400,7 @@ def staff_my_cases(
 ):
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     return templates.TemplateResponse(
-        "staff/cases/my_cases.html",
+        request, "staff/cases/my_cases.html",
         {
             "request": request,
             "account": account,
@@ -329,7 +419,7 @@ def staff_my_cases(
 @router.get("/cases", response_class=HTMLResponse, name="staff_all_cases")
 def staff_all_cases(
     request: Request,
-    account: StaffAccount,
+    account: CaseStaffAccount,
     q: str | None = None,
     stage: str | None = None,
     year: str | None = None,
@@ -341,7 +431,7 @@ def staff_all_cases(
 ):
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     return templates.TemplateResponse(
-        "staff/cases/my_cases.html",
+        request, "staff/cases/my_cases.html",
         {
             "request": request,
             "account": account,
@@ -415,10 +505,12 @@ def _file_size(size: int) -> str:
 
 
 @router.get("/cases/{case_id}", response_class=HTMLResponse, name="staff_case_detail")
-def staff_case_detail(case_id: str, request: Request, account: StaffAccount, db: Session = Depends(get_db)):
+def staff_case_detail(case_id: str, request: Request, account: CaseStaffAccount, db: Session = Depends(get_db)):
     labels = stage_labels(db)
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     filing = _find_filing(db, case_id)
+    if filing:  # the case page shows bank, FBAR and e-file details
+        access_log.record(db, request, account.id, "case_details_viewed", "tax_filing", filing.id)
 
     case = None
     if filing:
@@ -481,6 +573,8 @@ def staff_case_detail(case_id: str, request: Request, account: StaffAccount, db:
         case = {
             "id": f.id,
             "case_id": f.get_case_id(db),
+            "needs_assignment": f.status == case_actions.REGISTERED_STAGE and not assignments.team(db, f.id),
+            "team": assignments.team(db, f.id),
             "client_id": f.client_id,
             "client_name": f"{f.first_name} {f.last_name}",
             "client_number": client.client_number if client else None,
@@ -542,12 +636,15 @@ def staff_case_detail(case_id: str, request: Request, account: StaffAccount, db:
         }
 
     return templates.TemplateResponse(
-        "staff/cases/detail.html",
+        request, "staff/cases/detail.html",
         {
             "request": request,
             "account": account,
             "staff": staff,
             "case": case,
+            "client_nav": _client_nav(db, filing, "case") if filing else None,
+            # Saved by the client on Tax Notes / Bank Details (client feedback, Oct 2026)
+            **_intake_context(db, filing),
             "app_name": settings.APP_NAME,
             **_nav_context(db, staff),
         },
@@ -586,7 +683,7 @@ def _doc_row(d: FilingDocument, filing_id: str, names: dict[str, dict] | None = 
 def staff_case_documents(
     case_id: str,
     request: Request,
-    account: StaffAccount,
+    account: CaseStaffAccount,
     doc: str | None = None,
     error: str | None = None,
     db: Session = Depends(get_db),
@@ -610,7 +707,7 @@ def staff_case_documents(
         }
         all_docs = (
             db.query(FilingDocument)
-            .filter(FilingDocument.filing_id == filing.id)
+            .filter(FilingDocument.filing_id == filing.id, FilingDocument.category != REVIEW_CATEGORY)  # review docs: own section
             .order_by(FilingDocument.uploaded_at.desc())
             .all()
         )
@@ -666,7 +763,7 @@ def staff_case_documents(
                 counts[r["status_key"]] += 1
 
     return templates.TemplateResponse(
-        "staff/cases/documents.html",
+        request, "staff/cases/documents.html",
         {
             "request": request,
             "account": account,
@@ -676,6 +773,9 @@ def staff_case_documents(
             "highlight": doc,
             "counts": counts,
             "error": error,
+            "review_docs": review_documents(db, filing.id) if filing else [],
+            "client_nav": _client_nav(db, filing, "documents") if filing else None,
+            "checklist": intake.checklist(db, filing) if filing else None,
             "app_name": settings.APP_NAME,
             **_nav_context(db, staff),
         },
@@ -686,7 +786,8 @@ def staff_case_documents(
 def staff_case_document_file(
     filing_id: str,
     doc_id: str,
-    account: StaffAccount,
+    request: Request,
+    account: CaseStaffAccount,
     download: bool = False,
     db: Session = Depends(get_db),
 ):
@@ -694,19 +795,16 @@ def staff_case_document_file(
     d = db.query(FilingDocument).filter(FilingDocument.id == doc_id, FilingDocument.filing_id == filing_id).first()
     if not d:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
-    return FileResponse(
-        path=d.file_path,
-        filename=d.original_filename,
-        media_type=d.mime_type,
-        content_disposition_type="attachment" if download else "inline",
-    )
+    access_log.record(db, request, account.id, "document_downloaded" if download else "document_viewed", "filing_document", d.id,
+                      case_id=filing_id, name=d.original_filename)
+    return send_file(d.file_path, d.original_filename, d.mime_type, inline=not download)
 
 
 @router.post("/cases/{filing_id}/documents/{doc_id}/review", name="staff_review_document")
 def staff_review_document(
     filing_id: str,
     doc_id: str,
-    account: StaffAccount,
+    account: CaseStaffAccount,
     action: str = Form(...),
     reason: str = Form(""),
     db: Session = Depends(get_db),
@@ -726,11 +824,47 @@ def staff_review_document(
     return RedirectResponse(back, status_code=status.HTTP_303_SEE_OTHER)
 
 
+@router.post("/cases/{filing_id}/review-documents", name="staff_upload_review_document")
+def staff_upload_review_document(
+    filing_id: str,
+    account: CaseStaffAccount,
+    file: UploadFile = File(...),
+    document_name: str = Form(""),
+    document_group_id: str = Form(""),
+    note: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Send a filled-in document (draft return, form) to the client to approve or reject on Review Documents.
+
+    With document_group_id it replaces a document the client rejected, as its next version.
+    """
+    filing = db.query(TaxFiling).filter(TaxFiling.id == filing_id).first()
+    client = db.query(Client).filter(Client.id == filing.client_id).first() if filing else None
+    if not filing or not client:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
+    back = f"/staff/cases/{filing_id}/documents#review-docs"
+    if not file.filename:
+        return RedirectResponse(f"/staff/cases/{filing_id}/documents?error=review_file#review-docs", status_code=status.HTTP_303_SEE_OTHER)
+    group = document_group_id.strip() or None
+    if group and not db.query(FilingDocument).filter(FilingDocument.filing_id == filing_id, FilingDocument.document_group_id == group,
+                                                     FilingDocument.category == REVIEW_CATEGORY).first():
+        group = None
+    doc = store_upload(db, client=client, filing=filing, file=file, category=REVIEW_CATEGORY,
+                       document_name=document_name.strip()[:120] or None, document_group_id=group,
+                       uploaded_by_type="staff", uploaded_by_id=account.id)
+    doc.status = "client_review_pending"
+    db.flush()
+    if note.strip():
+        add_comment(db, document=doc, kind="note", body=note, author_type="staff", author_account_id=account.id)
+    db.commit()
+    return RedirectResponse(back, status_code=status.HTTP_303_SEE_OTHER)
+
+
 @router.post("/cases/{filing_id}/documents/{doc_id}/comments", name="staff_comment_document")
 def staff_comment_document(
     filing_id: str,
     doc_id: str,
-    account: StaffAccount,
+    account: CaseStaffAccount,
     body: str = Form(""),
     db: Session = Depends(get_db),
 ):
@@ -745,19 +879,24 @@ def staff_comment_document(
 @router.post("/cases/{filing_id}/stage", name="staff_move_stage")
 def staff_move_stage(
     filing_id: str,
-    account: StaffAccount,
+    account: CaseStaffAccount,
     to: str = Form(...),
     next: str = Form("/staff/cases"),
+    comment: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """Move a filing to another workflow stage, then return to the list it was moved from."""
     filing = db.query(TaxFiling).filter(TaxFiling.id == filing_id).first()
     if not filing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
-    if case_actions.move_stage(db, filing, to, account.id):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown stage.")
     # Only redirect within the staff portal
     back = next if next.startswith("/staff/") and not next.startswith("//") else "/staff/cases"
+    err = case_actions.move_stage(db, filing, to, account.id, comment=comment)
+    if err == case_actions.NOT_ASSIGNED_ERROR:
+        sep = "&" if "?" in back else "?"
+        return RedirectResponse(f"{back}{sep}{urlencode({'move_error': err})}", status_code=status.HTTP_303_SEE_OTHER)
+    if err:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown stage.")
     return RedirectResponse(back, status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -772,17 +911,17 @@ def _notification_feed(db: Session, limit: int = 300) -> list[dict]:
 
 
 @router.get("/clients", response_class=HTMLResponse, name="staff_clients")
-def staff_clients(request: Request, account: StaffAccount, db: Session = Depends(get_db)):
+def staff_clients(request: Request, account: CaseStaffAccount, db: Session = Depends(get_db)):
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     clients = _client_rows(db)
     return templates.TemplateResponse(
-        "staff/clients/index.html",
+        request, "staff/clients/index.html",
         {"request": request, "account": account, "staff": staff, "clients": clients, "app_name": settings.APP_NAME, **_nav_context(db, staff)},
     )
 
 
 @router.get("/clients/{client_id}", response_class=HTMLResponse, name="staff_client_detail")
-def staff_client_detail(client_id: str, request: Request, account: StaffAccount, db: Session = Depends(get_db)):
+def staff_client_detail(client_id: str, request: Request, account: CaseStaffAccount, db: Session = Depends(get_db)):
     labels = stage_labels(db)
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     
@@ -846,7 +985,7 @@ def staff_client_detail(client_id: str, request: Request, account: StaffAccount,
             client_email = records[0].email
 
     return templates.TemplateResponse(
-        "staff/clients/detail.html",
+        request, "staff/clients/detail.html",
         {
             "request": request,
             "account": account,
@@ -861,17 +1000,21 @@ def staff_client_detail(client_id: str, request: Request, account: StaffAccount,
 
 
 @router.get("/notifications", response_class=HTMLResponse, name="staff_notifications")
-def staff_notifications(request: Request, account: StaffAccount, db: Session = Depends(get_db)):
+def staff_notifications(request: Request, account: CaseStaffAccount, db: Session = Depends(get_db)):
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     seen = _aware(staff.notifications_seen_at) if staff else None
     events = _notification_feed(db)
+    teams = assignments.team_names(db, list({e["filing_id"] for e in events if e.get("filing_id")}))
     for e in events:
-        e["is_new"] = bool(e["at"]) and (seen is None or e["at"] > seen)
+        e["assigned"] = teams.get(e.get("filing_id"), [])
+        # New since the last visit, or a registration nobody has been assigned to yet: those stay
+        # "Latest" until the case is assigned (client feedback, Oct 2026).
+        e["is_new"] = bool(e["at"]) and (seen is None or e["at"] > seen) or (e["kind"] == "filing" and not e["assigned"] and e["filing"].status == case_actions.REGISTERED_STAGE)
     counts = {k: sum(1 for e in events if e["kind"] == k) for k in ("filing", "upload", "reupload", "reply")}
     new_count = sum(1 for e in events if e["is_new"])
 
     response = templates.TemplateResponse(
-        "staff/notifications.html",
+        request, "staff/notifications.html",
         {
             "request": request,
             "account": account,
@@ -895,7 +1038,7 @@ def staff_notifications(request: Request, account: StaffAccount, db: Session = D
 def staff_profile(request: Request, account: StaffAccount, db: Session = Depends(get_db)):
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     return templates.TemplateResponse(
-        "staff/profile.html",
+        request, "staff/profile.html",
         {"request": request, "account": account, "staff": staff, "app_name": settings.APP_NAME, **_nav_context(db, staff)},
     )
 
@@ -913,3 +1056,61 @@ def upload_staff_avatar(
     staff.profile_picture = avatar_url
     db.commit()
     return {"message": "Staff profile picture updated successfully!", "avatar_url": avatar_url}
+
+
+# ── Referrals (client feedback, Oct 2026): follow up colleagues that clients refer ──────────────
+
+def _referral_back(path: str, err: str | None, saved: str) -> RedirectResponse:
+    return RedirectResponse(f"{path}{'&' if '?' in path else '?'}{urlencode({'error': err} if err else {'saved': saved})}",
+                            status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/referrals", response_class=HTMLResponse, name="staff_referrals")
+def staff_referrals(request: Request, account: CaseStaffAccount, db: Session = Depends(get_db), status_filter: str = Query("all", alias="status"),
+                    q: str = "", mine: bool = False, due: bool = False, source: str = "", saved: str = "", error: str = ""):
+    staff = db.query(Staff).filter(Staff.account_id == account.id).first()
+    mine_id = staff.id if (mine and staff) else None
+    return templates.TemplateResponse(request, "staff/referrals/index.html", {
+        "request": request, "account": account, "staff": staff, "app_name": settings.APP_NAME, **_nav_context(db, staff),
+        "active_nav": "referrals", "rows": referrals.list_leads(db, status=status_filter, q=q, staff_id=mine_id, due=due, source=source),
+        "counts": referrals.counts(db, staff_id=mine_id), "status": status_filter, "q": q, "mine": mine, "due": due,
+        "statuses": referrals.STATUSES, "relationships": referrals.RELATIONSHIPS, "saved": saved, "error": error,
+        "source": source, "sources": referrals.SOURCES,
+    })
+
+
+@router.post("/referrals", name="staff_add_referral")
+def staff_add_referral(account: CaseStaffAccount, db: Session = Depends(get_db), referrer: str = Form(""), name: str = Form(""),
+                       phone: str = Form(""), email: str = Form(""), relationship: str = Form(""), note: str = Form("")):
+    """Staff add a colleague a client mentioned (e.g. on a call), on that client's behalf."""
+    client = referrals.find_client(db, referrer)
+    if referrer.strip() and not client:
+        return _referral_back("/staff/referrals?status=open", f"No client found for {referrer.strip()}. Use their client number or email.", "")
+    err = referrals.add_lead(db, referrer=client, name=name, phone=phone, email=email, relationship=relationship, note=note,
+                             source="staff", actor_account_id=account.id)
+    return _referral_back("/staff/referrals?status=open", err, f"{' '.join(name.split())} added to referrals.")
+
+
+@router.get("/referrals/{lead_id}", response_class=HTMLResponse, name="staff_referral_detail")
+def staff_referral_detail(lead_id: str, request: Request, account: CaseStaffAccount, db: Session = Depends(get_db), saved: str = "", error: str = ""):
+    staff = db.query(Staff).filter(Staff.account_id == account.id).first()
+    row = referrals.lead_detail(db, lead_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Referral not found.")
+    return templates.TemplateResponse(request, "staff/referrals/detail.html", {
+        "request": request, "account": account, "staff": staff, "app_name": settings.APP_NAME, **_nav_context(db, staff),
+        "active_nav": "referrals", "r": row, "outcomes": referrals.CALL_OUTCOMES, "statuses": referrals.MANUAL_STATUSES,
+        "status_label": referrals.STATUS_LABEL, "outcome_label": referrals.OUTCOME_LABEL, "saved": saved, "error": error,
+        "today": datetime.now(timezone.utc).date().isoformat(),
+    })
+
+
+@router.post("/referrals/{lead_id}/log", name="staff_referral_log")
+def staff_referral_log(lead_id: str, account: CaseStaffAccount, db: Session = Depends(get_db), outcome: str = Form(""), note: str = Form(""),
+                       lead_status: str = Form("", alias="status"), next_follow_up: str = Form("")):
+    lead = db.get(referrals.ReferralLead, lead_id)
+    if not lead:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Referral not found.")
+    err = referrals.log_followup(db, lead, actor_account_id=account.id, actor_role="staff", outcome=outcome, note=note,
+                                 status=lead_status, next_follow_up=next_follow_up)
+    return _referral_back(f"/staff/referrals/{lead_id}", err, "Follow-up saved.")

@@ -139,8 +139,7 @@ def void_invoice(db: Session, actor_id: str, inv: Invoice) -> str | None:
         return "This invoice is already void."
     if paid_amount(db, inv.id) > 0:
         return "An invoice with payments can't be voided."
-    if db.query(Payment).filter(Payment.invoice_id == inv.id, Payment.status == "pending",
-                                Payment.gateway == "manual").first():
+    if db.query(Payment).filter(Payment.invoice_id == inv.id, client_payments.needs_review()).first():
         return "The client has submitted a payment for this invoice; verify or reject it first."
     old = inv.status
     inv.status = "void"
@@ -198,7 +197,7 @@ def summary(db: Session) -> dict:
         "overdue": sum((_money(i.total_amount) - paid.get(i.id, Decimal("0")) for i in overdue), Decimal("0")).quantize(CENT),
         "overdue_count": len(overdue), "collected_month": _money(collected), "month": today.strftime("%B %Y"),
         "draft_count": db.query(Invoice).filter(Invoice.status == "draft").count(),
-        "awaiting_count": db.query(Payment).filter(Payment.status == "pending", Payment.gateway == "manual").count(),
+        "awaiting_count": db.query(Payment).filter(client_payments.needs_review()).count(),
     }
 
 
@@ -216,7 +215,7 @@ def list_invoices(db: Session, status: str = "", q: str = "", case_id: str = "")
     if status == "overdue":
         query = query.filter(Invoice.status.in_(OPEN), Invoice.due_date < today)
     elif status == "awaiting":  # a client has submitted a payment that needs checking
-        query = query.filter(Invoice.id.in_(db.query(Payment.invoice_id).filter(Payment.status == "pending", Payment.gateway == "manual")))
+        query = query.filter(Invoice.id.in_(db.query(Payment.invoice_id).filter(client_payments.needs_review())))
     elif status in STATUS_LABELS:
         query = query.filter(Invoice.status == status)
     if case_id:

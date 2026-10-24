@@ -16,7 +16,7 @@ _NAME_RE = re.compile(r"^[A-Za-z0-9]+$")
 _NAME_STRICT_RE = re.compile(r"^[A-Za-z]+$")
 
 
-def _validate_password_strength(v: str) -> str:
+def validate_password_strength(v: str) -> str:
     errors = []
     if len(v) < 8:
         errors.append("at least 8 characters")
@@ -60,7 +60,7 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        return _validate_password_strength(v)
+        return validate_password_strength(v)
 
     @model_validator(mode="after")
     def passwords_match(self) -> "RegisterRequest":
@@ -90,7 +90,7 @@ class ResetPasswordRequest(BaseModel):
     @field_validator("new_password")
     @classmethod
     def validate_password(cls, v: str) -> str:
-        return _validate_password_strength(v)
+        return validate_password_strength(v)
 
     @model_validator(mode="after")
     def passwords_match(self) -> "ResetPasswordRequest":

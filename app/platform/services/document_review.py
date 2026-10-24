@@ -13,6 +13,16 @@ from app.platform.models.tax_filing import TaxFiling
 from app.platform.services.storage_service import generate_uuid, save_document_file
 
 
+# Documents the tax team prepares (draft return, filled forms) and sends to the client to approve or
+# reject on Review Documents. Stored as filing_documents in this category; re-uploads are new versions.
+REVIEW_CATEGORY = "Client_Review"
+REVIEW_STATUS = {
+    "client_review_pending": ("Awaiting client review", "amber"),
+    "client_approved": ("Approved by client", "green"),
+    "client_rejected": ("Rejected by client", "coral"),
+}
+
+
 def _full_name(person) -> str:
     return " ".join(p for p in (person.first_name, person.last_name) if p) or "Unknown"
 
@@ -46,6 +56,23 @@ def comment_threads(db: Session, filing_id: str) -> dict[str, list[DocumentComme
     for c in rows:
         threads.setdefault(c.document_group_id, []).append(c)
     return threads
+
+
+def review_documents(db: Session, filing_id: str) -> list[dict]:
+    """Current version of each document sent for client review, newest first, with its comment thread."""
+    docs = (
+        db.query(FilingDocument)
+        .filter(FilingDocument.filing_id == filing_id, FilingDocument.category == REVIEW_CATEGORY,
+                FilingDocument.is_latest.is_(True))
+        .order_by(FilingDocument.uploaded_at.desc())
+        .all()
+    )
+    threads = comment_threads(db, filing_id)
+    return [
+        {"doc": d, "status": REVIEW_STATUS.get(d.status, (d.status.replace("_", " ").capitalize(), "blue")),
+         "comments": threads.get(d.document_group_id, [])}
+        for d in docs
+    ]
 
 
 def add_comment(
@@ -82,6 +109,7 @@ def store_upload(
     document_group_id: str | None,
     uploaded_by_type: str,
     uploaded_by_id: str,
+    document_type: str | None = None,
 ) -> FilingDocument:
     """Save one uploaded file as a new document, or as the next version of an existing group."""
     ext = f".{file.filename.split('.')[-1].lower()}" if "." in (file.filename or "") else ""
@@ -117,6 +145,7 @@ def store_upload(
         filing_id=filing.id,
         document_group_id=group_id,
         category=category,
+        document_type=document_type,
         document_name=document_name or file.filename,
         original_filename=file.filename,
         stored_filename=stored_name,

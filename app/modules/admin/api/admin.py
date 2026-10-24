@@ -1,5 +1,3 @@
-import secrets
-import string
 from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -32,16 +30,12 @@ from app.modules.admin.services.billing import list_invoices
 from app.platform.models.case_workflow import CaseStageHistory
 from app.platform.services import assignments
 from app.platform.services.document_review import account_names, comment_threads
+from app.modules.admin.services import accounts as admin_accounts
 from app.modules.admin.services.accounts import lock_state
 from app.modules.admin.services.reports import dashboard_progress
 from app.platform.services.storage_service import generate_uuid, save_document_file, save_profile_picture
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-def _generate_temp_password(length: int = 10) -> str:
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def _status_groups(db: Session) -> dict[str, tuple[str, list[str]]]:
@@ -105,7 +99,7 @@ def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depen
     formatted_filings = [{"id": f.id, "case_id": f.get_case_id(db), "client_name": f"{f.first_name} {f.last_name}", "tax_year": f.tax_year} for f in filings_list]
 
     return templates.TemplateResponse(
-        "admin/index.html",
+        request, "admin/index.html",
         {
             "request": request,
             "account": account,
@@ -186,7 +180,7 @@ def admin_clients_directory(
         })
 
     return templates.TemplateResponse(
-        "admin/clients/index.html",
+        request, "admin/clients/index.html",
         {
             "request": request,
             "account": account,
@@ -232,7 +226,7 @@ def render_client_detail(request: Request, client_id: str, account, db: Session,
         })
 
     return templates.TemplateResponse(
-        "admin/clients/detail.html",
+        request, "admin/clients/detail.html",
         {
             "request": request,
             "stage_labels": stage_labels(db),
@@ -305,7 +299,7 @@ def admin_cases_queue(
         })
 
     return templates.TemplateResponse(
-        "admin/cases/index.html",
+        request, "admin/cases/index.html",
         {
             "request": request,
             "stage_labels": stage_labels(db),
@@ -354,7 +348,7 @@ def admin_case_detail(
     movers = account_names(db, {h.changed_by_account_id for h in history})
 
     return templates.TemplateResponse(
-        "admin/cases/detail.html",
+        request, "admin/cases/detail.html",
         {
             "request": request,
             "stage_labels": stage_labels(db),
@@ -420,7 +414,7 @@ def admin_staff_directory(
         })
 
     return templates.TemplateResponse(
-        "admin/staff/index.html",
+        request, "admin/staff/index.html",
         {
             "request": request,
             "account": account,
@@ -478,7 +472,7 @@ def render_staff_detail(request: Request, staff_id: str, account, db: Session, s
         })
 
     return templates.TemplateResponse(
-        "admin/staff/detail.html",
+        request, "admin/staff/detail.html",
         {
             "request": request,
             "stage_labels": stage_labels(db),
@@ -539,7 +533,7 @@ def quick_create_client(
     if existing_auth:
         raise HTTPException(status_code=400, detail="An account with this email already exists.")
 
-    temp_password = _generate_temp_password(10)
+    temp_password = admin_accounts.temp_password()  # meets the strength rules; changed at first sign-in
     hashed_pwd = hash_password(temp_password)
 
     auth_acc = AuthAccount(
@@ -548,6 +542,7 @@ def quick_create_client(
         account_type=AccountType.CLIENT,
         is_active=True,
         is_verified=True,
+        must_change_password=True,
     )
     db.add(auth_acc)
     db.flush()
@@ -584,7 +579,7 @@ def quick_create_staff(
     if existing_auth:
         raise HTTPException(status_code=400, detail="An account with this email already exists.")
 
-    temp_password = _generate_temp_password(10)
+    temp_password = admin_accounts.temp_password()  # meets the strength rules; changed at first sign-in
     hashed_pwd = hash_password(temp_password)
 
     try:
@@ -598,6 +593,7 @@ def quick_create_staff(
         account_type=AccountType.STAFF,
         is_active=True,
         is_verified=True,
+        must_change_password=True,
     )
     db.add(auth_acc)
     db.flush()

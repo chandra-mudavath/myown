@@ -4,8 +4,10 @@ Clients pay an issued invoice: the full balance by default, or a smaller amount 
 stays due, and the invoice is partially paid). Two ways:
 
 * PayPal (the main option; also takes cards and Venmo). We create a PayPal order and a *pending*
-  payment, send the client to PayPal, and capture the order when they come back (or when PayPal's
-  webhook says it was approved). Only a completed capture makes the payment succeeded.
+  payment, send the client to PayPal, and capture the order when they come back to our return URL.
+  Only a completed capture makes the payment succeeded. There are no webhooks: a client who approves
+  and never comes back is not charged (the order is never captured), and a capture PayPal leaves
+  pending is checked by an admin in the PayPal dashboard and verified here like a manual payment.
 * UPI or bank transfer: the client submits the reference here, which creates a *pending* payment.
   An admin verifies it (it becomes succeeded and counts towards the invoice) or rejects it
   (status failed, with the reason shown to the client).
@@ -22,10 +24,11 @@ from pathlib import Path
 
 import httpx
 from fastapi import UploadFile
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.crypto import encrypt_bytes
 from app.platform.models.billing import Invoice, Payment
 from app.platform.models.system import AuditLog
 from app.platform.models.tax_filing import TaxFiling
@@ -144,7 +147,7 @@ def _save_proof(file: UploadFile, inv: Invoice) -> tuple[str, str, str] | str:
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in PROOF_TYPES:
         return "The proof must be a PDF, PNG or JPG file."
-    data = file.file.read()
+    data = file.file.read(settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024 + 1)
     if len(data) > settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024:
         return f"The proof file is larger than {settings.MAX_UPLOAD_SIZE_MB} MB."
     if not data:
@@ -152,7 +155,7 @@ def _save_proof(file: UploadFile, inv: Invoice) -> tuple[str, str, str] | str:
     folder = Path(settings.PAYMENT_PROOFS_DIR) / inv.client_id
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / f"{inv.invoice_number}_{generate_uuid()[:8]}{ext}"
-    path.write_bytes(data)
+    path.write_bytes(encrypt_bytes(data))  # encrypted at rest, like documents
     return str(path), sanitize_filename(file.filename or f"proof{ext}")[:255], PROOF_TYPES[ext]
 
 
@@ -271,7 +274,7 @@ def _apply_capture(db: Session, pay: Payment, inv: Invoice, capture: dict) -> st
             db.commit()
             advance_case_if_paid(db, inv, None)
         return None
-    if status == "PENDING":  # e.g. an eCheck or a PayPal review; the webhook finishes it
+    if status == "PENDING":  # e.g. an eCheck or a PayPal review; an admin verifies it once PayPal clears it
         db.commit()
         return None
     pay.status, pay.failure_reason = "failed", f"PayPal didn't complete the payment ({status.lower() or 'unknown'})."
@@ -281,7 +284,7 @@ def _apply_capture(db: Session, pay: Payment, inv: Invoice, capture: dict) -> st
 
 
 def finish_paypal(db: Session, order_id: str, client_id: str | None = None) -> str | None:
-    """Capture an order the client approved. Safe to call twice (return page and webhook). Returns an error or None."""
+    """Capture an order the client approved. Safe to call twice (a refreshed return page). Returns an error or None."""
     pay = db.query(Payment).filter(Payment.gateway == "paypal", Payment.gateway_payment_id == order_id).first() if order_id else None
     if not pay or (client_id and pay.client_id != client_id):
         return "We couldn't find that PayPal payment."
@@ -312,54 +315,28 @@ def cancel_paypal(db: Session, order_id: str, client_id: str) -> None:
         db.commit()
 
 
-def apply_paypal_event(db: Session, event: dict) -> None:
-    """Handle a verified PayPal webhook. Events can repeat or arrive late; every branch is idempotent."""
-    kind, res = event.get("event_type", ""), event.get("resource") or {}
-    if kind == "CHECKOUT.ORDER.APPROVED":  # the client approved but may never have come back to us
-        finish_paypal(db, res.get("id", ""))
-        return
-    if not kind.startswith("PAYMENT.CAPTURE."):
-        return
-    capture_id = res.get("id", "")
-    if kind in ("PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED"):
-        # The resource is the refund; its "up" link points at the capture.
-        up = next((l.get("href", "") for l in res.get("links", []) if l.get("rel") == "up"), "")
-        capture_id = up.rstrip("/").rsplit("/", 1)[-1] if up else capture_id
-    pay = None
-    if res.get("custom_id"):
-        pay = db.get(Payment, res["custom_id"])
-    if not pay and capture_id:
-        pay = db.query(Payment).filter(Payment.gateway == "paypal", Payment.transaction_reference == capture_id).first()
-    if not pay or pay.gateway != "paypal":
-        return
-    inv = _locked_invoice(db, pay.invoice_id)
-    if kind == "PAYMENT.CAPTURE.COMPLETED":
-        _apply_capture(db, pay, inv, res)
-    elif kind == "PAYMENT.CAPTURE.DENIED" and pay.status == "pending":
-        _apply_capture(db, pay, inv, res)
-    elif kind in ("PAYMENT.CAPTURE.REFUNDED", "PAYMENT.CAPTURE.REVERSED") and pay.status == "succeeded":
-        refunded = _money((res.get("amount") or {}).get("value"))
-        if refunded >= _money(pay.original_amount or pay.amount) or kind.endswith("REVERSED"):
-            pay.status = "refunded"
-            db.flush()
-            settle(db, inv)
-        _audit(db, None, "paypal_" + kind.rsplit(".", 1)[-1].lower(), pay.id, None,
-               {"refund": res.get("id"), "amount": str(refunded), "payment_status": pay.status})
-        db.commit()
-
-
 # ── Admin side ────────────────────────────────────────────────────────────────
+
+def needs_review():
+    """Pending payments an admin checks by hand: UPI / bank transfers, and PayPal captures PayPal left pending.
+    (A PayPal checkout with no capture yet is just an unfinished checkout, not a payment.)"""
+    return (Payment.status == "pending") & or_(Payment.gateway == "manual", Payment.transaction_reference.isnot(None))
+
 
 def pending_payments(db: Session) -> list[dict]:
     rows = (db.query(Payment, Invoice, TaxFiling).join(Invoice, Invoice.id == Payment.invoice_id)
-            .join(TaxFiling, TaxFiling.id == Invoice.case_id).filter(Payment.status == "pending", Payment.gateway == "manual")
+            .join(TaxFiling, TaxFiling.id == Invoice.case_id).filter(needs_review())
             .order_by(Payment.created_at).all())
     return [{"payment": p, "invoice": i, "filing": f, "client_name": f"{f.first_name} {f.last_name}"} for p, i, f in rows]
 
 
+def _reviewable(pay: Payment) -> bool:
+    return pay.gateway == "manual" or bool(pay.transaction_reference)
+
+
 def verify(db: Session, actor_id: str, pay: Payment) -> str | None:
-    if pay.gateway != "manual":
-        return "Online payments are confirmed by the gateway, not by hand."
+    if not _reviewable(pay):
+        return "This PayPal checkout was never completed, so there is nothing to verify."
     if pay.status != "pending":
         return "This payment has already been reviewed."
     inv = db.get(Invoice, pay.invoice_id)
@@ -381,8 +358,8 @@ def verify(db: Session, actor_id: str, pay: Payment) -> str | None:
 
 
 def reject(db: Session, actor_id: str, pay: Payment, reason: str) -> str | None:
-    if pay.gateway != "manual":
-        return "Online payments are confirmed by the gateway, not by hand."
+    if not _reviewable(pay):
+        return "This PayPal checkout was never completed, so there is nothing to reject."
     if pay.status != "pending":
         return "This payment has already been reviewed."
     reason = " ".join((reason or "").split())[:500]

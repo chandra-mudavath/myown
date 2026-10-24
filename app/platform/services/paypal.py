@@ -1,6 +1,6 @@
-"""Thin PayPal REST client (Orders v2 + webhook verification).
+"""Thin PayPal REST client (Orders v2).
 
-Only what checkout needs: create an order, capture it, read it, and verify a webhook's signature.
+Only what checkout needs: create an order, capture it, and read it.
 Card data never reaches us; the client approves the order on PayPal's own pages.
 """
 from __future__ import annotations
@@ -65,7 +65,7 @@ def create_order(*, amount: Decimal, currency: str, reference: str, payment_numb
         "intent": "CAPTURE",
         "purchase_units": [{
             "reference_id": reference,       # our invoice number
-            "custom_id": custom_id,          # our payment id; comes back on captures and webhooks
+            "custom_id": custom_id,          # our payment id; comes back on the capture
             "invoice_id": payment_number,    # shown to the payer; PayPal won't take two payments with the same one
             "description": description[:127],
             "amount": {"currency_code": currency, "value": f"{amount:.2f}"},
@@ -105,23 +105,3 @@ def first_capture(order: dict) -> dict:
         for cap in (unit.get("payments") or {}).get("captures", []):
             return cap
     return {}
-
-
-def verify_webhook(headers: dict, event: dict) -> bool:
-    """Ask PayPal whether a webhook really came from them."""
-    if not settings.PAYPAL_WEBHOOK_ID:
-        return False
-    h = {k.lower(): v for k, v in headers.items()}
-    body = {
-        "auth_algo": h.get("paypal-auth-algo", ""),
-        "cert_url": h.get("paypal-cert-url", ""),
-        "transmission_id": h.get("paypal-transmission-id", ""),
-        "transmission_sig": h.get("paypal-transmission-sig", ""),
-        "transmission_time": h.get("paypal-transmission-time", ""),
-        "webhook_id": settings.PAYPAL_WEBHOOK_ID,
-        "webhook_event": event,
-    }
-    try:
-        return _call("POST", "/v1/notifications/verify-webhook-signature", body).get("verification_status") == "SUCCESS"
-    except PayPalError:
-        return False

@@ -1,0 +1,132 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}Referrals - {{ app_name }}{% endblock %}
+{% set active_nav = 'referrals' %}
+{%- set status_options = [('open', 'Open (still to follow up)'), ('new', 'Not called yet'), ('contacted', 'Contacted'), ('follow_up', 'Call back'), ('interested', 'Interested'), ('signed_up', 'Signed up, not filed yet'), ('not_interested', 'Not interested'), ('all', 'Any status')] -%}
+{%- macro qs() -%}
+{%- set p = {'status': status, 'q': q, 'mine': '1' if mine else '', 'due': '1' if due else '', 'source': source} -%}
+{%- set _ = p.update(kwargs) -%}
+?{% for k, v in p.items() if v %}{{ k }}={{ v | urlencode }}{% if not loop.last %}&amp;{% endif %}{% endfor %}
+{%- endmacro %}
+
+{% block main %}
+    <div class="staff-pagehead">
+        <div>
+            <p class="eyebrow">Follow-up</p>
+            <h1>Referrals</h1>
+        </div>
+        <p class="staff-pagehead__meta">Colleagues our clients referred. Call them, log what happened, and set the next follow-up.</p>
+    </div>
+
+    {% if error %}<p class="ref-flash ref-flash--error" role="alert">{{ error }}</p>{% endif %}
+    {% if saved %}<p class="ref-flash" role="status">{{ saved }}</p>{% endif %}
+
+    <section class="staff-summary" aria-label="Referral summary">
+        <a class="staff-summary-card{% if status == 'open' and not due %} is-active{% endif %}" href="{{ qs(status='open', due='') }}">
+            <span class="staff-summary-card__label">Open</span><strong class="staff-summary-card__value">{{ counts.open }}</strong>
+        </a>
+        <a class="staff-summary-card ref-card--due{% if due %} is-active{% endif %}" href="{{ qs(status='open', due='1') }}">
+            <span class="staff-summary-card__label">Calls due today</span><strong class="staff-summary-card__value">{{ counts.due }}</strong>
+        </a>
+        <a class="staff-summary-card{% if status == 'new' %} is-active{% endif %}" href="{{ qs(status='new', due='') }}">
+            <span class="staff-summary-card__label">Not called yet</span><strong class="staff-summary-card__value">{{ counts.new }}</strong>
+        </a>
+        <a class="staff-summary-card{% if status == 'signed_up' %} is-active{% endif %}" href="{{ qs(status='signed_up', due='') }}">
+            <span class="staff-summary-card__label">Signed up</span><strong class="staff-summary-card__value">{{ counts.won }}</strong>
+        </a>
+    </section>
+
+    <section class="staff-panel staff-cases" aria-labelledby="ref-title" data-loading-region>
+        <div class="staff-cases-head">
+            <div class="staff-cases-title">
+                <h2 id="ref-title">Referred people</h2>
+                <span class="staff-count-chip">{{ rows | length }}</span>
+            </div>
+            <button type="button" class="staff-btn staff-btn--primary" data-ref-add aria-expanded="false" aria-controls="ref-add">{{ ci("plus", "ci ci--sm") }} Add a referral</button>
+        </div>
+
+        {#- Staff add a colleague a client mentioned, on that client's behalf -#}
+        <form class="staff-cases-filters ref-add" id="ref-add" method="post" action="/staff/referrals" hidden>
+            <label><span>Referred by</span><input class="staff-input" name="referrer" placeholder="Client number or email, e.g. CLI-00000006" /></label>
+            <label><span>Full name *</span><input class="staff-input" name="name" required minlength="2" maxlength="120" /></label>
+            <label><span>Phone *</span><input class="staff-input" name="phone" type="tel" required maxlength="30" placeholder="+1 415 555 0142" /></label>
+            <label><span>Email</span><input class="staff-input" name="email" type="email" maxlength="255" /></label>
+            <label><span>Relationship</span><select class="staff-select" name="relationship">{% for r in relationships %}<option>{{ r }}</option>{% endfor %}</select></label>
+            <label class="ref-add__note"><span>Note</span><input class="staff-input" name="note" maxlength="2000" placeholder="e.g. Best time to call, what they need help with" /></label>
+            <div class="staff-cases-filters__actions"><button type="submit" class="staff-btn staff-btn--primary">Save referral</button></div>
+        </form>
+
+        {#- One filter bar (client feedback, Oct 2026); each dropdown applies as soon as it changes -#}
+        <form class="staff-cases-filters ref-filters" method="get" aria-label="Filter referrals">
+            <label class="ref-filters__search"><span>Search</span>
+                <input class="staff-input" type="search" name="q" value="{{ q }}" placeholder="Name, phone, email or referring client" /></label>
+            <label><span>Status</span>
+                <select name="status" class="staff-select" onchange="this.form.submit()">
+                    {% for key, label in status_options %}<option value="{{ key }}" {% if status == key %}selected{% endif %}>{{ label }} ({{ counts.open if key == 'open' else counts.all if key == 'all' else counts[key] }})</option>{% endfor %}
+                </select></label>
+            <label><span>How referred</span>
+                <select name="source" class="staff-select" onchange="this.form.submit()">
+                    <option value="">Any ({{ counts.all }})</option>
+                    {% for key, label, tone in sources %}<option value="{{ key }}" {% if source == key %}selected{% endif %}>{{ label }} ({{ counts.by_source.get(key, 0) }})</option>{% endfor %}
+                </select></label>
+            <label class="ref-filters__check"><input type="checkbox" name="mine" value="1" {% if mine %}checked{% endif %} onchange="this.form.submit()" /> Assigned to me</label>
+            <label class="ref-filters__check"><input type="checkbox" name="due" value="1" {% if due %}checked{% endif %} onchange="this.form.submit()" /> Calls due only</label>
+            <div class="staff-cases-filters__actions">
+                <button type="submit" class="staff-btn staff-btn--primary">Apply</button>
+                {% if q or mine or due or source or status != 'all' %}<a class="staff-btn staff-btn--ghost" href="/staff/referrals">Clear</a>{% endif %}
+            </div>
+        </form>
+
+        <div class="staff-table-scroll" tabindex="0" aria-label="Referrals table">
+            <table class="staff-table staff-cases-table">
+                <thead>
+                    <tr>
+                        <th scope="col" class="col-sno">S.No</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">How referred</th>
+                        <th scope="col">Phone</th>
+                        <th scope="col">Referred by</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Next follow-up</th>
+                        <th scope="col">Last call</th>
+                        <th scope="col">Assigned</th>
+                        <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    {% set l = r.lead %}
+                    <tr>
+                        <td class="col-sno">{{ loop.index }}</td>
+                        <td><a class="staff-cell-link" href="/staff/referrals/{{ l.id }}">{{ l.name }}</a>
+                            <small class="staff-cell-muted ref-sub">{{ l.relationship or '' }}{% if l.email %}{{ ' · ' if l.relationship else '' }}{{ l.email }}{% endif %}</small></td>
+                        <td><span class="staff-stage-pill tone-{{ r.source_tone }}">{{ r.source_label }}</span></td>
+                        <td class="col-mono">{% if l.phone %}<a class="ref-call" href="tel:{{ r.tel }}" title="Call {{ l.name }}">{{ ci("phone", "ci ci--sm") }} {{ l.phone }}</a>{% else %}<span class="staff-cell-muted">—</span>{% endif %}</td>
+                        <td>{% if r.referrer %}<a class="staff-cell-link" href="/staff/clients/{{ r.referrer.id }}">{{ r.referrer_name }}</a><small class="staff-cell-muted ref-sub">{{ r.referrer.client_number }}</small>{% else %}<span class="staff-cell-muted">—</span>{% endif %}</td>
+                        <td><span class="staff-stage-pill tone-{{ r.tone }}">{{ r.status_label }}</span></td>
+                        <td class="{{ 'ref-overdue' if r.overdue else 'ref-today' if r.due_today else '' }}">{{ l.next_follow_up.strftime('%b %d, %Y') if l.next_follow_up else '—' }}{% if r.overdue %}<small class="ref-sub">Overdue</small>{% elif r.due_today %}<small class="ref-sub">Today</small>{% endif %}</td>
+                        <td>{% if r.last_call %}{{ r.last_call_label }}<small class="staff-cell-muted ref-sub">{{ r.last_call.created_at.strftime('%b %d · %H:%M') }}</small>{% else %}<span class="staff-cell-muted">Not called</span>{% endif %}</td>
+                        <td>{{ r.staff_name or '—' }}</td>
+                        <td class="col-actions"><a class="staff-row-action staff-row-action--primary" href="/staff/referrals/{{ l.id }}">Follow up</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="10" class="staff-empty">{{ ci("users") }}<strong>No referrals here</strong>
+                        <span>{% if q or due or mine %}Try another filter.{% else %}Referrals appear when clients refer a colleague or sign up with a referral link.{% endif %}</span></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}
+
+{% block page_scripts %}
+{{ super() }}
+<script>
+document.querySelector("[data-ref-add]")?.addEventListener("click", (e) => {
+    const form = document.getElementById("ref-add");
+    form.hidden = !form.hidden;
+    e.currentTarget.setAttribute("aria-expanded", String(!form.hidden));
+    if (!form.hidden) form.querySelector("input")?.focus();
+});
+</script>
+{% endblock %}

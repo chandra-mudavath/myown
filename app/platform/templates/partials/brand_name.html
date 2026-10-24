@@ -1,0 +1,8 @@
+{#- Company name in two tones, like the landing page headings: "Covrent" in the text colour, "Tax" in brand blue. -#}
+{% macro brand_name(name) -%}
+{%- if name and name.endswith("Tax") and name | length > 3 -%}
+{{ name[:-3] }}<span class="brand-accent">Tax</span>
+{%- else -%}
+{{ name }}
+{%- endif -%}
+{%- endmacro %}

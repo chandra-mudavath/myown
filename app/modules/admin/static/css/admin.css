@@ -868,3 +868,67 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-profile-facts { flex: 1 1 420px; margin: 0; }
 .admin-edit-row__fields--two { grid-template-columns: repeat(2, minmax(150px, 1fr)) auto; }
 @media (max-width: 760px) { .admin-edit-row__fields--two { grid-template-columns: 1fr; } }
+
+/* Settings: make each row's Save button easy to find, and light it up once that row is edited */
+.admin-settings-block .admin-save-col { width: 1%; text-align: right; }
+.admin-settings-block td:last-child { text-align: right; }
+.admin-settings-block .admin-mini-btn[type="submit"][form] {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    color: var(--accent-text);
+    font-weight: 700;
+    min-width: 72px;
+}
+.admin-settings-block .admin-mini-btn[type="submit"][form].is-dirty {
+    background: var(--brand);
+    color: #fff;
+    box-shadow: 0 0 0 3px var(--brand-soft);
+}
+.admin-settings-block tr.is-dirty td { background: var(--brand-soft); }
+.admin-settings-block .admin-mini-btn[type="submit"][form] { white-space: nowrap; }
+
+/* ── Referrals follow-up (client feedback, Oct 2026) ── */
+.admin-flash { margin: 16px 0 0; padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--green) 40%, transparent); border-radius: 10px; background: color-mix(in srgb, var(--green) 9%, transparent); color: var(--ink); font-size: .88rem; }
+.admin-flash--error { border-color: color-mix(in srgb, var(--coral) 40%, transparent); background: color-mix(in srgb, var(--coral) 9%, transparent); }
+.admin-welcome .link-primary { color: #fff; font-weight: 700; text-decoration: underline; }
+.admin-card .link-primary, .admin-facts .link-primary { color: var(--accent-text); font-weight: 600; }
+.admin-ref-add { display: grid; gap: 12px; }
+.admin-ref-add__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0 16px; }
+.admin-ref-add__grid .modal-form-group { margin-bottom: .6rem; }
+.admin-ref-add__note { grid-column: 1 / -1; }
+.admin-ref-add input, .admin-ref-add select, .admin-ref-grid input, .admin-ref-grid select, .admin-ref-grid textarea {
+    width: 100%; box-sizing: border-box; padding: .55rem .7rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; }
+.admin-ref-add label, .admin-ref-grid label { display: block; margin-bottom: 4px; color: var(--muted); font-size: .75rem; font-weight: 700; }
+.admin-ref-add .admin-filter-btn, .admin-ref-grid .admin-filter-btn { justify-self: start; }
+.admin-ref-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0; color: var(--muted); font-size: .85rem; font-weight: 600; }
+.admin-ref-bulk .admin-filter-btn:disabled { opacity: .45; cursor: default; }
+.admin-ref-call { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border: 1px solid color-mix(in srgb, var(--green) 40%, transparent); border-radius: 999px; color: var(--green); font-weight: 600; text-decoration: none; }
+.admin-ref-call:hover { background: var(--green); color: #fff; }
+.admin-ref-overdue { color: var(--coral); font-weight: 700; }
+.admin-ref-today { color: var(--amber); font-weight: 700; }
+.admin-ref-callbtn { background: #16a34a !important; border-color: #16a34a !important; }
+.admin-ref-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 960px) { .admin-ref-grid { grid-template-columns: minmax(0, 1fr); } }
+.admin-ref-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.admin-ref-timeline { margin: 0; padding: 0; list-style: none; }
+.admin-ref-timeline li { position: relative; padding: 0 0 14px 20px; margin-left: 6px; border-left: 2px solid var(--line); }
+.admin-ref-timeline li::before { content: ""; position: absolute; left: -7px; top: 2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--brand); background: var(--surface); }
+.admin-ref-timeline li.is-call::before { background: var(--green); border-color: var(--green); }
+.admin-ref-timeline strong { display: block; color: var(--ink); font-size: .9rem; }
+.admin-ref-timeline p { margin: 4px 0 0; color: var(--ink); font-size: .86rem; white-space: pre-line; }
+
+.admin-ref-sources { align-items: center; margin-top: 8px; }
+.admin-ref-sources .admin-muted { display: inline; margin-right: 4px; font-weight: 700; }
+.admin-ref-facts { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+
+/* Referrals: one filter bar */
+.admin-ref-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.admin-ref-filters label { display: grid; gap: 4px; min-width: 160px; }
+.admin-ref-filters label > span { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.admin-ref-filters__search { flex: 1; min-width: 220px; }
+.admin-ref-filters .admin-filter-input { width: 100%; box-sizing: border-box; }
+.admin-ref-filters__check { display: inline-flex !important; align-items: center; gap: 6px; min-width: 0 !important; padding-bottom: 10px; color: var(--ink); font-size: .86rem; font-weight: 600; }
+.admin-ref-filters__actions { display: flex; align-items: center; gap: 10px; padding-bottom: 2px; }
+.admin-ref-filters .admin-filter-input { min-width: 0; max-width: 100%; }
+.admin-ref-filters label { flex: 0 1 200px; }
+.admin-ref-filters__search { flex: 1 1 260px !important; }
