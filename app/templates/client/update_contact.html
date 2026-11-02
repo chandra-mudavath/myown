@@ -1,0 +1,82 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "update_contact" %}
+{% set page_section = "Account" %}
+{% set page_title = "Email & Mobile" %}
+{% set page_subtitle = "Keep your contact details current for filing updates and security alerts." %}
+
+{% block page %}
+<div class="cx-grid cx-grid--2">
+    <section class="cx-card" aria-labelledby="phone-title">
+        <form data-cx-api="/client/api/contact" data-cx-method="PUT">
+            <div class="cx-card__head">
+                <div>
+                    <h2 class="cx-card__title" id="phone-title">{{ ci("phone") }} Mobile <span class="cx-accent">number</span></h2>
+                    <p class="cx-card__sub">Used for SMS updates about your return.</p>
+                </div>
+            </div>
+            <div class="cx-card__body">
+                <div class="cx-field">
+                    <label class="cx-label" for="mobile_phone">Mobile number<span class="cx-req">*</span></label>
+                    <input class="cx-input" type="tel" id="mobile_phone" name="phone" required minlength="7" maxlength="25" value="{{ (client.phone or '') if client else '' }}" placeholder="+1 555 000 0000" />
+                </div>
+            </div>
+            <div class="cx-card__foot">
+                <button type="submit" class="cx-btn cx-btn--primary">Save number</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="cx-card" aria-labelledby="email-title">
+        <form data-cx-api="/client/api/email-request" data-cx-method="POST">
+            <div class="cx-card__head">
+                <div>
+                    <h2 class="cx-card__title" id="email-title">{{ ci("mail") }} Email <span class="cx-accent">address</span></h2>
+                    <p class="cx-card__sub">Current: <strong>{{ account_email }}</strong></p>
+                </div>
+                <span class="cx-badge cx-badge--complete">Verified</span>
+            </div>
+            <div class="cx-card__body">
+                <div class="cx-field">
+                    <label class="cx-label" for="primary_email">New email address<span class="cx-req">*</span></label>
+                    <input class="cx-input" type="email" id="primary_email" name="email" required placeholder="name@example.com" />
+                    <span class="cx-hint">Your current email stays active until you verify the new one.</span>
+                </div>
+            </div>
+            <div class="cx-card__foot">
+                <button type="submit" class="cx-btn cx-btn--primary">Request change</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+    // JSON forms: data-cx-api="<url>" data-cx-method="PUT|POST"
+    document.querySelectorAll("form[data-cx-api]").forEach((form) =>
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const btn = form.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            try {
+                const res = await fetch(form.dataset.cxApi, {
+                    method: form.dataset.cxMethod || "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(Object.fromEntries(new FormData(form).entries())),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    const msg = Array.isArray(data.detail) ? data.detail.map((d) => d.msg).join(" ") : data.detail;
+                    throw new Error(msg || "Could not save. Please try again.");
+                }
+                window.cxToast(data.message || "Saved.");
+                if (form.dataset.cxMethod === "POST") form.reset();
+            } catch (err) {
+                window.cxToast(err.message, true);
+            }
+            btn.disabled = false;
+        })
+    );
+</script>
+{% endblock %}

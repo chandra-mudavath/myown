@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{#- Shared shell for every auth page: full-page photo, twinkling stars, landing-page colors.
+    Form column on the left (centered logo + one-line heading, icon inputs), headline + trust copy on the right.
+    No theme: always the same clear look, whatever theme the landing page uses. Child templates fill auth_heading, auth_subtitle (optional) and auth_form. -#}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}?v=5.3" />
+{% endblock %}
+{% block body_class %}au-page{% endblock %}
+{% block content %}
+<div class="au-bg" aria-hidden="true"></div>
+<div class="au-starfield" id="au-starfield" data-max="70" aria-hidden="true"></div>
+
+<div class="au-layout">
+    <main class="au-main">
+        <div class="au-top">
+            <a class="au-back au-back--mobile" href="/">&larr; Home</a>
+        </div>
+
+        <div class="au-form{% block form_modifier %}{% endblock %}">
+            <div class="au-form__head">
+                <a class="au-logo" href="/">{{ app_name }}</a>
+                <h1 class="au-title">{% block auth_heading %}{% endblock %}</h1>
+                {% if self.auth_subtitle()|trim %}
+                <p class="au-subtitle">{% block auth_subtitle %}{% endblock %}</p>
+                {% endif %}
+            </div>
+            {% block auth_form %}{% endblock %}
+        </div>
+
+        <p class="au-copyright">&copy; <span id="footer-year">2026</span> {{ app_name }}. All rights reserved.</p>
+    </main>
+
+    <section class="au-copy">
+        <a class="au-back" href="/">&larr; Home</a>
+        <div class="au-copy__text">
+            <h2>Every return, <span>on track.</span></h2>
+            <p>One secure workspace for documents, deadlines, and filing status.</p>
+            <ul class="au-trust">
+                <li>Encrypted sign-in and expiring sessions</li>
+                <li>Every document versioned, nothing overwritten</li>
+                <li>Built for preparers, reviewers, and clients</li>
+            </ul>
+        </div>
+    </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/auth.js') }}"></script>
+<script src="{{ url_for('static', path='/js/auth-stars.js') }}?v=1.0"></script>
+{% endblock %}

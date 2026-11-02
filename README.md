@@ -1,4 +1,4 @@
-# MyOwn
+# UrTax
 
 Professional tax services web application.
 
@@ -14,8 +14,8 @@ Professional tax services web application.
 | JavaScript | Vanilla JS (ES6+) | — |
 | ORM | SQLAlchemy | 2.0.36 |
 | Migrations | Alembic | 1.14.0 |
-| Database | PostgreSQL | 16+ |
-| DB driver | psycopg3 | 3.2.3 |
+| Database | MySQL (Dev) / PostgreSQL (Prod) | 8.0+ / 16+ |
+| DB driver | PyMySQL (Dev) / psycopg3 (Prod) | 1.1+ / 3.2+ |
 | Auth | PyJWT + pwdlib (Argon2) | 2.10.1 / 0.2.1 |
 | Task queue | Celery | 5.4.0 |
 | Message broker | Redis | 5.2.1 (client) |
