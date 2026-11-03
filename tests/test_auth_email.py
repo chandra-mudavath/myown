@@ -275,3 +275,24 @@ def test_email_is_sent_inline_when_the_queue_is_down(monkeypatch):
     monkeypatch.setattr(email_service, "send_password_reset", lambda *a: calls.append(a) or True)
     email_tasks.enqueue(email_tasks.send_password_reset, "a@x.test", "https://x/r", 15)
     assert calls == [("a@x.test", "https://x/r", 15)]
+
+
+def test_admin_signs_up_from_the_link_without_a_phone(env):
+    """The admin form has no phone field (admins have no phone), so the server mustn't ask for one."""
+    from app.platform.services import admin_signup
+    db = env["Session"]()
+    key = admin_signup.generate(db, None)
+    db.close()
+    client = TestClient(app)
+    form = {"first_name": "Office", "last_name": "Admin", "email": "admin.dev@covrenttax.com", "password": PASSWORD,
+            "password_confirmation": PASSWORD, "signup_role": "admin", "admin_key": key}
+    r = client.post("/auth/register", data=form, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].endswith("/auth/verify-code")
+    assert _account(env, "admin.dev@covrenttax.com").account_type == AccountType.ADMIN
+
+    # A client still has to give a mobile number
+    r = TestClient(app).post("/auth/register", data={**form, "email": "new@x.test", "signup_role": "client", "admin_key": ""})
+    assert "Enter your mobile number." in r.text
+    db = env["Session"]()
+    assert db.query(AuthAccount).filter(AuthAccount.email == "new@x.test").first() is None
+    db.close()

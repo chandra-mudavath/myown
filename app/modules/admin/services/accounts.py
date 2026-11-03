@@ -20,7 +20,7 @@ from app.platform.models.auth import AccountType, AuthAccount, AuthRefreshToken
 from app.platform.models.case_workflow import CaseAssignment
 from app.platform.models.system import AuditLog
 from app.platform.services import auth_service, chat_service
-from app.platform.services.catalog import staff_roles
+from app.platform.services.catalog import staff_account_roles
 
 _MANAGED = (AccountType.CLIENT, AccountType.STAFF)
 
@@ -118,12 +118,19 @@ def reset_password(db: Session, actor_id: str, account: AuthAccount) -> tuple[st
 
 
 def change_staff_role(db: Session, actor_id: str, staff: Staff, role_code: str) -> str | None:
-    roles = {r.code for r in staff_roles(db)}
+    roles = {r.code for r in staff_account_roles(db)}
     if role_code not in roles:
-        return "Choose a role (Initiator, Preparer, Reviewer or Manager)."
+        return "Choose a role (Initiator, Preparer, Reviewer, Manager or HR)."
     old = staff.role.value if staff.role else None
     if old == role_code:
         return None
+    if role_code == StaffRole.HR.value:
+        # HR has no case access, so they can't stay on a case team
+        open_cases = db.query(CaseAssignment).filter(CaseAssignment.staff_id == staff.id,
+                                                     CaseAssignment.status == "active").count()
+        if open_cases:
+            return (f"Remove {staff.first_name} from {open_cases} case{'s' if open_cases != 1 else ''} first. "
+                    "HR has no access to cases.")
     staff.role = StaffRole(role_code)
     _audit(db, actor_id, "staff_role_changed", "staff", staff.id, {"role": old}, {"role": role_code})
     db.commit()

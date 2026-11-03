@@ -23,6 +23,7 @@ from app.platform.services.catalog import (
     open_tax_years,
     stage_codes_for_client_status,
     stage_labels,
+    staff_account_roles,
     staff_roles,
     tax_types,
 )
@@ -422,7 +423,7 @@ def admin_staff_directory(
             "account": account,
             "admin": admin,
             "staff_list": formatted_staff,
-            "case_roles": staff_roles(db),
+            "case_roles": staff_account_roles(db),
             "saved": saved,
             "error": error,
             "current_url": "/admin/staff" + (f"?{urlencode({'q': q})}" if q else ""),
@@ -484,7 +485,7 @@ def render_staff_detail(request: Request, staff_id: str, account, db: Session, s
             "filings": formatted_filings,
             "target": staff_member.account,
             "locked_until": lock_state(staff_member.account) if staff_member.account else None,
-            "case_roles": staff_roles(db),
+            "case_roles": staff_account_roles(db),
             "saved": saved,
             "error": error,
             "temp_password": temp_password,
@@ -512,7 +513,7 @@ def get_form_options_api(account: AdminAccount, db: Session = Depends(get_db)):
         "default_tax_year": default_tax_year(db),
         "tax_types": [{"code": t.code, "name": t.name} for t in tax_types(db)],
         "document_types": [{"code": d.code, "name": d.name} for d in case_document_types(db)],
-        "staff_roles": [{"code": r.code, "name": r.name} for r in staff_roles(db)],
+        "staff_roles": [{"code": r.code, "name": r.name} for r in staff_account_roles(db)],  # incl. HR
     }
 
 
@@ -584,10 +585,9 @@ def quick_create_staff(
     temp_password = admin_accounts.temp_password()  # meets the strength rules; changed at first sign-in
     hashed_pwd = hash_password(temp_password)
 
-    try:
-        staff_role_enum = StaffRole(role.upper())
-    except ValueError:
-        staff_role_enum = StaffRole.INITIATOR
+    if role.upper() not in {r.code for r in staff_account_roles(db)}:  # a case role or HR; never ADMIN
+        raise HTTPException(status_code=400, detail="Choose a role.")
+    staff_role_enum = StaffRole(role.upper())
 
     auth_acc = AuthAccount(
         email=email.strip().lower(),

@@ -124,11 +124,13 @@ def register(
     ref: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    if not (country_code and phone_local):  # the form requires it; clients.phone can't be empty
+    # Clients need a mobile number (clients.phone can't be empty). The admin form has no phone field and admins
+    # have no phone column; an "admin" sign-up without a valid link is still refused below.
+    if signup_role != "admin" and not (country_code and phone_local):
         return templates.TemplateResponse(request, "auth/register.html", _ctx(
             request, error="Enter your mobile number.", signup_role=signup_role, admin_key=admin_key, ref=ref))
     try:
-        phone = f"{country_code}{phone_local}"
+        phone = f"{country_code}{phone_local}" if country_code and phone_local else None
         data = RegisterRequest(
             first_name=first_name,
             last_name=last_name,

@@ -6,6 +6,8 @@ database. Only active rows are returned, in each table's sort_order.
 """
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from sqlalchemy.orm import Session
 
 from app.platform.models.lookups import CaseStage, DocumentCategory, DocumentType, StaffRoleLookup, TaxType, TaxYear
@@ -90,3 +92,12 @@ def staff_roles(db: Session) -> list[StaffRoleLookup]:
         .order_by(StaffRoleLookup.sort_order, StaffRoleLookup.id)
         .all()
     )
+
+
+HR_ROLE = SimpleNamespace(code="HR", name="HR")
+
+
+def staff_account_roles(db: Session) -> list:
+    """Roles an admin can give a staff account: the case roles, then HR (internal only, no case access).
+    HR isn't a case role, so it isn't in the staff_roles table (staff sign-up is off; admins create HR too)."""
+    return [*staff_roles(db), HR_ROLE]
