@@ -268,6 +268,8 @@
                     </div>
                 </div>
                 <div class="cx-card__body">
+                    {#- "Are you married?" moved to Personal Info → Marital status, with the spouse's details
+                        (client feedback, Nov 2026). It was:
                     <h3 class="cx-legend">Filing status</h3>
                     <div class="cx-q cx-q--lead">
                         <span class="cx-q__text"><strong>Are you married?</strong><small>As of December 31, {{ y }}.</small></span>
@@ -275,6 +277,7 @@
                         {{ detail_rows("married") }}
                         {{ note_box("married") }}
                     </div>
+                    -#}
 
                     <h3 class="cx-legend">Income questions</h3>
                     <ol class="cx-qlist">

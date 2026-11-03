@@ -142,11 +142,14 @@ def test_fbar_submit_needs_part_one(env):
 def test_residency_and_dependents_are_saved_per_year(env):
     client = as_(env, "client")
     r = client.post("/client/profile/residency", data={"nationality": "Indian", "visa_count": "2", "visa_type": "H1B",
-                                                       "first_entry": "2019-08-01", "days_183": "yes"}, follow_redirects=False)
-    assert r.headers["location"].endswith("#dependents")
+                                                       "first_entry": "2019-08-01", "days_183": "yes",
+                                                       "prev1_type": "F1", "prev1_from": "2019-08-01", "prev1_to": "2022-09-30"},
+                    follow_redirects=False)
+    assert r.headers["location"].endswith("#marital")  # Marital status comes next (Nov 2026)
     client.post("/client/profile/dependents", data={"dep_first": "Anya", "dep_last": "T", "dep_rel": "Daughter",
-                                                    "dep_dob": "2020-01-02", "dep_id": "ssn", "dep_months": "12"})
-    client.post("/client/profile/dependents", data={"dep_first": "Ravi", "dep_last": "T", "dep_rel": "Son"})
+                                                    "dep_dob": "2020-01-02", "dep_id": "ssn", "dep_id_number": "123-45-6789",
+                                                    "dep_months": "12"})
+    client.post("/client/profile/dependents", data={"dep_first": "Ravi", "dep_last": "T", "dep_rel": "Son", "dep_id": "applying"})
     assert "error=" in client.post("/client/profile/dependents", data={"dep_first": "X", "dep_last": "Y", "dep_months": "13"},
                                    follow_redirects=False).headers["location"]
     client.post("/client/profile/dependents", data={"action": "remove", "index": "1"})
@@ -154,6 +157,7 @@ def test_residency_and_dependents_are_saved_per_year(env):
     residency, filing_id = _section(env, intake.RESIDENCY)
     dependents, _ = _section(env, intake.DEPENDENTS)
     assert residency.data["visa_type"] == "H1B" and residency.data["visa_count"] == "2"
+    assert residency.data["earlier_visas"] == [{"type": "F1", "other": "", "from": "2019-08-01", "to": "2022-09-30"}]
     assert [d["first_name"] for d in dependents.data["items"]] == ["Anya"]
     page = client.get("/client/profile").text
     assert "Anya" in page and 'value="2019-08-01"' in page

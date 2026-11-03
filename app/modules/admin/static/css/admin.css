@@ -932,3 +932,8 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-ref-filters .admin-filter-input { min-width: 0; max-width: 100%; }
 .admin-ref-filters label { flex: 0 1 200px; }
 .admin-ref-filters__search { flex: 1 1 260px !important; }
+
+/* Dashboard notice, e.g. email change requests waiting (client feedback, Nov 2026) */
+.admin-alert--notice { padding: 12px 16px; border: 1px solid color-mix(in srgb, #d97706 35%, transparent); border-radius: 12px;
+    background: color-mix(in srgb, #d97706 10%, var(--surface)); color: var(--ink); font-size: .9rem; }
+.admin-alert--notice a { margin-left: 6px; font-weight: 700; }

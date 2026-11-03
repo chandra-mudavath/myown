@@ -12,6 +12,7 @@ from app.core.assets import STATIC_MOUNTS, mount_name
 from app.core.config import settings
 from app.core.database import Base, engine
 import app.db_models  # noqa: F401 — registers all models with Base.metadata
+from app.modules.admin.api import email_requests as admin_email_requests
 from app.modules.admin.api import referrals as admin_referrals, accounts as admin_accounts, admin, assignments as admin_assignments, case_actions as admin_case_actions, notifications as admin_notifications, profile as admin_profile, payments as admin_payments, reports as admin_reports, system_settings as admin_settings
 from app.modules.client.api import client as client_routes, dashboard, profile
 from app.modules.staff.api import staff
@@ -106,5 +107,6 @@ app.include_router(admin_assignments.router)
 app.include_router(admin_accounts.router)
 app.include_router(admin_case_actions.router)
 app.include_router(admin_referrals.router)
+app.include_router(admin_email_requests.router)
 app.include_router(chat.router)
 app.include_router(pages.router)

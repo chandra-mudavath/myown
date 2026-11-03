@@ -6,8 +6,12 @@
     - Pay in INR: UPI, as before.
     The previous form (India / US, then method, with bank transfer) is kept in _make_payment_v1.html.
     Needs the billing context from _billing_extra() in app/modules/client/api/client.py. -#}
+{#- Round 3 (client feedback, Nov 2026): payment is open at every stage, with no conditions. The amount starts empty.
+    With an open invoice the payment goes to it; with none it is an advance payment on the year's filing, which counts
+    towards the invoice once the tax team issues it. Was: payable = open invoices without a pending payment, and the
+    options only showed when an amount was due. -#}
 {% from "client/_icons.html" import ci %}
-{% set payable = (open_invoices | default([])) | rejectattr("pending") | list %}
+{% set payable = open_invoices | default([]) %}
 {% set one = payable[0] if payable | length == 1 else none %}
 {% set due = payable | sum(attribute="balance") if payable else 0 %}
 <section class="cx-card cx-pay" aria-labelledby="pay-title">
@@ -21,15 +25,18 @@
     <div class="cx-card__body cx-stack">
         {% if pay_error %}<div class="cx-alert cx-alert--error" role="alert">{{ ci("alert") }}<p>{{ pay_error }}</p></div>{% endif %}
 
+        {% if due > 0 %}
         <p class="cx-pay__due">Your payment is in the amount of <strong>${{ "{:,.2f}".format(due) }}</strong></p>
+        {% else %}
+        <div class="cx-alert">{{ ci("info") }}<p><strong>No invoice yet.</strong> You can still pay any amount now as an advance payment. It counts towards your fee once your tax team issues the invoice.</p></div>
+        {% endif %}
         <p class="cx-pay__terms">By proceeding with payment, <strong>you confirm</strong> that you have <strong>carefully reviewed your Tax Estimate / Summary</strong>
             and agree to the <a class="cx-link" href="/terms-and-conditions" target="_blank" rel="noopener">Terms of Service</a>.</p>
 
-        {% if not amount_due %}
-        <div class="cx-alert">{{ ci("info") }}<p>No payment is due yet. Your fee appears here once your preparer publishes the tax summary.</p></div>
-        {% elif not payable %}
-        <div class="cx-alert cx-alert--success">{{ ci("clock") }}<p>We've received your payment details and are verifying them. You'll see the result under <a class="cx-link" href="/client/tax-summary#payment-details">Payment details</a>.</p></div>
-        {% else %}
+        {% if has_pending or advance_pending %}
+        <div class="cx-alert cx-alert--success">{{ ci("clock") }}<p>We're verifying a payment you sent earlier; see <a class="cx-link" href="/client/tax-summary#payment-details">Payment details</a>. You can still make another payment below.</p></div>
+        {% endif %}
+        {#- Was: {% if not amount_due %} "No payment is due yet" {% elif not payable %} "verifying" {% else %} the options -#}
         <div class="cx-pay__split">
             {#- Left: the two options -#}
             <div class="cx-pay__options" role="radiogroup" aria-label="Payment option">
@@ -55,7 +62,7 @@
                         <input type="hidden" name="payment_method" value="upi" />
                         <input type="hidden" name="sent_currency" value="INR" />
                         {% if one %}<input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" />
-                        {% else %}
+                        {% elif payable %}
                         <div class="cx-field"><label class="cx-label" for="inr-invoice">Invoice<span class="cx-req">*</span></label>
                             <select class="cx-select" id="inr-invoice" name="invoice_id" required>{% for row in payable %}<option value="{{ row.invoice.id }}">{{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }}</option>{% endfor %}</select></div>
                         {% endif %}
@@ -72,14 +79,14 @@
                             </div>
                             <div>
                                 <ol class="cx-numsteps">
-                                    <li>Open any UPI app and pay the INR equivalent of the amount above.</li>
+                                    <li>Open any UPI app and pay the INR equivalent of the amount you want to pay.</li>
                                     <li>Enter the amount it covers in USD, the rupees you paid, and the UPI transaction ID.</li>
                                 </ol>
                                 <div class="cx-form-grid">
                                     <div class="cx-field"><label class="cx-label" for="inr-usd">Amount it covers (USD)<span class="cx-req">*</span></label>
-                                        <input class="cx-input" id="inr-usd" name="pay_amount" type="number" min="1" step="0.01" required placeholder="0.00" {% if one %}max="{{ '%.2f' | format(one.balance) }}"{% endif %} /></div>
+                                        <input class="cx-input" id="inr-usd" name="pay_amount" type="number" min="1" step="0.01" required placeholder="Enter amount, e.g. 150.00" {% if one %}max="{{ '%.2f' | format(one.balance) }}"{% endif %} /></div>
                                     <div class="cx-field"><label class="cx-label" for="upi-amt">Amount paid (₹)<span class="cx-req">*</span></label>
-                                        <input class="cx-input" id="upi-amt" name="sent_amount" type="number" min="1" step="0.01" required placeholder="0.00" /></div>
+                                        <input class="cx-input" id="upi-amt" name="sent_amount" type="number" min="1" step="0.01" required placeholder="Rupees paid, e.g. 12500" /></div>
                                     <div class="cx-field cx-span-2"><label class="cx-label" for="upi-txn">UPI transaction ID<span class="cx-req">*</span></label>
                                         <input class="cx-input cx-mono" id="upi-txn" name="transaction_reference" required minlength="4" maxlength="100" placeholder="e.g. 412345678901" /></div>
                                     <div class="cx-field cx-span-2"><label class="cx-label" for="pay-proof">Payment screenshot<span class="cx-opt">Optional</span></label>
@@ -92,11 +99,11 @@
                 </div>
             </div>
         </div>
-        {% endif %}
     </div>
 </section>
 
-{% if payable %}
+{#- Was {% if payable %}: the window is always there now (advance payments) -#}
+{% if true %}
 {#- Pay in USD: "Complete your payment", then the gateway's secure page takes the card -#}
 <dialog class="cx-paydlg" data-pay-dialog aria-labelledby="paydlg-title">
     <form method="post" action="/client/payments/paypal/start" class="cx-paydlg__grid" data-pay-form>
@@ -112,16 +119,20 @@
                 <button type="button" class="cx-paydlg__close" data-pay-close aria-label="Close">{{ ci("x") }}</button>
             </header>
             {% if one %}<input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" />
-            {% else %}
+            {% elif payable %}
             <div class="cx-field"><label class="cx-label" for="usd-invoice">Invoice</label>
                 <select class="cx-select" id="usd-invoice" name="invoice_id" required>{% for row in payable %}<option value="{{ row.invoice.id }}" data-balance="{{ '%.2f' | format(row.balance) }}">{{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }} due</option>{% endfor %}</select></div>
             {% endif %}
             <div class="cx-field">
                 <label class="cx-label" for="usd-amount">Amount</label>
                 <div class="cx-paydlg__money"><span>$</span>
-                    <input class="cx-input" id="usd-amount" name="pay_amount" type="number" min="1" step="0.01" required placeholder="00.00"
+                    <input class="cx-input" id="usd-amount" name="pay_amount" type="number" min="1" step="0.01" required placeholder="Enter amount, e.g. 150.00"
                            {% if one %}max="{{ '%.2f' | format(one.balance) }}"{% endif %} data-pay-amount /></div>
+                {% if payable %}
                 <span class="cx-hint">Up to ${{ "{:,.2f}".format(one.balance if one else due) }}. You can pay part now and the rest later.</span>
+                {% else %}
+                <span class="cx-hint">Any amount. It counts towards your fee once your tax team issues the invoice.</span>
+                {% endif %}
             </div>
             <div class="cx-field">
                 <label class="cx-label" for="usd-phone">Phone number</label>

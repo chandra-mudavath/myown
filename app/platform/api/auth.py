@@ -96,8 +96,9 @@ def admin_signup_page(key: str, request: Request, db: Session = Depends(get_db))
 
 
 @router.get("/forgot-password", response_class=HTMLResponse)
-def forgot_password_page(request: Request):
-    return templates.TemplateResponse(request, "auth/forgot-password.html", _ctx(request))
+def forgot_password_page(request: Request, email: str = ""):
+    # Coming from "Reset password" after 5 wrong passwords: the email is filled in.
+    return templates.TemplateResponse(request, "auth/forgot-password.html", _ctx(request, email=email.strip()[:254]))
 
 
 @router.get("/reset-password", response_class=HTMLResponse)
@@ -217,13 +218,19 @@ def _login(
     account, failure = auth_service.authenticate(db, username, password, ip, ua)
 
     if not account:
+        # 5 wrong passwords: ask for a reset instead of a 15-minute wait (client feedback, Nov 2026). Was:
+        #   "Too many wrong passwords. Please wait 15 minutes, or use Forgot password to reset it and sign in right away."
+        reset = "You've entered a wrong password 5 times. For your security, reset your password to sign in again."
         reasons = {
-            "account_locked": f"Too many wrong passwords. Please wait {auth_service.LOCKOUT_MINUTES} minutes, "
-                              "or use Forgot password to reset it and sign in right away.",
+            "reset_required": reset,
+            "account_locked": reset,
             "account_inactive": "Your account has been deactivated.",
         }
         error = reasons.get(failure, "Invalid email or password.")
-        return templates.TemplateResponse(request, "auth/login.html", _ctx(request, error=error, login_role=login_role))
+        needs_reset = failure in ("reset_required", "account_locked")
+        return templates.TemplateResponse(request, "auth/login.html", _ctx(
+            request, error=error, login_role=login_role,
+            reset_email=username.strip().lower() if needs_reset else None))
 
     if expected_type is not None and account.account_type != expected_type:
         role_name = expected_type.value.title()

@@ -905,6 +905,8 @@ body.cx-body::before { display: none; } /* legacy dotted overlay from profile.cs
 .cx-seg__opt:hover span { color: var(--cx-ink); }
 .cx-seg__opt input:checked + span { background: var(--cx-card); color: var(--cx-brand); box-shadow: var(--cx-shadow-sm), 0 0 0 1px var(--cx-border); }
 .cx-seg__opt input[value="no"]:checked + span { color: var(--cx-ink-2); }
+/* A Yes answer is filled in brand blue so it stands out (client feedback, Nov 2026) */
+.cx-seg__opt input[value="yes"]:checked + span { background: var(--cx-brand); color: #fff; box-shadow: var(--cx-shadow-sm); }
 .cx-seg__opt input:focus-visible + span { box-shadow: 0 0 0 3px var(--cx-brand-ring); }
 
 /* Choice cards (payment method, refund preference) */
@@ -1639,3 +1641,7 @@ html[data-theme="dark"] .cx-body .cx-helpcard strong { color: #ffffff; }
 .cx-paydlg__note--off { color: #b45309; }
 .cx-paydlg, .cx-paydlg__main { background: #ffffff; }
 html[data-theme="dark"] .cx-paydlg, html[data-theme="dark"] .cx-paydlg__main { background: #0f172a; }
+
+/* Personal Info (client feedback, Nov 2026): earlier visa rows and the married section get room to breathe */
+.cx-visa-row { margin-top: 1.4rem; }
+#marital .cx-q--lead + [data-cx-show-when] { margin-top: 1.4rem; }

@@ -24,6 +24,7 @@ RESIDENCY = "residency"      # Personal Info → Visa & residency
 DEPENDENTS = "dependents"    # Personal Info → Dependents: {"items": [...]}
 FBAR = "fbar"                # FBAR: {"filer": {...}, "accounts": [...], "no_separate", "no_joint"}
 EFILE = "efile_auth"         # E-File Authorization (Form 8879); submitted_at = when they signed
+SPOUSE = "spouse"            # Personal Info → Marital status: {"married", "filing", "spouse": {...}} (Nov 2026)
 
 # Checklist: (question field, answer that asks for documents, what to upload, document type codes that satisfy it).
 # A document uploaded under any of the codes ticks the item off.
@@ -210,12 +211,67 @@ def _yes_no(form, name: str) -> str:
 
 
 def residency_from_form(form) -> tuple[dict, str | None]:
+    """Nationality / current visa, each with its own name when "Other", plus one row per earlier visa when more
+    than one visa was held in the year (client feedback, Nov 2026)."""
     visa_count = _clean(form, "visa_count", 1)
     if visa_count not in ("1", "2", "3"):
         return {}, "Choose how many visas you held during the year."
-    return {"nationality": _pick(form, "nationality", NATIONALITIES), "visa_count": visa_count,
-            "visa_type": _pick(form, "visa_type", VISAS), "first_entry": _date(form, "first_entry"),
-            "days_183": _yes_no(form, "days_183")}, None
+    nationality, visa_type = _pick(form, "nationality", NATIONALITIES), _pick(form, "visa_type", VISAS)
+    nationality_other = _clean(form, "nationality_other", 60) if nationality == "Other" else ""
+    if nationality == "Other" and not nationality_other:
+        return {}, "Enter your nationality."
+    visa_type_other = _clean(form, "visa_type_other", 60) if visa_type == "Other" else ""
+    if visa_type == "Other" and not visa_type_other:
+        return {}, "Enter the name of your current visa."
+    earlier = []
+    for i in range(1, int(visa_count)):
+        kind = _pick(form, f"prev{i}_type", VISAS)
+        other = _clean(form, f"prev{i}_other", 60) if kind == "Other" else ""
+        if not kind or (kind == "Other" and not other):
+            return {}, f"Enter the type of earlier visa {i}."
+        start, end = _date(form, f"prev{i}_from"), _date(form, f"prev{i}_to")
+        if start and end and end < start:
+            return {}, f"Earlier visa {i}: the end date is before the start date."
+        earlier.append({"type": kind, "other": other, "from": start, "to": end})
+    return {"nationality": nationality, "nationality_other": nationality_other, "visa_count": visa_count,
+            "visa_type": visa_type, "visa_type_other": visa_type_other, "earlier_visas": earlier,
+            "first_entry": _date(form, "first_entry"), "days_183": _yes_no(form, "days_183")}, None
+
+
+def _tax_id(form, kind_field: str, number_field: str, saved: dict | None, who: str) -> tuple[str, str, str | None]:
+    """(id type, 9-digit number, error). SSN and ITIN need the number; "applying" has none. A blank number keeps
+    the one saved before, so the full number never has to be shown again."""
+    kind = _pick(form, kind_field, DEP_ID_TYPES) or "ssn"
+    if kind == "applying":
+        return kind, "", None
+    number = _re.sub(r"\D", "", str(form.get(number_field) or ""))
+    if not number and saved and saved.get("id_type") == kind:
+        number = saved.get("id_number", "")
+    if len(number) != 9:
+        return kind, "", f"Enter {who} 9-digit {'SSN' if kind == 'ssn' else 'ITIN'}."
+    return kind, number, None
+
+
+MARITAL_FILING = ("jointly", "separately")
+
+
+def spouse_from_form(form, saved: dict | None) -> tuple[dict, str | None]:
+    """Personal Info → Marital status (moved here from Tax Notes; client feedback, Nov 2026)."""
+    married = _yes_no(form, "married")
+    if not married:
+        return {}, "Tell us whether you are married."
+    if married == "no":
+        return {"married": "no"}, None
+    first, last = _clean(form, "spouse_first", 50), _clean(form, "spouse_last", 50)
+    if not first or not last:
+        return {}, "Enter your spouse's first and last name."
+    kind, number, err = _tax_id(form, "spouse_id", "spouse_id_number", (saved or {}).get("spouse"), "your spouse's")
+    if err:
+        return {}, err
+    return {"married": "yes", "filing": _pick(form, "filing", MARITAL_FILING) or "jointly",
+            "spouse": {"first_name": first, "last_name": last, "date_of_birth": _date(form, "spouse_dob"),
+                       "id_type": kind, "id_number": number, "email": _clean(form, "spouse_email", 120),
+                       "phone": _clean(form, "spouse_phone", 25)}}, None
 
 
 def dependent_from_form(form) -> tuple[dict, str | None]:
@@ -225,8 +281,12 @@ def dependent_from_form(form) -> tuple[dict, str | None]:
     months = _clean(form, "dep_months", 2)
     if months and not (months.isdigit() and 0 <= int(months) <= 12):
         return {}, "Months lived with you must be between 0 and 12."
+    # SSN / ITIN number required for those ID types (client feedback, Nov 2026)
+    kind, number, err = _tax_id(form, "dep_id", "dep_id_number", None, "the dependent's")
+    if err:
+        return {}, err
     return {"first_name": first, "last_name": last, "relationship": _pick(form, "dep_rel", RELATIONSHIPS) or "Other",
-            "date_of_birth": _date(form, "dep_dob"), "id_type": _pick(form, "dep_id", DEP_ID_TYPES) or "ssn",
+            "date_of_birth": _date(form, "dep_dob"), "id_type": kind, "id_number": number,
             "months": months}, None
 
 

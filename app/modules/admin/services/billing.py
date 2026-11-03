@@ -130,7 +130,11 @@ def issue_invoice(db: Session, actor_id: str, inv: Invoice) -> str | None:
         return "Only a draft invoice can be issued."
     inv.status = "issued"
     _audit(db, actor_id, "invoice_issued", "invoice", inv.id, {"status": "draft"}, {"status": "issued"})
+    # Money the client paid before this invoice existed (advance payments) counts towards it.
+    client_payments.attach_advance_payments(db, inv)
     db.commit()
+    if inv.status == "paid":
+        client_payments.advance_case_if_paid(db, inv, actor_id)
     return None
 
 
@@ -167,7 +171,7 @@ def record_payment(db: Session, actor_id: str, inv: Invoice, amount: str, method
         return "The payment date can't be in the future."
     ref = " ".join((reference or "").split())[:100] or None
 
-    pay = Payment(invoice_id=inv.id, client_id=inv.client_id, amount=amt, payment_method=method,
+    pay = Payment(invoice_id=inv.id, case_id=inv.case_id, client_id=inv.client_id, amount=amt, payment_method=method,
                   transaction_reference=ref, status="succeeded", paid_at=datetime.combine(day, time(12), tzinfo=timezone.utc))
     db.add(pay)
     db.flush()

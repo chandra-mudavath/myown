@@ -76,31 +76,13 @@ async function handleQuickUpload(e) {
     button.innerHTML = label;
 }
 
-// Category first, then Document type: the type list shows only the chosen category's types.
-// Picking a type directly (e.g. from the checklist) still sets its category.
+// Document type is the only field (client feedback, Nov 2026): it always lists every type, and the hidden
+// category field takes the chosen type's category. (Before, a Category dropdown came first and narrowed the list.)
 const docCat = document.querySelector("[data-doc-cat]");
 const docType = document.querySelector("[data-doc-type]");
-function filterTypes() {
-    if (!docCat || !docType) return;
-    const cat = docCat.value;
-    docType.querySelectorAll("optgroup").forEach((group) => {
-        const show = !cat || [...group.children].some((o) => o.dataset.category === cat);
-        group.hidden = !show;
-        group.disabled = !show;
-    });
-    const picked = docType.selectedOptions[0];
-    if (picked?.value && cat && picked.dataset.category !== cat) docType.value = "";
-    docType.disabled = !cat;
-}
-docCat?.addEventListener("change", filterTypes);
 docType?.addEventListener("change", () => {
-    const category = docType.selectedOptions[0]?.dataset.category;
-    if (category && docCat && docCat.value !== category) {
-        docCat.value = category;
-        filterTypes();
-    }
+    if (docCat) docCat.value = docType.selectedOptions[0]?.dataset.category || "";
 });
-filterTypes();
 
 // Reply forms: show the chosen file's name on the attach button
 document.querySelectorAll("[data-reply-file]").forEach((input) => {

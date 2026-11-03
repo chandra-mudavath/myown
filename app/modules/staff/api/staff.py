@@ -15,12 +15,12 @@ from app.core.deps import CaseStaffAccount, StaffAccount, is_hr
 from app.modules.client.api.dashboard import _build_section_statuses
 from app.core.templates import templates
 from app.platform.models.auth import AuthAccount
-from app.platform.models.case_workflow import CaseStageHistory
+from app.platform.models.case_workflow import CaseComment, CaseStageHistory
 from app.modules.client.models.client import Client
 from app.platform.models.filing_document import DocumentComment, FilingDocument
 from app.modules.staff.models.staff import Staff, StaffRole
 from app.platform.models.tax_filing import TaxFiling
-from app.platform.services import access_log, assignments, case_actions, intake, referrals
+from app.platform.services import access_log, assignments, case_actions, intake, payments, referrals
 from app.platform.services.activity_feed import client_activity
 from app.platform.services.catalog import case_stages, document_categories, stage_labels
 from app.platform.services.document_review import (REVIEW_CATEGORY, account_names, add_comment, comment_threads, review_documents,
@@ -95,11 +95,16 @@ def _intake_context(db: Session, filing: TaxFiling | None) -> dict:
     residency = intake.section(db, filing, intake.RESIDENCY)
     dependents = intake.section(db, filing, intake.DEPENDENTS)
     fbar = intake.section(db, filing, intake.FBAR)
+    spouse = intake.section(db, filing, intake.SPOUSE)
+    spouse_id = ((spouse.data or {}).get("spouse") or {}) if spouse else {}
     return {
         "tax_notes": intake.notes_summary(notes.data or {}) if notes else None, "tax_notes_row": notes,
         "bank": bank_data, "bank_row": bank, "checklist": intake.checklist(db, filing) if filing else None,
         "residency": residency.data if residency else None, "residency_row": residency,
-        "dependents": (dependents.data or {}).get("items") if dependents else None,
+        "dependents": [{**d, "id_masked": intake.masked(d.get("id_number"))} for d in (dependents.data or {}).get("items") or []]
+                      if dependents else None,
+        # Spouse SSN / ITIN from Personal Info → Marital status, masked (client feedback, Nov 2026)
+        "spouse_id": {"type": spouse_id.get("id_type"), "masked": intake.masked(spouse_id.get("id_number"))} if spouse_id else None,
         "fbar": intake.fbar_summary(fbar.data if fbar else None), "fbar_row": fbar,
         "efile_row": intake.section(db, filing, intake.EFILE),
     }
@@ -118,15 +123,57 @@ def _client_nav(db: Session, filing: TaxFiling, section: str) -> dict:
     seen: dict[int, str] = {}
     for year, case_id in years:
         seen.setdefault(year, case_id)
+    labels = stage_labels(db)
+    next_stage = _next_stage(filing.status, _stage_keys(db))
     return {
         "client_id": filing.client_id,
         "client_number": client.client_number if client else None,
         "client_name": f"{filing.first_name} {filing.last_name}",
         "case_id": filing.id,
+        "case_number": filing.get_case_id(db),
         "tax_year": filing.tax_year,
         "years": list(seen.items()),
         "section": section,
+        # Update stage in the sidebar (client feedback, Nov 2026)
+        "stage": labels.get(filing.status, filing.status.replace("_", " ").title()),
+        "stage_key": filing.status,
+        "next_stage": next_stage,
+        "needs_assignment": filing.status == case_actions.REGISTERED_STAGE and not assignments.team(db, filing.id),
+        "comment_count": len(_case_comments(db, filing)),
     }
+
+
+def _case_comments(db: Session, filing: TaxFiling) -> list[dict]:
+    """Everything staff and admins have written on a case, newest first (client feedback, Nov 2026): notes left on
+    the Comments page, comments typed when moving the stage, and their comments on documents. Clients' own
+    replies are left out."""
+    labels = stage_labels(db)
+    rows: list[dict] = []
+    for c in db.query(CaseComment).filter(CaseComment.case_id == filing.id).all():
+        rows.append({"when": c.created_at, "author_id": c.author_account_id, "author": c.author_name,
+                     "kind": "Note", "tone": "blue", "body": c.body, "about": None})
+    moves = (db.query(CaseStageHistory).filter(CaseStageHistory.case_id == filing.id, CaseStageHistory.comment.isnot(None),
+                                               CaseStageHistory.comment != "").all())
+    for h in moves:
+        about = f"{labels.get(h.from_stage_code, h.from_stage_code or 'Start')} → {labels.get(h.to_stage_code, h.to_stage_code)}"
+        rows.append({"when": h.created_at, "author_id": h.changed_by_account_id, "author": None,
+                     "kind": "Stage moved", "tone": "amber", "body": h.comment, "about": about})
+    doc_names = dict(db.query(FilingDocument.document_group_id, FilingDocument.document_name)
+                     .filter(FilingDocument.filing_id == filing.id, FilingDocument.is_latest.is_(True)).all())
+    for c in (db.query(DocumentComment).filter(DocumentComment.filing_id == filing.id,
+                                               DocumentComment.author_type.in_(("staff", "admin"))).all()):
+        kind = "Document rejected" if c.kind == "rejection" else "Document comment"
+        rows.append({"when": c.created_at, "author_id": c.author_account_id, "author": c.author_name,
+                     "kind": kind, "tone": "coral" if c.kind == "rejection" else "green", "body": c.body,
+                     "about": doc_names.get(c.document_group_id) or "Document", "doc_group": c.document_group_id})
+    names = account_names(db, {r["author_id"] for r in rows if r["author_id"]})
+    for r in rows:
+        person = names.get(r["author_id"] or "", {})
+        r["author"] = r["author"] or person.get("name") or "Staff"
+        r["role"] = person.get("role", "staff")
+        r["when"] = _aware(r["when"])
+    rows.sort(key=lambda r: r["when"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    return rows
 
 
 PER_PAGE_OPTIONS = (10, 25, 50, 100)
@@ -643,6 +690,8 @@ def staff_case_detail(case_id: str, request: Request, account: CaseStaffAccount,
             "staff": staff,
             "case": case,
             "client_nav": _client_nav(db, filing, "case") if filing else None,
+            # Tax Summary / Make Payment in the client view (client feedback, Nov 2026)
+            "billing": payments.client_billing(db, filing.client_id, filing) if filing else None,
             # Saved by the client on Tax Notes / Bank Details (client feedback, Oct 2026)
             **_intake_context(db, filing),
             "app_name": settings.APP_NAME,
@@ -874,6 +923,38 @@ def staff_comment_document(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
     case_actions.comment_on_document(db, d, body, author_type="staff", actor_account_id=account.id)
     return RedirectResponse(f"/staff/cases/{filing_id}/documents?doc={doc_id}", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/cases/{case_id}/comments", response_class=HTMLResponse, name="staff_case_comments")
+def staff_case_comments(case_id: str, request: Request, account: CaseStaffAccount, db: Session = Depends(get_db),
+                        saved: str = "", error: str = ""):
+    """All staff comments on one case in one place, so everyone has the same context (client feedback, Nov 2026)."""
+    staff = db.query(Staff).filter(Staff.account_id == account.id).first()
+    filing = _find_filing(db, case_id)
+    if not filing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
+    return templates.TemplateResponse(request, "staff/cases/comments.html", {
+        "request": request, "account": account, "staff": staff, "app_name": settings.APP_NAME,
+        "filing": filing, "case_number": filing.get_case_id(db), "comments": _case_comments(db, filing),
+        "client_nav": _client_nav(db, filing, "comments"), "saved": saved, "error": error,
+        **_nav_context(db, staff),
+    })
+
+
+@router.post("/cases/{case_id}/comments", name="staff_add_case_comment")
+def staff_add_case_comment(case_id: str, account: CaseStaffAccount, body: str = Form(""), db: Session = Depends(get_db)):
+    """A note for the rest of the team on this case. Clients never see it."""
+    filing = _find_filing(db, case_id)
+    if not filing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
+    text = (body or "").strip()[:2000]
+    if not text:
+        return RedirectResponse(f"/staff/cases/{filing.id}/comments?{urlencode({'error': 'Write a comment first.'})}",
+                                status_code=status.HTTP_303_SEE_OTHER)
+    names = account_names(db, {account.id}).get(account.id, {})
+    db.add(CaseComment(case_id=filing.id, author_account_id=account.id, author_name=(names.get("name") or "Staff")[:80], body=text))
+    db.commit()
+    return RedirectResponse(f"/staff/cases/{filing.id}/comments?saved=1", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/cases/{filing_id}/stage", name="staff_move_stage")

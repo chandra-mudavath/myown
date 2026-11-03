@@ -41,7 +41,7 @@
     };
     amount.addEventListener("input", sync);
     invoice?.addEventListener("change", () => { amount.max = invoice.selectedOptions[0].dataset.balance; });
-    if (invoice) amount.max = invoice.selectedOptions[0].dataset.balance;
+    if (invoice?.selectedOptions[0]) amount.max = invoice.selectedOptions[0].dataset.balance;
     document.querySelector("[data-pay-open]")?.addEventListener("click", () => { dialog.showModal(); amount.focus(); });
     dialog.querySelector("[data-pay-close]").addEventListener("click", () => dialog.close());
     dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });

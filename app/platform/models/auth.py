@@ -170,3 +170,20 @@ class AuthLoginOtp(Base):
     last_sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class EmailChangeRequest(Base):
+    """A client asks to sign in with a new email; an admin approves or rejects it (client feedback, Nov 2026).
+    On approval the account's email (the username) changes; the password stays the same."""
+    __tablename__ = "email_change_requests"
+    __table_args__ = (Index("ix_email_change_requests_status_created", "status", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    account_id: Mapped[str] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="CASCADE"), index=True, nullable=False)
+    old_email: Mapped[str] = mapped_column(String(254), nullable=False)
+    new_email: Mapped[str] = mapped_column(String(254), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)  # pending / approved / rejected / cancelled
+    reason: Mapped[str | None] = mapped_column(String(500), nullable=True)  # why it was rejected (shown to the client)
+    decided_by_account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="SET NULL"), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)

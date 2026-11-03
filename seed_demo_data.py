@@ -425,7 +425,7 @@ def _invoice(db, filing: TaxFiling, client: Client, kind: str, services: dict[st
 
 
 def _pay(db, inv: Invoice, actor: str, paid_on: date, method: str, ref: str) -> None:
-    pay = Payment(invoice_id=inv.id, client_id=inv.client_id, amount=inv.total_amount, payment_method=method,
+    pay = Payment(invoice_id=inv.id, case_id=inv.case_id, client_id=inv.client_id, amount=inv.total_amount, payment_method=method,
                   transaction_reference=ref, status="succeeded",
                   paid_at=datetime.combine(paid_on, time(12), tzinfo=timezone.utc),
                   created_at=datetime.combine(paid_on, time(12, 5), tzinfo=timezone.utc))

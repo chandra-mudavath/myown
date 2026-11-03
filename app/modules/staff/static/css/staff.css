@@ -1007,3 +1007,47 @@ html[data-theme="dark"] .ref-today { color: #fbbf24; }
 .case-needs { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .case-needs li { display: flex; align-items: center; gap: 10px; font-size: .9rem; color: var(--ink); }
 .case-needs-panel { margin-bottom: 20px; }
+
+/* ── Round 3 (client feedback, Nov 2026) ─────────────────────────────────── */
+/* Client view in the sidebar: Update stage + Comments, then the client's own tab groups */
+.staff-clientnav { min-width: 0; }
+.staff-clientnav__actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; margin-bottom: 6px; }
+.staff-clientnav__actions > .staff-tip { display: block; min-width: 0; }
+.staff-clientnav__btn { width: 100%; min-width: 0; justify-content: center; gap: 5px; padding: 8px 6px; font-size: .78rem; white-space: nowrap; }
+.staff-clientnav__btn .ci { flex: none; }
+.staff-clientnav__btn .staff-count-chip { margin-left: 2px; }
+.staff-clientnav__btn.is-active { border-color: var(--brand); color: var(--brand); }
+.staff-btn[aria-disabled="true"] { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.staff-clientnav__group { margin: 10px 0 2px; }
+
+/* Hover / focus tooltip, e.g. why Update stage is off (works on aria-disabled buttons, unlike title) */
+.staff-tip { position: relative; display: inline-block; }
+.staff-tip::after {
+    content: attr(data-tip); position: absolute; z-index: 30; left: 0; top: calc(100% + 8px);
+    width: max-content; max-width: 240px; padding: 7px 10px; border-radius: 8px;
+    background: #0f172a; color: #fff; font-size: .78rem; font-weight: 600; line-height: 1.35; white-space: normal;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, .25); opacity: 0; transform: translateY(-4px); pointer-events: none;
+    transition: opacity .12s, transform .12s;
+}
+.staff-tip--left::after { left: auto; right: 0; }
+.staff-tip:hover::after, .staff-tip:focus-visible::after, .staff-tip:focus-within::after { opacity: 1; transform: none; }
+
+/* Case header: name, email, phone */
+.case-file__contact { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 4px 0 10px; padding: 0; list-style: none; font-size: .9rem; }
+.case-file__contact li { display: inline-flex; align-items: center; gap: 6px; }
+.case-file__contact a { color: inherit; text-decoration: none; }
+.case-file__contact a:hover { color: var(--brand); text-decoration: underline; }
+.case-subhead { margin: 16px 0 8px; font-size: .9rem; }
+
+/* Comments page */
+.case-comments { padding: 18px 20px; margin-bottom: 18px; }
+.case-comments__form { display: grid; gap: 8px; }
+.case-comments__foot { display: flex; justify-content: flex-end; }
+.case-comments__saved { display: flex; align-items: center; gap: 6px; margin: 0; color: #15803d; font-weight: 600; font-size: .86rem; }
+.case-comments__list { list-style: none; margin: 0; padding: 0 20px 12px; }
+.case-comments__item { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.case-comments__item:last-child { border-bottom: 0; }
+.case-comments__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: .84rem; }
+.case-comments__meta time { margin-left: auto; }
+.case-comments__about { color: var(--ink); font-weight: 600; }
+.case-comments__body { margin: 6px 0 4px; white-space: pre-line; line-height: 1.5; }

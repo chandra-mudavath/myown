@@ -1,5 +1,5 @@
 {% extends "client/_layout.html" %}
-{% from "client/_icons.html" import ci %}
+{% from "client/_icons.html" import ci, yes_no %}
 {% set active_nav = "personal_info" %}
 {% set page_section = "Personal Info" %}
 {% set page_title = "Taxpayer Details" %}
@@ -39,6 +39,7 @@
             <button class="cx-tab" role="tab" aria-controls="address">{{ ci("dashboard") }} Mailing address</button>
             <button class="cx-tab" role="tab" aria-controls="contact">{{ ci("phone") }} Contact</button>
             <button class="cx-tab" role="tab" aria-controls="return-type">{{ ci("globe") }} Type of return</button>
+            <button class="cx-tab" role="tab" aria-controls="marital">{{ ci("user") }} Marital status</button>
             <button class="cx-tab" role="tab" aria-controls="dependents">{{ ci("users") }} Dependents</button>
         </div>
 
@@ -156,7 +157,7 @@
             <div class="cx-card__body" style="border-top: 1px solid var(--cx-border);">
                 <form id="email-form">
                     <h3 class="cx-legend">Request an email change</h3>
-                    <p class="cx-muted" style="margin: 0 0 0.75rem; font-size: 0.86rem;">Your current login email stays active until the new address is verified.</p>
+                    <p class="cx-muted" style="margin: 0 0 0.75rem; font-size: 0.86rem;">An admin approves the change. Until then you sign in with your current email; your password stays the same.</p>
                     <label class="sr-only" for="new-email">New email address</label>
                     <div class="cx-inputgroup">
                         <input class="cx-input" id="new-email" name="email" type="email" required placeholder="you@example.com" />
@@ -187,6 +188,12 @@
                                 {% for n in nationalities %}<option{% if residency.get("nationality") == n %} selected{% endif %}>{{ n }}</option>{% endfor %}
                             </select>
                         </div>
+                        {#- "Other" opens a box for the actual nationality (client feedback, Nov 2026) -#}
+                        <div class="cx-field" data-cx-show-when="nationality=Other" hidden>
+                            <label class="cx-label" for="rt-nat-other">Your nationality<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="rt-nat-other" name="nationality_other" maxlength="60" required
+                                   value="{{ residency.get('nationality_other', '') }}" placeholder="e.g. Canadian" />
+                        </div>
                         <div class="cx-field">
                             <label class="cx-label" for="rt-count">Number of visas held in {{ selected_year }}<span class="cx-req">*</span></label>
                             <select class="cx-select" id="rt-count" name="visa_count" required>
@@ -201,6 +208,11 @@
                                 {% for v in visas %}<option{% if residency.get("visa_type") == v %} selected{% endif %}>{{ v }}</option>{% endfor %}
                             </select>
                         </div>
+                        <div class="cx-field" data-cx-show-when="visa_type=Other" hidden>
+                            <label class="cx-label" for="rt-visa-other">Current visa name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="rt-visa-other" name="visa_type_other" maxlength="60" required
+                                   value="{{ residency.get('visa_type_other', '') }}" placeholder="e.g. O-1, TN, E-2" />
+                        </div>
                         <div class="cx-field">
                             <label class="cx-label" for="rt-entry">Date of first entry into the US</label>
                             <input class="cx-input" id="rt-entry" name="first_entry" type="date" value="{{ residency.get('first_entry', '') }}" />
@@ -208,12 +220,112 @@
                         </div>
                     </div>
 
+                    {#- More than one visa in the year: one row per earlier visa (client feedback, Nov 2026) -#}
+                    {% set earlier = residency.get("earlier_visas") or [] %}
+                    {% for i in (1, 2) %}
+                    {% set ev = earlier[i - 1] if earlier | length >= i else {} %}
+                    <div class="cx-visa-row" data-cx-show-when="visa_count={{ '2|3' if i == 1 else '3' }}" hidden>
+                        <h3 class="cx-legend">Earlier visa {{ i }} in {{ selected_year }}</h3>
+                        <div class="cx-form-grid">
+                            <div class="cx-field">
+                                <label class="cx-label" for="pv{{ i }}-type">Visa type<span class="cx-req">*</span></label>
+                                <select class="cx-select" id="pv{{ i }}-type" name="prev{{ i }}_type" required>
+                                    <option value="">Select</option>
+                                    {% for v in visas %}<option{% if ev.get("type") == v %} selected{% endif %}>{{ v }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="cx-field" data-cx-show-when="prev{{ i }}_type=Other" hidden>
+                                <label class="cx-label" for="pv{{ i }}-other">Visa name<span class="cx-req">*</span></label>
+                                <input class="cx-input" id="pv{{ i }}-other" name="prev{{ i }}_other" maxlength="60" required value="{{ ev.get('other', '') }}" placeholder="e.g. O-1" />
+                            </div>
+                            <div class="cx-field">
+                                <label class="cx-label" for="pv{{ i }}-from">From</label>
+                                <input class="cx-input" id="pv{{ i }}-from" name="prev{{ i }}_from" type="date" value="{{ ev.get('from', '') }}" />
+                            </div>
+                            <div class="cx-field">
+                                <label class="cx-label" for="pv{{ i }}-to">To</label>
+                                <input class="cx-input" id="pv{{ i }}-to" name="prev{{ i }}_to" type="date" value="{{ ev.get('to', '') }}" />
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
                     <h3 class="cx-legend">Residential status</h3>
                     <div class="cx-q cx-q--lead" style="counter-increment: none;">
                         <span class="cx-q__text">Did you stay in the US for at least 183 days in {{ selected_year }}?<small>Counts days present under the substantial presence test.</small></span>
                         <div class="cx-seg" role="radiogroup">
                             <label class="cx-seg__opt"><input type="radio" name="days_183" value="yes" {% if residency.get("days_183") == "yes" %}checked{% endif %} /><span>Yes</span></label>
                             <label class="cx-seg__opt"><input type="radio" name="days_183" value="no" {% if residency.get("days_183") == "no" %}checked{% endif %} /><span>No</span></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="cx-card__foot">
+                    <button class="cx-btn cx-btn--primary" type="submit">Save &amp; continue {{ ci("arrow-right", "ci ci--sm") }}</button>
+                </div>
+            </form>
+        </section>
+
+        {# ── Marital status: moved here from Tax Notes → Income sheet (client feedback, Nov 2026) ── #}
+        {% set sp = marital.get("spouse") or {} %}
+        <section class="cx-panel cx-card" role="tabpanel" id="marital" aria-labelledby="mar-title" hidden>
+            <form method="post" action="/client/profile/marital">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="mar-title">{{ ci("user") }} Marital <span class="cx-accent">status</span></h2>
+                        <p class="cx-card__sub">Saved for tax year {{ selected_year }}. Your spouse's details go on a joint return.</p>
+                    </div>
+                </div>
+                <div class="cx-card__body">
+                    {% if form_for == "marital" and form_error %}<div class="cx-alert cx-alert--error" role="alert" style="margin-bottom:1rem;">{{ ci("alert") }}<p>{{ form_error }}</p></div>{% endif %}
+                    {% if form_for == "marital" and form_saved %}<div class="cx-alert cx-alert--success" role="status" style="margin-bottom:1rem;">{{ ci("check-circle") }}<p>{{ form_saved }} Your tax team can see it now.</p></div>{% endif %}
+                    <div class="cx-q cx-q--lead" style="counter-increment: none;">
+                        <span class="cx-q__text"><strong>Are you married?</strong><small>As of December 31, {{ selected_year }}.</small></span>
+                        {{ yes_no("married", marital.get("married")) }}
+                    </div>
+
+                    <div data-cx-show-when="married=yes" hidden>
+                        <h3 class="cx-legend">Filing</h3>
+                        <div class="cx-radios">
+                            <label class="cx-radio"><input type="radio" name="filing" value="jointly" {% if marital.get("filing", "jointly") != "separately" %}checked{% endif %} /> Married filing jointly</label>
+                            <label class="cx-radio"><input type="radio" name="filing" value="separately" {% if marital.get("filing") == "separately" %}checked{% endif %} /> Married filing separately</label>
+                        </div>
+
+                        <h3 class="cx-legend">Spouse details</h3>
+                        <div class="cx-form-grid cx-form-grid--3">
+                            <div class="cx-field">
+                                <label class="cx-label" for="sp-first">First name<span class="cx-req">*</span></label>
+                                <input class="cx-input" id="sp-first" name="spouse_first" maxlength="50" required value="{{ sp.get('first_name', '') }}" />
+                            </div>
+                            <div class="cx-field">
+                                <label class="cx-label" for="sp-last">Last name<span class="cx-req">*</span></label>
+                                <input class="cx-input" id="sp-last" name="spouse_last" maxlength="50" required value="{{ sp.get('last_name', '') }}" />
+                            </div>
+                            <div class="cx-field">
+                                <label class="cx-label" for="sp-dob">Date of birth</label>
+                                <input class="cx-input" id="sp-dob" name="spouse_dob" type="date" value="{{ sp.get('date_of_birth', '') }}" />
+                            </div>
+                            <div class="cx-field">
+                                <label class="cx-label">ID type</label>
+                                <div class="cx-radios">
+                                    {% for v, l in (("ssn", "SSN"), ("itin", "ITIN"), ("applying", "Applying")) %}
+                                    <label class="cx-radio"><input type="radio" name="spouse_id" value="{{ v }}" {% if sp.get("id_type", "ssn") == v %}checked{% endif %} /> {{ l }}</label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="cx-field" data-cx-show-when="spouse_id=ssn|itin">
+                                <label class="cx-label" for="sp-idnum">SSN / ITIN<span class="cx-req">*</span></label>
+                                <input class="cx-input cx-mono" id="sp-idnum" name="spouse_id_number" inputmode="numeric" maxlength="11"
+                                       pattern="\d{3}-?\d{2}-?\d{4}" {% if not sp.get("id_masked") %}required{% endif %}
+                                       placeholder="{{ 'Saved: ' ~ sp.id_masked ~ ' (leave blank to keep)' if sp.get('id_masked') else '123-45-6789' }}" />
+                            </div>
+                            <div class="cx-field">
+                                <label class="cx-label" for="sp-email">Email<span class="cx-opt">Optional</span></label>
+                                <input class="cx-input" id="sp-email" name="spouse_email" type="email" maxlength="120" value="{{ sp.get('email', '') }}" />
+                            </div>
+                            <div class="cx-field">
+                                <label class="cx-label" for="sp-phone">Phone<span class="cx-opt">Optional</span></label>
+                                <input class="cx-input" id="sp-phone" name="spouse_phone" type="tel" maxlength="25" value="{{ sp.get('phone', '') }}" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -235,7 +347,7 @@
             <div class="cx-card__body">
                 <ul class="cx-checklist">
                     {% for d in dependents %}
-                    <li>{{ ci("user") }}<div><strong>{{ d.first_name }} {{ d.last_name }}</strong><span>{{ d.relationship }}{% if d.date_of_birth %} · born {{ d.date_of_birth }}{% endif %}{% if d.months %} · {{ d.months }} months with you{% endif %}</span></div>
+                    <li>{{ ci("user") }}<div><strong>{{ d.first_name }} {{ d.last_name }}</strong><span>{{ d.relationship }}{% if d.date_of_birth %} · born {{ d.date_of_birth }}{% endif %} · {{ 'Applying for an ID' if d.id_type == 'applying' else (d.id_type or 'ssn') | upper ~ (' ' ~ d.id_masked if d.id_masked else '') }}{% if d.months %} · {{ d.months }} months with you{% endif %}</span></div>
                         <form method="post" action="/client/profile/dependents" style="margin-left:auto;">
                             <input type="hidden" name="action" value="remove" /><input type="hidden" name="index" value="{{ loop.index0 }}" />
                             <button class="cx-btn cx-btn--ghost cx-btn--sm" type="submit">Remove</button>
@@ -275,6 +387,12 @@
                                 <label class="cx-radio"><input type="radio" name="dep_id" value="itin" /> ITIN</label>
                                 <label class="cx-radio"><input type="radio" name="dep_id" value="applying" /> Applying</label>
                             </div>
+                        </div>
+                        {#- The number itself is required for SSN / ITIN (client feedback, Nov 2026) -#}
+                        <div class="cx-field" data-cx-show-when="dep_id=ssn|itin">
+                            <label class="cx-label" for="dp-idnum">SSN / ITIN<span class="cx-req">*</span></label>
+                            <input class="cx-input cx-mono" id="dp-idnum" name="dep_id_number" inputmode="numeric" maxlength="11" required
+                                   pattern="\d{3}-?\d{2}-?\d{4}" placeholder="123-45-6789" />
                         </div>
                         <div class="cx-field">
                             <label class="cx-label" for="dp-months">Months lived with you</label>

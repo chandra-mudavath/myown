@@ -1,5 +1,5 @@
 {% extends "auth/_layout.html" %}
-{% from "auth/_icons.html" import icon %}
+{% from "auth/_icons.html" import icon, password_toggle %}
 {% set signup_role = signup_role|default("client") %}
 {% block title %}Create {{ signup_role|title }} Account - {{ app_name }}{% endblock %}
 {% block head %}
@@ -75,18 +75,24 @@
     <div class="au-input">
         <label class="au-sr" for="password">Password</label>
         {{ icon("lock") }}
-        <input name="password" id="password" type="password" placeholder="Password *" class="form-input"
+        <div class="password-input-wrap">
+            <input name="password" id="password" type="password" placeholder="Password *" class="form-input"
             autocomplete="new-password" required minlength="8"
             pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[\W_]).{8,}"
             title="Must contain at least one number, one uppercase and lowercase letter, and one special character, and at least 8 or more characters" />
+            {{ password_toggle("password") }}
+        </div>
     </div>
 
     <div class="au-input">
         <label class="au-sr" for="password_confirmation">Confirm password</label>
         {{ icon("lock") }}
-        <input name="password_confirmation" id="password_confirmation" type="password"
+        <div class="password-input-wrap">
+            <input name="password_confirmation" id="password_confirmation" type="password"
             placeholder="Confirm password *" class="form-input" autocomplete="new-password" required
             minlength="8" />
+            {{ password_toggle("password_confirmation") }}
+        </div>
     </div>
 
     <label class="au-check">

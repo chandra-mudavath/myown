@@ -54,10 +54,11 @@ def _is_hr_local(local_part: str) -> bool:
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-# Wrong passwords: 5 from one IP address for one email blocks only that IP for that email, so someone
-# guessing can't lock the real person out from their own network. The whole account locks only after
-# ACCOUNT_LOCK_ATTEMPTS wrong passwords from anywhere (a guess spread over many IPs). Both end after
-# LOCKOUT_MINUTES, on a password reset, or when an admin presses Unlock.
+# Wrong passwords: after 5 from one IP address for one email, that email can only sign in again from there
+# after a password reset (client feedback, Nov 2026: ask for a reset instead of a 15-minute wait). It only
+# affects that IP, so someone guessing can't lock the real person out from their own network. The whole
+# account locks after ACCOUNT_LOCK_ATTEMPTS wrong passwords from anywhere (a guess spread over many IPs),
+# until LOCKOUT_MINUTES pass. Both are cleared by a password reset, a successful sign-in, or an admin's Unlock.
 MAX_FAILED_ATTEMPTS = 5
 ACCOUNT_LOCK_ATTEMPTS = 25
 LOCKOUT_MINUTES = 15
@@ -283,13 +284,19 @@ def authenticate(
         db.add(attempt)
         db.commit()
 
+    def _wrong(reason: str) -> tuple[None, str]:
+        """Record a wrong guess; the fifth one from this IP asks for a reset straight away."""
+        _record_attempt(False, reason)
+        if ip_address and _guesses_from_ip(db, normalized, ip_address) >= MAX_FAILED_ATTEMPTS:
+            return None, "reset_required"
+        return None, "invalid_credentials"
+
     if ip_address and _guesses_from_ip(db, normalized, ip_address) >= MAX_FAILED_ATTEMPTS:
         _record_attempt(False, "ip_blocked_for_email")
-        return None, "account_locked"
+        return None, "reset_required"  # was "account_locked" (a 15-minute wait)
 
     if not account:
-        _record_attempt(False, "account_not_found")
-        return None, "invalid_credentials"
+        return _wrong("account_not_found")
 
     if not account.is_active:
         _record_attempt(False, "account_inactive")
@@ -306,9 +313,8 @@ def authenticate(
         account.failed_login_count += 1
         if account.failed_login_count >= ACCOUNT_LOCK_ATTEMPTS:
             account.locked_until = now + timedelta(minutes=LOCKOUT_MINUTES)
-        _record_attempt(False, "invalid_password")
         db.commit()
-        return None, "invalid_credentials"
+        return _wrong("invalid_password")
 
     # Success
     clear_failed_attempts(db, account)
@@ -318,10 +324,11 @@ def authenticate(
 
 
 def _guesses_from_ip(db: Session, email: str, ip_address: str) -> int:
-    since = datetime.now(timezone.utc) - timedelta(minutes=LOCKOUT_MINUTES)
+    """Wrong guesses for this email from this IP since the last reset or successful sign-in (those mark them "_cleared").
+    No time window any more: waiting doesn't unlock it, a reset does (client feedback, Nov 2026)."""
     return db.query(AuthLoginAttempt).filter(
         AuthLoginAttempt.email == email, AuthLoginAttempt.ip_address == ip_address,
-        AuthLoginAttempt.failure_reason.in_(_GUESS_REASONS), AuthLoginAttempt.created_at >= since,
+        AuthLoginAttempt.failure_reason.in_(_GUESS_REASONS),
     ).count()
 
 

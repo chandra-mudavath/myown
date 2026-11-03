@@ -47,6 +47,7 @@ CURRENCIES = ("USD", "INR", "CAD", "GBP", "EUR", "AUD", "AED", "SGD")
 PROOF_TYPES = {".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 CLIENT_STATUS_LABELS = {"pending": "Awaiting verification", "succeeded": "Paid", "failed": "Not accepted", "refunded": "Refunded"}
 PAID_STAGE_FROM, PAID_STAGE_TO = "payment_pending", "client_review"
+MAX_ADVANCE = Decimal("100000")
 
 
 def _money(value) -> Decimal:
@@ -65,6 +66,19 @@ def _pay_amount(raw: str | None, due: Decimal) -> Decimal | str:
         return "Enter the amount to pay."
     if amount > due:
         return f"That's more than the balance due (${due:,.2f})."
+    return amount
+
+
+def _advance_amount(raw: str | None) -> Decimal | str:
+    """An advance payment (no invoice yet): the client types any amount (client feedback, Nov 2026)."""
+    try:
+        amount = Decimal(str(raw or "").replace(",", "").strip()).quantize(CENT)
+    except InvalidOperation:
+        return "Enter the amount to pay, e.g. 149.99."
+    if amount <= 0:
+        return "Enter the amount to pay."
+    if amount > MAX_ADVANCE:
+        return f"For more than ${MAX_ADVANCE:,.0f}, please contact your tax team."
     return amount
 
 
@@ -122,12 +136,13 @@ def client_billing(db: Session, client_id: str, filing: TaxFiling | None) -> dic
     invoices = (db.query(Invoice).filter(Invoice.case_id == filing.id, Invoice.client_id == client_id, Invoice.status.in_(OPEN))
                 .order_by(Invoice.invoice_date, Invoice.created_at).all())
     open_invoices = [{"invoice": i, "balance": balance(db, i)} for i in invoices]
-    payments = (db.query(Payment, Invoice).join(Invoice, Invoice.id == Payment.invoice_id)
-                .filter(Invoice.case_id == filing.id, Payment.client_id == client_id)
+    payments = (db.query(Payment, Invoice).outerjoin(Invoice, Invoice.id == Payment.invoice_id)
+                .filter(Payment.client_id == client_id, or_(Payment.case_id == filing.id, Invoice.case_id == filing.id))
                 .order_by(Payment.created_at.desc()).all())
     # PayPal checkouts that never got as far as a capture aren't payments; leave them out of the history.
     payments = [(p, i) for p, i in payments if not (p.gateway == "paypal" and not p.transaction_reference)]
-    pending_invoice_ids = {p.invoice_id for p, _ in payments if p.status == "pending"}
+    pending_invoice_ids = {p.invoice_id for p, _ in payments if p.status == "pending" and p.invoice_id}
+    advance_pending = any(p.status == "pending" and not p.invoice_id and p.gateway == "manual" for p, _ in payments)
     for row in open_invoices:
         row["pending"] = row["invoice"].id in pending_invoice_ids
     return {
@@ -139,10 +154,11 @@ def client_billing(db: Session, client_id: str, filing: TaxFiling | None) -> dic
                       "method_label": CLIENT_METHODS.get(p.payment_method, (p.payment_method.replace("_", " ").title(),))[0]}
                      for p, i in payments],
         "has_pending": bool(pending_invoice_ids),
+        "advance_pending": advance_pending,
     }
 
 
-def _save_proof(file: UploadFile, inv: Invoice) -> tuple[str, str, str] | str:
+def _save_proof(file: UploadFile, client_id: str, label: str) -> tuple[str, str, str] | str:
     """Store the proof privately. Returns (path, original name, mime) or an error message."""
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in PROOF_TYPES:
@@ -152,32 +168,38 @@ def _save_proof(file: UploadFile, inv: Invoice) -> tuple[str, str, str] | str:
         return f"The proof file is larger than {settings.MAX_UPLOAD_SIZE_MB} MB."
     if not data:
         return "The proof file is empty."
-    folder = Path(settings.PAYMENT_PROOFS_DIR) / inv.client_id
+    folder = Path(settings.PAYMENT_PROOFS_DIR) / client_id
     folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"{inv.invoice_number}_{generate_uuid()[:8]}{ext}"
+    path = folder / f"{label}_{generate_uuid()[:8]}{ext}"
     path.write_bytes(encrypt_bytes(data))  # encrypted at rest, like documents
     return str(path), sanitize_filename(file.filename or f"proof{ext}")[:255], PROOF_TYPES[ext]
 
 
 def submit_manual(db: Session, account_id: str, client_id: str, invoice_id: str, method: str, reference: str,
-                  sent_amount: str, sent_currency: str, proof: UploadFile | None, pay_amount: str = "") -> str | None:
-    """A client says they paid an invoice by UPI or bank transfer. Returns an error message, or None."""
+                  sent_amount: str, sent_currency: str, proof: UploadFile | None, pay_amount: str = "",
+                  filing: TaxFiling | None = None) -> str | None:
+    """A client says they paid by UPI or bank transfer. With no invoice it is an advance payment on `filing`
+    (client feedback, Nov 2026: pay at any stage). Returns an error message, or None."""
     inv = db.get(Invoice, invoice_id) if invoice_id else None
-    if not inv or inv.client_id != client_id or inv.status not in OPEN:
+    if invoice_id and (not inv or inv.client_id != client_id or inv.status not in OPEN):
         return "That invoice can't be paid right now. Refresh the page and try again."
+    if not inv and (not filing or filing.client_id != client_id):
+        return "Choose the tax year you are paying for, then try again."
     if method not in MANUAL_METHODS:
         return "Choose how you paid."
     ref = " ".join((reference or "").split())[:100]
     if len(ref) < 4:
         return "Enter the transaction / reference number from your payment."
-    if db.query(Payment).filter(Payment.invoice_id == inv.id, Payment.status == "pending", Payment.gateway == "manual").first():
-        return "You've already sent details for this invoice. We'll confirm it once it's verified."
+    # Was: one pending manual payment per invoice at a time (client feedback, Nov 2026: no conditions).
     if db.query(Payment).filter(Payment.transaction_reference == ref, Payment.status.in_(("pending", "succeeded"))).first():
         return "That reference number has already been submitted."
-    due = balance(db, inv)
-    if due <= 0:
-        return "Nothing is due on this invoice."
-    amount = _pay_amount(pay_amount, due)
+    if inv:
+        due = balance(db, inv)
+        if due <= 0:
+            return "Nothing is due on this invoice."
+        amount = _pay_amount(pay_amount, due)
+    else:
+        amount = _advance_amount(pay_amount)
     if isinstance(amount, str):
         return amount
 
@@ -193,21 +215,22 @@ def submit_manual(db: Session, account_id: str, client_id: str, invoice_id: str,
 
     proof_path = proof_name = proof_mime = None
     if proof is not None and proof.filename:
-        saved = _save_proof(proof, inv)
+        saved = _save_proof(proof, client_id, inv.invoice_number if inv else filing.get_case_id(db))
         if isinstance(saved, str):
             return saved
         proof_path, proof_name, proof_mime = saved
 
     # The payment counts the chosen amount in the invoice currency; what was actually sent is kept alongside.
-    pay = Payment(invoice_id=inv.id, client_id=client_id, amount=amount, payment_method=method, transaction_reference=ref,
+    pay = Payment(invoice_id=inv.id if inv else None, case_id=inv.case_id if inv else filing.id, client_id=client_id,
+                  amount=amount, payment_method=method, transaction_reference=ref,
                   status="pending", gateway="manual", submitted_by_account_id=account_id,
                   original_amount=sent, original_currency=currency,
                   proof_path=proof_path, proof_filename=proof_name, proof_mime=proof_mime)
     db.add(pay)
     db.flush()
     _audit(db, account_id, "payment_submitted", pay.id, None,
-           {"payment_number": pay.payment_number, "invoice": inv.invoice_number, "amount": str(amount), "method": method,
-            "sent": f"{sent} {currency}", "reference": ref})
+           {"payment_number": pay.payment_number, "invoice": inv.invoice_number if inv else "advance payment",
+            "amount": str(amount), "method": method, "sent": f"{sent} {currency}", "reference": ref})
     db.commit()
     return None
 
@@ -220,42 +243,52 @@ def _locked_invoice(db: Session, invoice_id: str) -> Invoice | None:
 
 
 def start_paypal(db: Session, account_id: str, client_id: str, invoice_id: str, return_url: str,
-                 cancel_url: str, pay_amount: str = "") -> tuple[str | None, str | None]:
-    """Create a PayPal order for an invoice's balance (or the part the client chose). Returns (URL to send the client to, error)."""
+                 cancel_url: str, pay_amount: str = "", filing: TaxFiling | None = None) -> tuple[str | None, str | None]:
+    """Create a PayPal order for an invoice's balance (or the part the client chose), or, with no invoice, an
+    advance payment on `filing`. Returns (URL to send the client to, error)."""
     if not paypal.enabled():
         return None, "PayPal isn't available right now. Please use another payment method."
     inv = db.get(Invoice, invoice_id) if invoice_id else None
-    if not inv or inv.client_id != client_id or inv.status not in OPEN:
+    if invoice_id and (not inv or inv.client_id != client_id or inv.status not in OPEN):
         return None, "That invoice can't be paid right now. Refresh the page and try again."
-    due = balance(db, inv)
-    if due <= 0:
-        return None, "Nothing is due on this invoice."
-    amount = _pay_amount(pay_amount, due)
+    if not inv and (not filing or filing.client_id != client_id):
+        return None, "Choose the tax year you are paying for, then try again."
+    if inv:
+        due = balance(db, inv)
+        if due <= 0:
+            return None, "Nothing is due on this invoice."
+        amount = _pay_amount(pay_amount, due)
+    else:
+        amount = _advance_amount(pay_amount)
     if isinstance(amount, str):
         return None, amount
     # An earlier checkout the client walked away from is replaced (it can still finish if they approved it).
-    for old in db.query(Payment).filter(Payment.invoice_id == inv.id, Payment.gateway == "paypal",
+    same = (Payment.invoice_id == inv.id) if inv else ((Payment.case_id == filing.id) & Payment.invoice_id.is_(None))
+    for old in db.query(Payment).filter(same, Payment.gateway == "paypal",
                                         Payment.status == "pending", Payment.transaction_reference.is_(None)):
         old.status, old.failure_reason = "failed", PAYPAL_UNFINISHED
-    pay = Payment(invoice_id=inv.id, client_id=client_id, amount=amount, payment_method="paypal", status="pending",
+    reference = inv.invoice_number if inv else filing.get_case_id(db)
+    pay = Payment(invoice_id=inv.id if inv else None, case_id=inv.case_id if inv else filing.id, client_id=client_id,
+                  amount=amount, payment_method="paypal", status="pending",
                   gateway="paypal", submitted_by_account_id=account_id, original_amount=amount, original_currency="USD")
     db.add(pay)
     db.flush()
     try:
         order_id, link = paypal.create_order(
-            amount=amount, currency="USD", reference=inv.invoice_number, payment_number=pay.payment_number, custom_id=pay.id,
-            description=f"{settings.APP_NAME} invoice {inv.invoice_number}", return_url=return_url, cancel_url=cancel_url)
+            amount=amount, currency="USD", reference=reference, payment_number=pay.payment_number, custom_id=pay.id,
+            description=f"{settings.APP_NAME} {'invoice' if inv else 'advance payment'} {reference}",
+            return_url=return_url, cancel_url=cancel_url)
     except (paypal.PayPalError, httpx.HTTPError):
         db.rollback()
         return None, "We couldn't reach PayPal. Please try again in a few minutes."
     pay.gateway_payment_id = order_id
     _audit(db, account_id, "paypal_checkout_started", pay.id, None,
-           {"payment_number": pay.payment_number, "invoice": inv.invoice_number, "amount": str(amount), "order": order_id})
+           {"payment_number": pay.payment_number, "invoice": reference, "amount": str(amount), "order": order_id})
     db.commit()
     return link, None
 
 
-def _apply_capture(db: Session, pay: Payment, inv: Invoice, capture: dict) -> str | None:
+def _apply_capture(db: Session, pay: Payment, inv: Invoice | None, capture: dict) -> str | None:
     """Record what PayPal says happened to a capture. Commits. Returns a message for the client when it didn't succeed."""
     if capture.get("id"):
         pay.transaction_reference = capture["id"][:100]
@@ -267,12 +300,15 @@ def _apply_capture(db: Session, pay: Payment, inv: Invoice, capture: dict) -> st
             pay.original_currency = (amount.get("currency_code") or "USD")[:3]
             pay.status, pay.paid_at, pay.failure_reason = "succeeded", datetime.now(timezone.utc), None
             db.flush()
-            old = inv.status
-            settle(db, inv)
+            old = inv.status if inv else None
+            if inv:
+                settle(db, inv)
             _audit(db, None, "paypal_payment_captured", pay.id, {"invoice_status": old},
-                   {"capture": pay.transaction_reference, "amount": str(pay.original_amount), "invoice_status": inv.status})
+                   {"capture": pay.transaction_reference, "amount": str(pay.original_amount),
+                    "invoice_status": inv.status if inv else "advance payment"})
             db.commit()
-            advance_case_if_paid(db, inv, None)
+            if inv:
+                advance_case_if_paid(db, inv, None)
         return None
     if status == "PENDING":  # e.g. an eCheck or a PayPal review; an admin verifies it once PayPal clears it
         db.commit()
@@ -290,8 +326,8 @@ def finish_paypal(db: Session, order_id: str, client_id: str | None = None) -> s
         return "We couldn't find that PayPal payment."
     if pay.status in ("succeeded", "refunded") or pay.transaction_reference:
         return None  # already captured (or captured and waiting on PayPal)
-    inv = _locked_invoice(db, pay.invoice_id)
-    if inv.status not in OPEN or balance(db, inv) < _money(pay.amount):
+    inv = _locked_invoice(db, pay.invoice_id) if pay.invoice_id else None  # None: an advance payment
+    if inv and (inv.status not in OPEN or balance(db, inv) < _money(pay.amount)):
         pay.status, pay.failure_reason = "failed", "This invoice no longer needed this payment."
         db.commit()
         return "This invoice no longer needs this payment, so PayPal didn't charge you."
@@ -324,8 +360,8 @@ def needs_review():
 
 
 def pending_payments(db: Session) -> list[dict]:
-    rows = (db.query(Payment, Invoice, TaxFiling).join(Invoice, Invoice.id == Payment.invoice_id)
-            .join(TaxFiling, TaxFiling.id == Invoice.case_id).filter(needs_review())
+    rows = (db.query(Payment, Invoice, TaxFiling).outerjoin(Invoice, Invoice.id == Payment.invoice_id)
+            .join(TaxFiling, TaxFiling.id == func.coalesce(Payment.case_id, Invoice.case_id)).filter(needs_review())
             .order_by(Payment.created_at).all())
     return [{"payment": p, "invoice": i, "filing": f, "client_name": f"{f.first_name} {f.last_name}"} for p, i, f in rows]
 
@@ -339,22 +375,42 @@ def verify(db: Session, actor_id: str, pay: Payment) -> str | None:
         return "This PayPal checkout was never completed, so there is nothing to verify."
     if pay.status != "pending":
         return "This payment has already been reviewed."
-    inv = db.get(Invoice, pay.invoice_id)
-    if inv.status not in OPEN:
+    inv = db.get(Invoice, pay.invoice_id) if pay.invoice_id else None  # None: an advance payment
+    if inv and inv.status not in OPEN:
         return f"The invoice is {inv.status.replace('_', ' ')}; reject this payment instead."
-    due = balance(db, inv)
-    if _money(pay.amount) > due:
-        return f"This is more than the balance now due (${due:,.2f}); reject it and record the right amount."
+    if inv:
+        due = balance(db, inv)
+        if _money(pay.amount) > due:
+            return f"This is more than the balance now due (${due:,.2f}); reject it and record the right amount."
     now = datetime.now(timezone.utc)
     pay.status, pay.paid_at, pay.verified_by_account_id, pay.verified_at = "succeeded", now, actor_id, now
     db.flush()  # sessions don't autoflush; settle() sums succeeded payments from the database
-    old = inv.status
-    settle(db, inv)
+    old = inv.status if inv else None
+    if inv:
+        settle(db, inv)
     _audit(db, actor_id, "payment_verified", pay.id, {"status": "pending", "invoice_status": old},
-           {"status": "succeeded", "invoice_status": inv.status})
+           {"status": "succeeded", "invoice_status": inv.status if inv else "advance payment"})
     db.commit()
-    advance_case_if_paid(db, inv, actor_id)
+    if inv:
+        advance_case_if_paid(db, inv, actor_id)
     return None
+
+
+def attach_advance_payments(db: Session, inv: Invoice) -> int:
+    """When an invoice is issued, the case's advance payments (made before any invoice) count towards it.
+    Pending ones move with it and are settled once an admin verifies them. Flushes; the caller commits.
+    Returns how many were attached."""
+    advances = (db.query(Payment).filter(Payment.case_id == inv.case_id, Payment.invoice_id.is_(None),
+                                         Payment.status.in_(("pending", "succeeded")))
+                .order_by(Payment.created_at).all())
+    for pay in advances:
+        pay.invoice_id = inv.id
+    if advances:
+        db.flush()
+        settle(db, inv)
+        _audit(db, None, "advance_payments_attached", inv.id, None,
+               {"invoice": inv.invoice_number, "payments": [p.payment_number for p in advances]})
+    return len(advances)
 
 
 def reject(db: Session, actor_id: str, pay: Payment, reason: str) -> str | None:

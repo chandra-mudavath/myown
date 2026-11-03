@@ -169,7 +169,10 @@
             const [name, values] = el.getAttribute("data-cx-show-when").split("=");
             const form = el.closest("form") || document;
             const field = form.querySelector(`[name="${name}"]:checked`) || form.querySelector(`select[name="${name}"]`);
-            const match = field ? values.split("|").includes(field.value) : false;
+            // Inside another conditional that is hidden: stay hidden too (document order runs the outer one first),
+            // so a nested required field never blocks the form while its section is closed.
+            const outerHidden = el.parentElement?.closest("[data-cx-show-when]")?.hidden;
+            const match = !outerHidden && (field ? values.split("|").includes(field.value) : false);
             el.hidden = !match;
             el.querySelectorAll("input, select, textarea").forEach((f) => { f.disabled = !match; });
         });

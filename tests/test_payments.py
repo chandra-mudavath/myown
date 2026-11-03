@@ -129,7 +129,8 @@ def test_submit_reject_resubmit_verify(env):
     assert pay.status == "pending" and pay.amount == Decimal("150.00") and pay.proof_path
     assert db.get(Invoice, env["invoice_id"]).status == "issued"  # pending doesn't count yet
 
-    assert "error=" in submit(client, env["invoice_id"]).headers["location"]  # one pending at a time
+    # No "one pending at a time" rule any more (client feedback, Nov 2026), but a reference can't be used twice
+    assert "error=" in submit(client, env["invoice_id"], ref="FED123456").headers["location"]
     assert admin.post(f"/admin/payments/invoices/{env['invoice_id']}/void", follow_redirects=False).headers["location"].count("error=")
     assert admin.get(f"/admin/payments/payments/{pay.id}/proof").content == b"\x89PNG data"
     assert "Awaiting verification" in admin.get("/admin/payments").text

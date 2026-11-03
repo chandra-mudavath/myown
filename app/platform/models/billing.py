@@ -85,7 +85,11 @@ class Payment(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
     payment_number: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
-    invoice_id: Mapped[str] = mapped_column(String(36), ForeignKey("invoices.id"), index=True, nullable=False)
+    # None for an advance payment: the client paid before an invoice was issued (client feedback, Nov 2026).
+    # It is linked to the case's first invoice when that invoice is issued.
+    invoice_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("invoices.id"), index=True, nullable=True)
+    # The tax filing the payment is for. Always set for advance payments; for invoice payments it matches the invoice's case.
+    case_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("tax_filings.id", ondelete="SET NULL"), index=True, nullable=True)
     client_id: Mapped[str] = mapped_column(String(36), ForeignKey("clients.id"), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     payment_method: Mapped[str] = mapped_column(String(30), nullable=False)
@@ -109,4 +113,4 @@ class Payment(Base):
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)  # why a submission was rejected
 
-    invoice: Mapped["Invoice"] = relationship("Invoice", back_populates="payments")
+    invoice: Mapped["Invoice | None"] = relationship("Invoice", back_populates="payments")

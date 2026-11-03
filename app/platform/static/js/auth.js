@@ -5,6 +5,19 @@
 const toggleBtn = document.getElementById("toggle-password");
 const passwordInput = document.getElementById("password");
 
+// Every other password field (sign-up, reset, change password): <button data-password-toggle="input-id">
+document.querySelectorAll("[data-password-toggle]").forEach((btn) => {
+    const input = document.getElementById(btn.dataset.passwordToggle);
+    if (!input) return;
+    btn.addEventListener("click", () => {
+        const isText = input.type === "text";
+        input.type = isText ? "password" : "text";
+        btn.setAttribute("aria-label", isText ? "Show password" : "Hide password");
+        btn.setAttribute("title", isText ? "Show password" : "Hide password");
+        btn.classList.toggle("is-visible", !isText);
+    });
+});
+
 if (toggleBtn && passwordInput) {
     toggleBtn.addEventListener("click", () => {
         const isText = passwordInput.type === "text";

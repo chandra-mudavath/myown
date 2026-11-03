@@ -28,7 +28,7 @@ from app.platform.services.catalog import (
 )
 from app.modules.admin.services.billing import list_invoices
 from app.platform.models.case_workflow import CaseStageHistory
-from app.platform.services import assignments
+from app.platform.services import assignments, email_change
 from app.platform.services.document_review import account_names, comment_threads
 from app.modules.admin.services import accounts as admin_accounts
 from app.modules.admin.services.accounts import lock_state
@@ -106,6 +106,8 @@ def admin_dashboard(request: Request, account: AdminAccount, db: Session = Depen
             "admin": admin,
             "dashboard_stats": dashboard_stats,
             "progress": dashboard_progress(db),
+            # Clients' email change requests waiting for approval (client feedback, Nov 2026)
+            "email_requests_waiting": len(email_change.pending(db)),
             "activity": recent_activity,
             "clients_list": clients_list,
             "filings_list": formatted_filings,

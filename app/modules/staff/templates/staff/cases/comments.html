@@ -1,0 +1,62 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{#- Comments (client feedback, Nov 2026): every comment staff and admins wrote on this case, newest first, so the
+    whole team has the same context. Notes added here are for staff only; clients never see them. Stage-move
+    comments and document comments are listed too (their documents open from "Open"). Clients' replies are not. -#}
+{% block title %}Comments · {{ case_number }} - {{ app_name }}{% endblock %}
+{% set active_nav = 'cases' %}
+
+{% block main %}
+    <div class="staff-pagehead">
+        <div>
+            <p class="eyebrow">{{ case_number }} · Tax year {{ filing.tax_year }}</p>
+            <h1>Comments</h1>
+        </div>
+        <p class="staff-pagehead__meta">Staff comments only. The client doesn't see this page.</p>
+    </div>
+
+    <section class="staff-panel case-comments" aria-labelledby="add-comment-title">
+        <form method="post" action="/staff/cases/{{ filing.id }}/comments" class="case-comments__form">
+            <label id="add-comment-title" for="comment-body"><strong>Add a comment for the team</strong></label>
+            {% if error %}<p class="doc-reject__error" role="alert">{{ error }}</p>{% endif %}
+            {% if saved %}<p class="case-comments__saved" role="status">{{ ci("check-circle", "ci ci--sm") }} Comment added.</p>{% endif %}
+            <textarea id="comment-body" name="body" class="staff-textarea" rows="3" maxlength="2000" required
+                      placeholder="e.g. Called the client: the 1099-B arrives next week."></textarea>
+            <div class="case-comments__foot">
+                <button type="submit" class="staff-btn staff-btn--primary">{{ ci("send", "ci ci--sm") }} Add comment</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="staff-panel staff-cases" aria-labelledby="comments-title">
+        <div class="staff-cases-head">
+            <div class="staff-cases-title">
+                <h2 id="comments-title">All comments</h2>
+                <span class="staff-count-chip">{{ comments | length }}</span>
+            </div>
+        </div>
+        {% if comments %}
+        <ol class="case-comments__list">
+            {% for c in comments %}
+            <li class="case-comments__item">
+                <div class="case-comments__meta">
+                    <strong>{{ c.author }}</strong>
+                    <span class="staff-cell-muted">{{ c.role | capitalize }}</span>
+                    <span class="staff-stage-pill tone-{{ c.tone }}">{{ c.kind }}</span>
+                    {% if c.about %}<span class="case-comments__about">{{ c.about }}</span>{% endif %}
+                    <time class="staff-cell-muted" datetime="{{ c.when.isoformat() if c.when else '' }}">{{ c.when.strftime('%b %d, %Y · %H:%M') if c.when else '' }}</time>
+                </div>
+                <p class="case-comments__body">{{ c.body }}</p>
+                {% if c.doc_group %}<a class="staff-row-action" href="/staff/cases/{{ filing.id }}/documents">Open documents</a>{% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+        {% else %}
+        <div class="staff-empty">
+            {{ ci("notes") }}
+            <strong>No comments yet</strong>
+            <span>Comments added above, typed when moving the stage, or written on documents show up here.</span>
+        </div>
+        {% endif %}
+    </section>
+{% endblock %}

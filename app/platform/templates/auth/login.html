@@ -7,6 +7,10 @@
     {% if error %}
     <div class="alert alert--error">{{ error }}</div>
     {% endif %}
+    {% if reset_email %}
+    {#- 5 wrong passwords: reset instead of waiting (client feedback, Nov 2026) -#}
+    <a class="au-btn" href="/auth/forgot-password?email={{ reset_email | urlencode }}">{{ icon("refresh", "au-btn__icon") }}Reset password</a>
+    {% endif %}
     {% if msg %}
     <div class="alert alert--success">{{ msg }}</div>
     {% endif %}
@@ -15,7 +19,7 @@
         <label class="au-sr" for="email">Email</label>
         {{ icon("mail") }}
         <input name="username" id="email" type="email" placeholder="Enter registered email" class="form-input"
-            autocomplete="email" required />
+            autocomplete="email" required {% if reset_email %}value="{{ reset_email }}"{% endif %} />
     </div>
 
     <div class="au-input">

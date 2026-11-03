@@ -27,6 +27,8 @@
         </div>
     </section>
 
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
     {% if pending %}
     <section class="admin-section" aria-labelledby="awaiting-title">
         <div class="admin-section-heading"><div><span class="admin-kicker">Submitted by clients</span><h2 id="awaiting-title">Awaiting verification ({{ pending | length }})</h2></div></div>
@@ -38,12 +40,31 @@
                     <tr>
                         <td>{{ r.payment.payment_number }}<small class="admin-muted">Ref: {{ r.payment.transaction_reference }}</small></td>
                         <td>{{ r.client_name }}</td>
-                        <td><a href="/admin/payments/invoices/{{ r.invoice.id }}" class="link-primary">{{ r.invoice.invoice_number }}</a><small class="admin-muted">{{ r.filing.case_number }}</small></td>
+                        <td>{% if r.invoice %}<a href="/admin/payments/invoices/{{ r.invoice.id }}" class="link-primary">{{ r.invoice.invoice_number }}</a>{% else %}<span class="admin-pill admin-pill--amber">Advance payment</span>{% endif %}<small class="admin-muted">{{ r.filing.case_number }}</small></td>
                         <td class="admin-nowrap">{{ r.payment.created_at.strftime('%b %d, %Y') }}</td>
                         <td>{{ r.payment.payment_method | replace('_', ' ') | capitalize if r.payment.payment_method != 'upi' else 'UPI' }}</td>
                         <td>{% if r.payment.original_amount %}{{ '{:,.2f}'.format(r.payment.original_amount) }} {{ r.payment.original_currency }}{% else %}—{% endif %}</td>
                         <td>${{ '{:,.2f}'.format(r.payment.amount) }}</td>
-                        <td><div class="admin-doc-actions"><a href="/admin/payments/invoices/{{ r.invoice.id }}" class="admin-mini-btn">Review</a></div></td>
+                        <td><div class="admin-doc-actions">
+                            {% if r.invoice %}
+                            <a href="/admin/payments/invoices/{{ r.invoice.id }}" class="admin-mini-btn">Review</a>
+                            {% else %}
+                            {#- Advance payment (client feedback, Nov 2026): no invoice page yet, so it is checked here.
+                                It counts towards the case's invoice once that is issued. -#}
+                            {% if r.payment.proof_path %}<a class="admin-mini-btn" href="/admin/payments/payments/{{ r.payment.id }}/proof" target="_blank" rel="noopener">Proof</a>{% endif %}
+                            <form method="post" action="/admin/payments/payments/{{ r.payment.id }}/verify" onsubmit="return confirm('Confirm ${{ '{:,.2f}'.format(r.payment.amount) }} was received from {{ r.client_name }}?');">
+                                <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Verify</button>
+                            </form>
+                            <details class="admin-doc-pop">
+                                <summary class="admin-mini-btn admin-mini-btn--danger">Reject</summary>
+                                <form method="post" action="/admin/payments/payments/{{ r.payment.id }}/reject" class="admin-pop-form">
+                                    <label for="reason-{{ r.payment.id }}">Why isn't this payment accepted?</label>
+                                    <textarea id="reason-{{ r.payment.id }}" name="reason" rows="3" maxlength="500" required placeholder="e.g. No payment found with this reference."></textarea>
+                                    <button type="submit" class="admin-filter-btn">Reject payment</button>
+                                </form>
+                            </details>
+                            {% endif %}
+                        </div></td>
                     </tr>
                     {% endfor %}
                 </tbody>

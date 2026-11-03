@@ -64,7 +64,7 @@ def test_hr_cannot_open_cases_clients_or_documents(forms_env):
 def test_wrong_passwords_block_only_that_ip(env):
     for _ in range(auth_service.MAX_FAILED_ATTEMPTS):
         _login("6.6.6.6", "Wrong!pass1")
-    assert "Too many wrong passwords" in _login("6.6.6.6", PASSWORD).text  # even the right password, from that IP
+    assert "wrong password 5 times" in _login("6.6.6.6", PASSWORD).text  # even the right password, from that IP
     assert _login("10.0.0.1", PASSWORD).status_code == 303                  # the real person, elsewhere, gets in
     assert _account(env, "client@x.test").locked_until is None
 
@@ -73,7 +73,7 @@ def test_guesses_from_many_ips_lock_the_whole_account(env):
     for i in range(auth_service.ACCOUNT_LOCK_ATTEMPTS):
         _login(f"7.7.{i}.1", "Wrong!pass1")
     assert _account(env, "client@x.test").locked_until is not None
-    assert "Too many wrong passwords" in _login("10.0.0.1", PASSWORD).text
+    assert "wrong password 5 times" in _login("10.0.0.1", PASSWORD).text
 
 
 def test_admin_unlock_and_password_reset_lift_the_blocks(env):
@@ -96,7 +96,7 @@ def test_admin_unlock_and_password_reset_lift_the_blocks(env):
 def test_unknown_emails_are_blocked_the_same_way(env):
     for _ in range(auth_service.MAX_FAILED_ATTEMPTS):
         _login("6.6.6.6", "x", "ghost@x.test")
-    assert "Too many wrong passwords" in _login("6.6.6.6", "x", "ghost@x.test").text  # no hint whether it exists
+    assert "wrong password 5 times" in _login("6.6.6.6", "x", "ghost@x.test").text  # no hint whether it exists
 
 
 # ── Registration ────────────────────────────────────────────────────────────

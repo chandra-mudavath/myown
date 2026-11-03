@@ -81,8 +81,8 @@
                 {% endif %}
                 <div class="cx-grid cx-upload-grid">
                     <div class="cx-stack">
-                        {#- Category first, then Document type (client feedback, Oct 2026): the type list shows only the
-                            chosen category's types. Picking a type directly (e.g. from the checklist) still sets the category. -#}
+                        {#- Only Document type (client feedback, Nov 2026): it lists every type, whatever was picked before, and
+                            the category is filled in from the chosen type. The Category dropdown that came first was:
                         <div class="cx-field">
                             <label class="cx-label" for="up-cat">Category<span class="cx-req">*</span></label>
                             <select class="cx-select" id="up-cat" name="category" required data-doc-cat>
@@ -90,6 +90,8 @@
                                 {% for key, label in category_labels.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
                             </select>
                         </div>
+                        -#}
+                        <input type="hidden" name="category" value="" data-doc-cat />
                         <div class="cx-field">
                             <label class="cx-label" for="up-type">Document type<span class="cx-req">*</span></label>
                             <select class="cx-select" id="up-type" name="document_type" required data-doc-type>
@@ -102,13 +104,22 @@
                                 </optgroup>
                                 {% endif %}
                                 {% endfor %}
+                                {#- Every type shows, even one whose category isn't in the category list -#}
+                                {% set orphans = document_types | rejectattr("category", "in", category_labels.keys() | list) | list %}
+                                {% if orphans %}
+                                <optgroup label="Other">
+                                    {% for t in orphans %}<option value="{{ t.code }}" data-category="{{ t.category }}" data-name="{{ t.name }}">{{ t.name }}</option>{% endfor %}
+                                </optgroup>
+                                {% endif %}
                             </select>
                         </div>
                         {# Category used to come after Document type (filled in from the type) #}
+                        {#- Description: hidden for now (client feedback, Nov 2026: only Document type). Files are named after their type.
                         <div class="cx-field">
                             <label class="cx-label" for="up-name">Description<span class="cx-opt">Optional</span></label>
                             <input class="cx-input" id="up-name" name="document_name" placeholder="e.g. W-2 from Acme Corp" maxlength="120" />
                         </div>
+                        -#}
                     </div>
                     <div>
                         <div class="cx-dropzone" data-cx-dropzone="up-files">

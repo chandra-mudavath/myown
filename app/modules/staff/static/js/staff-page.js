@@ -222,27 +222,38 @@
     } catch (e) { /* storage unavailable */ }
 
     // Notifications page: filter rows by activity type or "new".
+    // Notifications: activity filter buttons plus a search box (client feedback, Nov 2026); both apply together.
     const notifFilter = document.querySelector("[data-notif-filter]");
     if (notifFilter) {
         const buttons = [...notifFilter.querySelectorAll("[data-filter]")];
         const rows = [...document.querySelectorAll("[data-notif-row]")];
         const none = document.querySelector("[data-notif-none]");
+        const search = document.querySelector("[data-notif-search]");
+        const count = document.querySelector("[data-notif-count]");
+        let key = "all";
+        const apply = () => {
+            const term = (search?.value || "").trim().toLowerCase();
+            let shown = 0;
+            rows.forEach((row) => {
+                const kindOk = key === "all" || (key === "new" ? row.dataset.new === "yes" : row.dataset.kind === key);
+                const match = kindOk && (!term || (row.dataset.search || "").includes(term));
+                row.hidden = !match;
+                if (match) shown += 1;
+            });
+            if (none) none.hidden = shown > 0;
+            if (count) count.textContent = shown.toLocaleString();
+        };
         buttons.forEach((button) => {
             button.addEventListener("click", () => {
-                const key = button.dataset.filter;
+                key = button.dataset.filter;
                 buttons.forEach((b) => {
                     b.classList.toggle("is-active", b === button);
                     b.setAttribute("aria-pressed", String(b === button));
                 });
-                let shown = 0;
-                rows.forEach((row) => {
-                    const match = key === "all" || (key === "new" ? row.dataset.new === "yes" : row.dataset.kind === key);
-                    row.hidden = !match;
-                    if (match) shown += 1;
-                });
-                if (none) none.hidden = shown > 0;
+                apply();
             });
         });
+        search?.addEventListener("input", apply);
     }
 
     document.querySelectorAll("[data-dialog-close]").forEach((button) => {

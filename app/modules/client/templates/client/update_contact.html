@@ -37,10 +37,19 @@
                 <span class="cx-badge cx-badge--complete">Verified</span>
             </div>
             <div class="cx-card__body">
+                {% set er = email_request if email_request is defined else none %}
+                {% if er and er.status == "pending" %}
+                <div class="cx-alert" role="status" style="margin-bottom: 1rem;">{{ ci("clock") }}<p><strong>Waiting for approval:</strong> change to {{ er.new_email }}, requested {{ er.created_at.strftime('%b %d, %Y') }}. Until an admin approves it, sign in with {{ account_email }}.</p></div>
+                {% elif er and er.status == "rejected" %}
+                <div class="cx-alert cx-alert--error" role="status" style="margin-bottom: 1rem;">{{ ci("alert") }}<p><strong>Your request to change to {{ er.new_email }} was not approved.</strong> {{ er.reason }}</p></div>
+                {% elif er and er.status == "approved" %}
+                <div class="cx-alert cx-alert--success" role="status" style="margin-bottom: 1rem;">{{ ci("check-circle") }}<p>Your sign-in email was changed to {{ er.new_email }} on {{ er.decided_at.strftime('%b %d, %Y') }}.</p></div>
+                {% endif %}
                 <div class="cx-field">
                     <label class="cx-label" for="primary_email">New email address<span class="cx-req">*</span></label>
                     <input class="cx-input" type="email" id="primary_email" name="email" required placeholder="name@example.com" />
-                    <span class="cx-hint">Your current email stays active until you verify the new one.</span>
+                    {#- Was: "Your current email stays active until you verify the new one." -#}
+                    <span class="cx-hint">An admin approves the change. After that you sign in with the new email; your password stays the same.</span>
                 </div>
             </div>
             <div class="cx-card__foot">
@@ -71,7 +80,7 @@
                     throw new Error(msg || "Could not save. Please try again.");
                 }
                 window.cxToast(data.message || "Saved.");
-                if (form.dataset.cxMethod === "POST") form.reset();
+                if (form.dataset.cxMethod === "POST") { form.reset(); setTimeout(() => window.location.reload(), 1500); }
             } catch (err) {
                 window.cxToast(err.message, true);
             }

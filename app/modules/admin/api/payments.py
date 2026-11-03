@@ -27,8 +27,10 @@ def _ctx(request: Request, account, db: Session, **extra) -> dict:
             "active_nav": "payments", **extra}
 
 
-def _to_invoice(invoice_id: str, err: str | None, saved: str) -> RedirectResponse:
-    return RedirectResponse(f"/admin/payments/invoices/{invoice_id}?{urlencode({'error': err} if err else {'saved': saved})}", status_code=303)
+def _to_invoice(invoice_id: str | None, err: str | None, saved: str) -> RedirectResponse:
+    """Back to the invoice page, or to Payments for an advance payment (no invoice yet)."""
+    page = f"/admin/payments/invoices/{invoice_id}" if invoice_id else "/admin/payments"
+    return RedirectResponse(f"{page}?{urlencode({'error': err} if err else {'saved': saved})}", status_code=303)
 
 
 def _invoice_or_404(db: Session, invoice_id: str) -> Invoice:
@@ -39,11 +41,12 @@ def _invoice_or_404(db: Session, invoice_id: str) -> Invoice:
 
 
 @router.get("", response_class=HTMLResponse, name="admin_payments")
-def payments_home(request: Request, account: AdminAccount, db: Session = Depends(get_db), status: str = "", q: str = ""):
+def payments_home(request: Request, account: AdminAccount, db: Session = Depends(get_db), status: str = "", q: str = "",
+                  saved: str = "", error: str = ""):
     return templates.TemplateResponse(request, "admin/payments/index.html", _ctx(
         request, account, db, summary=billing.summary(db), invoices=billing.list_invoices(db, status, q),
         pending=client_payments.pending_payments(db),
-        filters=FILTERS, status=status, q=q))
+        filters=FILTERS, status=status, q=q, saved=saved, error=error))
 
 
 @router.get("/invoices/new", response_class=HTMLResponse, name="admin_invoice_new")

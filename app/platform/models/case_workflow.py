@@ -56,6 +56,19 @@ class CaseStageHistory(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
 
 
+class CaseComment(Base):
+    """A note staff leave on a case for each other (client feedback, Nov 2026). Clients never see these."""
+    __tablename__ = "case_comments"
+    __table_args__ = (Index("ix_case_comments_case_created", "case_id", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("tax_filings.id", ondelete="CASCADE"), nullable=False)
+    author_account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="SET NULL"), nullable=True)
+    author_name: Mapped[str] = mapped_column(String(80), nullable=False)  # snapshot at time of writing
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
 class IrsSubmission(Base):
     """An e-file submission for a Form 8879 case. Paper filings never get one."""
     __tablename__ = "irs_submissions"

@@ -17,7 +17,7 @@ from app.platform.models.filing_document import FilingDocument
 from app.platform.models.lookups import CaseStage, ChatQueryTopic
 from app.platform.models.tax_filing import TaxFiling
 from app.modules.client.schemas.tax_filing import TaxFilingCreate
-from app.platform.services import chat_service, intake, payments, paypal, referrals
+from app.platform.services import chat_service, email_change, intake, payments, paypal, referrals
 from app.platform.models.auth import AuthAccount
 from app.platform.services.catalog import case_document_types, document_categories, open_tax_years, tax_types
 from app.platform.services.document_review import (REVIEW_CATEGORY, account_names, add_comment, comment_threads, review_documents,
@@ -639,12 +639,20 @@ async def client_payment_manual(
     sent_currency: str = Form(""),
     pay_amount: str = Form(""),
     proof: UploadFile | None = File(None),
+    tax_year: str | None = Cookie(None),
 ):
-    """The client paid by UPI or bank transfer and sends the reference for us to verify."""
+    """The client paid by UPI or bank transfer and sends the reference for us to verify. With no invoice it is an
+    advance payment on the selected year's filing (client feedback, Nov 2026: pay at any stage)."""
     client = _own_client(db, account)
+    filing = None if invoice_id else _payment_filing(db, client, account, tax_year)
     err = payments.submit_manual(db, account.id, client.id, invoice_id, payment_method, transaction_reference,
-                                 sent_amount, sent_currency, proof, pay_amount)
+                                 sent_amount, sent_currency, proof, pay_amount, filing=filing)
     return _back_to_payments(err, "Thanks! We've received your payment details and will confirm once verified.")
+
+
+def _payment_filing(db: Session, client: Client, account, tax_year: str | None) -> TaxFiling:
+    """The selected year's filing for an advance payment; started on the spot if there isn't one yet (as uploads do)."""
+    return intake.ensure_filing(db, client, db.get(AuthAccount, account.id), resolve_tax_year(db, tax_year))
 
 
 def _back_to_payments(err: str | None, saved: str) -> RedirectResponse:
@@ -665,13 +673,14 @@ def _own_client(db: Session, account) -> Client:
 
 @router.post("/payments/paypal/start", name="client_paypal_start")
 async def client_paypal_start(request: Request, account: ClientAccount, db: Session = Depends(get_db), invoice_id: str = Form(""),
-                             pay_amount: str = Form("")):
-    """Create a PayPal order for the invoice and send the client to PayPal to approve it."""
+                             pay_amount: str = Form(""), tax_year: str | None = Cookie(None)):
+    """Create a PayPal order for the invoice (or an advance payment) and send the client to PayPal to approve it."""
     client = _own_client(db, account)
+    filing = None if invoice_id else _payment_filing(db, client, account, tax_year)
     base = (settings.PUBLIC_BASE_URL or str(request.base_url)).rstrip("/")
     link, err = payments.start_paypal(db, account.id, client.id, invoice_id,
                                       return_url=f"{base}/client/payments/paypal/return",
-                                      cancel_url=f"{base}/client/payments/paypal/cancel", pay_amount=pay_amount)
+                                      cancel_url=f"{base}/client/payments/paypal/cancel", pay_amount=pay_amount, filing=filing)
     if err:
         return _back_to_payments(err, "")
     return RedirectResponse(link, status_code=303)
@@ -843,7 +852,10 @@ async def client_stage_request(account: ClientAccount, db: Session = Depends(get
 
 @router.get("/update-contact", response_class=HTMLResponse, name="client_update_contact")
 async def client_update_contact(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/update_contact.html", request, account, db, tax_year, "update_contact")
+    def extra(client, filing):
+        # The last email change request: waiting for an admin, or the reason it was rejected (client feedback, Nov 2026)
+        return {"email_request": email_change.latest_for(db, account.id)}
+    return _render_client_section("client/update_contact.html", request, account, db, tax_year, "update_contact", extra=extra)
 
 
 @router.get("/refund-request", response_class=HTMLResponse, name="client_refund_request")
