@@ -1,10 +1,10 @@
 """Admin Payments: invoices built from the service price list, and payments received offline.
 
-Nothing is charged online. Admins record payments received offline here; clients can also submit
-UPI / bank-transfer details, which arrive as pending payments for an admin to verify
-(app/platform/services/payments.py). An invoice paid in full moves its case on from payment_pending.
+Admins record payments received offline here. Clients pay online with Stripe (Pay in USD; confirmed by Stripe,
+refundable from the invoice page) or submit UPI / bank-transfer details, which arrive as pending payments for an
+admin to verify (app/platform/services/payments.py). An invoice paid in full moves its case on from payment_pending.
 Statuses follow the database checks: invoices draft / issued / partially_paid / paid / void,
-payments succeeded (recorded here) / pending / failed / refunded.
+payments succeeded (recorded here) / pending / failed / refunded; a part refund counts amount - refunded_amount.
 Money is Decimal, rounded to cents. Every change is written to audit_logs.
 """
 from datetime import date, datetime, time, timezone
@@ -20,8 +20,9 @@ from app.platform.models.tax_filing import TaxFiling
 from app.platform.services import payments as client_payments
 
 CENT = Decimal("0.01")
-METHODS = [("bank_transfer", "Bank transfer"), ("upi", "UPI"), ("paypal", "PayPal"), ("card", "Card"), ("cash", "Cash"), ("check", "Check"), ("other", "Other")]
-METHOD_LABELS = dict(METHODS)
+# Offline payments an admin can record. Was also ("paypal", "PayPal") until PayPal was removed (Nov 2026).
+METHODS = [("bank_transfer", "Bank transfer"), ("upi", "UPI"), ("card", "Card"), ("cash", "Cash"), ("check", "Check"), ("other", "Other")]
+METHOD_LABELS = {**client_payments.METHOD_LABELS, **dict(METHODS)}  # also labels Stripe (ach, stripe) and old PayPal rows
 OPEN = ("issued", "partially_paid")
 STATUS_LABELS = {"draft": "Draft", "issued": "Issued", "partially_paid": "Partly paid", "paid": "Paid", "void": "Void"}
 
@@ -58,7 +59,7 @@ def _audit(db: Session, actor_id: str, action: str, entity_type: str, entity_id:
 
 
 def paid_amount(db: Session, invoice_id: str) -> Decimal:
-    total = db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
+    total = db.query(func.coalesce(func.sum(client_payments.NET_AMOUNT), 0)).filter(
         Payment.invoice_id == invoice_id, Payment.status == "succeeded").scalar()
     return _money(total)
 
@@ -162,7 +163,7 @@ def record_payment(db: Session, actor_id: str, inv: Invoice, amount: str, method
     balance = _money(inv.total_amount) - paid_amount(db, inv.id)
     if amt > balance:
         return f"That's more than the balance due (${balance:,.2f})."
-    if method not in METHOD_LABELS:
+    if method not in dict(METHODS):  # only offline methods; online payments come from Stripe itself
         return "Choose how the payment was made."
     day, err = _parse_date(paid_on, "Payment date")
     if err:
@@ -194,7 +195,7 @@ def summary(db: Session) -> dict:
     outstanding = sum((_money(i.total_amount) - paid.get(i.id, Decimal("0")) for i in open_invoices), Decimal("0"))
     overdue = [i for i in open_invoices if is_overdue(i, today)]
     month_start = datetime.combine(today.replace(day=1), time(0))
-    collected = db.query(func.coalesce(func.sum(Payment.amount), 0)).filter(
+    collected = db.query(func.coalesce(func.sum(client_payments.NET_AMOUNT), 0)).filter(
         Payment.status == "succeeded", Payment.paid_at >= month_start).scalar()
     return {
         "outstanding": outstanding.quantize(CENT), "open_count": len(open_invoices),
@@ -208,7 +209,7 @@ def summary(db: Session) -> dict:
 def _paid_map(db: Session, invoice_ids: list[str]) -> dict[str, Decimal]:
     if not invoice_ids:
         return {}
-    rows = db.query(Payment.invoice_id, func.sum(Payment.amount)).filter(
+    rows = db.query(Payment.invoice_id, func.sum(client_payments.NET_AMOUNT)).filter(
         Payment.invoice_id.in_(invoice_ids), Payment.status == "succeeded").group_by(Payment.invoice_id)
     return {i: _money(a) for i, a in rows}
 

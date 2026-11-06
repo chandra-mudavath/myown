@@ -17,7 +17,7 @@ from app.platform.models.filing_document import FilingDocument
 from app.platform.models.lookups import CaseStage, ChatQueryTopic
 from app.platform.models.tax_filing import TaxFiling
 from app.modules.client.schemas.tax_filing import TaxFilingCreate
-from app.platform.services import chat_service, email_change, intake, payments, paypal, referrals
+from app.platform.services import chat_service, email_change, intake, payments, referrals, stripe_api
 from app.platform.models.auth import AuthAccount
 from app.platform.services.catalog import case_document_types, document_categories, open_tax_years, tax_types
 from app.platform.services.document_review import (REVIEW_CATEGORY, account_names, add_comment, comment_threads, review_documents,
@@ -611,7 +611,7 @@ async def client_save_tax_notes(request: Request, account: ClientAccount, db: Se
 def _billing_extra(request: Request, db: Session):
     def billing(client, filing):
         return {**payments.client_billing(db, client.id, filing), "pay_methods": payments.CLIENT_METHODS,
-                "currencies": payments.CURRENCIES, "paypal_on": paypal.enabled(), "upi_id": settings.PAYMENT_UPI_ID, "upi_payee": settings.PAYMENT_UPI_PAYEE,
+                "currencies": payments.CURRENCIES, "stripe_on": stripe_api.enabled(), "upi_id": settings.PAYMENT_UPI_ID, "upi_payee": settings.PAYMENT_UPI_PAYEE,
                 "bank_lines": [line for line in settings.PAYMENT_BANK_DETAILS.splitlines() if line.strip()],
                 "pay_saved": request.query_params.get("saved", ""), "pay_error": request.query_params.get("error", "")}
     return billing
@@ -671,32 +671,34 @@ def _own_client(db: Session, account) -> Client:
     return client
 
 
-@router.post("/payments/paypal/start", name="client_paypal_start")
-async def client_paypal_start(request: Request, account: ClientAccount, db: Session = Depends(get_db), invoice_id: str = Form(""),
-                             pay_amount: str = Form(""), tax_year: str | None = Cookie(None)):
-    """Create a PayPal order for the invoice (or an advance payment) and send the client to PayPal to approve it."""
+@router.post("/payments/stripe/start", name="client_stripe_start")
+async def client_stripe_start(request: Request, account: ClientAccount, db: Session = Depends(get_db), invoice_id: str = Form(""),
+                              pay_amount: str = Form(""), email: str = Form(""), tax_year: str | None = Cookie(None)):
+    """Pay in USD: create a Stripe Checkout page for the invoice (or an advance payment) and send the client there."""
     client = _own_client(db, account)
     filing = None if invoice_id else _payment_filing(db, client, account, tax_year)
     base = (settings.PUBLIC_BASE_URL or str(request.base_url)).rstrip("/")
-    link, err = payments.start_paypal(db, account.id, client.id, invoice_id,
-                                      return_url=f"{base}/client/payments/paypal/return",
-                                      cancel_url=f"{base}/client/payments/paypal/cancel", pay_amount=pay_amount, filing=filing)
+    link, err = payments.start_stripe(db, account.id, client.id, invoice_id,
+                                      # Stripe fills in {CHECKOUT_SESSION_ID} itself
+                                      success_url=f"{base}/client/payments/stripe/return?session_id={{CHECKOUT_SESSION_ID}}",
+                                      cancel_url=f"{base}/client/payments/stripe/cancel", pay_amount=pay_amount, filing=filing,
+                                      email=email or account.email)
     if err:
         return _back_to_payments(err, "")
     return RedirectResponse(link, status_code=303)
 
 
-@router.get("/payments/paypal/return", name="client_paypal_return")
-async def client_paypal_return(account: ClientAccount, db: Session = Depends(get_db), token: str = ""):
-    """PayPal sends the client back here after they approve; capture the payment now."""
-    err = payments.finish_paypal(db, token, _own_client(db, account).id)
-    return _back_to_payments(err, "Thank you! Your PayPal payment was received.")
+@router.get("/payments/stripe/return", name="client_stripe_return")
+async def client_stripe_return(account: ClientAccount, db: Session = Depends(get_db), session_id: str = ""):
+    """Stripe sends the client back here after paying; read the payment from Stripe and record it."""
+    err, saved = payments.finish_stripe(db, session_id, _own_client(db, account).id)
+    return _back_to_payments(err, saved)
 
 
-@router.get("/payments/paypal/cancel", name="client_paypal_cancel")
-async def client_paypal_cancel(account: ClientAccount, db: Session = Depends(get_db), token: str = ""):
-    payments.cancel_paypal(db, token, _own_client(db, account).id)
-    return _back_to_payments("PayPal checkout was cancelled. You were not charged.", "")
+@router.get("/payments/stripe/cancel", name="client_stripe_cancel")
+async def client_stripe_cancel(account: ClientAccount, db: Session = Depends(get_db), payment: str = ""):
+    payments.cancel_stripe(db, payment, _own_client(db, account).id)
+    return _back_to_payments("Payment was cancelled. You were not charged.", "")
 
 
 @router.get("/bank-details", response_class=HTMLResponse, name="client_bank_details")

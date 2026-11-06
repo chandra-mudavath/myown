@@ -106,16 +106,16 @@
 
                 <h3 class="cx-legend">Choose a payment method</h3>
                 <div class="cx-choices">
-                    {% if paypal_on %}
+                    {% if stripe_on %}
                     <label class="cx-choice">
-                        <input type="radio" name="payment_method" value="paypal" checked />
+                        <input type="radio" name="payment_method" value="card" checked />
                         <span class="cx-choice__icon">{{ ci("card") }}</span>
-                        <span><strong>PayPal <span class="cx-badge cx-badge--complete cx-badge--plain">Recommended</span></strong><small>PayPal, Venmo, Pay Later or any debit / credit card</small></span>
+                        <span><strong>Card or US bank account <span class="cx-badge cx-badge--complete cx-badge--plain">Recommended</span></strong><small>Any debit / credit card, Apple Pay, Google Pay or ACH</small></span>
                         <span class="cx-choice__tick">{{ ci("check") }}</span>
                     </label>
                     {% endif %}
                     <label class="cx-choice">
-                        <input type="radio" name="payment_method" value="bank_transfer" {% if not paypal_on %}checked{% endif %} />
+                        <input type="radio" name="payment_method" value="bank_transfer" {% if not stripe_on %}checked{% endif %} />
                         <span class="cx-choice__icon">{{ ci("bank") }}</span>
                         <span><strong>Bank transfer / wire</strong><small>ACH or wire in the US, SWIFT or Wise from abroad</small></span>
                         <span class="cx-choice__tick">{{ ci("check") }}</span>
@@ -128,19 +128,19 @@
                     </label>
                 </div>
 
-                {% if paypal_on %}
-                <div data-cx-show-when="payment_method=paypal" style="margin-top: 1.25rem;">
+                {% if stripe_on %}
+                <div data-cx-show-when="payment_method=card" style="margin-top: 1.25rem;">
                     <div class="cx-confirm" style="align-items:center; justify-content: space-between; flex-wrap: wrap;">
                         <div>
-                            <strong>Pay securely with PayPal</strong>
-                            <div class="cx-muted" style="font-size: 0.84rem;">You'll go to PayPal to log in or pay by card as a guest, then come straight back here. No PayPal account needed.</div>
+                            <strong>Pay securely with Stripe</strong>
+                            <div class="cx-muted" style="font-size: 0.84rem;">You'll pay on Stripe's secure page, then come straight back here.</div>
                         </div>
-                        <button type="submit" class="cx-btn cx-btn--primary cx-btn--lg" formaction="/client/payments/paypal/start" formenctype="application/x-www-form-urlencoded">{{ ci("lock", "ci ci--sm") }} Pay with PayPal</button>
+                        <button type="submit" class="cx-btn cx-btn--primary cx-btn--lg" formaction="/client/payments/stripe/start" formenctype="application/x-www-form-urlencoded">{{ ci("lock", "ci ci--sm") }} Pay now</button>
                     </div>
                 </div>
                 {% endif %}
 
-                <div data-cx-show-when="payment_method=bank_transfer" style="margin-top: 1.25rem;" {% if paypal_on %}hidden{% endif %}>
+                <div data-cx-show-when="payment_method=bank_transfer" style="margin-top: 1.25rem;" {% if stripe_on %}hidden{% endif %}>
                     <div class="cx-upi">
                         <div class="cx-qr">
                             <strong style="font-size: 0.9rem;">Send your payment to</strong>
@@ -209,7 +209,7 @@
                     </div>
                 </div>
 
-                <div data-cx-show-when="payment_method=bank_transfer|upi" {% if paypal_on %}hidden{% endif %}>
+                <div data-cx-show-when="payment_method=bank_transfer|upi" {% if stripe_on %}hidden{% endif %}>
                 <div class="cx-field" style="margin-top: 1rem;">
                     <label class="cx-label" for="pay-proof">Payment screenshot or bank slip<span class="cx-opt">Optional</span></label>
                     <input class="cx-input" id="pay-proof" name="proof" type="file" accept=".pdf,.png,.jpg,.jpeg" />

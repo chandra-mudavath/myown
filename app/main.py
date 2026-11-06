@@ -11,12 +11,13 @@ from app.core import error_handlers
 from app.core.assets import STATIC_MOUNTS, mount_name
 from app.core.config import settings
 from app.core.database import Base, engine
+from app.core.session import renew_session
 import app.db_models  # noqa: F401 — registers all models with Base.metadata
 from app.modules.admin.api import email_requests as admin_email_requests
 from app.modules.admin.api import referrals as admin_referrals, accounts as admin_accounts, admin, assignments as admin_assignments, case_actions as admin_case_actions, notifications as admin_notifications, profile as admin_profile, payments as admin_payments, reports as admin_reports, system_settings as admin_settings
 from app.modules.client.api import client as client_routes, dashboard, profile
 from app.modules.staff.api import staff
-from app.platform.api import auth, chat
+from app.platform.api import auth, chat, webhooks
 from app.public.api import pages
 
 @asynccontextmanager
@@ -69,6 +70,10 @@ async def security_headers(request: Request, call_next):
     return response
 
 
+# Idle timeout: each request renews the sign-in cookie, so only doing nothing for SESSION_IDLE_MINUTES signs out
+app.middleware("http")(renew_session)
+
+
 # Production: answer only for our own host names, so a forged Host header can't end up in emailed links
 if settings.is_production:
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
@@ -109,4 +114,5 @@ app.include_router(admin_case_actions.router)
 app.include_router(admin_referrals.router)
 app.include_router(admin_email_requests.router)
 app.include_router(chat.router)
+app.include_router(webhooks.router)  # Stripe calls these (signed); no sign-in
 app.include_router(pages.router)

@@ -263,7 +263,7 @@ def _signed_in(request: Request, db: Session, account: AuthAccount) -> RedirectR
     if account.must_change_password:  # a temporary password from an admin: choose their own first
         target = str(request.url_for("change_password_page"))
     resp = RedirectResponse(url=target, status_code=status.HTTP_303_SEE_OTHER)
-    resp.set_cookie("access_token", access_token, max_age=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60, **_COOKIE_OPTS)
+    resp.set_cookie("access_token", access_token, max_age=settings.SESSION_IDLE_MINUTES * 60, **_COOKIE_OPTS)
     resp.set_cookie("refresh_token", raw_refresh, max_age=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400, **_COOKIE_OPTS)
     resp.delete_cookie(_OTP_COOKIE, path="/auth")
     resp.delete_cookie(_NEXT_COOKIE, path="/auth")
@@ -390,7 +390,7 @@ def refresh(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Refresh token invalid or expired")
     access_token, new_raw_refresh = result
     resp = Response()
-    resp.set_cookie("access_token", access_token, max_age=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60, **_COOKIE_OPTS)
+    resp.set_cookie("access_token", access_token, max_age=settings.SESSION_IDLE_MINUTES * 60, **_COOKIE_OPTS)
     resp.set_cookie("refresh_token", new_raw_refresh, max_age=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS * 86400, **_COOKIE_OPTS)
     return {"ok": True}
 

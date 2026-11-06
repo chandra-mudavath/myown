@@ -189,8 +189,8 @@ async def validation_error(request: Request, exc: RequestValidationError):
 
 def _maintenance_exempt(request: Request) -> bool:
     path = request.url.path
-    if path.startswith(("/static", "/storage", "/auth", "/_errors")):
-        return True  # assets, and sign-in so an admin can still get in
+    if path.startswith(("/static", "/storage", "/auth", "/_errors", "/webhooks")):
+        return True  # assets, sign-in so an admin can still get in, and payment webhooks so no payment is missed
     return viewer_type(request) == "ADMIN"
 
 

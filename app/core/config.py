@@ -35,7 +35,9 @@ class Settings(BaseSettings):
 
     # JWT
     JWT_ALGORITHM: str = "HS256"
-    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    # Signed out after this many minutes of doing nothing; working renews it (app/core/session.py).
+    # Replaced JWT_ACCESS_TOKEN_EXPIRE_MINUTES (15, from sign-in, even mid-work), Nov 2026.
+    SESSION_IDLE_MINUTES: int = 300  # 5 hours
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Database (MySQL local dev fallback; PostgreSQL in production via .env)
@@ -78,10 +80,11 @@ class Settings(BaseSettings):
     PAYMENT_UPI_PAYEE: str = ""          # name shown in the UPI app
     PAYMENT_BANK_DETAILS: str = ""       # wire / ACH instructions, one item per line (a quoted multi-line value in .env)
     PAYMENT_PROOFS_DIR: str = "private_storage/payment_proofs"  # not under the public /storage mount
-    # PayPal Checkout (main online option). Blank client id / secret hides it.
-    PAYPAL_MODE: str = "sandbox"         # sandbox | live
-    PAYPAL_CLIENT_ID: str = ""
-    PAYPAL_CLIENT_SECRET: str = ""
+    # Stripe Checkout: Pay in USD (card, Apple Pay, Google Pay, ACH) into the CovrentTax US account.
+    # A blank secret key hides it. Test keys start sk_test_ / rk_test_; live keys sk_live_ / rk_live_.
+    STRIPE_SECRET_KEY: str = ""          # a restricted key (rk_) with Checkout Sessions, PaymentIntents, Charges, Refunds write
+    STRIPE_WEBHOOK_SECRET: str = ""      # whsec_… from the webhook endpoint (or from `stripe listen` locally)
+    STRIPE_STATEMENT_DESCRIPTOR: str = ""  # optional suffix on the client's card statement, e.g. "TAX FEE"
     PUBLIC_BASE_URL: str = ""            # e.g. "https://app.covrenttax.com"; blank uses the request's own host
 
     # Chat

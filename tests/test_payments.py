@@ -1,5 +1,11 @@
-"""Client payments (UPI / bank transfer submitted for verification), against an in-memory SQLite database."""
+"""Client payments (UPI / bank transfer submitted for verification, Stripe Checkout and its webhooks), against an
+in-memory SQLite database."""
 from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+import time
 
 from datetime import date
 from decimal import Decimal
@@ -171,103 +177,249 @@ def test_rejects_bad_input(env):
     assert "error=" in bad_proof.headers["location"]
 
 
-# ── PayPal (the PayPal API is faked) ──────────────────────────────────────────
+# ── Stripe (the Stripe API is faked; webhooks are signed for real) ────────────
 
-class FakePayPal:
+class FakeStripe:
+    """Checkout sessions in memory. `state[session_id]` is what Stripe would report: open / paid / processing /
+    failed / expired."""
+
     def __init__(self):
-        self.orders, self.captured, self.capture_status = {}, [], "COMPLETED"
+        self.sessions, self.state, self.refunds = {}, {}, []
 
-    def create_order(self, *, amount, custom_id, **_):
-        order_id = f"ORDER{len(self.orders) + 1}"
-        self.orders[order_id] = {"amount": amount, "custom_id": custom_id}
-        return order_id, f"https://paypal.test/approve/{order_id}"
+    def create_checkout_session(self, *, amount, payment_id, success_url, cancel_url, **_):
+        sid = f"cs_test_{len(self.sessions) + 1}"
+        self.sessions[sid] = {"amount": amount, "payment_id": payment_id, "cancel_url": cancel_url}
+        self.state[sid] = "open"
+        return sid, f"https://checkout.stripe.test/{sid}"
 
-    def capture_order(self, order_id, request_id):
-        self.captured.append(order_id)
-        o = self.orders[order_id]
-        return {"purchase_units": [{"payments": {"captures": [
-            {"id": f"CAP-{order_id}", "status": self.capture_status, "custom_id": o["custom_id"],
-             "amount": {"value": f"{o['amount']:.2f}", "currency_code": "USD"}}]}}]}
+    def get_checkout_session(self, sid):
+        state, amount = self.state[sid], self.sessions[sid]["amount"]
+        session = {"id": sid, "amount_total": int(amount * 100), "currency": "usd",
+                   "status": {"open": "open", "expired": "expired"}.get(state, "complete"),
+                   "payment_status": "paid" if state == "paid" else "unpaid"}
+        if session["status"] == "complete":
+            ach = state in ("processing", "failed")
+            session["payment_intent"] = {
+                "id": f"pi_{sid}", "status": {"paid": "succeeded", "processing": "processing"}.get(state, "requires_payment_method"),
+                "last_payment_error": {"message": "The bank account has insufficient funds."} if state == "failed" else None,
+                "latest_charge": {"id": f"ch_{sid}", "payment_method_details": {"type": "us_bank_account" if ach else "card"},
+                                  "balance_transaction": {"fee": 465} if state == "paid" else None}}
+        return session
+
+    def expire_checkout_session(self, sid):
+        from app.platform.services.stripe_api import StripeError
+        if self.state[sid] != "open":
+            raise StripeError("not open", "checkout_session_not_open", 400)
+        self.state[sid] = "expired"
+        return {"id": sid, "status": "expired"}
+
+    def create_refund(self, payment_intent_id, amount, idempotency_key, reason="requested_by_customer"):
+        self.refunds.append((payment_intent_id, amount))
+        return {"id": f"re_{len(self.refunds)}", "status": "succeeded"}
+
+
+WHSEC = "whsec_test_secret"
 
 
 @pytest.fixture()
-def fake_paypal(monkeypatch):
-    from app.platform.services import paypal
-    fake = FakePayPal()
-    monkeypatch.setattr(settings, "PAYPAL_CLIENT_ID", "id")
-    monkeypatch.setattr(settings, "PAYPAL_CLIENT_SECRET", "secret")
-    monkeypatch.setattr(paypal, "create_order", fake.create_order)
-    monkeypatch.setattr(paypal, "capture_order", fake.capture_order)
+def fake_stripe(monkeypatch):
+    from app.platform.services import stripe_api
+    fake = FakeStripe()
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_x")
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", WHSEC)
+    for name in ("create_checkout_session", "get_checkout_session", "expire_checkout_session", "create_refund"):
+        monkeypatch.setattr(stripe_api, name, getattr(fake, name))
     return fake
 
 
-def test_paypal_is_offered_under_pay_in_us_when_configured(env, fake_paypal):
+def send_event(event: dict, secret: str = WHSEC, age: int = 0):
+    body = json.dumps(event).encode()
+    t = int(time.time()) - age
+    sig = hmac.new(secret.encode(), f"{t}.".encode() + body, hashlib.sha256).hexdigest()
+    return TestClient(app).post("/webhooks/stripe", content=body,
+                                headers={"Stripe-Signature": f"t={t},v1={sig}", "Content-Type": "application/json"})
+
+
+def start(client: TestClient, invoice_id: str, **extra):
+    return client.post("/client/payments/stripe/start", data={"invoice_id": invoice_id, **extra}, follow_redirects=False)
+
+
+def completed(sid: str, event_id: str = "evt_1", kind: str = "checkout.session.completed") -> dict:
+    return {"id": event_id, "type": kind, "data": {"object": {"id": sid}}}
+
+
+def test_stripe_is_offered_under_pay_in_usd_when_configured(env, fake_stripe):
     page = as_(env, "client").get("/client/make-payment").text
-    # Pay in USD → Pay now → the "Complete your payment" window posts to PayPal's checkout
-    assert "data-pay-open" in page and 'action="/client/payments/paypal/start"' in page and "Continue to payment" in page
+    # Pay in USD → Pay now → the "Complete your payment" window posts to Stripe Checkout
+    assert "data-pay-open" in page and 'action="/client/payments/stripe/start"' in page and "Secured by Stripe" in page
+    assert "Card payment isn't switched on yet" not in page
 
 
-def test_paypal_checkout_capture(env, fake_paypal):
+def test_stripe_off_without_keys(env):
     client = as_(env, "client")
-    r = client.post("/client/payments/paypal/start", data={"invoice_id": env["invoice_id"]}, follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == "https://paypal.test/approve/ORDER1"
-    # walked away and started again: the first checkout is replaced
-    client.post("/client/payments/paypal/start", data={"invoice_id": env["invoice_id"]}, follow_redirects=False)
-    r = client.get("/client/payments/paypal/return?token=ORDER2", follow_redirects=False)
+    assert "Card payment isn't switched on yet" in client.get("/client/make-payment").text
+    assert "error=" in start(client, env["invoice_id"]).headers["location"]
+
+
+def test_stripe_checkout_paid(env, fake_stripe):
+    client = as_(env, "client")
+    r = start(client, env["invoice_id"])
+    assert r.status_code == 303 and r.headers["location"] == "https://checkout.stripe.test/cs_test_1"
+    # walked away and started again: the first page is closed at Stripe so it can't be paid any more
+    start(client, env["invoice_id"])
+    assert fake_stripe.state["cs_test_1"] == "expired"
+    fake_stripe.state["cs_test_2"] = "paid"
+    r = client.get("/client/payments/stripe/return?session_id=cs_test_2", follow_redirects=False)
     assert "saved=" in r.headers["location"]
-    client.get("/client/payments/paypal/return?token=ORDER2", follow_redirects=False)  # refresh: no second capture
-    assert fake_paypal.captured == ["ORDER2"]
+    client.get("/client/payments/stripe/return?session_id=cs_test_2", follow_redirects=False)  # refresh: no change
     db = env["Session"]()
-    pay = db.query(Payment).filter(Payment.gateway_payment_id == "ORDER2").one()
-    assert pay.status == "succeeded" and pay.transaction_reference == "CAP-ORDER2" and pay.amount == Decimal("150.00")
+    pay = db.query(Payment).filter(Payment.gateway_payment_id == "cs_test_2").one()
+    assert pay.status == "succeeded" and pay.transaction_reference == "pi_cs_test_2" and pay.payment_method == "card"
+    assert pay.amount == Decimal("150.00") and pay.fee_amount == Decimal("4.65")
+    assert db.query(Payment).filter(Payment.gateway_payment_id == "cs_test_1").one().status == "failed"
     assert db.get(Invoice, env["invoice_id"]).status == "paid"
     assert db.get(TaxFiling, env["filing_id"]).status == "client_review"
-    # approving the old order now must not charge again
-    assert "error=" in client.get("/client/payments/paypal/return?token=ORDER1", follow_redirects=False).headers["location"]
-    assert fake_paypal.captured == ["ORDER2"]
     db.close()
+    assert "Card / Apple Pay / Google Pay" in client.get("/client/tax-summary").text
 
 
-def test_paypal_cancel_and_other_clients(env, fake_paypal):
+def test_stripe_cancel_and_other_clients(env, fake_stripe):
     client, other = as_(env, "client"), as_(env, "other")
-    assert "error=" in other.post("/client/payments/paypal/start", data={"invoice_id": env["invoice_id"]},
-                                  follow_redirects=False).headers["location"]
-    client.post("/client/payments/paypal/start", data={"invoice_id": env["invoice_id"]}, follow_redirects=False)
-    assert "error=" in other.get("/client/payments/paypal/return?token=ORDER1", follow_redirects=False).headers["location"]
-    assert fake_paypal.captured == []
-    client.get("/client/payments/paypal/cancel?token=ORDER1", follow_redirects=False)
-    db = env["Session"]()
-    assert db.query(Payment).one().status == "failed"
-    db.close()
-
-
-def test_no_webhook_endpoint(env):
-    assert TestClient(app).post("/webhooks/paypal", json={}).status_code == 404
-
-
-def test_paypal_pending_capture_is_verified_by_admin(env, fake_paypal):
-    """Without webhooks, a capture PayPal leaves pending is checked in PayPal and verified by an admin."""
-    client, admin = as_(env, "client"), as_(env, "admin")
-    fake_paypal.capture_status = "PENDING"
-    client.post("/client/payments/paypal/start", data={"invoice_id": env["invoice_id"]}, follow_redirects=False)
-    client.get("/client/payments/paypal/return?token=ORDER1", follow_redirects=False)
+    assert "error=" in start(other, env["invoice_id"]).headers["location"]
+    start(client, env["invoice_id"])
+    fake_stripe.state["cs_test_1"] = "paid"
+    assert "error=" in other.get("/client/payments/stripe/return?session_id=cs_test_1",
+                                 follow_redirects=False).headers["location"]
     db = env["Session"]()
     pay = db.query(Payment).one()
-    assert pay.status == "pending" and pay.transaction_reference == "CAP-ORDER1"
+    assert pay.status == "pending"
+    fake_stripe.state["cs_test_1"] = "open"
+    other.get(f"/client/payments/stripe/cancel?payment={pay.id}", follow_redirects=False)  # not theirs: ignored
+    assert fake_stripe.state["cs_test_1"] == "open"
+    client.get(f"/client/payments/stripe/cancel?payment={pay.id}", follow_redirects=False)
+    db.expire_all()
+    assert db.get(Payment, pay.id).status == "failed" and fake_stripe.state["cs_test_1"] == "expired"
+    db.close()
+    assert "Not accepted" not in client.get("/client/tax-summary").text  # an unfinished checkout isn't listed
+
+
+def test_webhook_signature_is_checked(env, fake_stripe):
+    event = completed("cs_test_1")
+    assert send_event(event, secret="whsec_wrong").status_code == 400
+    assert send_event(event, age=3600).status_code == 400  # replayed an hour later
+    assert TestClient(app).post("/webhooks/stripe", json=event).status_code == 400  # unsigned
+    assert send_event(event).json()["result"] == "ignored"  # signed, but not one of our payments
+    assert TestClient(app).post("/webhooks/paypal", json={}).status_code == 404  # PayPal is gone
+
+
+def test_ach_clears_through_webhooks(env, fake_stripe):
+    client, admin = as_(env, "client"), as_(env, "admin")
+    start(client, env["invoice_id"])
+    fake_stripe.state["cs_test_1"] = "processing"  # an ACH debit: Checkout completes, the money clears days later
+    assert send_event(completed("cs_test_1")).json()["result"] == "applied"
+    db = env["Session"]()
+    pay = db.query(Payment).one()
+    assert pay.status == "pending" and pay.payment_method == "ach" and pay.transaction_reference == "pi_cs_test_1"
     assert db.get(Invoice, env["invoice_id"]).status == "issued"
-    assert "Awaiting verification" in admin.get("/admin/payments").text
-    admin.post(f"/admin/payments/payments/{pay.id}/verify", follow_redirects=False)
+    assert "Processing at your bank" in client.get("/client/tax-summary").text
+    from app.platform.services import payments as client_payments
+    assert client_payments.pending_payments(db) == []  # Stripe confirms it, not an admin
+    assert "error=" in admin.post(f"/admin/payments/payments/{pay.id}/verify", follow_redirects=False).headers["location"]
+
+    fake_stripe.state["cs_test_1"] = "paid"
+    paid = completed("cs_test_1", "evt_2", "checkout.session.async_payment_succeeded")
+    assert send_event(paid).json()["result"] == "applied"
+    assert send_event(paid).json()["result"] == "duplicate"  # Stripe redelivers: applied once
     db.expire_all()
     assert db.get(Payment, pay.id).status == "succeeded" and db.get(Invoice, env["invoice_id"]).status == "paid"
     db.close()
 
 
-def test_unfinished_paypal_checkout_is_not_reviewable(env, fake_paypal):
-    client, admin = as_(env, "client"), as_(env, "admin")
-    client.post("/client/payments/paypal/start", data={"invoice_id": env["invoice_id"]}, follow_redirects=False)
+def test_ach_failure(env, fake_stripe):
+    client = as_(env, "client")
+    start(client, env["invoice_id"])
+    fake_stripe.state["cs_test_1"] = "failed"
+    send_event(completed("cs_test_1", kind="checkout.session.async_payment_failed"))
     db = env["Session"]()
     pay = db.query(Payment).one()
-    assert "error=" in admin.post(f"/admin/payments/payments/{pay.id}/verify", follow_redirects=False).headers["location"]
-    db.expire_all()
-    assert db.get(Payment, pay.id).status == "pending"
+    assert pay.status == "failed" and "insufficient funds" in pay.failure_reason
     db.close()
+    assert "insufficient funds" in client.get("/client/tax-summary").text
+
+
+def test_admin_refund_and_dispute(env, fake_stripe):
+    client, admin = as_(env, "client"), as_(env, "admin")
+    start(client, env["invoice_id"])
+    fake_stripe.state["cs_test_1"] = "paid"
+    client.get("/client/payments/stripe/return?session_id=cs_test_1", follow_redirects=False)
+    db = env["Session"]()
+    pay = db.query(Payment).one()
+    assert "Refund payment" in admin.get(f"/admin/payments/invoices/{env['invoice_id']}").text
+    assert "error=" in admin.post(f"/admin/payments/payments/{pay.id}/refund", data={"amount": "200"},
+                                  follow_redirects=False).headers["location"]
+    assert "saved=" in admin.post(f"/admin/payments/payments/{pay.id}/refund", data={"amount": "50"},
+                                  follow_redirects=False).headers["location"]
+    assert fake_stripe.refunds == [("pi_cs_test_1", Decimal("50.00"))]
+    db.expire_all()
+    pay = db.get(Payment, pay.id)
+    assert pay.status == "succeeded" and pay.refunded_amount == Decimal("50.00")
+    assert db.get(Invoice, env["invoice_id"]).status == "partially_paid"  # $100 kept of $150
+    assert "$50.00 refunded" in client.get("/client/tax-summary").text
+    # Stripe's own charge.refunded for that same refund changes nothing
+    send_event({"id": "evt_r1", "type": "charge.refunded",
+                "data": {"object": {"payment_intent": "pi_cs_test_1", "amount_refunded": 5000}}})
+    db.expire_all()
+    assert db.get(Payment, pay.id).refunded_amount == Decimal("50.00")
+    send_event({"id": "evt_d1", "type": "charge.dispute.created",
+                "data": {"object": {"id": "dp_1", "payment_intent": "pi_cs_test_1", "status": "needs_response"}}})
+    db.expire_all()
+    assert db.get(Payment, pay.id).dispute_status == "needs_response"
+    send_event({"id": "evt_d2", "type": "charge.dispute.closed",
+                "data": {"object": {"id": "dp_1", "payment_intent": "pi_cs_test_1", "status": "lost"}}})
+    db.expire_all()
+    pay = db.get(Payment, pay.id)
+    assert pay.status == "refunded" and pay.refunded_amount == Decimal("150.00")
+    assert db.get(Invoice, env["invoice_id"]).status == "issued"
+    db.close()
+
+
+def test_admin_check_with_stripe(env, fake_stripe):
+    """No webhook arrived and the client never came back: an admin reads the payment from Stripe."""
+    client, admin = as_(env, "client"), as_(env, "admin")
+    start(client, env["invoice_id"])
+    fake_stripe.state["cs_test_1"] = "paid"
+    db = env["Session"]()
+    pay = db.query(Payment).one()
+    assert "Check with Stripe" in admin.get(f"/admin/payments/invoices/{env['invoice_id']}").text
+    assert "saved=" in admin.post(f"/admin/payments/payments/{pay.id}/sync", follow_redirects=False).headers["location"]
+    db.expire_all()
+    assert db.get(Payment, pay.id).status == "succeeded" and db.get(Invoice, env["invoice_id"]).status == "paid"
+    db.close()
+
+
+def test_advance_payment_by_card(env, fake_stripe):
+    """No open invoice: the client pays any amount, kept on the case until an invoice is issued."""
+    db = env["Session"]()
+    db.get(Invoice, env["invoice_id"]).status = "void"
+    db.commit()
+    client = as_(env, "client")
+    assert start(client, "", pay_amount="75").status_code == 303
+    fake_stripe.state["cs_test_1"] = "paid"
+    client.get("/client/payments/stripe/return?session_id=cs_test_1", follow_redirects=False)
+    pay = db.query(Payment).one()
+    assert pay.status == "succeeded" and pay.invoice_id is None and pay.amount == Decimal("75.00")
+    db.close()
+
+
+def test_verify_event_signature():
+    from app.platform.services import stripe_api
+    settings_secret = settings.STRIPE_WEBHOOK_SECRET
+    try:
+        settings.STRIPE_WEBHOOK_SECRET = WHSEC
+        body, t = b'{"id": "evt_1"}', 1_700_000_000
+        sig = hmac.new(WHSEC.encode(), f"{t}.".encode() + body, hashlib.sha256).hexdigest()
+        assert stripe_api.verify_event(body, f"t={t},v1=bad,v1={sig}", now=t + 10)["id"] == "evt_1"  # any v1 may match
+        with pytest.raises(stripe_api.StripeError):
+            stripe_api.verify_event(body + b" ", f"t={t},v1={sig}", now=t)  # body changed
+    finally:
+        settings.STRIPE_WEBHOOK_SECRET = settings_secret

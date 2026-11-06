@@ -5,7 +5,7 @@ import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -97,8 +97,10 @@ class Payment(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
-    # How the payment arrived: "manual" (recorded by admin, or submitted by the client for checking)
-    # or an online gateway later. A client submission stays "pending" until an admin verifies it.
+    # How the payment arrived: "manual" (recorded by admin, or submitted by the client for checking), "stripe"
+    # (Pay in USD; gateway_payment_id is the Checkout Session, transaction_reference the PaymentIntent) or "paypal"
+    # (old rows only). A client submission stays "pending" until an admin verifies it; a Stripe ACH debit stays
+    # "pending" while the bank clears it.
     gateway: Mapped[str] = mapped_column(String(20), default="manual", nullable=False)
     gateway_payment_id: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     submitted_by_account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="SET NULL"), nullable=True)
@@ -112,5 +114,23 @@ class Payment(Base):
     verified_by_account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="SET NULL"), nullable=True)
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)  # why a submission was rejected
+    # Stripe (Pay in USD): what Stripe kept as its fee, how much has been refunded, and any card dispute.
+    # A part-refunded payment stays "succeeded" and counts amount - refunded_amount; a full refund makes it "refunded".
+    fee_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    refunded_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"), server_default="0", nullable=False)
+    dispute_status: Mapped[str | None] = mapped_column(String(30), nullable=True)  # e.g. needs_response, won, lost
 
     invoice: Mapped["Invoice | None"] = relationship("Invoice", back_populates="payments")
+
+
+class PaymentEvent(Base):
+    """A webhook event already handled, so a redelivered event (gateways retry) is never applied twice."""
+    __tablename__ = "payment_events"
+    __table_args__ = (UniqueConstraint("gateway", "event_id", name="uq_payment_events_gateway_event"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    gateway: Mapped[str] = mapped_column(String(20), nullable=False)
+    event_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    payment_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("payments.id", ondelete="SET NULL"), index=True, nullable=True)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)

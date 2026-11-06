@@ -34,7 +34,7 @@ from app.modules.staff.models.staff_records import (  # noqa: F401
     StaffSalaryHistory,
 )
 from app.platform.models.case_workflow import Acknowledgment, CaseAssignment, CaseComment, CaseStageHistory, IrsSubmission  # noqa: F401
-from app.platform.models.billing import CaseService, Invoice, Payment, Service  # noqa: F401
+from app.platform.models.billing import CaseService, Invoice, Payment, PaymentEvent, Service  # noqa: F401
 from app.platform.models.system import AppSetting, AuditLog, Notification  # noqa: F401
 from app.platform.models.referral import ReferralFollowUp, ReferralLead  # noqa: F401
 from app.platform.models.filing_intake import FilingIntake  # noqa: F401

@@ -1,8 +1,8 @@
 {#- Make Payment (client feedback, Oct 2026), laid out like the client's reference portal: two options,
     Pay in USD and Pay in INR.
     - Pay in USD: "Pay now" opens a "Complete your payment" window (amount, phone, email), then hands over
-      to the card gateway's secure page. The gateway is PayPal for now (cards without a PayPal account);
-      card details are never entered on our site.
+      to Stripe Checkout (card, Apple Pay, Google Pay or US bank account / ACH; was PayPal until Nov 2026).
+      Card and bank details are never entered on our site.
     - Pay in INR: UPI, as before.
     The previous form (India / US, then method, with bank transfer) is kept in _make_payment_v1.html.
     Needs the billing context from _billing_extra() in app/modules/client/api/client.py. -#}
@@ -42,7 +42,7 @@
             <div class="cx-pay__options" role="radiogroup" aria-label="Payment option">
                 <label class="cx-pay__option">
                     <input type="radio" name="pay_option" value="usd" checked data-pay-option />
-                    <span><strong>Pay in USD</strong><small>Card, Google Pay, Apple Pay or PayPal</small></span>
+                    <span><strong>Pay in USD</strong><small>Card, Apple Pay, Google Pay or US bank account (ACH)</small></span>
                 </label>
                 <label class="cx-pay__option">
                     <input type="radio" name="pay_option" value="inr" data-pay-option />
@@ -54,7 +54,7 @@
             <div class="cx-pay__panel">
                 <div data-pay-panel="usd">
                     <button type="button" class="cx-pay__now" data-pay-open>PAY NOW</button>
-                    <div class="cx-pay__brands"><span>VISA · Mastercard · Amex &amp; more</span><span>Secured by PayPal</span></div>
+                    <div class="cx-pay__brands"><span>VISA · Mastercard · Amex · ACH &amp; more</span><span>Secured by Stripe</span></div>
                 </div>
 
                 <div data-pay-panel="inr" hidden>
@@ -106,7 +106,7 @@
 {% if true %}
 {#- Pay in USD: "Complete your payment", then the gateway's secure page takes the card -#}
 <dialog class="cx-paydlg" data-pay-dialog aria-labelledby="paydlg-title">
-    <form method="post" action="/client/payments/paypal/start" class="cx-paydlg__grid" data-pay-form>
+    <form method="post" action="/client/payments/stripe/start" class="cx-paydlg__grid" data-pay-form>
         <aside class="cx-paydlg__brand">
             <span class="cx-paydlg__logo">CT</span><strong>{{ app_name }}</strong>
             <p class="cx-paydlg__paying">PAYING</p>
@@ -142,9 +142,9 @@
                 <label class="cx-label" for="usd-email">Email</label>
                 <input class="cx-input" id="usd-email" name="email" type="email" maxlength="255" value="{{ account_email }}" />
             </div>
-            {% if paypal_on %}
+            {% if stripe_on %}
             <button type="submit" class="cx-btn cx-btn--primary cx-paydlg__go">Continue to payment</button>
-            <p class="cx-muted cx-paydlg__note">Next, you'll enter your card (or pay with PayPal) on PayPal's secure page, then come straight back here.</p>
+            <p class="cx-muted cx-paydlg__note">Next, you'll pay by card, Apple Pay, Google Pay or US bank account on Stripe's secure page, then come straight back here.</p>
             {% else %}
             <button type="button" class="cx-btn cx-btn--primary cx-paydlg__go" disabled>Continue to payment</button>
             <p class="cx-paydlg__note cx-paydlg__note--off">Card payment isn't switched on yet. Please use <strong>Pay in INR</strong>, or contact your tax team.</p>

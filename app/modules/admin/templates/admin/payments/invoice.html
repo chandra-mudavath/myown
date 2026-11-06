@@ -75,17 +75,37 @@
                         <tr>
                             <td>
                                 {{ p.payment_number }}{% if p.transaction_reference %}<small class="admin-muted">Ref: {{ p.transaction_reference }}</small>{% endif %}
-                                {% if p.gateway == 'paypal' and p.gateway_payment_id %}<small class="admin-muted">PayPal order {{ p.gateway_payment_id }}</small>{% elif p.submitted_by_account_id %}<small class="admin-muted">Submitted by client{% if p.original_amount %} · sent {{ '{:,.2f}'.format(p.original_amount) }} {{ p.original_currency }}{% endif %}</small>{% endif %}
-                                {% if p.failure_reason %}<small class="admin-doc-reason">Rejected: {{ p.failure_reason }}</small>{% endif %}
+                                {% if p.gateway == 'stripe' %}<small class="admin-muted">Paid online (Stripe){% if p.fee_amount is not none %} · fee {{ money.format(p.fee_amount) }}{% endif %}</small>
+                                {% if p.refunded_amount %}<small class="admin-muted">Refunded {{ money.format(p.refunded_amount) }}</small>{% endif %}
+                                {% if p.dispute_status %}<small class="admin-doc-reason">Card dispute: {{ p.dispute_status.replace('_', ' ') }} (answer it in the Stripe Dashboard)</small>{% endif %}
+                                {% elif p.gateway == 'paypal' and p.gateway_payment_id %}<small class="admin-muted">PayPal order {{ p.gateway_payment_id }}</small>{% elif p.submitted_by_account_id %}<small class="admin-muted">Submitted by client{% if p.original_amount %} · sent {{ '{:,.2f}'.format(p.original_amount) }} {{ p.original_currency }}{% endif %}</small>{% endif %}
+                                {% if p.failure_reason %}<small class="admin-doc-reason">{{ 'Not completed' if p.gateway == 'stripe' else 'Rejected' }}: {{ p.failure_reason }}</small>{% endif %}
                             </td>
                             <td class="admin-nowrap">{{ (p.paid_at or p.created_at).strftime('%b %d, %Y') }}</td>
                             <td>{{ method_labels.get(p.payment_method, p.payment_method) }}</td>
                             <td>
-                                <span class="admin-pill admin-pill--{{ pay_tone.get(p.status, 'slate') }}">{{ ('Processing at PayPal' if p.transaction_reference else 'Checkout started') if p.gateway == 'paypal' and p.status == 'pending' else pay_label.get(p.status, p.status) }}</span>
-                                {% if (p.status == 'pending' and (p.gateway == 'manual' or p.transaction_reference)) or p.proof_path %}
+                                {% set reviewable = p.status == 'pending' and (p.gateway == 'manual' or (p.gateway == 'paypal' and p.transaction_reference)) %}
+                                {% set stripe_pending = p.gateway == 'stripe' and p.status == 'pending' %}
+                                {% set refundable = p.gateway == 'stripe' and p.status == 'succeeded' and p.transaction_reference %}
+                                <span class="admin-pill admin-pill--{{ pay_tone.get(p.status, 'slate') }}">{% if stripe_pending %}{{ 'Bank payment clearing' if p.transaction_reference else 'Checkout started' }}{% elif p.gateway == 'paypal' and p.status == 'pending' %}{{ 'Processing at PayPal' if p.transaction_reference else 'Checkout started' }}{% else %}{{ pay_label.get(p.status, p.status) }}{% endif %}</span>
+                                {% if reviewable or p.proof_path or stripe_pending or refundable %}
                                 <div class="admin-doc-actions">
                                     {% if p.proof_path %}<a class="admin-mini-btn" href="/admin/payments/payments/{{ p.id }}/proof" target="_blank" rel="noopener">Proof</a>{% endif %}
-                                    {% if p.status == 'pending' and (p.gateway == 'manual' or p.transaction_reference) %}
+                                    {% if stripe_pending %}
+                                    <form method="post" action="/admin/payments/payments/{{ p.id }}/sync"><button type="submit" class="admin-mini-btn">Check with Stripe</button></form>
+                                    {% endif %}
+                                    {% if refundable %}
+                                    <details class="admin-doc-pop">
+                                        <summary class="admin-mini-btn admin-mini-btn--danger">Refund</summary>
+                                        <form method="post" action="/admin/payments/payments/{{ p.id }}/refund" class="admin-pop-form" onsubmit="return confirm('Send this refund to the client's card / bank? This can't be undone.');">
+                                            <label for="refund-{{ p.id }}">Amount to refund ($)</label>
+                                            <input id="refund-{{ p.id }}" name="amount" inputmode="decimal" placeholder="{{ '%.2f' | format(p.amount - p.refunded_amount) }} (leave blank for all)">
+                                            <small class="admin-muted">The refund comes off what this invoice has been paid, so the invoice can show a balance again.</small>
+                                            <button type="submit" class="admin-filter-btn">Refund payment</button>
+                                        </form>
+                                    </details>
+                                    {% endif %}
+                                    {% if reviewable %}
                                     <form method="post" action="/admin/payments/payments/{{ p.id }}/verify" onsubmit="return confirm('Confirm {{ money.format(p.amount) }} was received for {{ invoice.invoice_number }}?');">
                                         <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Verify</button>
                                     </form>

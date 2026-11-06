@@ -45,7 +45,7 @@ def password_needs_rehash(hashed: str) -> bool:
 # ── JWT tokens ────────────────────────────────────────────────────────────────
 
 def create_access_token(subject: str, account_type: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.SESSION_IDLE_MINUTES)
     return jwt.encode(
         {"sub": subject, "type": "access", "account_type": account_type, "exp": expire},
         settings.SECRET_KEY,
