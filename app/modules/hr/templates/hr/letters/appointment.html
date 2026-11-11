@@ -1,0 +1,27 @@
+{% extends "hr/letters/_frame.html" %}
+{% block letter_body %}
+<p style="margin:0;"><strong>{{ d.employee_name }}</strong></p>
+<p style="margin:0 0 16px;color:#6b7280;">Employee number {{ d.employee_number }}</p>
+<p style="margin:16px 0;font-weight:bold;">Subject: Letter of appointment</p>
+<p style="margin:0 0 10px;">Dear {{ d.employee_name }},</p>
+<p style="margin:0 0 10px;">We are pleased to appoint you as <strong>{{ d.designation }}</strong>{% if d.department %} in the {{ d.department }} department{% endif %} of {{ company.company_name }}, with effect from <strong>{{ fmt_date(d.joining_date) }}</strong>.</p>
+<p style="margin:0 0 10px;"><strong>Compensation.</strong> Your monthly salary is {{ company.currency }} {{ money(d.monthly_salary) }}, made up as follows:</p>
+<table role="presentation" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;margin:8px 0;font-family:Arial,sans-serif;font-size:13px;">
+    <tr style="background:#eff6ff;"><th style="border:1px solid #e5e7eb;text-align:left;">Component</th><th style="border:1px solid #e5e7eb;text-align:right;">Per month</th></tr>
+    {% for label, amount in breakup %}<tr><td style="border:1px solid #e5e7eb;">{{ label }}</td><td style="border:1px solid #e5e7eb;text-align:right;">{{ money(amount) }}</td></tr>{% endfor %}
+</table>
+<p style="margin:0 0 10px;"><strong>Probation.</strong> You will be on probation for {{ d.probation_months | int }} months. On satisfactory completion your employment will be confirmed in writing.</p>
+<p style="margin:0 0 10px;"><strong>Duties and conduct.</strong> You will carry out the duties of your role and any other work reasonably asked of you, follow the company's policies, and keep company and client information confidential during and after your employment.</p>
+<p style="margin:0 0 10px;"><strong>Working hours and leave.</strong> As per the company's attendance and leave policy.</p>
+<p style="margin:0 0 10px;"><strong>Notice.</strong> Either side may end the employment with {{ d.notice_days | int }} days' written notice, or salary in place of notice.</p>
+<p style="margin:0 0 10px;">Please sign and return a copy of this letter to confirm that you accept these terms.</p>
+{% endblock %}
+{% block signature %}
+{{ super() }}
+<div style="margin-top:28px;border-top:1px dashed #d1d5db;padding-top:12px;">
+    <div style="font-weight:bold;">Acknowledgement</div>
+    <p style="margin:6px 0;">I have read and accept the terms of this appointment.</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:26px;"><tr>
+        <td>Signature: ______________________</td><td style="text-align:right;">Date: ______________</td></tr></table>
+</div>
+{% endblock %}

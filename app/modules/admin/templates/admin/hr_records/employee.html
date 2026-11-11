@@ -1,0 +1,16 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ people.full_name(employee) }} - HR records - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'HR records / ' ~ employee.staff_number %}
+{% set no_rail = true %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />{% endblock %}
+
+{% block main %}
+    {% include "hr/partials/employee_head.html" %}
+    <nav class="hr-chips" aria-label="Record sections">
+        <a class="admin-mini-btn" href="/admin/hr-records">&#8249; All employees</a>
+        {% for group, items in tabs %}{% for key, label in items %}
+        <a class="admin-mini-btn{% if tab == key %} is-active{% endif %}" href="{{ page }}?tab={{ key }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}{% endfor %}
+    </nav>
+    {% include "hr/_employee_tabs.html" %}
+{% endblock %}

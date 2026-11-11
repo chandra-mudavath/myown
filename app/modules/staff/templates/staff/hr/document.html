@@ -1,0 +1,18 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}{{ title }} - {{ app_name }}{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />{% endblock %}
+
+{% block main %}
+    <div class="staff-pagehead">
+        <div>
+            <p class="eyebrow">{{ doc.document_number }}</p>
+            <h1>{{ title }}</h1>
+        </div>
+        <div class="hr-form-actions">
+            <a class="staff-btn staff-btn--ghost" href="{{ '/staff/hr/payslips' if doc.kind == 'PAYSLIP' else '/staff/hr/documents' }}">{{ ci("chevron-left", "ci ci--sm") }} Back</a>
+            <a class="staff-btn staff-btn--primary" href="/staff/hr/documents/{{ doc.id }}/print" target="_blank" rel="noopener">{{ ci("download", "ci ci--sm") }} Print / Save as PDF</a>
+        </div>
+    </div>
+    <section class="hr-doc-paper" aria-label="Document">{{ letter | safe }}</section>
+{% endblock %}

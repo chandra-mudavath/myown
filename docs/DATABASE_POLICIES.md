@@ -1,4 +1,4 @@
-# UrTax: Database access policies and indexing
+# CovrentTax: Database access policies and indexing
 
 Status: **adopted 2026-10-02.** Replaces §5 (RLS) and §6 (indexing) of
 [DATABASE_IMPLEMENTATION_PLAN.md](DATABASE_IMPLEMENTATION_PLAN.md), which were written for revision 1 and for
@@ -122,7 +122,7 @@ HR is a later phase; its column records the agreed intent.
 | `chat_attachments` | S I with their message | S I; U `filing_document_id` (save to case documents) | — | never |
 
 HR has no access to CASE / QUERY threads (`account_types.has_case_access = false`). Hidden threads are read only by
-admins (audit view) and backend developers (`urtax_readonly`).
+admins (audit view) and backend developers (`covrenttax_readonly`).
 
 ---
 
@@ -131,7 +131,7 @@ admins (audit view) and backend developers (`urtax_readonly`).
 - **Read through scoped queries.** Client routes never load a record by id alone. They go through a helper that
   adds the ownership filter, for example `client_filing(db, account, filing_id)` returning `None` for someone
   else's case. The client routes already follow this (`TaxFiling.client_id == client.id` in
-  `app/api/client/client.py`); new code collects these helpers in one module instead of repeating the filter.
+  `app/modules/client/api/client.py`); new code collects these helpers in one module instead of repeating the filter.
 - **One check per action.** Writes go through a service function that checks the matrix before changing anything
   (`chat_service.can_post(...)`, `document_review.add_comment(...)`). Routes don't write models directly.
 - **No `db.delete()` outside the tables marked "allowed".** Retire rows with their flag instead. Today the app has
@@ -149,9 +149,9 @@ python db_grants.py postgresql --database <prod>  # production
 
 | User | Used by | Permissions |
 |---|---|---|
-| `urtax_migrate` | Alembic (`MIGRATION_DATABASE_URL`) | owns the tables; create / alter / drop |
-| `urtax_app` | the app (`DATABASE_URL`) | S I U on every table; **no U** on append-only tables; **D** only on login tokens and `staff_role_assignments` |
-| `urtax_readonly` | backend developers, audit | S only |
+| `covrenttax_migrate` | Alembic (`MIGRATION_DATABASE_URL`) | owns the tables; create / alter / drop |
+| `covrenttax_app` | the app (`DATABASE_URL`) | S I U on every table; **no U** on append-only tables; **D** only on login tokens and `staff_role_assignments` |
+| `covrenttax_readonly` | backend developers, audit | S only |
 
 The script prints SQL and runs nothing. Review it, replace `CHANGE_ME` passwords, and run it as the database admin.
 On MySQL, re-run it after each migration that adds a table. On PostgreSQL, default privileges cover new tables, and
@@ -159,17 +159,17 @@ a re-run applies their special cases.
 
 **Order to switch over:**
 1. Run the script for the target database.
-2. Set `MIGRATION_DATABASE_URL` to `urtax_migrate`, and run `alembic upgrade head`.
-3. Set `DATABASE_URL` to `urtax_app` and restart the app.
+2. Set `MIGRATION_DATABASE_URL` to `covrenttax_migrate`, and run `alembic upgrade head`.
+3. Set `DATABASE_URL` to `covrenttax_app` and restart the app.
 
-`app/main.py` runs `create_all()` on startup. With `urtax_app` it can no longer create tables, so **run migrations
+`app/main.py` runs `create_all()` on startup. With `covrenttax_app` it can no longer create tables, so **run migrations
 before deploying code that adds a table**. Running `create_all()` only in development is the cleaner fix.
 
 ## 6. Layer 3: row level security (PostgreSQL production, later phase)
 
 Add it after layer 1 helpers and denial tests exist, and test it on PostgreSQL before enabling. Outline:
 
-1. The app connects as `urtax_app`, which does **not** own the tables (owners bypass RLS).
+1. The app connects as `covrenttax_app`, which does **not** own the tables (owners bypass RLS).
 2. At the start of each request transaction the app sets who is asking:
    ```python
    # app/core/database.py: SQLAlchemy "after_begin" event, PostgreSQL only
@@ -234,7 +234,7 @@ starts with that column). Every readable number has a unique index.
 
 **Lag that indexes don't fix:**
 - **Lists without paging.** Admin pages load every row: `/admin` dashboard, clients, cases, staff
-  (`app/api/admin.py`, `.all()` without `limit`). Fine at today's size; at thousands of rows they need paging
+  (`app/modules/admin/api/admin.py`, `.all()` without `limit`). Fine at today's size; at thousands of rows they need paging
   like the staff case list (`staff.py`, `offset` / `limit`).
 - **A query per row (N+1).** Counting or loading inside a loop; use one grouped query instead (fixed on the admin
   clients page).

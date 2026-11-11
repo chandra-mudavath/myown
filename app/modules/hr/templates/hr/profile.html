@@ -1,0 +1,83 @@
+{% extends "hr/_layout.html" %}
+{% block title %}My Profile - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'My Profile' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Account</span>
+                <h1>My Profile</h1>
+                <p>Your name, mobile and password.</p>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved == 'details' %}<div class="alert alert--success admin-alert" role="status">Your details have been updated.</div>{% endif %}
+    {% if saved == 'password' %}<div class="alert alert--success admin-alert" role="status">Password changed. Other devices have been signed out.</div>{% endif %}
+
+    <section class="admin-section" aria-labelledby="profile-title">
+        <div class="admin-card">
+            <h3 class="admin-card-title" id="profile-title">Profile</h3>
+            <div class="admin-profile-row">
+                <div class="admin-profile-head">
+                    <span class="admin-profile-photo admin-profile-photo--initials">{{ initials }}</span>
+                    <div>
+                        <strong>{{ hr_name }} {{ hr_last_name }}</strong>
+                        <span>{{ account.email }}</span>
+                    </div>
+                </div>
+                <dl class="admin-facts admin-profile-facts">
+                    <div><dt>HR Number</dt><dd>{{ hr.hr_number if hr else '—' }}</dd></div>
+                    <div><dt>Email Address</dt><dd>{{ account.email }}</dd></div>
+                    <div><dt>Last Sign-in</dt><dd>{{ account.last_login_at.strftime('%b %d, %Y · %H:%M') if account.last_login_at else '—' }}</dd></div>
+                    <div><dt>Member Since</dt><dd>{{ hr.created_at.strftime('%b %d, %Y') if hr and hr.created_at else '—' }}</dd></div>
+                </dl>
+            </div>
+
+            <form method="post" action="/hr/profile" class="admin-form admin-edit-row">
+                <h4>Details</h4>
+                <div class="admin-edit-row__fields">
+                    <div class="modal-form-group">
+                        <label for="first_name">First name</label>
+                        <input id="first_name" name="first_name" value="{{ hr.first_name if hr else '' }}" maxlength="15" required autocomplete="given-name">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="last_name">Last name</label>
+                        <input id="last_name" name="last_name" value="{{ hr.last_name or '' if hr else '' }}" maxlength="15" autocomplete="family-name">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="phone">Mobile</label>
+                        <input id="phone" name="phone" value="{{ hr.phone or '' if hr else '' }}" maxlength="20" autocomplete="tel">
+                    </div>
+                    <button type="submit" class="modal-btn-submit admin-form-submit">Save details</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-labelledby="password-title">
+        <div class="admin-card">
+            <h3 class="admin-card-title" id="password-title">Change password</h3>
+            <form method="post" action="/hr/profile/password" class="admin-form admin-edit-row">
+                <div class="admin-edit-row__fields">
+                    <div class="modal-form-group">
+                        <label for="current_password">Current password</label>
+                        <input id="current_password" name="current_password" type="password" required autocomplete="current-password">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="new_password">New password</label>
+                        <input id="new_password" name="new_password" type="password" required minlength="8" autocomplete="new-password">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="confirm_password">Confirm new password</label>
+                        <input id="confirm_password" name="confirm_password" type="password" required minlength="8" autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="modal-btn-submit admin-form-submit">Change password</button>
+                </div>
+                <p class="admin-form-hint admin-team-hint">At least 8 characters, with an uppercase letter, a lowercase letter, a number and a special character. Changing it signs out your other devices.</p>
+            </form>
+        </div>
+    </section>
+{% endblock %}

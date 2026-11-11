@@ -1,0 +1,396 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci, yes_no %}
+{% set active_nav = "tax_notes" %}
+{% set page_section = "Tax Notes" %}
+{% set page_title = "Tax Notes Sheet" %}
+{% set page_subtitle = "Answer a few quick questions so your preparer knows which income, deductions and documents apply to you." %}
+{% set y = selected_year %}
+{#- Saved answers for this year (client feedback, Oct 2026: Tax Notes now save, and the first save starts the year's case) -#}
+{% set nv = notes | default({}) %}
+
+{% set income_qs = [
+    ("stayed_usa", "Did you stay in the USA during tax year " ~ y ~ "?", ""),
+    ("rental", "Do you own any rental property in the US, India or elsewhere?", ""),
+    ("india_salary", "Did you receive any salary income from India?", "Only if this income is not already included in your W-2."),
+    ("interest", "Did you earn any interest income in the USA or abroad?", "Savings, FDs, NRE/NRO accounts, bonds."),
+    ("dividend", "Did you earn any dividend income in the USA or abroad?", ""),
+    ("distributions", "Did you receive any distributions from HSA, IRA or 401(k) plans?", ""),
+    ("prev_return", "Did you file your previous year's tax return with us?", ""),
+] %}
+{% set expense_qs = [
+    ("student_visa", "Are you a student on an F, M, J or Q visa?", ""),
+    ("tuition", "Did you pay tuition or higher-education expenses at a qualified US institution?", ""),
+    ("edu_loan", "Did you pay interest on an education loan in the US during " ~ y ~ "?", ""),
+    ("mortgage", "Did you pay mortgage interest in the USA during " ~ y ~ "?", ""),
+    ("hsa_ira", "Did you contribute to a Health Savings Account or IRA?", "Out-of-pocket only, not covered by your employer."),
+    ("stock_sales", "Any stock sales or carry-forward losses during the tax year?", ""),
+    ("foreign_mf", "Do you own mutual funds in countries other than the USA?", ""),
+    ("medical", "Did you have out-of-pocket medical expenses during the year?", ""),
+    ("charity", "Did you make charitable contributions in " ~ y ~ "?", ""),
+    ("health_ins", "Were you covered by health insurance?", ""),
+    ("marketplace", "Do you have Marketplace health insurance (Form 1095-A)?", ""),
+] %}
+{#- Every question asks for details when answered Yes: one row per entry, with "Add another".
+    field: (name, label, input type, placeholder). Type "select" takes its options in the placeholder, split by "|".
+    Questions in single_row get one row and no "Add another". -#}
+{% set money = ("amount", "Amount ($)", "number", "0.00") %}
+{% set country = ("country", "Country", "text", "e.g. USA, India") %}
+{% set q_details = {
+    "married": [("spouse_name", "Spouse full name", "text", ""), ("marriage_date", "Date of marriage", "date", ""),
+                ("spouse_id", "Spouse SSN / ITIN", "select", "Has SSN|Has ITIN|Needs ITIN|Neither"),
+                ("spouse_country", "Spouse lives in", "text", "e.g. USA, India")],
+
+    "inc_stayed_usa": [("year", "Year", "number", y), ("state", "State", "text", "e.g. Texas"),
+                       ("from", "From date", "date", ""), ("to", "To date", "date", ""), ("rent", "Rent amount ($)", "number", "0.00")],
+    "inc_rental": [("location", "Property location", "text", "City, state / country"), country,
+                   ("rent", "Rent received ($)", "number", "0.00"), ("expenses", "Expenses ($)", "number", "0.00")],
+    "inc_india_salary": [("employer", "Employer", "text", ""), ("from", "From date", "date", ""), ("to", "To date", "date", ""),
+                         ("salary", "Gross salary (₹)", "number", "0.00"), ("tds", "Tax deducted / TDS (₹)", "number", "0.00")],
+    "inc_interest": [("payer", "Bank / institution", "text", "e.g. Chase, SBI NRO"),
+                     ("type", "Account type", "select", "Savings|Fixed deposit (FD)|NRE|NRO|Bond|Other"), country, money],
+    "inc_dividend": [("payer", "Company / broker", "text", "e.g. Fidelity"), country, money],
+    "inc_distributions": [("plan", "Plan", "select", "HSA|Traditional IRA|Roth IRA|401(k)|Other"), ("provider", "Provider", "text", "e.g. Vanguard"),
+                          ("form", "Form", "select", "1099-R|1099-SA|Don't know"), money],
+    "inc_prev_return": [("year", "Tax year", "number", y - 1 if y is number else y), ("name", "Filed under name", "text", ""),
+                        ("email", "Email used", "email", "")],
+
+    "exp_student_visa": [("visa", "Visa type", "select", "F-1|J-1|M-1|Q-1"), ("arrival", "First arrival in the US", "date", ""),
+                         ("school", "School / program", "text", ""), ("years", "Years in US on this visa", "number", "0")],
+    "exp_tuition": [("institution", "Institution", "text", "College / university"), ("student", "Student name", "text", ""),
+                    ("form", "Form 1098-T received?", "select", "Yes|No"), ("amount", "Amount paid ($)", "number", "0.00")],
+    "exp_edu_loan": [("lender", "Lender", "text", "e.g. Sallie Mae"), ("student", "Student name", "text", ""),
+                     ("amount", "Interest paid ($)", "number", "0.00")],
+    "exp_mortgage": [("lender", "Lender", "text", "e.g. Wells Fargo"), ("property", "Property address", "text", ""),
+                     ("amount", "Interest paid ($)", "number", "0.00"), ("tax", "Property tax paid ($)", "number", "0.00")],
+    "exp_hsa_ira": [("account", "Account", "select", "HSA|Traditional IRA|Roth IRA"), ("provider", "Provider", "text", "e.g. Fidelity"),
+                    ("amount", "Amount contributed ($)", "number", "0.00")],
+    "exp_stock_sales": [("broker", "Broker", "text", "e.g. Robinhood, Zerodha"), country,
+                        ("gain", "Gain / (loss) ($)", "number", "0.00"), ("carry", "Carry-forward loss ($)", "number", "0.00")],
+    "exp_foreign_mf": [("fund", "Fund name", "text", ""), country, ("value", "Value at year end ($)", "number", "0.00"),
+                       ("income", "Income received ($)", "number", "0.00")],
+    "exp_medical": [("description", "Description", "text", "e.g. Dental, prescriptions"), ("paid_to", "Paid to", "text", ""), money],
+    "exp_charity": [("org", "Organization", "text", "e.g. Red Cross"), ("date", "Date", "date", ""),
+                    ("kind", "Type", "select", "Cash|Goods"), money],
+    "exp_health_ins": [("provider", "Insurer / plan", "text", "e.g. Aetna"), ("through", "Through", "select", "Employer|Marketplace|Private|Government"),
+                       ("from", "Covered from", "date", ""), ("to", "Covered to", "date", ""), ("people", "People covered", "text", "e.g. Self, spouse")],
+    "exp_marketplace": [("exchange", "Marketplace / state exchange", "text", "e.g. HealthCare.gov"), ("policy", "Policy number", "text", ""),
+                        ("months", "Months covered", "number", "12"), ("premium", "Premium paid ($)", "number", "0.00")],
+} %}
+{% set single_row = ["married"] %}
+
+{#- Questions asked as a grid, one row per field with Taxpayer and Spouse columns, like the client's
+    reference portal (client feedback, Oct 2026). These win over the q_details row above (whose
+    inc_rental entry is kept, unused). field: (name, label, input type, placeholder). -#}
+{% set grid_details = {
+    "inc_rental": [
+        ("location", "Where located? (City, State and Country)", "text", "City, State, Country"),
+        ("price", "Property purchase price (in Dollars)", "number", "Amount in $"),
+        ("purchase_date", "Date of purchase", "date", ""),
+        ("let_out", "Period of let-out during the tax year " ~ y, "text", "e.g. Apr – Dec " ~ y),
+        ("rent", "Amount of rental income received during the tax year " ~ y ~ "?", "number", "Amount in $"),
+        ("mortgage_interest", "Mortgage / housing loan interest paid during the tax year " ~ y ~ "?", "number", "Amount in $"),
+        ("property_tax", "Property / municipal taxes paid during the tax year " ~ y ~ "?", "number", "Amount in $"),
+        ("mortgage_insurance", "Mortgage insurance premium paid in the tax year " ~ y ~ "?", "number", "Amount in $"),
+        ("repairs", "Repairs & maintenance paid in the tax year " ~ y ~ "?", "number", "Amount in $"),
+        ("advertising", "Advertisement cost, if any", "number", "Amount in $"),
+        ("legal_fees", "Legal and professional fees, if any", "number", "Amount in $"),
+        ("commission", "Commission paid, if any", "number", "Amount in $"),
+        ("utilities", "Utilities paid, if any", "number", "Amount in $"),
+        ("misc", "Miscellaneous other", "number", "Amount in $"),
+    ],
+} %}
+
+{#- Income questions laid out like the client's reference portal (client feedback, Oct 2026).
+    row_overrides replace a question's q_details row (the old entries are kept, unused);
+    row_captions go above the table; upload_hints replace the details table with a red
+    "please upload" line, shown on the given answer. -#}
+{% set row_overrides = {
+    "inc_stayed_usa": [("year", "Tax year", "number", y), ("who", "Taxpayer / Spouse", "select", "Taxpayer|Spouse"),
+                       ("states", "States resided", "text", "e.g. New Jersey"),
+                       ("rent", "Rent paid ($) (if stayed in NJ, CA, WI, IN & MA)", "number", "0.00"),
+                       ("from", "Start date", "date", ""), ("to", "End date", "date", "")],
+} %}
+{% set row_captions = {"inc_stayed_usa": "Please provide details of the resided states"} %}
+{% set upload_hints = {
+    "inc_india_salary": ("yes", "If Yes, please upload your monthly salary payslips or Form-16."),
+    "inc_interest": ("yes", "If Yes, please upload Form 1099-INT or Form-16."),
+    "inc_dividend": ("yes", "If Yes, please upload Form 1099-DIV."),
+    "inc_distributions": ("yes", "If Yes, please upload Form 1099-SA or Form 1099-R."),
+    "inc_prev_return": ("no", "If No, please upload a copy of your previous year's tax return."),
+    "exp_tuition": ("yes", "If Yes, please upload Form 1098-T."),
+    "exp_edu_loan": ("yes", "If Yes, please upload Form 1098-E or relevant documents."),
+    "exp_mortgage": ("yes", "If Yes, please upload relevant documents."),
+    "exp_hsa_ira": ("yes", "If Yes, please upload Form 5498-SA or 5498-IRA or relevant documents."),
+    "exp_stock_sales": ("yes", "If Yes, please upload broker statements or relevant documents."),
+    "exp_foreign_mf": ("yes", "If Yes, please <a class=\"cx-link\" href=\"" ~ asset('client', 'files/Mutual_Funds_Summary.xlsx') ~ "\" download>download the Excel sheet</a> and upload it with the portfolio details in"),
+    "exp_medical": ("yes", "If Yes, please upload medical bills."),
+    "exp_charity": ("yes", "If Yes, please upload donation receipts or relevant documents."),
+    "exp_health_ins": ("yes", "Please upload Form 1099-HC (if you resided in Massachusetts)."),
+    "exp_marketplace": ("yes", "Please upload the Form 1095-A document."),
+} %}
+{#- Short fields on one line instead of a table (student visa, like the reference portal). -#}
+{% set inline_details = {
+    "exp_student_visa": [("arrival", "Enter first date of entry to US", "date", ""), ("visa", "Enter visa type", "text", "e.g. F-1, J-1")],
+} %}
+
+{% macro upload_hint(qname) -%}
+{%- set when, text = upload_hints[qname] -%}
+<p class="cx-qdetail cx-qhint" data-cx-show-when="{{ qname }}={{ when }}" hidden>
+    {{ text | safe }} <a class="cx-link" href="/client/documents">Upload documents</a>
+</p>
+{%- endmacro %}
+
+{% macro detail_grid(qname, fields) -%}
+<div class="cx-qdetail" data-cx-show-when="{{ qname }}=yes" hidden>
+    <div class="cx-table-wrap">
+        <table class="cx-table cx-table--form cx-table--grid">
+            <thead><tr><th>Please provide the following information</th><th>Taxpayer</th><th>Spouse</th></tr></thead>
+            <tbody>
+                {% for name, label, kind, ph in fields %}
+                <tr>
+                    <th scope="row">{{ label }}</th>
+                    {% for who in ("taxpayer", "spouse") %}
+                    <td><input class="cx-input" name="{{ qname }}_{{ name }}_{{ who }}" type="{{ kind }}" aria-label="{{ label }} ({{ who }})"
+                               {% if kind == "number" %}min="0" step="0.01"{% endif %} {% if ph %}placeholder="{{ ph }}"{% endif %}
+                               value="{{ nv.get(qname ~ '_' ~ name ~ '_' ~ who, '') }}" /></td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{%- endmacro %}
+
+{% macro detail_rows(qname) -%}
+{%- set fields = row_overrides.get(qname) or q_details.get(qname) -%}
+{%- if qname in inline_details %}
+<div class="cx-qdetail cx-qinline" data-cx-show-when="{{ qname }}=yes" hidden>
+    {% for name, label, kind, ph in inline_details[qname] %}
+    <label class="cx-qinline__field"><span>{{ label }}</span>
+        <input class="cx-input" name="{{ qname }}_{{ name }}" type="{{ kind }}" {% if ph %}placeholder="{{ ph }}"{% endif %} value="{{ nv.get(qname ~ '_' ~ name, '') }}" /></label>
+    {% endfor %}
+</div>
+{%- elif qname in grid_details %}
+{{ detail_grid(qname, grid_details[qname]) }}
+{%- elif fields %}
+<div class="cx-qdetail" data-cx-show-when="{{ qname }}=yes" hidden>
+    {% if qname in row_captions %}<p class="cx-qcaption">{{ row_captions[qname] }}</p>{% endif %}
+    <div class="cx-table-wrap">
+        <table class="cx-table cx-table--form">
+            <thead><tr>{% for name, label, kind, ph in fields %}<th>{{ label }}</th>{% endfor %}{% if qname not in single_row %}<th><span class="sr-only">Remove</span></th>{% endif %}</tr></thead>
+            {%- set rc = namespace(n=1) -%}
+            {%- for name, label, kind, ph in fields %}{% set saved = nv.get(qname ~ '_' ~ name) %}{% if saved is iterable and saved is not string and saved | length > rc.n %}{% set rc.n = saved | length %}{% endif %}{% endfor %}
+            <tbody data-cx-rows>
+                {% for i in range(rc.n) %}
+                <tr>
+                    {% for name, label, kind, ph in fields %}
+                    {%- set saved = nv.get(qname ~ '_' ~ name) -%}
+                    {%- set val = saved[i] if (saved is iterable and saved is not string and i < saved | length) else none -%}
+                    <td>
+                        {%- if kind == "select" %}
+                        <select class="cx-select" name="{{ qname }}_{{ name }}[]" aria-label="{{ label }}">
+                            <option value="">Select</option>
+                            {% for opt in ph.split("|") %}<option {% if val == opt %}selected{% endif %}>{{ opt }}</option>{% endfor %}
+                        </select>
+                        {%- else %}
+                        <input class="cx-input" name="{{ qname }}_{{ name }}[]" type="{{ kind }}" aria-label="{{ label }}"
+                               {% if kind == "number" %}min="0" step="{{ '1' if name in ('year', 'years', 'months') else '0.01' }}"{% endif %}
+                               {% if val is not none %}value="{{ val }}"{% elif name == "year" %}value="{{ ph }}"{% endif %} {% if ph and name != "year" %}placeholder="{{ ph }}"{% endif %} />
+                        {%- endif %}
+                    </td>
+                    {% endfor %}
+                    {% if qname not in single_row %}<td><button type="button" class="cx-btn cx-btn--sm cx-btn--ghost" data-cx-remove-row aria-label="Remove row">{{ ci("x", "ci ci--sm") }}</button></td>{% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if qname not in single_row %}<button type="button" class="cx-btn cx-btn--sm cx-btn--soft" data-cx-add-row>{{ ci("plus", "ci ci--sm") }} Add another</button>{% endif %}
+</div>
+{%- endif %}
+{%- endmacro %}
+
+{#- Notes box under every question (client feedback, Oct 2026: a text area for every question).
+    Shows once the question is answered (`when`: "yes|no" by default; "yes" for the 7 income questions,
+    whose No answers use the one Notes box after question 7). -#}
+{% macro note_box(qname, when="yes|no") -%}
+<div class="cx-qdetail cx-qnote" data-cx-show-when="{{ qname }}={{ when }}" hidden>
+    <label class="cx-label" for="{{ qname }}-note">Notes<span class="cx-opt">Optional</span></label>
+    <textarea class="cx-textarea" id="{{ qname }}-note" name="{{ qname }}_note" rows="2" maxlength="2000"
+              placeholder="Anything your preparer should know, e.g. property address, dates, amounts or documents you will upload.">{{ nv.get(qname ~ '_note', '') }}</textarea>
+</div>
+{%- endmacro %}
+
+{#- Misc sheet: hidden for now (client feedback, Oct 2026). Kept with its tab and panel below. #}
+{% set misc_items = [
+    ("Income documents", "Upload W-2s and any 1099 forms in the Upload Documents section."),
+    ("Partnerships & S-corps", "Upload Schedule K-1, Form 1099-MISC or other income statements."),
+    ("Student loan interest", "Upload Form 1098-E or your lender's statement."),
+    ("Personal property taxes", "Taxes paid on vehicles, boats or mobile homes bought for the first time."),
+    ("Dependent care", "Childcare costs are claimable only if both spouses work and the caregiver has a valid SSN or FEIN."),
+    ("Stock sales", "Upload broker statements (Form 1099-B) for sales in the US, India or elsewhere."),
+    ("Stock options", "Upload grant and exercise statements for RSUs, ESPP or ISOs."),
+    ("Foreign income & taxes", "Upload proof of income earned and taxes paid in another country."),
+    ("Energy-saving purchases", "Hybrid/electric vehicles or home energy equipment. Supporting documents are mandatory."),
+    ("Massachusetts health coverage", "Upload Form 1099-HC if you lived in Massachusetts during the year."),
+] %}
+
+{% block page %}
+<div class="cx-stack">
+    {# Tip: hidden for now (client feedback, Oct 2026)
+    <div class="cx-alert">
+        {{ ci("info") }}
+        <p><strong>Tip:</strong> Answer every question with Yes or No. Some Yes answers ask for a few details; use <strong>Add another</strong> for each extra entry. Upload the matching documents in <a class="cx-link" href="/client/documents">Upload Documents</a>.</p>
+    </div>
+    #}
+
+    {% if notes_saved == "income" %}
+    <div class="cx-alert cx-alert--success" role="status">{{ ci("check-circle") }}<p><strong>Income sheet saved.</strong> Now answer the Expenses sheet.</p></div>
+    {% elif notes_row %}
+    <div class="cx-alert" role="status">{{ ci("info") }}<p>{% if notes_row.submitted_at %}Submitted to your tax team. {% endif %}Last saved {{ notes_row.updated_at.strftime('%b %d, %Y at %H:%M') }}. You can change your answers and save again.</p></div>
+    {% endif %}
+
+    <div data-cx-tabs data-cx-hash>
+        <div class="cx-tabs__list" role="tablist" aria-label="Tax notes sheets">
+            <button class="cx-tab" role="tab" aria-selected="true" aria-controls="income"><span class="cx-tab__num">1</span> Income sheet</button>
+            <button class="cx-tab" role="tab" aria-controls="expenses"><span class="cx-tab__num">2</span> Expenses sheet</button>
+            {# <button class="cx-tab" role="tab" aria-controls="misc"><span class="cx-tab__num">3</span> Misc sheet</button> #}
+        </div>
+
+        <section class="cx-panel cx-card" role="tabpanel" id="income" aria-labelledby="income-title">
+            <form method="post" action="/client/tax-notes">{# was data-cx-demo (nothing saved) #}
+                <input type="hidden" name="sheet" value="income" />
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="income-title">{{ ci("refund") }} Income <span class="cx-accent">sheet</span></h2>
+                        <p class="cx-card__sub">Tell us about your filing status and sources of income.</p>
+                    </div>
+                </div>
+                <div class="cx-card__body">
+                    {#- "Are you married?" moved to Personal Info → Marital status, with the spouse's details
+                        (client feedback, Nov 2026). It was:
+                    <h3 class="cx-legend">Filing status</h3>
+                    <div class="cx-q cx-q--lead">
+                        <span class="cx-q__text"><strong>Are you married?</strong><small>As of December 31, {{ y }}.</small></span>
+                        {{ yes_no("married", nv.get("married")) }}
+                        {{ detail_rows("married") }}
+                        {{ note_box("married") }}
+                    </div>
+                    -#}
+
+                    <h3 class="cx-legend">Income questions</h3>
+                    <ol class="cx-qlist">
+                        {% for key, q, hint in income_qs %}
+                        <li class="cx-q">
+                            <span class="cx-q__text">{{ q }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
+                            {{ yes_no("inc_" ~ key, nv.get("inc_" ~ key)) }}
+                            {% if ("inc_" ~ key) in upload_hints %}
+                            {{ upload_hint("inc_" ~ key) }}
+                            {% else %}
+                            {{ detail_rows("inc_" ~ key) }}
+                            {% endif %}
+                            {# Notes box under each income question: hidden for now (client feedback, Oct 2026); the
+                               "Any other information" box after question 7 replaces it.
+                            {{ note_box("inc_" ~ key, when="yes") }}
+                            #}
+                        </li>
+                        {% endfor %}
+                    </ol>
+
+                    {#- One Notes box after question 7 (client feedback, Oct 2026): a No answer no longer opens a box under
+                        the question; anything to add goes here. -#}
+                    <div class="cx-field cx-qnotes-end">
+                        <label class="cx-label" for="income-notes">Any other information, please mention here point-wise (1, 2, 3…)<span class="cx-opt">Optional</span></label>
+                        <textarea class="cx-textarea" id="income-notes" name="income_notes" rows="5" maxlength="4000"
+                                  placeholder="Please write point-wise as 1, 2, 3…">{{ nv.get("income_notes", "") }}</textarea>
+                    </div>
+
+                    {# "Anything else" box: hidden for now (client feedback, Oct 2026)
+                    <div class="cx-field" style="margin-top: 1rem;">
+                        <label class="cx-label" for="income-other">Anything else we should know?<span class="cx-opt">Optional</span></label>
+                        <textarea class="cx-textarea" id="income-other" name="income_other" placeholder="Please list point-wise: 1. … 2. … 3. …"></textarea>
+                    </div>
+                    #}
+                </div>
+                <div class="cx-card__foot">
+                    <button class="cx-btn cx-btn--primary" type="submit">Save &amp; next {{ ci("arrow-right", "ci ci--sm") }}</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="cx-panel cx-card" role="tabpanel" id="expenses" aria-labelledby="exp-title" hidden>
+            <form method="post" action="/client/tax-notes">{# was data-cx-demo (nothing saved) #}
+                <input type="hidden" name="sheet" value="expenses" />
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="exp-title">{{ ci("calculator") }} Expenses <span class="cx-accent">sheet</span></h2>
+                        <p class="cx-card__sub">Deductions and credits you may be eligible for.</p>
+                    </div>
+                </div>
+                <div class="cx-card__body">
+                    <ol class="cx-qlist">
+                        {% for key, q, hint in expense_qs %}
+                        <li class="cx-q">
+                            <span class="cx-q__text">{{ q }}{% if hint %}<small>{{ hint }}</small>{% endif %}</span>
+                            {{ yes_no("exp_" ~ key, nv.get("exp_" ~ key)) }}
+                            {% if ("exp_" ~ key) in upload_hints %}
+                            {{ upload_hint("exp_" ~ key) }}
+                            {% else %}
+                            {{ detail_rows("exp_" ~ key) }}
+                            {% endif %}
+                            {# Notes box under each expense question: hidden for now (client feedback, Oct 2026); the
+                               "Any other information" box after the last question replaces it.
+                            {{ note_box("exp_" ~ key) }}
+                            #}
+                        </li>
+                        {% endfor %}
+                    </ol>
+
+                    {#- One box after the last question, like the reference portal (client feedback, Oct 2026) -#}
+                    <div class="cx-field cx-qnotes-end">
+                        <label class="cx-label" for="expenses-notes">Any other information, please mention here point-wise (1, 2, 3…)<span class="cx-opt">Optional</span></label>
+                        <textarea class="cx-textarea" id="expenses-notes" name="expenses_notes" rows="5" maxlength="4000"
+                                  placeholder="Please write point-wise as 1, 2, 3…">{{ nv.get("expenses_notes", "") }}</textarea>
+                    </div>
+
+                    {# "Anything else" box: hidden for now (client feedback, Oct 2026)
+                    <div class="cx-field" style="margin: 1rem 0;">
+                        <label class="cx-label" for="exp-other">Anything else we should know?<span class="cx-opt">Optional</span></label>
+                        <textarea class="cx-textarea" id="exp-other" name="expenses_other" placeholder="Please list point-wise: 1. … 2. … 3. …"></textarea>
+                    </div>
+                    #}
+
+                    <label class="cx-check cx-confirm" style="margin-top: 1rem;">
+                        <input type="checkbox" name="confirm" required />
+                        <span><strong>I confirm that all income and expense details are correct.</strong><br /><span class="cx-muted">Your preparer will rely on these answers to build your return.</span></span>
+                    </label>
+                </div>
+                <div class="cx-card__foot cx-card__foot--between">
+                    <button class="cx-btn cx-btn--ghost" type="button" data-cx-goto="income">{{ ci("chevron-left", "ci ci--sm") }} Back</button>
+                    <button class="cx-btn cx-btn--primary" type="submit">{{ ci("send", "ci ci--sm") }} Save &amp; submit tax notes</button>
+                </div>
+            </form>
+        </section>
+
+        {# Misc sheet panel: hidden for now (client feedback, Oct 2026)
+        <section class="cx-panel cx-card" role="tabpanel" id="misc" aria-labelledby="misc-title" hidden>
+            <div class="cx-card__head">
+                <div>
+                    <h2 class="cx-card__title" id="misc-title">{{ ci("folder") }} Misc sheet: <span class="cx-accent">documents to upload</span></h2>
+                    <p class="cx-card__sub">If any of these apply to you, upload the relevant document.</p>
+                </div>
+                <a class="cx-btn cx-btn--primary cx-btn--sm" href="/client/documents">{{ ci("upload", "ci ci--sm") }} Upload documents</a>
+            </div>
+            <div class="cx-card__body">
+                <ul class="cx-checklist">
+                    {% for title, text in misc_items %}
+                    <li>{{ ci("file") }}<div><strong>{{ title }}</strong><span>{{ text }}</span></div></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
+        #}
+    </div>
+</div>
+{% endblock %}

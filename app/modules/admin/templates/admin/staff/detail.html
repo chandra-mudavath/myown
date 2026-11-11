@@ -1,0 +1,74 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Staff Details - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Staff / ' ~ staff_member.staff_number %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <h1>Staff Member: {{ staff_member.first_name }} {{ staff_member.last_name or '' }}</h1>
+                <p>Staff ID: <strong>{{ staff_member.staff_number }}</strong></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Personal Details: one horizontal row of facts -->
+    <section class="admin-section" aria-labelledby="personal-title">
+        <div class="admin-card">
+            <h3 class="admin-card-title" id="personal-title">Personal Details</h3>
+            <dl class="admin-facts">
+                <div><dt>Staff Number</dt><dd>{{ staff_member.staff_number }}</dd></div>
+                <div><dt>Full Name</dt><dd>{{ staff_member.first_name }} {{ staff_member.last_name or '' }}</dd></div>
+                <div><dt>Email Address</dt><dd>{{ staff_member.account.email if staff_member.account else 'N/A' }}</dd></div>
+                <div><dt>Assigned Role</dt><dd><span class="admin-role-badge">{{ staff_member.role.value if staff_member.role else 'INITIATOR' }}</span></dd></div>
+                <div><dt>Account Status</dt><dd>{% if target and target.is_active %}<span class="admin-status-active">Active</span>{% else %}<span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}</dd></div>
+                <div><dt>Joined Date</dt><dd>{{ staff_member.created_at.strftime('%b %d, %Y') if staff_member.created_at else 'N/A' }}</dd></div>
+            </dl>
+            <form method="post" action="/admin/staff/{{ staff_member.id }}/role" class="admin-inline-form">
+                <label for="role_code" class="admin-inline-label">Change role</label>
+                <select id="role_code" name="role_code" class="admin-filter-select">
+                    {% for r in case_roles %}<option value="{{ r.code }}" {% if staff_member.role and staff_member.role.value == r.code %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+                </select>
+                <button type="submit" class="admin-filter-btn">Save role</button>
+            </form>
+            <p class="admin-form-hint admin-team-hint">Their role on existing cases doesn't change; it's the default when they're assigned to new ones.</p>
+        </div>
+    </section>
+
+    <!-- Assigned cases -->
+    <section class="admin-section" aria-labelledby="cases-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Workload</span><h2 id="cases-title">Assigned cases ({{ filings | length }})</h2></div>
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Case ID</th>
+                        <th>Client Name</th>
+                        <th>Tax Year</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in filings %}
+                    <tr>
+                        <td><a href="/admin/cases/{{ f.id }}" class="link-primary">{{ f.case_id }}</a></td>
+                        <td><a href="/admin/clients/{{ f.client_id }}" class="link-primary">👤 {{ f.client_name }}</a></td>
+                        <td>{{ f.tax_year }}</td>
+                        <td>{{ f.roles | join(', ') }}</td>
+                        <td><span class="status-pill-subtle">{{ stage_labels.get(f.status, f.status.replace('_', ' ').title()) }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="admin-empty">Not assigned to any case yet. Assign cases from a case page or the <a href="/admin/cases?assigned=none" class="link-primary">unassigned queue</a>.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% include "admin/partials/account_controls.html" %}
+{% endblock %}

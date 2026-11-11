@@ -1,0 +1,128 @@
+{% extends "admin/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}Staff Directory - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Staff' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Staff Management</span>
+                <h1>Staff Members Directory</h1>
+                <p>Manage employees, assign roles, and view staff details.</p>
+            </div>
+            <div>
+                <button type="button" id="btn-quick-new-staff" class="modal-btn-submit admin-btn-action">
+                    <b>+</b> Add New Staff
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search Section -->
+    <section class="admin-section">
+        <form method="get" action="/admin/staff">
+            <div class="admin-filter-bar">
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ q or '' }}" 
+                    placeholder="Search by name, email, staff #..." 
+                    class="admin-filter-input"
+                >
+                <button type="submit" class="admin-filter-btn">
+                    Search
+                </button>
+                {% if q %}
+                <a href="/admin/staff" class="admin-filter-clear">
+                    Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+
+        {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+        {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--compact">
+                <thead>
+                    <tr>
+                        <th>Staff Name</th>
+                        <th>Staff #</th>
+                        <th>Email Address</th>
+                        <th>Role</th>
+                        <th>Active cases</th>
+                        <th>Created Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if staff_list %}
+                    {% for s in staff_list %}
+                    <tr>
+                        <td class="admin-nowrap">
+                            <a href="/admin/staff/{{ s.id }}" class="link-primary">
+                                👔 {{ s.first_name }} {{ s.last_name or '' }}
+                            </a>{% if not s.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
+                        </td>
+                        <td class="admin-nowrap">
+                            <a href="/admin/staff/{{ s.id }}" class="link-primary">
+                                {{ s.staff_number }}
+                            </a>
+                        </td>
+                        <td>{{ s.email }}</td>
+                        <td>
+                            <form method="post" action="/admin/staff/{{ s.id }}/role" class="admin-role-form">
+                                <input type="hidden" name="next" value="{{ current_url }}">
+                                <select name="role_code" class="admin-filter-select" aria-label="Role for {{ s.first_name }} {{ s.last_name or '' }}">
+                                    {% for r in case_roles %}<option value="{{ r.code }}" {% if s.role and s.role.value == r.code %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+                                </select>
+                                <button type="submit" class="admin-mini-btn">Save</button>
+                            </form>
+                        </td>
+                        <td>{% if s.active_cases %}<a href="/admin/cases?assigned={{ s.id }}" class="link-primary">{{ s.active_cases }}</a>{% else %}0{% endif %}</td>
+                        <td>{{ s.created_at.strftime('%b %d, %Y') if s.created_at else 'N/A' }}</td>
+                        <td>
+                            <a href="/admin/staff/{{ s.id }}" class="admin-eye-btn" aria-label="View {{ s.first_name }} {{ s.last_name or '' }}" title="View staff details">{{ ci("eye") }}</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="empty-cell">
+                            No staff members found.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- HR team: their own account type and workspace; no cases -->
+    <section class="admin-section" aria-labelledby="hr-team-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">HR workspace</span><h2 id="hr-team-title">HR team ({{ hr_list | length }})</h2></div>
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--compact">
+                <thead>
+                    <tr><th>Name</th><th>HR #</th><th>Email Address</th><th>Created Date</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    {% for h in hr_list %}
+                    <tr>
+                        <td class="admin-nowrap"><a href="/admin/hr/{{ h.id }}" class="link-primary">{{ h.first_name }} {{ h.last_name or '' }}</a>{% if h.account and not h.account.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}</td>
+                        <td class="admin-nowrap"><a href="/admin/hr/{{ h.id }}" class="link-primary">{{ h.hr_number }}</a></td>
+                        <td>{{ h.account.email if h.account else 'N/A' }}</td>
+                        <td>{{ h.created_at.strftime('%b %d, %Y') if h.created_at else 'N/A' }}</td>
+                        <td><a href="/admin/hr/{{ h.id }}" class="admin-eye-btn" aria-label="View {{ h.first_name }} {{ h.last_name or '' }}" title="View HR details">{{ ci("eye") }}</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty-cell">No HR accounts yet. Use Add New Staff and choose the HR role.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

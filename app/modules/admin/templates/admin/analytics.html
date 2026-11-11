@@ -1,0 +1,84 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Analytics - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Analytics' %}
+{% set no_rail = true %}
+{% set split_tone = {'Submitted': 'blue', 'In Progress': 'amber', 'Completed': 'teal', 'Amendment': 'coral'} %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Insights</span>
+                <h1>Analytics</h1>
+                <p>Where cases are, how fast they move, and how many come in each month.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-label="Key numbers">
+        <div class="admin-stat-grid">
+            <a class="admin-stat-card blue" href="/admin/cases"><span>Total cases</span><strong>{{ total_cases }}</strong><small>All tax years</small></a>
+            <a class="admin-stat-card teal" href="/admin/cases"><span>New this month</span><strong>{{ new_this_month }}</strong><small>{{ months[-1].label if months else '' }}</small></a>
+            <a class="admin-stat-card amber" href="/admin/reports?days=7#stuck"><span>Stuck 7+ days</span><strong>{{ stuck_7 }}</strong><small>View report &#8594;</small></a>
+            <a class="admin-stat-card coral" href="/admin/reports#pending"><span>Docs awaiting review</span><strong>{{ pending_docs }}</strong><small>View report &#8594;</small></a>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-labelledby="split-title">
+        <div class="admin-section-heading"><div><span class="admin-kicker">What clients see</span><h2 id="split-title">Case status split</h2></div></div>
+        {% if split_total %}
+        <div class="admin-split" role="img" aria-label="{% for r in split %}{{ r.label }} {{ r.count }}{% if not loop.last %}, {% endif %}{% endfor %}">
+            {% for r in split %}{% if r.count %}<span class="admin-split__seg admin-split__seg--{{ split_tone.get(r.label, 'slate') }}" style="flex-grow: {{ r.count }}"></span>{% endif %}{% endfor %}
+        </div>
+        <ul class="admin-legend">
+            {% for r in split %}
+            <li><span class="admin-legend__dot admin-split__seg--{{ split_tone.get(r.label, 'slate') }}"></span>{{ r.label }} <strong>{{ r.count }}</strong> <small>({{ (100 * r.count / split_total) | round | int }}%)</small></li>
+            {% endfor %}
+        </ul>
+        {% else %}<p class="admin-empty">No cases yet.</p>{% endif %}
+    </section>
+
+    <div class="admin-chart-grid">
+        <section class="admin-card" aria-labelledby="stages-title">
+            <h3 class="admin-card-title" id="stages-title">Cases in each stage</h3>
+            <ul class="admin-hbars">
+                {% for r in stages %}
+                <li>
+                    <a href="/admin/cases?status={{ r.code }}" class="admin-hbars__label">{{ r.name }}</a>
+                    <span class="admin-hbars__track"><span class="admin-hbars__bar" style="width: {{ (100 * r.count / stage_max) | round(1) }}%"></span></span>
+                    <span class="admin-hbars__value">{{ r.count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="admin-card" aria-labelledby="avg-title">
+            <h3 class="admin-card-title" id="avg-title">Average days in each stage</h3>
+            <p class="admin-form-hint">From cases that have moved on from the stage. "—" means no case has left it yet.</p>
+            <ul class="admin-hbars">
+                {% for r in avg %}
+                <li title="{{ r.cases }} completed stay{{ 's' if r.cases != 1 else '' }}">
+                    <span class="admin-hbars__label">{{ r.name }}</span>
+                    <span class="admin-hbars__track">{% if r.avg_days is not none %}<span class="admin-hbars__bar admin-hbars__bar--amber" style="width: {{ (100 * r.avg_days / avg_max) | round(1) }}%"></span>{% endif %}</span>
+                    <span class="admin-hbars__value">{{ r.avg_days if r.avg_days is not none else '—' }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+
+    <section class="admin-section" aria-labelledby="months-title">
+        <div class="admin-section-heading"><div><span class="admin-kicker">Intake</span><h2 id="months-title">New filings per month</h2></div><span class="admin-period">Last 12 months</span></div>
+        <div class="admin-card">
+            <ol class="admin-columns" aria-label="New filings per month">
+                {% for m in months %}
+                <li title="{{ m.label }}: {{ m.count }}">
+                    <span class="admin-columns__value">{{ m.count }}</span>
+                    <span class="admin-columns__track"><span class="admin-columns__bar" style="height: {{ (100 * m.count / month_max) | round(1) }}%"></span></span>
+                    <span class="admin-columns__label">{{ m.short }}</span>
+                </li>
+                {% endfor %}
+            </ol>
+        </div>
+    </section>
+{% endblock %}

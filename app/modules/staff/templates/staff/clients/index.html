@@ -1,0 +1,55 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}Client Directory - {{ app_name }}{% endblock %}
+{% set active_nav = 'clients' %}
+
+{% block main %}
+    <div class="staff-page-header">
+        <div>
+            <p class="eyebrow">Client Directory</p>
+            <h1 class="staff-page-title">Registered Clients</h1>
+            <p class="staff-page-desc">Manage client profiles and view their filing histories.</p>
+        </div>
+    </div>
+
+    <section class="staff-panel staff-client-table-panel">
+        <table class="staff-client-table">
+            <thead>
+                <tr>
+                    <th>Client ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if clients %}
+                {% for c in clients %}
+                <tr>
+                    <td>
+                        <a href="/staff/clients/{{ c.id }}" class="client-link">
+                            {{ c.customer_no }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="/staff/clients/{{ c.id }}" class="client-link">
+                            👤 {{ c.name }}
+                        </a>
+                    </td>
+                    <td>{{ c.email or 'N/A' }}</td>
+                    <td>{{ c.phone or 'N/A' }}</td>
+                    <td>
+                        <a href="/staff/clients/{{ c.id }}" class="staff-eye-btn" aria-label="View profile of {{ c.name }}" title="View profile">{{ ci("eye", "ci ci--sm") }}</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr class="no-results">
+                    <td colspan="5">No registered clients found.</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </section>
+{% endblock %}

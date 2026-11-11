@@ -1,0 +1,39 @@
+{#- Leave requests. Needs leave_requests; optional show_staff (name column), editable (HR approve/reject),
+    can_cancel (staff cancel their own), back (where to return), cancel_base (staff cancel URL prefix). -#}
+{%- set emp_base = '/admin/hr-records/' if (base is defined and base == '/admin/hr-records') else '/hr/employees/' -%}
+<div class="admin-table-panel">
+    <table class="admin-table admin-table--compact">
+        <thead><tr>{% if show_staff %}<th>Employee</th>{% endif %}<th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th>{% if editable or can_cancel %}<th></th>{% endif %}</tr></thead>
+        <tbody>
+            {% for r in leave_requests %}
+            <tr>
+                {% if show_staff %}<td class="admin-nowrap"><a class="link-primary" href="{{ emp_base }}{{ r.staff_id }}?tab=leaves">{{ people.full_name(r.staff) }}</a></td>{% endif %}
+                <td>{{ r.leave_type.name }}</td>
+                <td class="admin-nowrap">{{ r.start_date.strftime('%d %b %Y') }}{% if r.end_date != r.start_date %} – {{ r.end_date.strftime('%d %b %Y') }}{% endif %}{% if r.half_day %} (half day){% endif %}</td>
+                <td>{{ (r.days | num) }}</td>
+                <td>{{ r.reason or '—' }}{% if r.hr_note %}<br><small class="hr-later">HR: {{ r.hr_note }}</small>{% endif %}</td>
+                <td>{% set tone = {'pending': 'amber', 'approved': 'green', 'rejected': 'coral', 'cancelled': 'slate'} %}<span class="admin-pill admin-pill--{{ tone.get(r.status, 'slate') }}">{{ 'Waiting' if r.status == 'pending' else r.status.title() }}</span></td>
+                {% if editable or can_cancel %}
+                <td class="admin-nowrap">
+                    {% if editable and r.status == 'pending' %}
+                    <form method="post" action="/hr/leaves/{{ r.id }}/decide" class="hr-decide">
+                        <input type="hidden" name="back" value="{{ back }}">
+                        <label class="sr-only" for="note-{{ r.id }}">Note</label>
+                        <input id="note-{{ r.id }}" name="note" maxlength="255" placeholder="Note (needed to reject)" class="admin-filter-input">
+                        <button type="submit" name="decision" value="approve" class="admin-mini-btn admin-mini-btn--ok">Approve</button>
+                        <button type="submit" name="decision" value="reject" class="admin-mini-btn admin-mini-btn--danger">Reject</button>
+                    </form>
+                    {% elif can_cancel and r.status in ('pending', 'approved') %}
+                    <form method="post" action="{{ cancel_base }}/{{ r.id }}/cancel" onsubmit="return confirm('Cancel this leave?');">
+                        <button type="submit" class="staff-btn staff-btn--ghost">Cancel</button>
+                    </form>
+                    {% endif %}
+                </td>
+                {% endif %}
+            </tr>
+            {% else %}
+            <tr><td colspan="8" class="empty-cell">No leave requests here.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

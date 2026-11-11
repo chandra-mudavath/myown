@@ -1,0 +1,188 @@
+{% from "client/_icons.html" import ci %}
+{%- set stages = stage_nav if (stage_nav is defined and stage_nav) else [] -%}
+{%- set current_stage = selected_stage if (selected_stage is defined and active_nav == 'all_cases') else '' -%}
+{%- set cases_open = active_nav in ['my_cases', 'all_cases', 'cases'] -%}
+<div class="sidebar-overlay" id="sidebar-overlay" hidden></div>
+<aside class="dashboard-sidebar staff-sidebar" id="dashboard-sidebar">
+    <div class="staff-sidebar-heading">
+        <a class="staff-sidebar-brand staff-brand" href="/staff/dashboard" aria-label="{{ app_name or 'CovrentTax' }} staff dashboard">
+            <span class="staff-brand-mark" aria-hidden="true">CT</span>
+            <span class="staff-brand-text"><strong>{{ app_name or 'CovrentTax' }}</strong><small>Staff workspace</small></span>
+        </a>
+        <button type="button" class="sidebar-toggle staff-sidebar-collapse" data-sidebar-collapse aria-controls="dashboard-sidebar" aria-label="Close menu">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </button>
+    </div>
+    <nav class="sidebar-nav" aria-label="Staff navigation">
+        {#- HR accounts never see clients or cases: only Messages and Profile -#}
+        {% if not is_hr %}
+        <a class="sidebar-nav-item{% if active_nav == 'dashboard' %} active{% endif %}" href="/staff/dashboard">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("dashboard") }}</span> Dashboard
+        </a>
+        {% endif %}
+
+        {# Cases (My Cases / All Cases) and Clients: hidden for now (client feedback, Oct 2026). The pages still work.
+        <div class="sidebar-dropdown-wrap">
+            <button
+                type="button"
+                class="sidebar-nav-item sidebar-dropdown-toggle{% if cases_open and not current_stage %} is-parent-active{% endif %}"
+                id="cases-dropdown-btn"
+                aria-expanded="{{ 'true' if cases_open else 'false' }}"
+                aria-controls="cases-dropdown-menu"
+            >
+                <span class="sidebar-dropdown-label">
+                    <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("folder") }}</span> Cases
+                </span>
+                <span class="dropdown-chevron" aria-hidden="true">{{ ci("chevron-down") }}</span>
+            </button>
+            <div class="sidebar-dropdown-menu" id="cases-dropdown-menu" {% if not cases_open %}hidden{% endif %}>
+                <a class="sidebar-nav-item sidebar-nav-item--nested{% if active_nav == 'my_cases' %} active{% endif %}" href="/staff/cases/my">My Cases</a>
+                <a class="sidebar-nav-item sidebar-nav-item--nested{% if active_nav == 'all_cases' and not current_stage %} active{% endif %}" href="/staff/cases">All Cases</a>
+            </div>
+        </div>
+
+        <a class="sidebar-nav-item{% if active_nav == 'clients' %} active{% endif %}" href="/staff/clients">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("users") }}</span> Clients
+        </a>
+        #}
+        <a class="sidebar-nav-item{% if active_nav == 'messages' %} active{% endif %}" href="/staff/messages">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("send") }}</span> Messages
+            <span class="staff-unread-pill" data-chat-unread hidden style="display:none"></span>
+        </a>
+        {% if not is_hr %}
+        <a class="sidebar-nav-item{% if active_nav == 'referrals' %} active{% endif %}" href="/staff/referrals">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("phone") }}</span> Referrals
+        </a>
+        {#- My HR: their own attendance, leaves, payslips and letters (HR workspace, Nov 2026) -#}
+        <p class="sidebar-nav-label">My HR</p>
+        <a class="sidebar-nav-item{% if active_nav == 'my_attendance' %} active{% endif %}" href="/staff/hr/attendance">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("clock") }}</span> Attendance
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'my_leaves' %} active{% endif %}" href="/staff/hr/leaves">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("calendar") }}</span> Leaves
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'my_payslips' %} active{% endif %}" href="/staff/hr/payslips">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("card") }}</span> Payslips
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'my_documents' %} active{% endif %}" href="/staff/hr/documents">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("file") }}</span> My documents
+        </a>
+        {% endif %}
+        {# Notifications: hidden for now (client feedback, Oct 2026)
+        <a class="sidebar-nav-item{% if active_nav == 'notifications' %} active{% endif %}" href="/staff/notifications">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("mail") }}</span> Notifications
+            {% if unread_count is defined and unread_count %}<span class="staff-unread-pill" aria-label="{{ unread_count }} new">{{ '99+' if unread_count > 99 else unread_count }}</span>{% endif %}
+        </a>
+        #}
+
+        {#- Client view (client feedback, Oct 2026): opening a client from their readable number shows the
+            tax year, the client number, then that client's information, in place of the stage list.
+            One "Documents" link (client feedback, Oct 2026): the page has both the client's uploads and the
+            drafts sent for review. The separate link was:
+                ("review", case_url ~ "/documents#review-docs", "eye", "Review documents"), -#}
+        {% set cn = client_nav if client_nav is defined else none %}
+        {% if cn %}
+        {% set case_url = "/staff/cases/" ~ cn.case_id %}
+        {#- Round 3 (client feedback, Nov 2026): the same tabs the client has in their own portal, in the same groups,
+            each opening the matching part of the case; then Update stage and Comments.
+            Was: Personal details, Filing details, Spouse & dependents, Tax notes, Previous tax info, Documents,
+            Bank details, Client profile, Message client. -#}
+        <div class="staff-clientnav" aria-label="Client information">
+            <label class="sidebar-nav-label" for="clientnav-year">Tax year</label>
+            <select id="clientnav-year" class="staff-select staff-clientnav__year" onchange="if (this.value) window.location = this.value">
+                {% for year, case_id in cn.years %}
+                <option value="/staff/cases/{{ case_id }}" {% if year == cn.tax_year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+            <div class="staff-clientnav__who">
+                <span class="staff-id-chip">{{ cn.client_number or '—' }}</span>
+                <strong>{{ cn.client_name }}</strong>
+            </div>
+
+            <div class="staff-clientnav__actions">
+                {% if cn.needs_assignment %}
+                {#- Unassigned: the reason shows on hover instead of as text on the case page (client feedback, Nov 2026) -#}
+                <span class="staff-tip" data-tip="Unassigned filing cannot move to next stage" tabindex="0">
+                    <button type="button" class="staff-btn staff-btn--primary staff-clientnav__btn" aria-disabled="true" data-update-stage
+                            aria-label="Update stage (unassigned filing cannot move to next stage)">{{ ci("stage", "ci ci--sm") }} Update stage</button>
+                </span>
+                {% else %}
+                <button type="button" class="staff-btn staff-btn--primary staff-clientnav__btn" data-move-stage data-update-stage
+                        data-action="/staff/cases/{{ cn.case_id }}/stage" data-case="{{ cn.case_number }} · {{ cn.client_name }}"
+                        data-current="{{ cn.stage }}" data-current-key="{{ cn.stage_key }}" data-next="{{ cn.next_stage or '' }}">{{ ci("stage", "ci ci--sm") }} Update stage</button>
+                {% endif %}
+                <a class="staff-btn staff-btn--ghost staff-clientnav__btn{% if cn.section == 'comments' %} is-active{% endif %}" href="{{ case_url }}/comments">
+                    {{ ci("notes", "ci ci--sm") }} Comments{% if cn.comment_count %} <span class="staff-count-chip">{{ cn.comment_count }}</span>{% endif %}
+                </a>
+            </div>
+
+            {% for group, items in [
+                ("Overview", [
+                    ("dashboard", case_url, "dashboard", "Dashboard"),
+                    ("filings", "/staff/clients/" ~ cn.client_id ~ "#filings-title", "history", "My Filings"),
+                    ("messages", "/staff/messages?case=" ~ cn.case_id, "mail", "Messages"),
+                ]),
+                ("My tax return", [
+                    ("personal", case_url ~ "#sec-01", "user", "Personal Info"),
+                    ("notes", case_url ~ "#sec-notes", "notes", "Tax Notes"),
+                    ("documents", case_url ~ "/documents", "upload", "Upload Documents"),
+                    ("summary", case_url ~ "#sec-payments", "calculator", "Tax Summary"),
+                    ("payment", case_url ~ "#sec-payments-list", "card", "Make Payment"),
+                    ("bank", case_url ~ "#sec-bank", "bank", "Bank Details"),
+                    ("fbar", case_url ~ "#sec-fbar", "globe", "FBAR"),
+                ]),
+                ("Review & file", [
+                    ("review", case_url ~ "/documents#review-docs", "eye", "Review Documents"),
+                    ("efile", case_url ~ "#sec-efile", "sign", "E-File Authorization"),
+                    ("final", case_url ~ "/documents#docs-title", "download", "Download Tax Docs"),
+                ]),
+                ("Account", [
+                    ("refund", case_url ~ "#sec-refund", "refund", "Refund Status"),
+                    ("contact", "/staff/clients/" ~ cn.client_id ~ "#personal-title", "phone", "Email & Mobile"),
+                    ("referrals", "/staff/referrals?q=" ~ (cn.client_number or cn.client_name) | urlencode, "gift", "Refer & Earn"),
+                ]),
+            ] %}
+            <p class="sidebar-nav-label staff-clientnav__group">{{ group }}</p>
+            {% for key, href, icon, label in items %}
+            <a class="sidebar-nav-item staff-clientnav__item{% if (key == 'documents' and cn.section == 'documents') or (key == 'dashboard' and cn.section == 'case') %} active{% endif %}" href="{{ href }}">
+                <span class="sidebar-nav-icon" aria-hidden="true">{{ ci(icon) }}</span> {{ label }}
+            </a>
+            {% endfor %}
+            {% endfor %}
+        </div>
+        {#- The Update stage window (once per page; the case table pages include their own) -#}
+        {% include "staff/_stage_dialog.html" %}
+        {% endif %}
+
+        {% if stages and not cn and not is_hr %}
+        <p class="sidebar-nav-label">Stages</p>
+        <ul class="staff-stage-list">
+            {% for stage in stages if stage.slug != 'in_progress' %}{# In Progress: hidden for now (client feedback, Oct 2026) #}
+            <li>
+                <a class="sidebar-nav-item staff-stage-item{% if current_stage == stage.slug %} active{% endif %}"
+                   href="/staff/cases?stage={{ stage.slug }}"
+                   {% if current_stage == stage.slug %}aria-current="page"{% endif %}>
+                    <span class="staff-stage-arrow" aria-hidden="true">{{ ci("arrow-right") }}</span>
+                    <span class="staff-stage-label">{{ stage.label }}</span>
+                    <span class="staff-stage-count{% if not stage.count %} is-empty{% endif %}" aria-label="{{ stage.count }} cases">{{ stage.count }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+        <a class="sidebar-nav-item{% if active_nav == 'profile' %} active{% endif %}" href="/staff/profile">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("user") }}</span> Profile
+        </a>
+        <script src="{{ asset('platform', 'js/chat-badge.js') }}" defer></script>
+        <form action="/auth/logout" method="post">
+            <button type="submit" class="sidebar-nav-item sidebar-nav-item--logout">
+                <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("logout") }}</span> Logout
+            </button>
+        </form>
+    </div>
+</aside>

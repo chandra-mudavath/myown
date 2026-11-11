@@ -1,0 +1,11 @@
+{% extends "hr/letters/_frame.html" %}
+{% block letter_body %}
+<p style="margin:0;"><strong>{{ d.employee_name }}</strong></p>
+<p style="margin:0 0 16px;color:#6b7280;">Employee number {{ d.employee_number }}</p>
+<p style="margin:16px 0;font-weight:bold;">Subject: Relieving letter</p>
+<p style="margin:0 0 10px;">Dear {{ d.employee_name }},</p>
+<p style="margin:0 0 10px;">This is to confirm that your resignation dated {{ fmt_date(d.resignation_date) }} has been accepted, and that you are relieved from your duties as <strong>{{ d.designation }}</strong> at the close of business on <strong>{{ fmt_date(d.last_working_day) }}</strong>.</p>
+<p style="margin:0 0 10px;">You worked with {{ company.company_name }} from {{ fmt_date(d.joining_date) }} to {{ fmt_date(d.last_working_day) }}. Your full and final settlement is {{ 'completed' if d.settlement == 'Completed' else 'in progress and will be completed as per company policy' }}.</p>
+<p style="margin:0 0 10px;">Please remember that your obligation to keep company and client information confidential continues after you leave.</p>
+<p style="margin:0 0 10px;">We thank you for your contribution and wish you success in the future.</p>
+{% endblock %}

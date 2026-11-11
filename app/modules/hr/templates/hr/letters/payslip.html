@@ -1,0 +1,85 @@
+{% extends "hr/letters/_frame.html" %}
+{#- Payslip: company and PF details, employee details, the month's days and holidays, earnings (monthly rate and
+    earned), PF and other deductions, employer contribution, and the totals. -#}
+{% block letter_body %}
+{%- set H = "font-family:Arial,sans-serif;" -%}
+{%- set cell = "border:1px solid #e5e7eb;padding:5px 8px;" -%}
+{%- set label = cell ~ "color:#6b7280;width:22%;" -%}
+{%- set th = "border:1px solid #e5e7eb;padding:6px 8px;background:#eff6ff;text-align:left;font-weight:bold;" -%}
+{%- set band = "border:1px solid #e5e7eb;padding:5px 8px;background:#f8fafc;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#1e2a4a;" -%}
+{%- set grid = "border-collapse:collapse;width:100%;" ~ H ~ "font-size:12.5px;margin:0 0 14px;" -%}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="{{ H }}margin:0 0 14px;">
+    <tr>
+        <td style="vertical-align:bottom;"><div style="font-size:18px;font-weight:bold;color:#1e2a4a;">Payslip for {{ d.month_label }}</div>
+            <div style="font-size:12px;color:#6b7280;">Pay period {{ fmt_date(d.period_from) }} to {{ fmt_date(d.period_to) }}</div></td>
+        <td style="vertical-align:bottom;text-align:right;font-size:12px;color:#6b7280;line-height:1.6;">
+            <strong style="color:#1f2937;">{{ company.company_name }}</strong><br>
+            PF establishment code: <strong style="color:#1f2937;">{{ company.company_pf_code or '—' }}</strong></td>
+    </tr>
+</table>
+
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ grid }}">
+    <tr><td colspan="4" style="{{ band }}">Employee details</td></tr>
+    <tr><td style="{{ label }}">Name</td><td style="{{ cell }}"><strong>{{ d.employee_name }}</strong></td>
+        <td style="{{ label }}">Employee number</td><td style="{{ cell }}">{{ d.employee_number }}</td></tr>
+    <tr><td style="{{ label }}">Designation</td><td style="{{ cell }}">{{ d.designation or '—' }}</td>
+        <td style="{{ label }}">Department</td><td style="{{ cell }}">{{ d.department or '—' }}</td></tr>
+    <tr><td style="{{ label }}">Date of joining</td><td style="{{ cell }}">{{ fmt_date(d.joining_date) or '—' }}</td>
+        <td style="{{ label }}">PAN</td><td style="{{ cell }}">{{ d.pan or '—' }}</td></tr>
+    <tr><td style="{{ label }}">UAN</td><td style="{{ cell }}">{{ d.uan or '—' }}</td>
+        <td style="{{ label }}">PF number</td><td style="{{ cell }}">{{ d.pf_number or '—' }}</td></tr>
+    <tr><td style="{{ label }}">Bank</td><td style="{{ cell }}">{{ d.bank_name or '—' }}{% if d.bank_account %} · {{ d.bank_account }}{% endif %}</td>
+        <td style="{{ label }}">Paid on</td><td style="{{ cell }}">{{ fmt_date(d.pay_date) }} · {{ d.pay_mode }}</td></tr>
+</table>
+
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ grid }}">
+    <tr><td colspan="6" style="{{ band }}">Month details</td></tr>
+    <tr><td style="{{ label }}width:20%;">Days in month</td><td style="{{ cell }}text-align:right;"><strong>{{ d.days_in_month }}</strong></td>
+        <td style="{{ label }}width:20%;">Working days</td><td style="{{ cell }}text-align:right;"><strong>{{ d.working_days }}</strong></td>
+        <td style="{{ label }}width:20%;">Paid days</td><td style="{{ cell }}text-align:right;"><strong>{{ d.paid_days }}</strong></td></tr>
+    <tr><td style="{{ label }}">Days present</td><td style="{{ cell }}text-align:right;">{{ d.present }}</td>
+        <td style="{{ label }}">Paid leave</td><td style="{{ cell }}text-align:right;">{{ d.leave_days }}</td>
+        <td style="{{ label }}">Loss of pay days</td><td style="{{ cell }}text-align:right;">{{ d.lop_days }}</td></tr>
+    <tr><td style="{{ label }}">Week offs</td><td style="{{ cell }}text-align:right;">{{ d.week_offs }}</td>
+        <td style="{{ label }}">Holidays</td><td style="{{ cell }}text-align:right;">{{ d.holidays }}</td>
+        <td style="{{ label }}">Unpaid leave / absent</td><td style="{{ cell }}text-align:right;">{{ d.unpaid_leave }} / {{ d.absent }}</td></tr>
+    {% if d.holiday_list %}<tr><td style="{{ label }}">Holidays this month</td><td colspan="5" style="{{ cell }}">{% for day, name in d.holiday_list %}{{ name }} ({{ fmt_date(day) }}){% if not loop.last %}, {% endif %}{% endfor %}</td></tr>{% endif %}
+    {% if d.not_employed_days %}<tr><td style="{{ label }}">Before joining / after leaving</td><td colspan="5" style="{{ cell }}">{{ d.not_employed_days }} day{{ 's' if d.not_employed_days != 1 }} not paid</td></tr>{% endif %}
+</table>
+
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;{{ H }}font-size:12.5px;margin:0 0 14px;"><tr>
+    <td style="width:55%;vertical-align:top;padding-right:8px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;">
+            <tr><th style="{{ th }}">Earnings</th><th style="{{ th }}text-align:right;">Monthly rate</th><th style="{{ th }}text-align:right;">Earned</th></tr>
+            {% set rates = dict(d.rate_earnings or []) %}
+            {% for name, amount in d.earnings %}
+            <tr><td style="{{ cell }}">{{ name }}</td><td style="{{ cell }}text-align:right;color:#6b7280;">{{ money(rates[name]) if name in rates else '—' }}</td><td style="{{ cell }}text-align:right;">{{ money(amount) }}</td></tr>
+            {% endfor %}
+            <tr><td style="{{ cell }}font-weight:bold;">Total</td><td style="{{ cell }}text-align:right;font-weight:bold;color:#6b7280;">{{ money(d.monthly_salary) }}</td><td style="{{ cell }}text-align:right;font-weight:bold;">{{ money(d.gross) }}</td></tr>
+        </table>
+        {% if d.lop_amount and d.lop_amount != '0.00' %}<p style="margin:6px 0 0;font-size:11.5px;color:#6b7280;">Loss of pay: {{ d.lop_days }} day(s) = {{ d.currency }} {{ money(d.lop_amount) }} less than the monthly rate.</p>{% endif %}
+    </td>
+    <td style="width:45%;vertical-align:top;padding-left:8px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;">
+            <tr><th style="{{ th }}">Deductions</th><th style="{{ th }}text-align:right;">Amount</th></tr>
+            <tr><td colspan="2" style="{{ band }}">PF deductions</td></tr>
+            {% for name, amount in d.pf_deductions or [] %}<tr><td style="{{ cell }}">{{ name }}</td><td style="{{ cell }}text-align:right;">{{ money(amount) }}</td></tr>{% else %}<tr><td colspan="2" style="{{ cell }}color:#6b7280;">None</td></tr>{% endfor %}
+            <tr><td colspan="2" style="{{ band }}">Other deductions</td></tr>
+            {% for name, amount in d.other_deductions or [] %}<tr><td style="{{ cell }}">{{ name }}</td><td style="{{ cell }}text-align:right;">{{ money(amount) }}</td></tr>{% else %}<tr><td colspan="2" style="{{ cell }}color:#6b7280;">None</td></tr>{% endfor %}
+            <tr><td style="{{ cell }}font-weight:bold;">Total deductions</td><td style="{{ cell }}text-align:right;font-weight:bold;">{{ money(d.total_deductions) }}</td></tr>
+        </table>
+        {% if d.employer_pf %}<p style="margin:6px 0 0;font-size:11.5px;color:#6b7280;">Employer PF contribution (not deducted from you): {{ d.currency }} {{ money(d.employer_pf) }}</p>{% endif %}
+    </td>
+</tr></table>
+
+<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;{{ H }}font-size:13px;">
+    <tr><td style="{{ cell }}color:#6b7280;">Total salary (monthly rate)</td><td style="{{ cell }}text-align:right;">{{ d.currency }} {{ money(d.monthly_salary) }}</td></tr>
+    <tr><td style="{{ cell }}color:#6b7280;">Gross earnings this month</td><td style="{{ cell }}text-align:right;">{{ d.currency }} {{ money(d.gross) }}</td></tr>
+    <tr><td style="{{ cell }}color:#6b7280;">Total deductions</td><td style="{{ cell }}text-align:right;">− {{ d.currency }} {{ money(d.total_deductions) }}</td></tr>
+    <tr style="background:#dbeafe;"><td style="{{ cell }}font-size:15px;font-weight:bold;">Net pay</td><td style="{{ cell }}text-align:right;font-size:15px;font-weight:bold;">{{ d.currency }} {{ money(d.net) }}</td></tr>
+    <tr><td colspan="2" style="{{ cell }}font-size:12px;">In words: {{ d.currency }} {{ d.net_words }}</td></tr>
+</table>
+{% endblock %}
+{% block signature %}
+<p style="margin:22px 0 0;font-family:Arial,sans-serif;font-size:12px;color:#6b7280;">This is a computer-generated payslip; no signature is required. Please tell HR within 7 days if anything on it looks wrong.</p>
+{% endblock %}

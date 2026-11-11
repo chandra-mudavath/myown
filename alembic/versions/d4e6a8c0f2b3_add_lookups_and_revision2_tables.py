@@ -315,7 +315,7 @@ def _seed_rows():
             dict(id=4, code='MANAGER', name='Manager', description='Oversees cases and assignments', is_case_role=True, sort_order=4),
         ],
         'tax_years': [
-            dict(id=i + 1, year=year, name=f'Tax year {year}', is_open=True, is_default=(year == 2025), sort_order=i + 1)
+            dict(id=i + 1, year=year, name=f'Tax year {year}', is_open=True, is_default=(year == 2026), sort_order=i + 1)  # was 2025 (client feedback, Nov 2026)
             for i, year in enumerate([2026, 2025, 2024, 2023, 2022])
         ],
         'tax_types': [

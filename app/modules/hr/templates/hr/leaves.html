@@ -1,0 +1,44 @@
+{% extends "hr/_layout.html" %}
+{% block title %}Leaves - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'Leaves' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Time</span>
+                <h1>Leaves</h1>
+                <p>Approve or reject requests after checking with an admin. Leave types and holidays are in HR Settings.</p>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <section class="admin-section">
+        <div class="hr-chips" role="tablist" aria-label="Filter requests">
+            {% for key, label in [('pending', 'Waiting'), ('approved', 'Approved'), ('rejected', 'Rejected'), ('cancelled', 'Cancelled'), ('all', 'All')] %}
+            <a class="admin-mini-btn{% if status == key %} is-active{% endif %}" href="/hr/leaves?status={{ key }}"{% if status == key %} aria-current="page"{% endif %}>{{ label }}{% if key == 'pending' and pending_leaves %} ({{ pending_leaves }}){% endif %}</a>
+            {% endfor %}
+        </div>
+        {% set show_staff, editable, back = true, true, '/hr/leaves?status=' ~ status %}
+        {% include "hr/partials/leave_table.html" %}
+    </section>
+
+    <section class="admin-section" aria-labelledby="add-title">
+        <div class="admin-card">
+            <h3 class="admin-card-title" id="add-title">Add leave for an employee</h3>
+            <form method="post" action="/hr/leaves/add" class="admin-form">
+                <input type="hidden" name="back" value="/hr/leaves?status=approved">
+                <div class="hr-form-grid">
+                    <div class="modal-form-group"><label for="leave-staff">Employee</label>
+                        <select id="leave-staff" name="staff_id" required>{% for sid, label in staff_options %}<option value="{{ sid }}">{{ label }}</option>{% endfor %}</select></div>
+                </div>
+                {% include "hr/partials/leave_fields.html" %}
+                <div class="hr-form-actions"><button type="submit" class="modal-btn-submit admin-form-submit">Add leave</button>
+                    <span class="admin-form-hint">Recorded as approved straight away.</span></div>
+            </form>
+        </div>
+    </section>
+{% endblock %}

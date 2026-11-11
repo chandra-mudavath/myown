@@ -1,0 +1,22 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ doc.document_number }} - HR records - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'HR records / ' ~ doc.document_number %}
+{% set no_rail = true %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />{% endblock %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">{{ doc.document_number }} · read-only</span>
+                <h1>{{ title }}</h1>
+                <p>{% if doc.status == 'final' %}<span class="admin-pill admin-pill--green">Final</span>{% elif doc.status == 'void' %}<span class="admin-pill admin-pill--slate">Void</span>{% else %}<span class="admin-pill admin-pill--amber">Draft</span>{% endif %}</p>
+            </div>
+            <div class="hr-form-actions">
+                <a class="admin-mini-btn" href="{{ '/admin/hr-records/' ~ doc.staff_id ~ ('?tab=payslips' if doc.kind == 'PAYSLIP' else '?tab=letters') if doc.staff_id else '/admin/hr-records' }}">Back</a>
+                <a class="admin-mini-btn" href="/admin/hr-records/documents/{{ doc.id }}/print" target="_blank" rel="noopener">Print / Save as PDF</a>
+            </div>
+        </div>
+    </section>
+    <section class="hr-doc-paper" aria-label="Document">{{ letter | safe }}</section>
+{% endblock %}

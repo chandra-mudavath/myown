@@ -1,0 +1,87 @@
+{% extends "admin/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}Clients Directory - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Clients' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Client Management</span>
+                <h1>Registered Clients Directory</h1>
+                <p>View and manage all client accounts and their associated profiles.</p>
+            </div>
+            <div>
+                <button type="button" id="btn-quick-new-client" class="modal-btn-submit admin-btn-action">
+                    <b>+</b> Add New Client
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search & Filter Section -->
+    <section class="admin-section">
+        <form method="get" action="/admin/clients">
+            <div class="admin-filter-bar">
+                <input 
+                    type="text" 
+                    name="q" 
+                    value="{{ q or '' }}" 
+                    placeholder="Search by name, email, client #..." 
+                    class="admin-filter-input"
+                >
+                <button type="submit" class="admin-filter-btn">
+                    Search
+                </button>
+                {% if q %}
+                <a href="/admin/clients" class="admin-filter-clear">
+                    Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Client Name</th>
+                        <th>Client #</th>
+                        <th>Email Address</th>
+                        <th>Phone</th>
+                        <th>Total Filings</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if clients %}
+                    {% for c in clients %}
+                    <tr>
+                        <td>
+                            <strong>👤 {{ c.first_name }} {{ c.last_name or '' }}</strong>{% if not c.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
+                        </td>
+                        <td>
+                            <a href="/admin/clients/{{ c.id }}" class="link-primary">
+                                {{ c.client_number }}
+                            </a>
+                        </td>
+                        <td>{{ c.email }}</td>
+                        <td>{{ c.phone or 'N/A' }}</td>
+                        <td><strong>{{ c.filing_count }}</strong></td>
+                        <td>
+                            <a href="/admin/clients/{{ c.id }}" class="admin-eye-btn" aria-label="View {{ c.first_name }} {{ c.last_name or '' }}" title="View client details">{{ ci("eye") }}</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-cell">
+                            No registered clients found.
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

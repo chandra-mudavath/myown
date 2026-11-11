@@ -1,0 +1,10 @@
+{% if greeting %}{{ greeting }}
+
+{% endif %}{% for line in lines %}{{ line }}
+
+{% endfor %}{% if link %}{{ link[0] }}: {{ link[1] }}
+
+{% endif %}{% if letter_html %}The letter is in the HTML version of this email.
+
+{% endif %}Regards,
+HR team, {{ company_name }}

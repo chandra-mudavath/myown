@@ -1,5 +1,5 @@
 -- =====================================================================
--- UrTax schema — revision 2 target
+-- CovrentTax schema — revision 2 target
 -- Source of truth: Data Models/Final-Data-Model.md (revision 2)
 -- Diagram:         Data Models/schema-map.html
 --
@@ -297,6 +297,7 @@ CREATE TABLE admins (
     id            VARCHAR(36)  NOT NULL PRIMARY KEY,
     account_id    VARCHAR(36)  NOT NULL UNIQUE,
     admin_number  VARCHAR(20)  NOT NULL UNIQUE,
+    notifications_seen_at  TIMESTAMP,
     created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_admins_account FOREIGN KEY (account_id) REFERENCES auth_accounts (id) ON DELETE CASCADE
@@ -479,6 +480,19 @@ CREATE INDEX ix_case_assignments_staff_status ON case_assignments (staff_id, sta
 --   CREATE UNIQUE INDEX uq_case_assignments_active
 --       ON case_assignments (case_id, role_id) WHERE status = 'active';
 
+-- Notes staff leave on a case for each other (Comments page); clients never see them.
+CREATE TABLE case_comments (
+    id                 VARCHAR(36)  NOT NULL PRIMARY KEY,
+    case_id            VARCHAR(36)  NOT NULL,
+    author_account_id  VARCHAR(36),
+    author_name        VARCHAR(80)  NOT NULL,
+    body               TEXT         NOT NULL,
+    created_at         TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_cc_case FOREIGN KEY (case_id) REFERENCES tax_filings (id) ON DELETE CASCADE,
+    CONSTRAINT fk_cc_author FOREIGN KEY (author_account_id) REFERENCES auth_accounts (id) ON DELETE SET NULL
+);
+CREATE INDEX ix_case_comments_case_created ON case_comments (case_id, created_at);
+
 CREATE TABLE case_stage_history (
     id                     VARCHAR(36)  NOT NULL PRIMARY KEY,
     case_id                VARCHAR(36)  NOT NULL,
@@ -617,6 +631,7 @@ CREATE TABLE services (
 CREATE TABLE case_services (
     id            VARCHAR(36)   NOT NULL PRIMARY KEY,
     case_id       VARCHAR(36)   NOT NULL,
+    invoice_id    VARCHAR(36),                          -- the invoice that billed this line
     service_id    VARCHAR(36)   NOT NULL,
     quantity      INTEGER       NOT NULL DEFAULT 1,
     unit_price    DECIMAL(12,2) NOT NULL,              -- copied from services.base_price
@@ -627,6 +642,7 @@ CREATE TABLE case_services (
     CONSTRAINT ck_cs_quantity CHECK (quantity > 0)
 );
 CREATE INDEX ix_case_services_case_id ON case_services (case_id);
+CREATE INDEX ix_case_services_invoice_id ON case_services (invoice_id);
 
 CREATE TABLE invoices (
     id               VARCHAR(36)   NOT NULL PRIMARY KEY,
@@ -647,11 +663,14 @@ CREATE TABLE invoices (
 );
 CREATE INDEX ix_invoices_case_id ON invoices (case_id);
 CREATE INDEX ix_invoices_client_id ON invoices (client_id);
+-- case_services is created before invoices, so its invoice FK is added here
+ALTER TABLE case_services ADD CONSTRAINT fk_cs_invoice FOREIGN KEY (invoice_id) REFERENCES invoices (id) ON DELETE CASCADE;
 
 CREATE TABLE payments (
     id                     VARCHAR(36)   NOT NULL PRIMARY KEY,
     payment_number         VARCHAR(30)   NOT NULL UNIQUE,
-    invoice_id             VARCHAR(36)   NOT NULL,
+    invoice_id             VARCHAR(36),                  -- NULL: an advance payment, made before any invoice
+    case_id                VARCHAR(36),                  -- the filing the payment is for
     client_id              VARCHAR(36)   NOT NULL,
     amount                 DECIMAL(12,2) NOT NULL,
     payment_method         VARCHAR(30)   NOT NULL,
@@ -660,11 +679,13 @@ CREATE TABLE payments (
     paid_at                TIMESTAMP,
     created_at             TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_pay_invoice FOREIGN KEY (invoice_id) REFERENCES invoices (id),
+    CONSTRAINT fk_pay_case FOREIGN KEY (case_id) REFERENCES tax_filings (id) ON DELETE SET NULL,
     CONSTRAINT fk_pay_client FOREIGN KEY (client_id) REFERENCES clients (id),
     CONSTRAINT ck_pay_status CHECK (status IN ('pending', 'succeeded', 'failed', 'refunded')),
     CONSTRAINT ck_pay_amount CHECK (amount > 0)
 );
 CREATE INDEX ix_payments_invoice_id ON payments (invoice_id);
+CREATE INDEX ix_payments_case_id ON payments (case_id);
 
 
 -- =====================================================================
@@ -903,8 +924,8 @@ INSERT INTO staff_roles (id, code, name, description, sort_order) VALUES
 
 -- Matches dashboard._available_tax_years(): current year plus 4 prior years.
 INSERT INTO tax_years (id, year, name, is_open, is_default, sort_order) VALUES
-    (1, 2026, 'Tax year 2026', TRUE, FALSE, 1),
-    (2, 2025, 'Tax year 2025', TRUE, TRUE,  2),
+    (1, 2026, 'Tax year 2026', TRUE, TRUE,  1),
+    (2, 2025, 'Tax year 2025', TRUE, FALSE, 2),
     (3, 2024, 'Tax year 2024', TRUE, FALSE, 3),
     (4, 2023, 'Tax year 2023', TRUE, FALSE, 4),
     (5, 2022, 'Tax year 2022', TRUE, FALSE, 5);

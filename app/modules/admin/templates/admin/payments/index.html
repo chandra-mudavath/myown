@@ -1,0 +1,117 @@
+{% extends "admin/_layout.html" %}
+{% block title %}Payments - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Payments' %}
+{% set no_rail = true %}
+{% set tone = {'draft': 'slate', 'issued': 'blue', 'partially_paid': 'amber', 'paid': 'green', 'void': 'slate'} %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Billing</span>
+                <h1>Payments</h1>
+                <p>Invoices for cases and payments received. Prices come from Settings &rsaquo; Services &amp; prices.</p>
+            </div>
+            <div>
+                <a href="/admin/payments/invoices/new" class="modal-btn-submit admin-btn-action"><b>+</b> New invoice</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-label="Billing totals">
+        <div class="admin-stat-grid">
+            <a class="admin-stat-card blue" href="/admin/payments?status=issued"><span>Outstanding</span><strong>${{ '{:,.2f}'.format(summary.outstanding) }}</strong><small>{{ summary.open_count }} open invoice{{ 's' if summary.open_count != 1 else '' }}</small></a>
+            <a class="admin-stat-card coral" href="/admin/payments?status=overdue"><span>Overdue</span><strong>${{ '{:,.2f}'.format(summary.overdue) }}</strong><small>{{ summary.overdue_count }} past due date</small></a>
+            <a class="admin-stat-card teal" href="/admin/payments?status=paid"><span>Collected this month</span><strong>${{ '{:,.2f}'.format(summary.collected_month) }}</strong><small>{{ summary.month }}</small></a>
+            <a class="admin-stat-card amber" href="/admin/payments?status=draft"><span>Drafts</span><strong>{{ summary.draft_count }}</strong><small>Not issued yet</small></a>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+    {% if pending %}
+    <section class="admin-section" aria-labelledby="awaiting-title">
+        <div class="admin-section-heading"><div><span class="admin-kicker">Submitted by clients</span><h2 id="awaiting-title">Awaiting verification ({{ pending | length }})</h2></div></div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--money">
+                <thead><tr><th>Payment</th><th>Client</th><th>Invoice</th><th>Submitted</th><th>Method</th><th>Client sent</th><th>Amount</th><th></th></tr></thead>
+                <tbody>
+                    {% for r in pending %}
+                    <tr>
+                        <td>{{ r.payment.payment_number }}<small class="admin-muted">Ref: {{ r.payment.transaction_reference }}</small></td>
+                        <td>{{ r.client_name }}</td>
+                        <td>{% if r.invoice %}<a href="/admin/payments/invoices/{{ r.invoice.id }}" class="link-primary">{{ r.invoice.invoice_number }}</a>{% else %}<span class="admin-pill admin-pill--amber">Advance payment</span>{% endif %}<small class="admin-muted">{{ r.filing.case_number }}</small></td>
+                        <td class="admin-nowrap">{{ r.payment.created_at.strftime('%b %d, %Y') }}</td>
+                        <td>{{ r.payment.payment_method | replace('_', ' ') | capitalize if r.payment.payment_method != 'upi' else 'UPI' }}</td>
+                        <td>{% if r.payment.original_amount %}{{ '{:,.2f}'.format(r.payment.original_amount) }} {{ r.payment.original_currency }}{% else %}—{% endif %}</td>
+                        <td>${{ '{:,.2f}'.format(r.payment.amount) }}</td>
+                        <td><div class="admin-doc-actions">
+                            {% if r.invoice %}
+                            <a href="/admin/payments/invoices/{{ r.invoice.id }}" class="admin-mini-btn">Review</a>
+                            {% else %}
+                            {#- Advance payment (client feedback, Nov 2026): no invoice page yet, so it is checked here.
+                                It counts towards the case's invoice once that is issued. -#}
+                            {% if r.payment.proof_path %}<a class="admin-mini-btn" href="/admin/payments/payments/{{ r.payment.id }}/proof" target="_blank" rel="noopener">Proof</a>{% endif %}
+                            <form method="post" action="/admin/payments/payments/{{ r.payment.id }}/verify" onsubmit="return confirm('Confirm ${{ '{:,.2f}'.format(r.payment.amount) }} was received from {{ r.client_name }}?');">
+                                <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Verify</button>
+                            </form>
+                            <details class="admin-doc-pop">
+                                <summary class="admin-mini-btn admin-mini-btn--danger">Reject</summary>
+                                <form method="post" action="/admin/payments/payments/{{ r.payment.id }}/reject" class="admin-pop-form">
+                                    <label for="reason-{{ r.payment.id }}">Why isn't this payment accepted?</label>
+                                    <textarea id="reason-{{ r.payment.id }}" name="reason" rows="3" maxlength="500" required placeholder="e.g. No payment found with this reference."></textarea>
+                                    <button type="submit" class="admin-filter-btn">Reject payment</button>
+                                </form>
+                            </details>
+                            {% endif %}
+                        </div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="admin-section">
+        <form method="get" action="/admin/payments" class="admin-filter-bar">
+            <input type="hidden" name="status" value="{{ status }}">
+            <input type="text" name="q" value="{{ q }}" placeholder="Search invoice #, case # or client name..." class="admin-filter-input" aria-label="Search invoices">
+            <button type="submit" class="admin-filter-btn">Search</button>
+            {% if q %}<a href="/admin/payments?status={{ status }}" class="admin-filter-clear">Clear</a>{% endif %}
+        </form>
+        <nav class="admin-chips" aria-label="Filter invoices by status">
+            {% for key, label in filters %}
+            <a href="/admin/payments?status={{ key }}{% if q %}&amp;q={{ q | urlencode }}{% endif %}" class="admin-chip{% if status == key %} is-active{% endif %}">{{ label }}</a>
+            {% endfor %}
+        </nav>
+
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--money">
+                <thead>
+                    <tr><th>Invoice</th><th>Client</th><th>Case</th><th>Date</th><th>Due</th><th>Status</th><th>Total</th><th>Paid</th><th>Balance</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in invoices %}
+                    <tr>
+                        <td><a href="/admin/payments/invoices/{{ r.invoice.id }}" class="link-primary">{{ r.invoice.invoice_number }}</a></td>
+                        <td>{{ r.client_name }}</td>
+                        <td><a href="/admin/cases/{{ r.filing.id }}" class="link-primary">{{ r.filing.case_number }}</a></td>
+                        <td class="admin-nowrap">{{ r.invoice.invoice_date.strftime('%b %d, %Y') }}</td>
+                        <td class="admin-nowrap">{{ r.invoice.due_date.strftime('%b %d, %Y') if r.invoice.due_date else '—' }}</td>
+                        <td>
+                            <span class="admin-pill admin-pill--{{ tone.get(r.invoice.status, 'slate') }}">{{ r.status_label }}</span>
+                            {% if r.overdue %}<span class="admin-pill admin-pill--coral">Overdue</span>{% endif %}
+                        </td>
+                        <td>${{ '{:,.2f}'.format(r.invoice.total_amount) }}</td>
+                        <td>${{ '{:,.2f}'.format(r.paid) }}</td>
+                        <td><strong>${{ '{:,.2f}'.format(r.balance) }}</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="9" class="admin-empty">{% if q or status %}No invoices match.{% else %}No invoices yet. Create one with <strong>New invoice</strong>.{% endif %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

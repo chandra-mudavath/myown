@@ -1,0 +1,5 @@
+<div class="hr-who">
+    <span class="hr-id">{{ employee.staff_number }}</span>
+    <strong>{{ people.full_name(employee) }}</strong>
+    {% if employee.account.is_active %}<span class="admin-pill admin-pill--green">Active</span>{% else %}<span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}
+</div>

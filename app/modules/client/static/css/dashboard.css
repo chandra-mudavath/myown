@@ -1,0 +1,299 @@
+* {
+  box-sizing: border-box;
+}
+/* Body styles handled globally by theme.css */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--ink);
+  font: 700 1.15rem "Space Grotesk", sans-serif;
+  text-decoration: none;
+}
+dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.panel h2 {
+  margin: 0;
+  font: 600 1.25rem "Space Grotesk", sans-serif;
+}
+.teal {
+  color: var(--teal);
+}
+.blue {
+  color: var(--blue);
+}
+.green {
+  color: var(--green);
+}
+.amber {
+  color: var(--amber);
+}
+.coral {
+  color: var(--coral);
+}
+.panel {
+  padding: 27px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgba(23, 50, 77, 0.05);
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid transparent;
+  padding: 0 15px;
+  font: 700 0.8rem "DM Sans", sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.button:hover {
+  transform: translateY(-1px);
+}
+.button:focus-visible {
+  outline: 3px solid #e4ad50;
+  outline-offset: 3px;
+}
+.button-primary {
+  background: var(--teal);
+  color: #fff;
+}
+.button-primary:hover {
+  box-shadow: 0 6px 16px rgba(8, 127, 121, 0.23);
+}
+.button-secondary {
+  background: var(--brand-soft);
+  border-color: #b9d8d3;
+  color: var(--teal);
+}
+.button-quiet {
+  min-height: 32px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 8px;
+}
+.button-quiet:hover {
+  background: var(--surface-soft);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 650px) {
+  .panel {
+    padding: 21px;
+  }
+  .button-secondary {
+    width: 100%;
+  }
+}
+
+/* === Section status list (in progress panel) === */
+.status-complete      { color: var(--green);  background: rgba(43,  139, 99,  0.12); }
+.status-pending       { color: var(--blue);   background: rgba(41,  105, 168, 0.12); }
+
+/* ════════════════════════════════════════
+   DARK THEME OVERRIDES — dashboard.css
+   Overrides hardcoded colors for dark mode
+════════════════════════════════════════ */
+html[data-theme=dark] .button-secondary {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+html[data-theme=dark] .button-quiet:hover {
+  background: var(--surface-soft);
+}
+
+/* ── Client Filings & Documents ── */
+
+.doc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.doc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+/* Documents Page Layout */
+
+.doc-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.doc-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+}
+
+.doc-card:hover {
+  border-color: var(--line);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
+
+.doc-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.doc-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.doc-card-meta {
+  overflow: hidden;
+}
+
+.doc-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 0.25rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-card-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* ── Documents page ── */
+.doc-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+.doc-card-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.doc-tree-list {
+  list-style: none;
+  padding-left: 1.5rem;
+  margin: 0;
+}
+.doc-tree-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.doc-tree-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.doc-tree-version {
+  color: var(--muted);
+}
+.doc-tree-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* ── New Filing Progress & Forms ── */
+
+.upload-progress-container {
+  display: none;
+  margin-top: 0.5rem;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  background: var(--line);
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  width: 0%;
+  background: var(--brand);
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.file-list {
+  margin-top: 0.5rem;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+}
+
+.submit-confirmation-message {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--teal-soft);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.submit-confirmation-message p {
+  margin: 0;
+}
+
+.form-actions-end {
+  display: flex;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+

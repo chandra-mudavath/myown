@@ -1,0 +1,33 @@
+{#- HR workspace shell: the admin console layout (admin.css) in the HR colour (hr.css), no right rail.
+    Pages set `crumb` for the header and fill `main`. `employee` + `tabs` switch the sidebar to that
+    employee's menu, the way the staff portal switches to a client's menu. -#}
+{% extends "base.html" %}
+{% set app_name = app_name or 'CovrentTax' %}
+{% set hr_name = hr.first_name if hr and hr.first_name else 'HR' %}
+{% set hr_last_name = hr.last_name if hr and hr.last_name else '' %}
+{% set initials = (hr_name[0] ~ (hr_last_name[0] if hr_last_name else '')) | upper %}
+{% set no_rail = true %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ asset('admin', 'css/admin.css') }}" />
+<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />
+{% block extra_styles %}{% endblock %}
+{% endblock %}
+
+{% block body_class %}admin-page hr-page{% endblock %}
+
+{% block content %}
+<div class="admin-layout admin-layout--no-rail{% block layout_class %}{% endblock %}">
+    {% include "hr/partials/sidebar.html" %}
+
+    <main class="admin-main">
+        {% include "hr/partials/header.html" %}
+        {% block main %}{% endblock %}
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ asset('hr', 'js/hr.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+{% endblock %}

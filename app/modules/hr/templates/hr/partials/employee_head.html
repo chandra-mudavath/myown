@@ -1,0 +1,13 @@
+<section class="admin-welcome">
+    <div class="admin-page-topbar">
+        <div class="hr-emp-head">
+            <span class="hr-initials" aria-hidden="true">{{ people.initials(employee) }}</span>
+            <div>
+                <h1>{{ people.full_name(employee) }}</h1>
+                <p>{{ employee.staff_number }}{% if record and record.employee_number %} · {{ record.employee_number }}{% endif %}{% if record and record.designation %} · {{ record.designation }}{% endif %}
+                    · {% if employee.account.is_active %}<span class="admin-pill admin-pill--green">Active</span>{% else %}<span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}</p>
+            </div>
+        </div>
+        {% if editable %}<div><a href="/hr/messages" class="admin-mini-btn">Message</a></div>{% endif %}
+    </div>
+</section>

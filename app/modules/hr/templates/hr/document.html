@@ -1,0 +1,101 @@
+{% extends "hr/_layout.html" %}
+{% block title %}{{ doc.document_number }} - HR - {{ app_name }}{% endblock %}
+{% set crumb = doc.document_number %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">{{ doc.document_number }}</span>
+                <h1>{{ title }}</h1>
+                <p>
+                    {% if doc.status == 'final' %}<span class="admin-pill admin-pill--green">Final</span> Finalised {{ doc.finalised_at.strftime('%d %b %Y') }}. It can no longer change.
+                    {% elif doc.status == 'void' %}<span class="admin-pill admin-pill--slate">Void</span>
+                    {% else %}<span class="admin-pill admin-pill--amber">Draft</span> Check it, change anything below, then finalise.{% endif %}
+                    {% if doc.kind == 'OFFER' and doc.offer_status %} · Offer {{ offer_statuses[doc.offer_status] | lower }}{% endif %}
+                </p>
+            </div>
+            <div class="hr-form-actions">
+                {% if doc.kind == 'PAYSLIP' %}<a class="admin-mini-btn" href="/hr/payslips?month={{ doc.period }}">All payslips</a>
+                {% elif doc.kind == 'OFFER' %}<a class="admin-mini-btn" href="/hr/offers">All offers</a>
+                {% elif doc.staff_id %}<a class="admin-mini-btn" href="/hr/employees/{{ doc.staff_id }}?tab=letters">Employee's letters</a>{% endif %}
+                {% if doc.status != 'void' %}<a class="admin-mini-btn" href="/hr/documents/{{ doc.id }}/print" target="_blank" rel="noopener">Print / Save as PDF</a>{% endif %}
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <div class="hr-doc-layout">
+        <section class="hr-doc-paper" aria-label="Document">{{ letter | safe }}</section>
+
+        <aside class="hr-doc-side">
+            {% if doc.status == 'draft' %}
+            <div class="admin-card">
+                <h3 class="admin-card-title">{{ 'One-off items this month' if doc.kind == 'PAYSLIP' else 'Details' }}</h3>
+                <form method="post" action="/hr/documents/{{ doc.id }}" class="admin-form">
+                    {% if doc.kind == 'PAYSLIP' %}
+                    <div class="hr-form-grid">
+                        {% for key, label, side in extras %}
+                        <div class="modal-form-group"><label for="x-{{ key }}">{{ label }} <small class="hr-later">({{ side }})</small></label>
+                            <input id="x-{{ key }}" name="{{ key }}" inputmode="decimal" value="{{ values.extras[key] if values.extras[key] != '0' else '' }}" placeholder="0"></div>
+                        {% endfor %}
+                        <div class="modal-form-group"><label for="x-pay_date">Pay date</label><input id="x-pay_date" name="pay_date" type="date" value="{{ values.pay_date }}" required></div>
+                        <div class="modal-form-group"><label for="x-pay_mode">Payment mode</label><input id="x-pay_mode" name="pay_mode" value="{{ values.pay_mode }}" maxlength="40"></div>
+                    </div>
+                    {% else %}
+                    {% include "hr/partials/document_fields.html" %}
+                    {% endif %}
+                    <div class="hr-form-actions"><button type="submit" class="modal-btn-submit admin-form-submit">Save and regenerate</button></div>
+                </form>
+            </div>
+            <div class="admin-card">
+                <h3 class="admin-card-title">Finish</h3>
+                <div class="hr-form-actions">
+                    <form method="post" action="/hr/documents/{{ doc.id }}/finalise" onsubmit="return confirm('Finalise {{ doc.document_number }}? It is locked after this.');">
+                        <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Finalise</button></form>
+                    <form method="post" action="/hr/documents/{{ doc.id }}/void" onsubmit="return confirm('Void this draft?');">
+                        <button type="submit" class="admin-mini-btn admin-mini-btn--danger">Void draft</button></form>
+                </div>
+                <p class="admin-form-hint">{% if doc.kind == 'PAYSLIP' %}Or finalise the whole month from Payslips.{% else %}Finalising stores this exact page; the employee then sees it in their portal.{% endif %}</p>
+            </div>
+            {% endif %}
+
+            {% if doc.kind == 'OFFER' and doc.status == 'final' %}
+            <div class="admin-card">
+                <h3 class="admin-card-title">Offer</h3>
+                <div class="hr-form-actions">
+                    {% if not doc.offer_status %}
+                    <form method="post" action="/hr/documents/{{ doc.id }}/offer"><input type="hidden" name="status" value="sent">
+                        <button type="submit" class="modal-btn-submit admin-form-submit">Send offer to {{ doc.data.candidate_email }}</button></form>
+                    {% elif doc.offer_status == 'sent' %}
+                    <form method="post" action="/hr/documents/{{ doc.id }}/offer"><input type="hidden" name="status" value="accepted">
+                        <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Mark accepted</button></form>
+                    <form method="post" action="/hr/documents/{{ doc.id }}/offer"><input type="hidden" name="status" value="declined">
+                        <button type="submit" class="admin-mini-btn">Mark declined</button></form>
+                    {% endif %}
+                    {% if doc.offer_status == 'accepted' %}
+                    {% if doc.staff_id %}<a class="admin-mini-btn" href="/hr/employees/{{ doc.staff_id }}">Open their record</a>
+                    {% else %}<a class="modal-btn-submit admin-form-submit" href="/hr/employees/new?offer={{ doc.id }}">Create their staff account</a>{% endif %}
+                    {% endif %}
+                </div>
+                {% if doc.offer_status in ('sent', 'accepted') %}
+                <form method="post" action="/hr/documents/{{ doc.id }}/offer" class="admin-form" onsubmit="return confirm('Withdraw this offer?');">
+                    <input type="hidden" name="status" value="withdrawn">
+                    <div class="modal-form-group"><label for="withdraw-reason">Reason for the candidate (optional)</label><input id="withdraw-reason" name="reason" maxlength="255"></div>
+                    <button type="submit" class="admin-mini-btn admin-mini-btn--danger">Withdraw offer</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if doc.status == 'final' and doc.kind != 'OFFER' %}
+            <div class="admin-card">
+                <form method="post" action="/hr/documents/{{ doc.id }}/void" onsubmit="return confirm('Void {{ doc.document_number }}? The employee will no longer see it. Make a new one to replace it.');">
+                    <button type="submit" class="admin-mini-btn admin-mini-btn--danger">Void this document</button></form>
+            </div>
+            {% endif %}
+        </aside>
+    </div>
+{% endblock %}

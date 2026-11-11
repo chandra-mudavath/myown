@@ -1,0 +1,80 @@
+{% extends "admin/_layout.html" %}
+{#- Clients' requests to change their sign-in email (client feedback, Nov 2026). Approving makes the new address
+    the username; the password stays the same. Rejecting shows the reason to the client on Email & Mobile. -#}
+{% block title %}Email change requests - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Email change requests' %}
+{% set no_rail = true %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Clients</span>
+                <h1>Email change requests</h1>
+                <p>{% if pending %}<strong>{{ pending | length }} waiting</strong> for approval.{% else %}Nothing waiting.{% endif %} Approving makes the new email the client's username; the password stays the same.</p>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <section class="admin-section" aria-labelledby="pending-title">
+        <div class="admin-section-heading"><div><span class="admin-kicker">To review</span><h2 id="pending-title">Waiting for approval ({{ pending | length }})</h2></div></div>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Client</th><th>Current email</th><th>New email</th><th>Requested</th><th></th></tr></thead>
+                <tbody>
+                    {% for r in pending %}
+                    <tr>
+                        <td>{% if r.client %}<a href="/admin/clients/{{ r.client.id }}" class="link-primary">{{ r.name }}</a><small class="admin-muted">{{ r.client.client_number }}</small>{% else %}{{ r.name }}{% endif %}</td>
+                        <td>{{ r.request.old_email }}</td>
+                        <td><strong>{{ r.request.new_email }}</strong></td>
+                        <td class="admin-nowrap">{{ r.request.created_at.strftime('%b %d, %Y · %H:%M') }}</td>
+                        <td>
+                            <div class="admin-doc-actions">
+                                <form method="post" action="/admin/email-requests/{{ r.request.id }}/approve"
+                                      onsubmit="return confirm('Change the sign-in email from {{ r.request.old_email }} to {{ r.request.new_email }}?');">
+                                    <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Approve</button>
+                                </form>
+                                <details class="admin-doc-pop">
+                                    <summary class="admin-mini-btn admin-mini-btn--danger">Reject</summary>
+                                    <form method="post" action="/admin/email-requests/{{ r.request.id }}/reject" class="admin-pop-form">
+                                        <label for="reason-{{ r.request.id }}">Why isn't this change approved?</label>
+                                        <textarea id="reason-{{ r.request.id }}" name="reason" rows="3" maxlength="500" required placeholder="e.g. Please call us to confirm this change."></textarea>
+                                        <button type="submit" class="admin-filter-btn">Reject request</button>
+                                    </form>
+                                </details>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="admin-empty">No email change requests waiting.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if recent %}
+    <section class="admin-section" aria-labelledby="recent-title">
+        <div class="admin-section-heading"><div><span class="admin-kicker">History</span><h2 id="recent-title">Recently handled</h2></div></div>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>From</th><th>To</th><th>Decision</th><th>When</th><th>Reason</th></tr></thead>
+                <tbody>
+                    {% for r in recent %}
+                    <tr>
+                        <td>{{ r.old_email }}</td>
+                        <td>{{ r.new_email }}</td>
+                        <td><span class="admin-pill admin-pill--{{ 'green' if r.status == 'approved' else 'coral' }}">{{ r.status | capitalize }}</span></td>
+                        <td class="admin-nowrap">{{ r.decided_at.strftime('%b %d, %Y') if r.decided_at else '—' }}</td>
+                        <td>{{ r.reason or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+{% endblock %}

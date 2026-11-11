@@ -1,0 +1,49 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}My attendance - {{ app_name }}{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />{% endblock %}
+
+{% block main %}
+    <div class="staff-pagehead">
+        <div>
+            <p class="eyebrow">My HR</p>
+            <h1>My attendance</h1>
+        </div>
+        <p class="staff-pagehead__meta">{{ today.strftime('%A, %d %B %Y') }}</p>
+    </div>
+
+    {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success" role="status">{{ saved }}</div>{% endif %}
+
+    <section class="staff-panel" aria-labelledby="today-title">
+        <div class="staff-cases-head">
+            <div class="staff-cases-title"><h2 id="today-title">Today</h2>
+                <span class="staff-count-chip">{{ code_labels.get(today_code, today_code) if today_code else 'Not checked in' }}</span></div>
+        </div>
+        <div class="hr-form-actions">
+            {% if today_code in ('W', 'H') %}
+            <p class="staff-cell-muted">No check-in needed today.</p>
+            {% elif not row or not row.check_in_at %}
+            <form method="post" action="/staff/hr/check-in"><button type="submit" class="staff-btn staff-btn--primary">{{ ci("check-circle", "ci ci--sm") }} Check in</button></form>
+            {% elif not row.check_out_at %}
+            <span>Checked in at <strong>{{ checked_in_at }}</strong></span>
+            <form method="post" action="/staff/hr/check-out"><button type="submit" class="staff-btn staff-btn--ghost">{{ ci("clock", "ci ci--sm") }} Check out</button></form>
+            {% else %}
+            <span>Checked in and out today. Thank you.</span>
+            {% endif %}
+            <a class="staff-btn staff-btn--ghost" href="/staff/hr/leaves">Apply for leave</a>
+        </div>
+    </section>
+
+    <section class="staff-panel" aria-labelledby="month-title">
+        <div class="staff-cases-head">
+            <div class="staff-cases-title"><h2 id="month-title">{{ nav.label }}</h2></div>
+            <div class="hr-monthbar">
+                <a class="staff-btn staff-btn--ghost" href="/staff/hr/attendance?month={{ nav.prev }}">{{ ci("chevron-left", "ci ci--sm") }} Previous</a>
+                <a class="staff-btn staff-btn--ghost" href="/staff/hr/attendance?month={{ nav.next }}">Next {{ ci("chevron-right", "ci ci--sm") }}</a>
+            </div>
+        </div>
+        {% include "hr/partials/month_calendar.html" %}
+        <p class="staff-cell-muted">Something wrong? Message HR and they'll correct it.</p>
+    </section>
+{% endblock %}

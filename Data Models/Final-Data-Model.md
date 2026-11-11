@@ -1,4 +1,4 @@
-# UrTax — Final Data Model (revision 2)
+# CovrentTax — Final Data Model (revision 2)
 
 Status: **final reconciled proposal, revision 2 (2026-10-01)**. This file is the authoritative **table
 catalog**. Access policies (per table and operation) and indexing are in
@@ -160,7 +160,7 @@ Also kept unchanged: `auth_sessions`, `auth_refresh_tokens`, `auth_password_rese
 `id`, `account_id` FK UK, `client_number` UK, `created_at`, `updated_at`
 
 **`admins`** ♻️
-`id`, `account_id` FK UK, `admin_number` UK, `created_at`, `updated_at`
+`id`, `account_id` FK UK, `admin_number` UK, `notifications_seen_at`, `created_at`, `updated_at`
 
 **`hr`** 🆕
 `id`, `account_id` FK UK, `hr_number` UK, `department`, `created_at`, `updated_at`
@@ -245,7 +245,7 @@ history, so a separate `document_reviews` table isn't needed.*
 
 ### FINANCIAL *(unchanged except FK target)*
 **`services`** `id`, `service_code` UK, `name`, `description`, `base_price`, `is_active`, `created_at`, `updated_at`
-**`case_services`** `id`, `case_id` FK → `tax_filings.id`, `service_id` FK, `quantity`, `unit_price`, `total_amount`, `created_at`
+**`case_services`** `id`, `case_id` FK → `tax_filings.id`, ✏️ `invoice_id` FK → `invoices.id` (the invoice that billed the line), `service_id` FK, `quantity`, `unit_price`, `total_amount`, `created_at`
 **`invoices`** `id`, `invoice_number` UK, `client_id` FK, `case_id` FK → `tax_filings.id`, `subtotal`,
 `discount_amount`, `tax_amount`, `total_amount`, `status`, `invoice_date`, `due_date`, `created_at`
 **`payments`** `id`, `payment_number` UK, `invoice_id` FK, `client_id` FK, `amount`, `payment_method`,

@@ -1,0 +1,89 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set l = r.lead %}
+{% block title %}{{ l.name }} · Referral - {{ app_name }}{% endblock %}
+{% set active_nav = 'referrals' %}
+
+{% block main %}
+    <a class="staff-back" href="/staff/referrals">{{ ci("chevron-left", "ci ci--sm") }} Back to referrals</a>
+
+    {% if error %}<p class="ref-flash ref-flash--error" role="alert">{{ error }}</p>{% endif %}
+    {% if saved %}<p class="ref-flash" role="status">{{ saved }}</p>{% endif %}
+
+    {#- Who to call, and how to reach them -#}
+    <header class="ref-head">
+        <div class="ref-head__main">
+            <p class="eyebrow">Referral · added {{ l.created_at.strftime('%b %d, %Y') }}</p>
+            <h1>{{ l.name }} <span class="staff-stage-pill tone-{{ r.tone }}">{{ r.status_label }}</span></h1>
+            <dl class="ref-facts">
+                <div><dt>Phone</dt><dd class="is-mono">{{ l.phone or '—' }}</dd></div>
+                <div><dt>Email</dt><dd>{{ l.email or '—' }}</dd></div>
+                <div><dt>How referred</dt><dd><span class="staff-stage-pill tone-{{ r.source_tone }}">{{ r.source_label }}</span></dd></div>
+                <div><dt>Relationship</dt><dd>{{ l.relationship or ('Signed up with the referral link' if l.source == 'link' else '—') }}</dd></div>
+                <div><dt>Referred by</dt><dd>{% if r.referrer %}<a href="/staff/clients/{{ r.referrer.id }}">{{ r.referrer_name }}</a> <span class="staff-id-chip">{{ r.referrer.client_number }}</span>{% else %}—{% endif %}</dd></div>
+                <div><dt>Assigned to</dt><dd>{{ r.staff_name or 'Not assigned' }}</dd></div>
+                <div><dt>Next follow-up</dt><dd class="{{ 'ref-overdue' if r.overdue else '' }}">{{ l.next_follow_up.strftime('%b %d, %Y') if l.next_follow_up else '—' }}{% if r.overdue %} · overdue{% endif %}</dd></div>
+                {% if r.signed_up %}<div><dt>Client account</dt><dd><a href="/staff/clients/{{ r.signed_up.id }}">{{ r.signed_up.client_number }}</a></dd></div>{% endif %}
+            </dl>
+            {% if l.note %}<p class="ref-note"><strong>Note from {{ 'the client' if l.source == 'form' else 'the team' }}:</strong> {{ l.note }}</p>{% endif %}
+        </div>
+        <div class="ref-head__call">
+            {% if l.phone %}
+            <a class="ref-callbtn" href="tel:{{ r.tel }}">{{ ci("phone") }} Call {{ l.name.split()[0] }}</a>
+            <span class="staff-cell-muted">{{ l.phone }}</span>
+            {% endif %}
+            {% if l.email %}<a class="staff-btn staff-btn--ghost" href="mailto:{{ l.email }}">{{ ci("mail", "ci ci--sm") }} Email</a>{% endif %}
+        </div>
+    </header>
+
+    <div class="ref-layout">
+        {#- After the call: what happened, and what's next -#}
+        <section class="staff-panel ref-log" aria-labelledby="log-title">
+            <h2 id="log-title">Log a call</h2>
+            <form method="post" action="/staff/referrals/{{ l.id }}/log" class="ref-log__form">
+                <fieldset>
+                    <legend>Call outcome</legend>
+                    <div class="ref-outcomes">
+                        {% for key, label in outcomes %}
+                        <label class="ref-outcome"><input type="radio" name="outcome" value="{{ key }}" /><span>{{ label }}</span></label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <label for="log-note">Notes</label>
+                <textarea id="log-note" name="note" class="staff-textarea" rows="3" maxlength="2000" placeholder="What did they say? e.g. Interested, needs help with a 1099-B, call back after the 25th."></textarea>
+                <div class="ref-log__row">
+                    <label>Status
+                        <select name="status" class="staff-select">
+                            <option value="">Keep: {{ r.status_label }}</option>
+                            {% if l.status not in ('signed_up', 'filed') %}
+                            {% for key, label, tone in statuses if key != l.status %}<option value="{{ key }}">{{ label }}</option>{% endfor %}
+                            {% endif %}
+                        </select>
+                    </label>
+                    <label>Next follow-up
+                        <input type="date" name="next_follow_up" class="staff-input" min="{{ today }}" value="" />
+                    </label>
+                </div>
+                <div><button type="submit" class="staff-btn staff-btn--primary">Save follow-up</button></div>
+            </form>
+        </section>
+
+        {#- Everything that happened with this referral, newest first -#}
+        <section class="staff-panel ref-history" aria-labelledby="hist-title">
+            <h2 id="hist-title">History</h2>
+            {% if r.history %}
+            <ol class="ref-timeline">
+                {% for h in r.history %}
+                <li class="ref-timeline__item is-{{ h.kind }}">
+                    <strong>{% if h.kind == 'call' %}Call · {{ outcome_label.get(h.outcome, h.outcome) }}{% elif h.kind == 'note' %}Note{% elif h.kind == 'assign' %}Assignment{% else %}Update{% endif %}</strong>
+                    <span class="staff-cell-muted">{{ h.author_name }} · {{ h.created_at.strftime('%b %d, %Y · %H:%M') }}</span>
+                    {% if h.note %}<p>{{ h.note }}</p>{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="staff-cell-muted">No calls yet. Call {{ l.name.split()[0] }}, then log what happened here.</p>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

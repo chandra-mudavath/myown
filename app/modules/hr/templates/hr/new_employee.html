@@ -1,0 +1,68 @@
+{% extends "hr/_layout.html" %}
+{% block title %}New staff account - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'New staff account' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">People</span>
+                <h1>New staff account</h1>
+                <p>They get a temporary password and choose their own the first time they sign in.</p>
+            </div>
+        </div>
+    </section>
+
+    {% if created %}
+    <div class="admin-temp-password" role="status">
+        <strong>{{ created.name }} ({{ created.number }}) can now sign in</strong>
+        <span>Sign-in email: {{ created.email }}</span>
+        <code>{{ created.temp_password }}</code>
+        <span>Share this temporary password with them securely. It's shown only this once.</span>
+    </div>
+    <p class="hr-form-actions">
+        <a class="modal-btn-submit admin-form-submit" href="/hr/employees/{{ created.id }}?tab=job">Fill in their job details &#8594;</a>
+        <a class="admin-mini-btn" href="/hr/dashboard">Back to dashboard</a>
+    </p>
+    {% endif %}
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+
+    <section class="admin-section" aria-labelledby="new-title">
+        <div class="admin-card">
+            <h3 class="admin-card-title" id="new-title">{{ 'Add another' if created else 'Details' }}</h3>
+            <form method="post" action="/hr/employees" class="admin-form">
+                {% if form.offer %}<input type="hidden" name="offer" value="{{ form.offer }}">
+                <p class="admin-form-hint">From an accepted offer: their job details and first salary are copied from the offer.</p>{% endif %}
+                <div class="hr-form-grid">
+                    <div class="modal-form-group">
+                        <label for="first_name">First name</label>
+                        <input id="first_name" name="first_name" maxlength="15" required value="{{ form.first_name or '' }}" autocomplete="off">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="last_name">Last name</label>
+                        <input id="last_name" name="last_name" maxlength="15" value="{{ form.last_name or '' }}" autocomplete="off">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="email">Company email</label>
+                        <input id="email" name="email" type="email" required value="{{ form.email or '' }}" placeholder="name@covrenttax.com" autocomplete="off">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="phone">Mobile</label>
+                        <input id="phone" name="phone" maxlength="20" value="{{ form.phone or '' }}" autocomplete="off">
+                    </div>
+                    <div class="modal-form-group">
+                        <label for="role">Role on cases</label>
+                        <select id="role" name="role" required>
+                            {% for r in roles %}<option value="{{ r.code }}" {% if form.role == r.code %}selected{% endif %}>{{ r.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="hr-form-actions">
+                    <button type="submit" class="modal-btn-submit admin-form-submit">Create account</button>
+                    <span class="admin-form-hint">HR accounts are created by an admin.</span>
+                </div>
+            </form>
+        </div>
+    </section>
+{% endblock %}

@@ -9,19 +9,19 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-import app.models  # noqa: F401
+import app.db_models  # noqa: F401
 from app.core.config import settings
 from app.core.database import Base, get_db
 from app.core.security import create_access_token
 from app.main import app
-from app.models.admin import Admin
-from app.models.auth import AccountType, AuthAccount
-from app.models.chat import ChatThread
-from app.models.client import Client
-from app.models.lookups import AccountTypeLookup, CaseStage, ChatQueryTopic
-from app.models.staff import Staff
-from app.models.tax_filing import TaxFiling
-from app.services import chat_service
+from app.modules.admin.models.admin import Admin
+from app.platform.models.auth import AccountType, AuthAccount
+from app.platform.models.chat import ChatThread
+from app.modules.client.models.client import Client
+from app.platform.models.lookups import AccountTypeLookup, CaseStage, ChatQueryTopic
+from app.modules.staff.models.staff import Staff
+from app.platform.models.tax_filing import TaxFiling
+from app.platform.services import chat_service
 
 
 @pytest.fixture()
@@ -196,6 +196,13 @@ def test_stage_change_hides_and_admin_restores(env):
     client, staff, admin = as_(env, "client"), as_(env, "staff"), as_(env, "admin")
     fid = env["filing_id"]
     t = client.post(f"/chat/api/cases/{fid}/open").json()["thread_id"]
+    # A Registered case only moves on once someone is assigned to it
+    with env["Session"]() as db:
+        from app.platform.models.case_workflow import CaseAssignment
+        from app.platform.models.lookups import StaffRoleLookup
+        db.add(StaffRoleLookup(id=1, code="PREPARER", name="Preparer", sort_order=1))
+        db.add(CaseAssignment(case_id=fid, staff_id=env["staff"]["person"].id, role_id=1, status="active"))
+        db.commit()
     staff.post(f"/staff/cases/{fid}/stage", data={"to": "complete", "next": "/staff/cases"}, follow_redirects=False)
     with env["Session"]() as db:
         assert db.get(ChatThread, t).hide_after is not None
@@ -207,6 +214,14 @@ def test_stage_change_hides_and_admin_restores(env):
     assert staff.get("/chat/api/hidden").status_code == 403
     assert admin.post(f"/chat/api/threads/{t}/restore").status_code == 200
     assert client.get(f"/chat/api/threads/{t}").status_code == 200
+
+
+def test_registered_case_needs_an_assignment_to_move(env):
+    fid = env["filing_id"]
+    r = as_(env, "staff").post(f"/staff/cases/{fid}/stage", data={"to": "complete", "next": "/staff/cases"}, follow_redirects=False)
+    assert "move_error=" in r.headers["location"]
+    with env["Session"]() as db:
+        assert db.get(TaxFiling, fid).status == "pending_review"
 
 
 def test_pages_render(env):

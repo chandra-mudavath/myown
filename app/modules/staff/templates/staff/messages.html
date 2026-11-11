@@ -1,0 +1,17 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}Messages - {{ app_name }}{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ asset('platform', 'css/chat.css') }}" />
+{% endblock %}
+{% block main_class %} chat-page{% endblock %}
+
+{% block main %}
+    {% set portal = "staff" %}
+    {% include "chat/_app.html" %}
+{% endblock %}
+
+{% block page_scripts %}
+<script src="{{ asset('platform', 'js/chat.js') }}"></script>
+{% endblock %}

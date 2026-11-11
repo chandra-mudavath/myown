@@ -1,8 +1,18 @@
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
 
+from app.core.assets import asset
 
-templates = Jinja2Templates(directory="app/templates")
+
+# Each module keeps its own templates/ folder; names stay namespaced ("admin/index.html").
+templates = Jinja2Templates(directory=[
+    "app/platform/templates",
+    "app/public/templates",
+    "app/modules/client/templates",
+    "app/modules/staff/templates",
+    "app/modules/admin/templates",
+    "app/modules/hr/templates",
+])
 
 
 def two_tone(text: str) -> Markup:
@@ -24,4 +34,15 @@ def two_tone(text: str) -> Markup:
     return Markup(f'{lead}<span class="cx-accent">{escape(tail)}</span>')
 
 
+def plain_number(value) -> str:
+    """A count of days or a quantity without trailing zeros or exponents: 30, 2.5, 0 (never 3E+1 or 12.0)."""
+    try:
+        text = f"{float(value):.2f}".rstrip("0").rstrip(".")
+    except (TypeError, ValueError):
+        return str(value or "")
+    return "0" if text in ("-0", "") else text
+
+
 templates.env.filters["two_tone"] = two_tone
+templates.env.filters["num"] = plain_number
+templates.env.globals["asset"] = asset

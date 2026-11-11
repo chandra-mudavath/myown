@@ -1,0 +1,18 @@
+{#- The form fields for one document kind. Needs kind (documents.Kind) and values (dict). -#}
+<div class="hr-form-grid">
+    {% for f in kind.fields %}
+    <div class="modal-form-group{% if f.kind == 'textarea' %} hr-span-2{% endif %}">
+        <label for="f-{{ f.key }}">{{ f.label }}{% if f.filled_by == 'auto' %} <small class="hr-later">(from the record)</small>{% elif not f.required %} <small class="hr-later">(optional)</small>{% endif %}</label>
+        {% if f.kind == 'textarea' %}
+        <textarea id="f-{{ f.key }}" name="{{ f.key }}" rows="3" maxlength="1000"{% if f.required %} required{% endif %}>{{ values.get(f.key, '') }}</textarea>
+        {% elif f.kind == 'select' %}
+        <select id="f-{{ f.key }}" name="{{ f.key }}"{% if f.required %} required{% endif %}>
+            {% for value, label in f.options %}<option value="{{ value }}" {% if values.get(f.key) == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        {% else %}
+        <input id="f-{{ f.key }}" name="{{ f.key }}" type="{{ 'date' if f.kind == 'date' else 'text' }}"{% if f.kind == 'number' %} inputmode="decimal"{% endif %}
+               value="{{ values.get(f.key, '') }}"{% if f.required %} required{% endif %} maxlength="200">
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>

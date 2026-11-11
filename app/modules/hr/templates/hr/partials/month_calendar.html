@@ -1,0 +1,31 @@
+{#- One person's month as a calendar. Needs nav (time_off.month_nav), codes, totals, code_labels.
+    Used on the HR employee page, the admin HR record and the staff "My attendance" page. -#}
+<div class="hr-cal-wrap">
+    <table class="hr-cal" aria-label="Attendance for {{ nav.label }}">
+        <thead><tr>{% for d in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}<th scope="col">{{ d }}</th>{% endfor %}</tr></thead>
+        <tbody>
+            {% set lead = nav.days[0].weekday() %}
+            {% set cells = [none] * lead + nav.days %}
+            {% for week in cells | batch(7, none) %}
+            <tr>
+                {% for d in week %}
+                {% if d %}{% set code = codes[d.day - 1] %}
+                <td class="hr-day hr-day--{{ code or 'none' }}" data-day="{{ d.isoformat() }}" title="{{ d.strftime('%d %b') }}: {{ code_labels.get(code, code) }}">
+                    <span>{{ d.day }}</span><small>{{ code if code not in ('W', '') else '' }}</small>
+                </td>
+                {% else %}<td class="hr-day hr-day--blank"></td>{% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <ul class="hr-legend">
+        <li><span class="hr-day--P"></span>Present {{ totals.P }}</li>
+        <li><span class="hr-day--HALF"></span>Half day {{ totals.HALF }}</li>
+        <li><span class="hr-day--L"></span>Leave {{ totals.L + totals.HL }}</li>
+        <li><span class="hr-day--UL"></span>Unpaid leave {{ totals.UL }}</li>
+        <li><span class="hr-day--A"></span>Absent {{ totals.A }}</li>
+        <li><span class="hr-day--H"></span>Holiday {{ totals.H }}</li>
+        <li><span class="hr-day--W"></span>Week off {{ totals.W }}</li>
+    </ul>
+</div>

@@ -1,0 +1,58 @@
+{#- Every error screen (see app/core/errors.py). Standalone on purpose: no base.html, no database, no
+    scripts beyond the theme check, so it renders even when the rest of the app is broken.
+    build_error_pages.py renders it with inline_css for the static nginx pages (413 / 502 / 504). -#}
+{% from "partials/brand_name.html" import brand_name %}
+{% from "errors/_icons.html" import error_icon %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>{{ title }} · {{ app_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Slab:wght@600;700&display=swap" rel="stylesheet" />
+    {% if inline_css %}
+    <script>{{ inline_js | safe }}</script>
+    <style>{{ inline_css | safe }}</style>
+    {% else %}
+    <script src="{{ asset('platform', 'js/theme-init.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('platform', 'css/theme.css') }}" />
+    <link rel="stylesheet" href="{{ asset('platform', 'css/errors.css') }}" />
+    {% endif %}
+</head>
+<body class="error-page">
+    <header class="e-bar">
+        <a class="e-brand" href="/">{{ brand_name(app_name) }}</a>
+        <a class="e-home" href="/">Home →</a>
+    </header>
+
+    <main class="e-main" aria-labelledby="e-title">
+        <div class="e-card e-tone-{{ screen.tone }}">
+            <div class="e-icon">{{ error_icon(screen.icon) }}</div>
+            <p class="e-status">Error {{ screen.status }}</p>
+            <h1 id="e-title">{{ title }}</h1>
+            <p class="e-error">{{ problem }}</p>
+            <p class="e-todo">{{ fix }}</p>
+            {% if actions %}
+            <div class="e-actions">
+                {% for a in actions %}
+                {% set cls = "e-btn e-btn--primary" if loop.first else "e-btn e-btn--secondary" %}
+                {% if a.form %}
+                <form method="post" action="{{ a.form }}"><button type="submit" class="{{ cls }}">{{ a.label }}</button></form>
+                {% else %}
+                <a class="{{ cls }}" href="{{ a.href }}"{% if a.onclick %} onclick="{{ a.onclick }}"{% endif %}>{{ a.label }}</a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <footer class="e-foot">
+        <span>Need help? <a href="mailto:{{ support_email }}">{{ support_email }}</a></span>
+        <span>© {{ year }} {{ app_name }}</span>
+    </footer>
+</body>
+</html>

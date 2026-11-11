@@ -1,0 +1,33 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}{{ heading }} - {{ app_name }}{% endblock %}
+
+{% block main %}
+    <div class="staff-pagehead">
+        <div>
+            <p class="eyebrow">My HR</p>
+            <h1>{{ heading }}</h1>
+        </div>
+    </div>
+
+    <section class="staff-panel" aria-label="{{ heading }}">
+        <div class="staff-table-scroll">
+            <table class="staff-table">
+                <thead><tr><th>Document</th><th>Number</th><th>Date</th>{% if active_nav == 'my_payslips' %}<th>Net pay</th>{% endif %}<th></th></tr></thead>
+                <tbody>
+                    {% for d in docs %}
+                    <tr>
+                        <td><a class="staff-cell-link" href="/staff/hr/documents/{{ d.id }}">{{ title(d) }}</a></td>
+                        <td>{{ d.document_number }}</td>
+                        <td>{{ d.finalised_at.strftime('%d %b %Y') if d.finalised_at else '' }}</td>
+                        {% if active_nav == 'my_payslips' %}<td><strong>{{ d.data.currency }} {{ money(d.net_amount) }}</strong></td>{% endif %}
+                        <td><a class="staff-row-action staff-row-action--primary" href="/staff/hr/documents/{{ d.id }}">View</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="staff-empty">{{ ci("file") }}<strong>Nothing here yet</strong><span>{{ empty }}</span></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}
