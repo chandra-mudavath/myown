@@ -51,6 +51,9 @@ SCREENS: dict[str, Screen] = {s.code: s for s in (
     Screen("AUTH-009", 403, "lock", "brand", "Set your own password",
            "You signed in with a temporary password from an administrator.",
            "Choose your own password to continue.", ("change_password", "switch_account")),
+    Screen("AUTH-010", 403, "shield", "brand", "You don't have access",
+           "This page is for the HR team. You're signed in as {you}.",
+           "Go to your dashboard, or sign in with a different account.", ("dashboard", "switch_account")),
     Screen("AUTH-015", 404, "link", "brand", "This sign-up link isn't valid",
            "This sign-up link is no longer valid.", "Ask an administrator for the current link.", ("sign_in", "home")),
     # Pages and records

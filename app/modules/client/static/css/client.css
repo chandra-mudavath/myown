@@ -1618,6 +1618,29 @@ html[data-theme="dark"] .cx-body .cx-helpcard strong { color: #ffffff; }
 .cx-pay__now { width: 100%; padding: 1.1rem; border: 0; border-radius: 12px; background: #2563eb; color: #fff; font: 800 1.15rem var(--font-heading, inherit); letter-spacing: .04em; cursor: pointer; box-shadow: 0 14px 28px -14px rgba(37, 99, 235, .9); }
 .cx-pay__now:hover { background: #1d4ed8; }
 .cx-pay__brands { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; color: var(--cx-muted); font-size: .78rem; font-weight: 600; }
+/* Pay in INR (Nov 2026): rupee amount, and bank transfer to the client's own account (Razorpay Smart Collect) */
+.cx-pay__inr { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem; margin: 0; padding: .85rem 1rem; border-radius: 12px; background: var(--cx-card-2); color: var(--cx-muted); }
+.cx-pay__inr strong { color: var(--cx-ink); font-size: 1.35rem; }
+.cx-pay__inr small { font-size: .8rem; }
+.cx-inr-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .6rem; }
+.cx-inr-way { cursor: pointer; }
+.cx-inr-way input { position: absolute; opacity: 0; pointer-events: none; }
+.cx-inr-way > span { display: grid; grid-template-columns: auto 1fr; column-gap: .65rem; align-items: center; height: 100%; padding: .8rem .95rem; border: 1.5px solid var(--cx-border); border-radius: 12px; transition: border-color .15s ease, background .15s ease; }
+.cx-inr-way > span .ci { grid-row: span 2; width: 1.4rem; height: 1.4rem; color: var(--cx-brand); }
+.cx-inr-way small { color: var(--cx-muted); font-size: .76rem; }
+.cx-inr-way.is-on > span, .cx-inr-way input:checked + span { border-color: var(--cx-brand); background: var(--cx-brand-soft); }
+.cx-inr-way input:focus-visible + span { outline: 2px solid var(--cx-brand); outline-offset: 2px; }
+.cx-qr__img { width: 180px; height: 180px; padding: 6px; border-radius: 12px; background: #fff; box-shadow: 0 0 0 1px #e2e8f0; }
+.cx-upi__app { display: none; }
+@media (hover: none) and (pointer: coarse) { .cx-upi__app { display: inline-flex; } }  /* phones: open the UPI app directly */
+.cx-bank-lines { text-align: left; white-space: pre-line; font-size: .8rem; line-height: 1.6; }
+.cx-pay__bank { margin-top: 1.25rem; padding-top: 1.1rem; border-top: 1px dashed var(--cx-border); display: grid; gap: .7rem; justify-items: start; }
+.cx-pay__bank .cx-legend { margin: 0; }
+.cx-pay__bank .cx-legend small { color: var(--cx-muted); font-weight: 600; font-size: .78rem; margin-left: .35rem; }
+.cx-pay__bank p { margin: 0; font-size: .86rem; }
+.cx-pay__acct { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .6rem 1.2rem; width: 100%; margin: 0; padding: .9rem 1rem; border: 1px solid var(--cx-border); border-radius: 12px; }
+.cx-pay__acct dt { color: var(--cx-muted); font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.cx-pay__acct dd { margin: .15rem 0 0; color: var(--cx-ink); font-weight: 700; }
 
 .cx-paydlg { width: min(46rem, calc(100vw - 2rem)); padding: 0; border: 0; border-radius: 16px; background: var(--cx-card); color: var(--cx-ink); box-shadow: 0 30px 80px -20px rgba(15, 23, 42, .5); }
 .cx-paydlg::backdrop { background: rgba(15, 23, 42, .55); }

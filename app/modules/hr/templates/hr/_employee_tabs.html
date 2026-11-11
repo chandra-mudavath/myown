@@ -1,0 +1,264 @@
+{#- One employee's record, tab by tab. Shared by the HR workspace (editable = true) and the admin
+    console's HR records (editable = false, read-only). Needs employee_view.context(...) plus
+    `editable`, `base` ("/hr" or "/admin/hr-records") and `page` (this employee's page URL). -#}
+{% set name = people.full_name(employee) %}
+{% set fmt = '%d %b %Y' %}
+<section class="admin-section" aria-labelledby="tab-title">
+<div class="admin-card">
+    <h2 class="hr-tab-title" id="tab-title">{{ tab_name }}</h2>
+
+    {% if tab == 'summary' %}
+    <dl class="admin-facts">
+        <div><dt>Designation</dt><dd>{{ record.designation if record and record.designation else '—' }}</dd></div>
+        <div><dt>Department</dt><dd>{{ record.department if record and record.department else '—' }}</dd></div>
+        <div><dt>Status</dt><dd>{{ people.status_label(record.employment_status) if record else 'Job details missing' }}</dd></div>
+        <div><dt>Date of joining</dt><dd>{{ record.date_of_joining.strftime(fmt) if record and record.date_of_joining else '—' }}</dd></div>
+        <div><dt>Reporting manager</dt><dd>{{ people.full_name(manager) if manager else '—' }}</dd></div>
+        <div><dt>Current salary / month</dt><dd>{{ money(record.current_salary) if record and record.current_salary is not none else '—' }}</dd></div>
+        <div><dt>This month</dt><dd>{{ month_totals.P + month_totals.HALF }} present · {{ month_totals.L + month_totals.HL + month_totals.UL }} leave · {{ month_totals.A }} absent</dd></div>
+        <div><dt>Last payslip</dt><dd>{{ last_payslip.data.month_label ~ ' · net ' ~ money(last_payslip.net_amount) if last_payslip else '—' }}</dd></div>
+        <div><dt>Documents on file</dt><dd>{{ files_count }}</dd></div>
+    </dl>
+    <h3 class="hr-subhead">Leave left this year</h3>
+    <div class="hr-chips">
+        {% for b in balances %}<span class="hr-chip"><strong>{{ (b.left | num) if b.left is not none else '—' }}</strong> {{ b.leave_type.name }}{% if b.pending %} · {{ (b.pending | num) }} waiting{% endif %}</span>{% else %}<span class="hr-later">No leave types set up.</span>{% endfor %}
+    </div>
+    {% if not record and editable %}
+    <p class="admin-form-hint admin-team-hint">No job details yet. <a class="link-primary" href="{{ page }}?tab=job">Fill in the job details &#8594;</a></p>
+    {% endif %}
+
+    {% elif tab == 'personal' %}
+    <dl class="admin-facts">
+        <div><dt>Full name</dt><dd>{{ name }}</dd></div>
+        <div><dt>Company email</dt><dd>{{ employee.account.email }}</dd></div>
+        <div><dt>Mobile</dt><dd>{{ employee.phone or '—' }}</dd></div>
+        <div><dt>Staff number</dt><dd>{{ employee.staff_number }}</dd></div>
+        <div><dt>Account created</dt><dd>{{ employee.created_at.strftime(fmt) if employee.created_at else '—' }}</dd></div>
+    </dl>
+    <p class="admin-form-hint admin-team-hint">Staff change their own name and mobile from their profile.</p>
+
+    {% elif tab == 'job' %}
+    {% if editable %}
+    <form method="post" action="{{ page }}/job" class="admin-form">
+        <div class="hr-form-grid">
+            <div class="modal-form-group"><label for="employee_number">Employee number</label>
+                <input id="employee_number" value="{{ record.employee_number if record else 'Given when you save' }}" disabled></div>
+            <div class="modal-form-group"><label for="designation">Designation</label>
+                <input id="designation" name="designation" maxlength="80" value="{{ record.designation or '' if record else '' }}" placeholder="e.g. Senior Tax Preparer"></div>
+            <div class="modal-form-group"><label for="department">Department</label>
+                <input id="department" name="department" maxlength="80" value="{{ record.department or '' if record else '' }}" placeholder="e.g. Tax preparation"></div>
+            <div class="modal-form-group"><label for="date_of_joining">Date of joining</label>
+                <input id="date_of_joining" name="date_of_joining" type="date" value="{{ record.date_of_joining.isoformat() if record and record.date_of_joining else '' }}"></div>
+            <div class="modal-form-group"><label for="employment_type">Employment type</label>
+                <select id="employment_type" name="employment_type"><option value="">Choose…</option>
+                    {% for code, label in employment_types %}<option value="{{ code }}" {% if record and record.employment_type == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="modal-form-group"><label for="employment_status">Status</label>
+                <select id="employment_status" name="employment_status">
+                    {% for code, label in employment_statuses %}<option value="{{ code }}" {% if (record and record.employment_status == code) or (not record and code == 'ACTIVE') %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="modal-form-group"><label for="reporting_manager_staff_id">Reporting manager</label>
+                <select id="reporting_manager_staff_id" name="reporting_manager_staff_id"><option value="">None</option>
+                    {% for sid, label in managers %}<option value="{{ sid }}" {% if record and record.reporting_manager_staff_id == sid %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div class="modal-form-group"><label for="termination_date">Last working day</label>
+                <input id="termination_date" name="termination_date" type="date" value="{{ record.termination_date.isoformat() if record and record.termination_date else '' }}"></div>
+        </div>
+        <div class="hr-form-actions">
+            <button type="submit" class="modal-btn-submit admin-form-submit">Save job details</button>
+            <span class="admin-form-hint">Salary is changed on the Salary history tab, so every change is kept.</span>
+        </div>
+    </form>
+    {% if record %}
+    <form method="post" action="{{ page }}/payroll" class="admin-form" id="payroll">
+        <h3 class="hr-subhead">Payroll details (shown on payslips)</h3>
+        <div class="hr-form-grid">
+            {% for key, label in payroll_fields %}
+            <div class="modal-form-group"><label for="p-{{ key }}">{{ label }}</label>
+                <input id="p-{{ key }}" name="{{ key }}" value="{{ payroll[key] }}" maxlength="60" autocomplete="off"
+                       {% if key == 'pan' %}placeholder="ABCDE1234F"{% elif key == 'uan' %}placeholder="12 digits" inputmode="numeric"{% elif key == 'ifsc' %}placeholder="HDFC0001234"{% elif key == 'bank_account' %}inputmode="numeric"{% endif %}></div>
+            {% endfor %}
+        </div>
+        <div class="hr-form-actions">
+            <button type="submit" class="modal-btn-submit admin-form-submit">Save payroll details</button>
+            <span class="admin-form-hint">Stored encrypted. Payslips show PAN and the account number masked.</span>
+        </div>
+    </form>
+    {% endif %}
+    {% else %}
+    <dl class="admin-facts">
+        <div><dt>Employee number</dt><dd>{{ record.employee_number if record else '—' }}</dd></div>
+        <div><dt>Designation</dt><dd>{{ record.designation or '—' if record else '—' }}</dd></div>
+        <div><dt>Department</dt><dd>{{ record.department or '—' if record else '—' }}</dd></div>
+        <div><dt>Date of joining</dt><dd>{{ record.date_of_joining.strftime(fmt) if record and record.date_of_joining else '—' }}</dd></div>
+        <div><dt>Employment type</dt><dd>{{ people.type_label(record.employment_type) if record else '—' }}</dd></div>
+        <div><dt>Status</dt><dd>{{ people.status_label(record.employment_status) if record else '—' }}</dd></div>
+        <div><dt>Reporting manager</dt><dd>{{ people.full_name(manager) if manager else '—' }}</dd></div>
+        <div><dt>Last working day</dt><dd>{{ record.termination_date.strftime(fmt) if record and record.termination_date else '—' }}</dd></div>
+        <div><dt>PAN</dt><dd>{{ payroll_masked.pan or '—' }}</dd></div>
+        <div><dt>UAN / PF number</dt><dd>{{ payroll_masked.uan or '—' }} / {{ payroll_masked.pf_number or '—' }}</dd></div>
+        <div><dt>Bank</dt><dd>{{ payroll_masked.bank_name or '—' }} {{ payroll_masked.bank_account }}</dd></div>
+    </dl>
+    {% endif %}
+
+    {% elif tab == 'salary' %}
+    <div class="admin-table-panel">
+        <table class="admin-table admin-table--compact admin-table--money">
+            <thead><tr><th>Effective</th><th>Previous / month</th><th>New / month</th><th>Change</th><th>Reason</th></tr></thead>
+            <tbody>
+                {% for r in salary_rows %}
+                <tr><td class="admin-nowrap">{{ r.effective_date.strftime(fmt) }}</td>
+                    <td>{{ money(r.previous_salary) if r.previous_salary is not none else '—' }}</td>
+                    <td><strong>{{ money(r.new_salary) }}</strong></td>
+                    <td>{{ ('+' if r.hike_percentage > 0 else '') ~ r.hike_percentage ~ '%' if r.hike_percentage is not none else '—' }}</td>
+                    <td>{{ r.reason or '—' }}</td></tr>
+                {% else %}<tr><td colspan="5" class="empty-cell">No salary recorded yet.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if editable and record %}
+    <form method="post" action="{{ page }}/salary" class="admin-form">
+        <h3 class="hr-subhead">Add a salary change</h3>
+        <div class="hr-form-grid">
+            <div class="modal-form-group"><label for="new_salary">New monthly salary</label><input id="new_salary" name="new_salary" inputmode="decimal" required placeholder="e.g. 62000"></div>
+            <div class="modal-form-group"><label for="effective_date">Effective from</label><input id="effective_date" name="effective_date" type="date" required></div>
+            <div class="modal-form-group"><label for="reason">Reason</label><input id="reason" name="reason" maxlength="255" placeholder="Joining, annual review, promotion…"></div>
+        </div>
+        <div class="hr-form-actions">
+            <button type="submit" class="modal-btn-submit admin-form-submit">Add salary change</button>
+            <span class="admin-form-hint">Rows are never edited or deleted. To correct one, add a new row.</span>
+        </div>
+    </form>
+    {% elif editable %}
+    <p class="admin-form-hint admin-team-hint"><a class="link-primary" href="{{ page }}?tab=job">Save the job details first</a>, then add the salary.</p>
+    {% endif %}
+
+    {% elif tab == 'files' %}
+    <div class="admin-table-panel">
+        <table class="admin-table admin-table--compact">
+            <thead><tr><th>Document</th><th>File</th><th>Uploaded</th><th>Expires</th><th></th></tr></thead>
+            <tbody>
+                {% for d in files %}
+                <tr><td>{{ d.document_type.name if d.document_type else '—' }}{% if d.notes %}<br><small class="hr-later">{{ d.notes }}</small>{% endif %}</td>
+                    <td><a class="link-primary" href="{{ base }}/files/{{ d.id }}?inline=true" target="_blank" rel="noopener">{{ d.original_filename }}</a></td>
+                    <td class="admin-nowrap">{{ d.uploaded_at.strftime(fmt) if d.uploaded_at else '—' }}</td>
+                    <td class="admin-nowrap">{% if d.expiry_date %}{{ d.expiry_date.strftime(fmt) }}{% else %}—{% endif %}</td>
+                    <td class="admin-nowrap">{% if editable and d.expiry_date %}<form method="post" action="{{ base }}/files/{{ d.id }}/renewal" class="admin-inline"><button type="submit" class="admin-mini-btn">Ask for renewal</button></form>{% endif %}</td></tr>
+                {% else %}<tr><td colspan="5" class="empty-cell">No documents on file yet.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if editable %}
+    <form method="post" action="{{ page }}/files" enctype="multipart/form-data" class="admin-form">
+        <h3 class="hr-subhead">Upload a document</h3>
+        <div class="hr-form-grid">
+            <div class="modal-form-group"><label for="document_type">Kind of document</label>
+                <select id="document_type" name="document_type" required>{% for t in file_types %}<option value="{{ t.code }}">{{ t.name }}</option>{% endfor %}</select></div>
+            <div class="modal-form-group"><label for="file">File</label><input id="file" name="file" type="file" required></div>
+            <div class="modal-form-group"><label for="expiry_date">Expires on (optional)</label><input id="expiry_date" name="expiry_date" type="date"></div>
+            <div class="modal-form-group"><label for="notes">Note (optional)</label><input id="notes" name="notes" maxlength="500"></div>
+        </div>
+        <div class="hr-form-actions">
+            <button type="submit" class="modal-btn-submit admin-form-submit">Upload</button>
+            <span class="admin-form-hint">Files are stored encrypted. They're never deleted: upload a renewed copy next to the old one.</span>
+        </div>
+    </form>
+    {% endif %}
+
+    {% elif tab == 'letters' %}
+    {% if editable %}
+    <div class="hr-chips">
+        {% for k in letter_kinds %}<a class="admin-mini-btn" href="/hr/documents/new?kind={{ k.code }}&staff_id={{ employee.id }}">+ {{ k.label }}</a>{% endfor %}
+    </div>
+    {% endif %}
+    <div class="admin-table-panel">
+        <table class="admin-table admin-table--compact">
+            <thead><tr><th>Document</th><th>Number</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+                {% for d in letters %}
+                <tr><td><a class="link-primary" href="{{ base }}/documents/{{ d.id }}">{{ doc_title(d) }}</a></td>
+                    <td class="admin-nowrap">{{ d.document_number }}</td>
+                    <td>{% if d.status == 'final' %}<span class="admin-pill admin-pill--green">Final</span>{% else %}<span class="admin-pill admin-pill--amber">Draft</span>{% endif %}</td>
+                    <td class="admin-nowrap">{{ (d.finalised_at or d.created_at).strftime(fmt) }}</td></tr>
+                {% else %}<tr><td colspan="4" class="empty-cell">No letters yet.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif tab == 'attendance' %}
+    <div class="hr-monthbar">
+        <a class="admin-mini-btn" href="{{ page }}?tab=attendance&month={{ nav.prev }}">&#8249; Previous</a>
+        <strong>{{ nav.label }}</strong>
+        <a class="admin-mini-btn" href="{{ page }}?tab=attendance&month={{ nav.next }}">Next &#8250;</a>
+    </div>
+    {% include "hr/partials/month_calendar.html" %}
+    {% if editable %}
+    <form method="post" action="/hr/attendance/correct" class="admin-form" data-hr-correct>
+        <h3 class="hr-subhead">Correct a day</h3>
+        <input type="hidden" name="staff_id" value="{{ employee.id }}">
+        <input type="hidden" name="back" value="{{ page }}?tab=attendance&month={{ nav.value }}">
+        <div class="hr-form-grid">
+            <div class="modal-form-group"><label for="att-day">Day</label><input id="att-day" name="day" type="date" required></div>
+            <div class="modal-form-group"><label for="att-status">Mark as</label>
+                <select id="att-status" name="status">{% for code, label in corrections %}<option value="{{ code }}">{{ label }}</option>{% endfor %}<option value="CLEAR">Undo my correction</option></select></div>
+            <div class="modal-form-group"><label for="att-note">Reason</label><input id="att-note" name="note" maxlength="255" placeholder="e.g. Forgot to check in"></div>
+        </div>
+        <div class="hr-form-actions"><button type="submit" class="modal-btn-submit admin-form-submit">Save</button>
+            <span class="admin-form-hint">Click a day above to pick it. Every correction is logged.</span></div>
+    </form>
+    {% endif %}
+
+    {% elif tab == 'leaves' %}
+    <div class="hr-chips">
+        {% for b in balances %}<span class="hr-chip"><strong>{{ (b.left | num) if b.left is not none else '—' }}</strong> {{ b.leave_type.name }} left{% if b.carried %} (incl. {{ (b.carried | num) }} carried over){% endif %}{% if b.pending %} · {{ (b.pending | num) }} waiting{% endif %}</span>{% endfor %}
+    </div>
+    {% set back = page ~ '?tab=leaves' %}
+    {% include "hr/partials/leave_table.html" %}
+    {% if editable %}
+    <form method="post" action="/hr/leaves/add" class="admin-form">
+        <h3 class="hr-subhead">Add leave for {{ employee.first_name }}</h3>
+        <input type="hidden" name="staff_id" value="{{ employee.id }}"><input type="hidden" name="back" value="{{ back }}">
+        {% include "hr/partials/leave_fields.html" %}
+        <div class="hr-form-actions"><button type="submit" class="modal-btn-submit admin-form-submit">Add leave</button>
+            <span class="admin-form-hint">Recorded as approved straight away.</span></div>
+    </form>
+    {% endif %}
+
+    {% elif tab == 'payslips' %}
+    <div class="admin-table-panel">
+        <table class="admin-table admin-table--compact admin-table--money">
+            <thead><tr><th>Month</th><th>Number</th><th>Paid days</th><th>Net pay</th><th>Status</th></tr></thead>
+            <tbody>
+                {% for d in payslip_docs %}
+                <tr><td><a class="link-primary" href="{{ base }}/documents/{{ d.id }}">{{ d.data.month_label }}</a></td>
+                    <td class="admin-nowrap">{{ d.document_number }}</td><td>{{ d.data.paid_days }}</td>
+                    <td><strong>{{ money(d.net_amount) }}</strong></td>
+                    <td>{% if d.status == 'final' %}<span class="admin-pill admin-pill--green">Final</span>{% else %}<span class="admin-pill admin-pill--amber">Draft</span>{% endif %}</td></tr>
+                {% else %}<tr><td colspan="5" class="empty-cell">No payslips yet.{% if editable %} Generate them from Payslips.{% endif %}</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% elif tab == 'access' %}
+    <dl class="admin-facts">
+        <div><dt>Sign-in email</dt><dd>{{ employee.account.email }}</dd></div>
+        <div><dt>Status</dt><dd>
+            {% if not employee.account.is_active %}<span class="admin-pill admin-pill--coral">Inactive</span>
+            {% elif locked_until %}<span class="admin-pill admin-pill--amber">Locked until {{ locked_until.strftime('%H:%M') }} UTC</span>
+            {% else %}<span class="admin-pill admin-pill--green">Active</span>{% endif %}</dd></div>
+        <div><dt>Last sign-in</dt><dd>{{ employee.account.last_login_at.strftime('%d %b %Y · %H:%M') if employee.account.last_login_at else 'Never' }}</dd></div>
+    </dl>
+    {% if editable %}
+    <div class="hr-form-actions">
+        {% if employee.account.is_active %}
+        <form method="post" action="{{ page }}/deactivate" data-confirm="Deactivate {{ employee.account.email }}? They'll be signed out, can't sign in until reactivated, and their case assignments end." onsubmit="return confirm(this.dataset.confirm);">
+            <button type="submit" class="admin-mini-btn admin-mini-btn--danger">Deactivate account</button>
+        </form>
+        {% else %}
+        <form method="post" action="{{ page }}/activate"><button type="submit" class="admin-mini-btn">Activate account</button></form>
+        {% endif %}
+    </div>
+    <p class="admin-form-hint admin-team-hint">Password resets and unlocking are done by an admin.</p>
+    {% else %}
+    <p class="admin-form-hint admin-team-hint">Manage sign-in from the <a class="link-primary" href="/admin/staff/{{ employee.id }}#account">staff page</a>.</p>
+    {% endif %}
+    {% endif %}
+</div>
+</section>

@@ -1,0 +1,8 @@
+{% extends "hr/letters/_frame.html" %}
+{% block letter_body %}
+<p style="margin:16px 0;font-weight:bold;text-align:center;letter-spacing:.04em;">TO WHOM IT MAY CONCERN</p>
+<p style="margin:0 0 10px;">This is to certify that <strong>{{ d.employee_name }}</strong> worked with {{ company.company_name }} as <strong>{{ d.designation }}</strong> from {{ fmt_date(d.joining_date) }} to {{ fmt_date(d.last_working_day) }}.</p>
+<p style="margin:0 0 10px;white-space:pre-line;">{{ d.role_summary }}</p>
+<p style="margin:0 0 10px;">During this period their conduct was {{ d.conduct }}.</p>
+<p style="margin:0 0 10px;">We wish them every success in their future work.</p>
+{% endblock %}

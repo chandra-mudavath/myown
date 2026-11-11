@@ -1,0 +1,19 @@
+{% extends "hr/_layout.html" %}
+{% block title %}Messages - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'Messages' %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ asset('platform', 'css/chat.css') }}" />
+{% endblock %}
+{% block layout_class %} chat-admin{% endblock %}
+
+{% block main %}
+    <div class="chat-page chat-page--admin">
+        {% set portal = "hr" %}
+        {% include "chat/_app.html" %}
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ asset('platform', 'js/chat.js') }}"></script>
+{% endblock %}

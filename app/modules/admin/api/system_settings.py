@@ -11,12 +11,13 @@ from app.core.deps import AdminAccount
 from app.core.templates import templates
 from app.modules.admin.services import system_settings as svc
 from app.modules.admin.services.profile_service import current_admin
-from app.platform.services import admin_signup, email_service
+from app.platform.services import admin_signup, email_service, payments, razorpay_api, stripe_api
 
 router = APIRouter(prefix="/admin/settings", tags=["admin"])
 
 SECTIONS = [("tax-years", "Tax years"), ("stages", "Case stages"), ("document-types", "Document types"),
-            ("chat-topics", "Chat topics"), ("services", "Services & prices"), ("admin-signup", "Admin sign-up link")]
+            ("chat-topics", "Chat topics"), ("services", "Services & prices"), ("payments", "Payments"),
+            ("admin-signup", "Admin sign-up link")]
 
 
 def _back(section: str, err: str | None, saved: str) -> RedirectResponse:
@@ -30,6 +31,8 @@ def admin_settings(request: Request, account: AdminAccount, db: Session = Depend
         "request": request, "account": account, "admin": current_admin(db, account), "app_name": settings.APP_NAME,
         "active_nav": "settings", "sections": SECTIONS, "max_upload_mb": settings.MAX_UPLOAD_SIZE_MB, "saved": saved, "error": error, **svc.overview(db),
         "admin_signup_url": email_service.public_url(request, admin_signup.PATH + key) if (key := admin_signup.current_key(db)) else None,
+        **payments.inr_rate_info(db), "razorpay_on": razorpay_api.enabled(), "stripe_on": stripe_api.enabled(),
+        "upi_on": bool(settings.PAYMENT_UPI_ID), "bank_in_on": bool(settings.PAYMENT_BANK_DETAILS_IN.strip()), "smart_collect_on": razorpay_api.smart_collect_enabled(),
     })
 
 
@@ -84,6 +87,12 @@ def service_update(service_id: str, account: AdminAccount, db: Session = Depends
                    name: str = Form(""), base_price: str = Form(""), is_active: bool = Form(False)):
     err = svc.update_service(db, account.id, service_id, name, base_price, is_active)
     return _back("services", err, "Service saved.")
+
+
+@router.post("/inr-rate")
+def inr_rate_save(account: AdminAccount, db: Session = Depends(get_db), rate: str = Form("")):
+    """The USD -> INR rate Pay in INR charges at. Each payment keeps the rate it was made at."""
+    return _back("payments", payments.set_inr_rate(db, account.id, rate), "USD to INR rate saved. New payments use it.")
 
 
 @router.post("/admin-signup")

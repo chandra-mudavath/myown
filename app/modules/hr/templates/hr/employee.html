@@ -1,0 +1,12 @@
+{% extends "hr/_layout.html" %}
+{% set name = people.full_name(employee) %}
+{% block title %}{{ name }} - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'Employees / ' ~ employee.staff_number %}
+
+{% block main %}
+    {% include "hr/partials/employee_head.html" %}
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+    {% set page = '/hr/employees/' ~ employee.id %}
+    {% include "hr/_employee_tabs.html" %}
+{% endblock %}

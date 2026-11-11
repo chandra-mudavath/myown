@@ -27,8 +27,8 @@ from app.core.templates import templates
 
 log = logging.getLogger("app.errors")
 
-DASHBOARDS = {"CLIENT": "/client/dashboard", "STAFF": "/staff/dashboard", "ADMIN": "/admin/dashboard"}
-WHO = {"CLIENT": "a client", "STAFF": "a member of the tax team", "ADMIN": "an administrator"}
+DASHBOARDS = {"CLIENT": "/client/dashboard", "STAFF": "/staff/dashboard", "ADMIN": "/admin/dashboard", "HR": "/hr/dashboard"}
+WHO = {"CLIENT": "a client", "STAFF": "a member of the tax team", "ADMIN": "an administrator", "HR": "a member of the HR team"}
 
 # "Back to …" for a record that wasn't found, by the section of the site it was opened from.
 LISTS = [
@@ -38,13 +38,14 @@ LISTS = [
     ("/admin/clients", "Back to clients", "/admin/clients"),
     ("/admin/staff", "Back to staff", "/admin/staff"),
     ("/staff/referrals", "Back to referrals", "/staff/referrals"),
+    ("/hr/", "Back to dashboard", "/hr/dashboard"),
     ("/staff/", "Back to dashboard", "/staff/dashboard"),
     ("/client/", "Back to dashboard", "/client/dashboard"),
 ]
 
 # Sample values for the /_errors preview
 _PREVIEW_PARAMS = {"AUTH-004": {"you": "a member of the tax team"}, "AUTH-005": {"you": "a client"},
-                   "AUTH-006": {"you": "a client"}, "SYS-004": {"thing": "Case", "thing_lower": "case"},
+                   "AUTH-006": {"you": "a client"}, "AUTH-010": {"you": "a client"}, "SYS-004": {"thing": "Case", "thing_lower": "case"},
                    "DOC-009": {"name": "W-2_2025.pdf"}}
 
 _NOT_FOUND = re.compile(r"^(?P<thing>[A-Za-z][A-Za-z ]{0,40}?) not found\.?$")

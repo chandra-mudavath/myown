@@ -10,7 +10,10 @@ stays due, and the invoice is partially paid). Two ways:
   Both paths read the session back from Stripe and apply it the same way, so either can come first and
   repeats change nothing. Only Stripe saying the PaymentIntent succeeded makes the payment succeeded.
   (PayPal was removed in Nov 2026; its old rows stay and still show.)
-* UPI or bank transfer: the client submits the reference here, which creates a *pending* payment.
+* Pay in INR with Razorpay Checkout (UPI / QR, cards, net banking, wallets) into the CovrentTax India account, at
+  the USD -> INR rate an admin sets; bank transfers (NEFT / RTGS / IMPS) go to the client's own Smart Collect
+  account number and are recorded when Razorpay reports them. Confirmed by the signed Checkout result and webhooks.
+* UPI or bank transfer submitted by hand (the fallback while Razorpay isn't set up): the client submits the reference here, which creates a *pending* payment.
   An admin verifies it (it becomes succeeded and counts towards the invoice) or rejects it
   (status failed, with the reason shown to the client).
 
@@ -21,11 +24,14 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
-from urllib.parse import urlencode
+import io
+import re
+from urllib.parse import quote, urlencode
 
 import httpx
+import segno
 from fastapi import UploadFile
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
@@ -33,10 +39,10 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.crypto import encrypt_bytes
-from app.platform.models.billing import Invoice, Payment, PaymentEvent
-from app.platform.models.system import AuditLog
+from app.platform.models.billing import Invoice, Payment, PaymentEvent, VirtualAccount
+from app.platform.models.system import AppSetting, AuditLog
 from app.platform.models.tax_filing import TaxFiling
-from app.platform.services import case_actions, stripe_api
+from app.platform.services import case_actions, razorpay_api, stripe_api
 from app.platform.services.catalog import case_stages
 from app.platform.services.storage_service import generate_uuid, sanitize_filename
 
@@ -46,7 +52,9 @@ OPEN = ("issued", "partially_paid")
 # card / ach come from Stripe (a Stripe payment is "stripe" until the client has finished checkout).
 CLIENT_METHODS = {"card": ("Card / Apple Pay / Google Pay", "USD"), "ach": ("US bank account (ACH)", "USD"),
                   "upi": ("UPI (India)", "INR"), "bank_transfer": ("Bank transfer / wire", "USD")}
-METHOD_LABELS = {**{k: v[0] for k, v in CLIENT_METHODS.items()}, "stripe": "Online payment", "paypal": "PayPal"}  # paypal: old rows
+METHOD_LABELS = {**{k: v[0] for k, v in CLIENT_METHODS.items()}, "stripe": "Online payment", "paypal": "PayPal",  # paypal: old rows
+                 "card_inr": "Debit / credit card (INR)", "netbanking": "Net banking", "wallet": "Wallet", "emi": "Card EMI",
+                 "paylater": "Pay later", "razorpay": "Online payment (INR)"}
 MANUAL_METHODS = ("upi", "bank_transfer")
 STRIPE_CANCELLED = "Cancelled at checkout."
 STRIPE_UNFINISHED = "Checkout wasn't completed."
@@ -63,9 +71,10 @@ def _money(value) -> Decimal:
 
 
 def _pay_amount(raw: str | None, due: Decimal) -> Decimal | str:
-    """The USD amount the client chose to pay (blank means the full balance), or an error message."""
+    """The USD amount the client typed (required: no default amount, client feedback Nov 2026), or an error message.
+    Was: blank meant the full balance."""
     if not (raw or "").strip():
-        return due
+        return "Enter the amount to pay."
     try:
         amount = Decimal(str(raw).replace(",", "").strip()).quantize(CENT)
     except InvalidOperation:
@@ -152,7 +161,7 @@ def client_billing(db: Session, client_id: str, filing: TaxFiling | None) -> dic
                 .filter(Payment.client_id == client_id, or_(Payment.case_id == filing.id, Invoice.case_id == filing.id))
                 .order_by(Payment.created_at.desc()).all())
     # Online checkouts the client never finished (no PaymentIntent / capture) aren't payments; leave them out.
-    payments = [(p, i) for p, i in payments if not (p.gateway in ("stripe", "paypal") and not p.transaction_reference)]
+    payments = [(p, i) for p, i in payments if not (p.gateway in ("stripe", "razorpay", "paypal") and not p.transaction_reference)]
     pending_invoice_ids = {p.invoice_id for p, _ in payments if p.status == "pending" and p.invoice_id}
     advance_pending = any(p.status == "pending" and not p.invoice_id and p.gateway == "manual" for p, _ in payments)
     for row in open_invoices:
@@ -168,9 +177,41 @@ def client_billing(db: Session, client_id: str, filing: TaxFiling | None) -> dic
     }
 
 
+# ── Pay in INR without a gateway: UPI QR with the amount filled in ────────────
+
+UPI_NOTE = re.compile(r"[^A-Za-z0-9 -]")
+
+
+def upi_link(amount_inr: str | None = None, note: str | None = None) -> str | None:
+    """A UPI payment link (what the QR holds; it also opens a UPI app on a phone). None without a UPI ID.
+    Any UPI app reads it: payee, name, rupee amount and a note the client sees and we match the payment by."""
+    if not settings.PAYMENT_UPI_ID:
+        return None
+    parts = [("pa", settings.PAYMENT_UPI_ID), ("pn", settings.PAYMENT_UPI_PAYEE or settings.APP_NAME)]
+    try:
+        amount = Decimal(str(amount_inr or "").replace(",", "").strip()).quantize(CENT)
+    except InvalidOperation:
+        amount = None
+    if amount and Decimal("1") <= amount <= Decimal("10000000"):
+        parts.append(("am", f"{amount:.2f}"))
+    parts.append(("cu", "INR"))
+    note = UPI_NOTE.sub("", note or "")[:50].strip()
+    if note:
+        parts.append(("tn", note))
+    return "upi://pay?" + "&".join(f"{k}={quote(v, safe='@.-')}" for k, v in parts)
+
+
+def upi_qr_svg(link: str) -> bytes:
+    buf = io.BytesIO()
+    segno.make(link, error="m").save(buf, kind="svg", scale=5, border=2, dark="#0f172a", xmldecl=False)
+    return buf.getvalue()
+
+
 def _client_status(p: Payment) -> str:
     if p.gateway == "stripe" and p.status == "pending":
         return "Processing at your bank"  # an ACH debit takes a few business days to clear
+    if p.gateway == "razorpay" and p.status == "pending":
+        return "Processing"
     if p.gateway == "paypal" and p.status == "pending":
         return "Processing at PayPal"
     if p.status == "succeeded" and p.refunded_amount:
@@ -255,11 +296,57 @@ def submit_manual(db: Session, account_id: str, client_id: str, invoice_id: str,
     return None
 
 
-# ── Stripe (Pay in USD) ───────────────────────────────────────────────────────
+# ── Online payments (shared by Stripe and Razorpay) ───────────────────────────
 
 def _locked_invoice(db: Session, invoice_id: str) -> Invoice | None:
     """The invoice row, locked until commit so two confirmations can't both settle the same balance."""
     return db.query(Invoice).filter(Invoice.id == invoice_id).with_for_update().first()
+
+
+def _what_to_pay(db: Session, client_id: str, invoice_id: str, pay_amount: str,
+                 filing: TaxFiling | None) -> tuple[Invoice | None, Decimal | None, str | None]:
+    """The invoice being paid (None: an advance payment on `filing`) and the USD amount, or an error message."""
+    inv = db.get(Invoice, invoice_id) if invoice_id else None
+    if invoice_id and (not inv or inv.client_id != client_id or inv.status not in OPEN):
+        return None, None, "That invoice can't be paid right now. Refresh the page and try again."
+    if not inv and (not filing or filing.client_id != client_id):
+        return None, None, "Choose the tax year you are paying for, then try again."
+    if inv:
+        due = balance(db, inv)
+        if due <= 0:
+            return None, None, "Nothing is due on this invoice."
+        amount = _pay_amount(pay_amount, due)
+    else:
+        amount = _advance_amount(pay_amount)
+    if isinstance(amount, str):
+        return None, None, amount
+    return inv, amount, None
+
+
+def _record_success(db: Session, pay: Payment, action: str, details: dict) -> None:
+    """The gateway says the money arrived: mark the payment succeeded, settle its invoice, move the case on. Commits.
+
+    Also used when a checkout we had closed or marked cancelled is paid after all (money moved, so it counts)."""
+    inv = _locked_invoice(db, pay.invoice_id) if pay.invoice_id else None  # None: an advance payment
+    late = pay.status == "failed"
+    pay.status, pay.paid_at, pay.failure_reason = "succeeded", datetime.now(timezone.utc), None
+    db.flush()  # settle() sums succeeded payments from the database
+    old = inv.status if inv else None
+    if inv:
+        settle(db, inv)
+    new = {**details, "amount": str(pay.amount), "paid": f"{pay.original_amount} {pay.original_currency}",
+           "method": pay.payment_method, "invoice_status": inv.status if inv else "advance payment"}
+    if late:
+        new["note"] = "paid after the checkout was closed"
+    if inv and paid_amount(db, inv.id) > _money(inv.total_amount):
+        new["overpaid_by"] = str(paid_amount(db, inv.id) - _money(inv.total_amount))  # an admin can refund it
+    _audit(db, None, action, pay.id, {"invoice_status": old}, new)
+    db.commit()
+    if inv:
+        advance_case_if_paid(db, inv, None)
+
+
+# ── Stripe (Pay in USD) ───────────────────────────────────────────────────────
 
 
 def _close_checkout(pay: Payment, reason: str) -> None:
@@ -283,20 +370,9 @@ def start_stripe(db: Session, account_id: str, client_id: str, invoice_id: str, 
     advance payment on `filing`. Returns (URL to send the client to, error)."""
     if not stripe_api.enabled():
         return None, "Card payment isn't available right now. Please use Pay in INR, or contact your tax team."
-    inv = db.get(Invoice, invoice_id) if invoice_id else None
-    if invoice_id and (not inv or inv.client_id != client_id or inv.status not in OPEN):
-        return None, "That invoice can't be paid right now. Refresh the page and try again."
-    if not inv and (not filing or filing.client_id != client_id):
-        return None, "Choose the tax year you are paying for, then try again."
-    if inv:
-        due = balance(db, inv)
-        if due <= 0:
-            return None, "Nothing is due on this invoice."
-        amount = _pay_amount(pay_amount, due)
-    else:
-        amount = _advance_amount(pay_amount)
-    if isinstance(amount, str):
-        return None, amount
+    inv, amount, err = _what_to_pay(db, client_id, invoice_id, pay_amount, filing)
+    if err:
+        return None, err
     # An earlier checkout the client walked away from is closed, so only the newest page can take money.
     same = (Payment.invoice_id == inv.id) if inv else ((Payment.case_id == filing.id) & Payment.invoice_id.is_(None))
     for old in db.query(Payment).filter(same, Payment.gateway == "stripe", Payment.status == "pending",
@@ -330,29 +406,13 @@ def _expanded(value) -> dict:
 
 
 def _mark_paid(db: Session, pay: Payment, session: dict, charge: dict) -> None:
-    inv = _locked_invoice(db, pay.invoice_id) if pay.invoice_id else None  # None: an advance payment
     if session.get("amount_total") is not None:
         pay.original_amount = (Decimal(session["amount_total"]) / 100).quantize(CENT)
     pay.original_currency = (session.get("currency") or "usd").upper()[:3]
     txn = _expanded(charge.get("balance_transaction"))
     if txn.get("fee") is not None:
         pay.fee_amount = (Decimal(txn["fee"]) / 100).quantize(CENT)
-    late = pay.status == "failed"  # closed on our side, but the client had already paid in another tab
-    pay.status, pay.paid_at, pay.failure_reason = "succeeded", datetime.now(timezone.utc), None
-    db.flush()  # settle() sums succeeded payments from the database
-    old = inv.status if inv else None
-    if inv:
-        settle(db, inv)
-    new = {"payment_intent": pay.transaction_reference, "amount": str(pay.original_amount),
-           "method": pay.payment_method, "invoice_status": inv.status if inv else "advance payment"}
-    if late:
-        new["note"] = "paid after the checkout was closed"
-    if inv and paid_amount(db, inv.id) > _money(inv.total_amount):
-        new["overpaid_by"] = str(paid_amount(db, inv.id) - _money(inv.total_amount))  # an admin can refund it
-    _audit(db, None, "stripe_payment_succeeded", pay.id, {"invoice_status": old}, new)
-    db.commit()
-    if inv:
-        advance_case_if_paid(db, inv, None)
+    _record_success(db, pay, "stripe_payment_succeeded", {"payment_intent": pay.transaction_reference})
 
 
 def _apply_session(db: Session, pay: Payment, session: dict) -> str:
@@ -432,7 +492,7 @@ def cancel_stripe(db: Session, payment_id: str, client_id: str) -> None:
 
 
 def _apply_refund(db: Session, pay: Payment, refunded_total: Decimal, actor_id: str | None, refund_id: str | None) -> None:
-    """Set how much of a Stripe payment has been refunded in all (from our refund, or Stripe's charge.refunded). Commits."""
+    """Set how much of an online payment has been refunded in all, in USD (from our refund, or the gateway's webhook). Commits."""
     inv = _locked_invoice(db, pay.invoice_id) if pay.invoice_id else None
     refunded_total = min(_money(refunded_total), _money(pay.amount))
     if refunded_total == _money(pay.refunded_amount) and (pay.status == "refunded") == (refunded_total >= _money(pay.amount)):
@@ -445,23 +505,26 @@ def _apply_refund(db: Session, pay: Payment, refunded_total: Decimal, actor_id: 
     db.flush()
     if inv:
         settle(db, inv)
-    _audit(db, actor_id, "stripe_payment_refunded", pay.id, old,
+    _audit(db, actor_id, f"{pay.gateway}_payment_refunded", pay.id, old,
            {"status": pay.status, "refunded": str(refunded_total), "refund": refund_id, "invoice_status": inv.status if inv else None})
     db.commit()
 
 
 def refund(db: Session, actor_id: str, pay: Payment, amount_raw: str) -> str | None:
-    """An admin refunds all or part of a Stripe payment back to the client's card / bank. Returns an error or None."""
-    if pay.gateway != "stripe" or not pay.transaction_reference:
-        return "Only card / ACH payments made through Stripe can be refunded here."
+    """An admin refunds all or part of an online payment (amount in USD) back to how the client paid.
+    Returns an error or None."""
+    if pay.gateway not in ("stripe", "razorpay") or not pay.transaction_reference:
+        return "Only payments made online (Stripe or Razorpay) can be refunded here."
     if pay.status != "succeeded":
         return "Only a received payment can be refunded."
     left = _money(pay.amount) - _money(pay.refunded_amount)
     if left <= 0:
         return "This payment has already been refunded in full."
-    amount = _pay_amount(amount_raw, left)
+    amount = _pay_amount(amount_raw, left)  # required: was "blank refunds it all"
     if isinstance(amount, str):
-        return amount.replace("balance due", "amount left to refund")
+        return amount.replace("balance due", "amount left to refund").replace("amount to pay", "amount to refund")
+    if pay.gateway == "razorpay":
+        return _refund_razorpay(db, actor_id, pay, amount, left)
     try:
         result = stripe_api.create_refund(pay.transaction_reference, amount,
                                           f"refund-{pay.payment_number}-{stripe_api.cents(_money(pay.refunded_amount))}-{stripe_api.cents(amount)}")
@@ -474,16 +537,24 @@ def refund(db: Session, actor_id: str, pay: Payment, amount_raw: str) -> str | N
 
 
 def _apply_dispute(db: Session, pay: Payment, dispute: dict) -> None:
-    """The client's bank opened (or closed) a dispute on a card payment. A lost dispute takes the money back. Commits."""
-    status = (dispute.get("status") or "needs_response")[:30]  # warning_needs_response, needs_response, under_review, won, lost
+    """The client's bank opened (or closed) a dispute on a payment. A lost dispute takes the money back. Commits.
+    Stripe: warning_needs_response, needs_response, under_review, won, lost. Razorpay: open, under_review, won, lost, closed."""
+    status = (dispute.get("status") or "needs_response")[:30]
     old = pay.dispute_status
     pay.dispute_status = status
-    _audit(db, None, "stripe_dispute", pay.id, {"dispute_status": old},
+    _audit(db, None, f"{pay.gateway}_dispute", pay.id, {"dispute_status": old},
            {"dispute_status": status, "dispute": dispute.get("id"), "reason": dispute.get("reason")})
     if status == "lost":
         _apply_refund(db, pay, _money(pay.amount), None, dispute.get("id"))
     else:
         db.commit()
+
+
+def sync_gateway(db: Session, pay: Payment) -> str | None:
+    """An admin's "Check with Stripe / Razorpay" on a payment, for when a webhook was missed."""
+    if pay.gateway == "razorpay":
+        return sync_razorpay(db, pay)
+    return sync_stripe(db, pay)
 
 
 def sync_stripe(db: Session, pay: Payment) -> str | None:
@@ -534,6 +605,339 @@ def handle_stripe_event(db: Session, event: dict) -> str:
     try:
         db.commit()
     except IntegrityError:  # the same event arrived twice at once; the other request recorded it
+        db.rollback()
+        return "duplicate"
+    return "applied" if pay else "ignored"
+
+
+# ── Razorpay (Pay in INR) ─────────────────────────────────────────────────────
+# The invoice stays in USD. The client pays the rupee amount at the admin-set USD -> INR rate, which is locked on the
+# payment (amount = USD it counts for, original_amount = rupees paid). Checkout is Razorpay's window on our page; a
+# signed result comes back to us from the browser and, separately, by webhook. Orders don't expire, so a payment that
+# arrives after the client closed the window is still recorded.
+
+RATE_KEY = "usd_inr_rate"
+CHECKOUT_CANCELLED = "Cancelled at checkout."
+RZP_METHOD = {"upi": "upi", "card": "card_inr", "netbanking": "netbanking", "wallet": "wallet", "emi": "emi",
+              "paylater": "paylater", "bank_transfer": "bank_transfer"}  # Razorpay's method -> ours
+
+
+def inr_rate(db: Session) -> Decimal | None:
+    """Rupees for one US dollar, as set by an admin (None until set)."""
+    row = db.get(AppSetting, RATE_KEY)
+    try:
+        rate = Decimal(row.value) if row and row.value else None
+    except InvalidOperation:
+        return None
+    return rate if rate and rate > 0 else None
+
+
+def inr_rate_info(db: Session) -> dict:
+    row = db.get(AppSetting, RATE_KEY)
+    return {"inr_rate": inr_rate(db), "inr_rate_updated": row.updated_at if row and row.value else None}
+
+
+def set_inr_rate(db: Session, actor_id: str, raw: str) -> str | None:
+    try:
+        rate = Decimal(str(raw or "").replace(",", "").strip()).quantize(Decimal("0.0001"))
+    except InvalidOperation:
+        return "Enter the rupees for one US dollar, e.g. 88.50."
+    if not Decimal("1") <= rate <= Decimal("1000"):
+        return "Enter the rupees for one US dollar, e.g. 88.50."
+    row = db.get(AppSetting, RATE_KEY)
+    old = row.value if row else None
+    if row:
+        row.value, row.updated_by_account_id, row.updated_at = str(rate), actor_id, datetime.now(timezone.utc)
+    else:
+        db.add(AppSetting(key=RATE_KEY, value=str(rate), updated_by_account_id=actor_id, updated_at=datetime.now(timezone.utc)))
+    db.add(AuditLog(actor_account_id=actor_id, action="inr_rate_changed", entity_type="setting", entity_id=RATE_KEY,
+                    old_values={"rate": old}, new_values={"rate": str(rate)}))
+    db.commit()
+    return None
+
+
+def inr_for(usd: Decimal, rate: Decimal) -> Decimal:
+    return (usd * rate).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def razorpay_ready(db: Session) -> bool:
+    """Pay in INR online: keys in .env and a rate set by an admin."""
+    return razorpay_api.enabled() and inr_rate(db) is not None
+
+
+def start_razorpay(db: Session, account_id: str, client_id: str, invoice_id: str, pay_amount: str = "",
+                   filing: TaxFiling | None = None, email: str = "", phone: str = "", name: str = "") -> tuple[dict | None, str | None]:
+    """Create a Razorpay order for the rupee amount of what the client chose to pay. Returns (what the browser needs to
+    open Checkout, error)."""
+    rate = inr_rate(db)
+    if not razorpay_api.enabled() or rate is None:
+        return None, "Online payment in INR isn't available right now. Please contact your tax team."
+    inv, amount, err = _what_to_pay(db, client_id, invoice_id, pay_amount, filing)
+    if err:
+        return None, err
+    rupees = inr_for(amount, rate)
+    # An earlier Checkout the client closed without paying no longer shows; it still counts if it is paid after all.
+    same = (Payment.invoice_id == inv.id) if inv else ((Payment.case_id == filing.id) & Payment.invoice_id.is_(None))
+    for old in db.query(Payment).filter(same, Payment.gateway == "razorpay", Payment.status == "pending",
+                                        Payment.transaction_reference.is_(None)).all():
+        old.status, old.failure_reason = "failed", STRIPE_UNFINISHED
+    reference = inv.invoice_number if inv else filing.get_case_id(db)
+    pay = Payment(invoice_id=inv.id if inv else None, case_id=inv.case_id if inv else filing.id, client_id=client_id,
+                  amount=amount, payment_method="razorpay", status="pending", gateway="razorpay",
+                  submitted_by_account_id=account_id, original_amount=rupees, original_currency="INR")
+    db.add(pay)
+    db.flush()
+    try:
+        order = razorpay_api.create_order(amount_inr=rupees, receipt=pay.payment_number, notes={
+            "payment_id": pay.id, "payment_number": pay.payment_number, "reference": reference,
+            "usd": str(amount), "rate": str(rate)})
+    except (razorpay_api.RazorpayError, httpx.HTTPError):
+        db.rollback()
+        return None, "We couldn't reach the payment service. You were not charged; please try again in a few minutes."
+    pay.gateway_payment_id = order["id"]
+    _audit(db, account_id, "razorpay_checkout_started", pay.id, None,
+           {"payment_number": pay.payment_number, "invoice": reference, "usd": str(amount), "inr": str(rupees),
+            "rate": str(rate), "order": order["id"]})
+    db.commit()
+    return {
+        "key": settings.RAZORPAY_KEY_ID, "order_id": order["id"], "amount": razorpay_api.paise(rupees), "currency": "INR",
+        "name": settings.APP_NAME, "description": f"{'Invoice' if inv else 'Advance payment'} {reference}",
+        "prefill": {"name": name[:100], "email": (email or "")[:255], "contact": (phone or "")[:25]},
+        "notes": {"payment_number": pay.payment_number}, "payment": pay.id,
+    }, None
+
+
+def _apply_razorpay_payment(db: Session, pay: Payment, rp: dict) -> str:
+    """Record what Razorpay says about one payment on this order (a payment entity). Commits.
+    Returns "succeeded", "processing", "failed" or "open"."""
+    status = rp.get("status", "")
+    if status == "authorized":  # auto-capture is off in the Dashboard (or not run yet): capture it ourselves
+        try:
+            rp = razorpay_api.capture_payment(rp["id"], int(rp.get("amount") or 0)) or rp
+            status = rp.get("status", status)
+        except (razorpay_api.RazorpayError, httpx.HTTPError):
+            pass  # left processing; the payment.captured webhook or "Check with Razorpay" finishes it
+    if status in ("captured", "refunded"):
+        if pay.status in ("succeeded", "refunded"):
+            db.commit()
+            return "succeeded"
+        pay.transaction_reference = rp["id"][:100]
+        pay.payment_method = RZP_METHOD.get(rp.get("method", ""), "razorpay")
+        if rp.get("amount") is not None:
+            pay.original_amount = (Decimal(rp["amount"]) / 100).quantize(CENT)
+        pay.original_currency = (rp.get("currency") or "INR").upper()[:3]
+        if rp.get("fee") is not None:
+            pay.fee_amount = (Decimal(rp["fee"]) / 100).quantize(CENT)  # includes GST on the fee
+        _record_success(db, pay, "razorpay_payment_captured", {"razorpay_payment": rp["id"]})
+        return "succeeded"
+    if status == "authorized":
+        if pay.status == "pending" and not pay.transaction_reference:
+            pay.transaction_reference = rp["id"][:100]
+            pay.payment_method = RZP_METHOD.get(rp.get("method", ""), "razorpay")
+            _audit(db, None, "razorpay_payment_authorized", pay.id, None, {"razorpay_payment": rp["id"]})
+        db.commit()
+        return "processing"
+    if status == "failed":
+        # One failed attempt; the client may still pay on the same order (a webhook then marks it paid).
+        if pay.status == "pending" and not pay.transaction_reference:
+            pay.status = "failed"
+            pay.failure_reason = (rp.get("error_description") or "The payment didn't go through.")[:500]
+            _audit(db, None, "razorpay_payment_failed", pay.id, None,
+                   {"razorpay_payment": rp.get("id"), "reason": pay.failure_reason, "code": rp.get("error_code")})
+        db.commit()
+        return "failed"
+    db.commit()
+    return "open"
+
+
+def finish_razorpay(db: Session, order_id: str, payment_id: str, signature: str, client_id: str | None = None) -> tuple[str | None, str]:
+    """Checkout says the client paid: check the signature, read the payment from Razorpay and record it.
+    Safe to call twice. Returns (error, message for the client)."""
+    pay = (db.query(Payment).filter(Payment.gateway == "razorpay", Payment.gateway_payment_id == order_id).first()
+           if order_id else None)
+    if not pay or (client_id and pay.client_id != client_id):
+        return "We couldn't find that payment.", ""
+    if not razorpay_api.checkout_signature_ok(order_id, payment_id, signature):
+        return "We couldn't confirm that payment. If money left your account it will show here shortly.", ""
+    if pay.status in ("succeeded", "refunded"):
+        return None, PAID_MESSAGE
+    try:
+        rp = razorpay_api.get_payment(payment_id)
+    except (razorpay_api.RazorpayError, httpx.HTTPError):
+        return None, "Thank you! We're confirming your payment; it will show here in a few minutes."
+    if rp.get("order_id") != order_id:
+        return "We couldn't confirm that payment. If money left your account it will show here shortly.", ""
+    state = _apply_razorpay_payment(db, pay, rp)
+    if state == "succeeded":
+        return None, PAID_MESSAGE
+    if state == "processing":
+        return None, "Thank you! Your payment is being confirmed by your bank; it will show here shortly."
+    return f"{pay.failure_reason or 'The payment did not go through.'} You were not charged; please try again or use another method.", ""
+
+
+def cancel_razorpay(db: Session, payment_id: str, client_id: str) -> None:
+    """The client closed the Checkout window without paying."""
+    pay = db.get(Payment, payment_id) if payment_id else None
+    if pay and pay.client_id == client_id and pay.gateway == "razorpay" and pay.status == "pending" and not pay.transaction_reference:
+        pay.status, pay.failure_reason = "failed", CHECKOUT_CANCELLED
+        db.commit()
+
+
+def _usd_share(pay: Payment, refunded_paise: int) -> Decimal:
+    """The USD a refund of `refunded_paise` stands for, at the rate the client paid."""
+    paid_paise = razorpay_api.paise(_money(pay.original_amount))
+    if not paid_paise or refunded_paise >= paid_paise:
+        return _money(pay.amount)
+    return (_money(pay.amount) * refunded_paise / paid_paise).quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def _refund_razorpay(db: Session, actor_id: str, pay: Payment, amount: Decimal, left: Decimal) -> str | None:
+    paid_paise = razorpay_api.paise(_money(pay.original_amount))
+    if amount >= left:  # the rest: exactly what is still unrefunded at Razorpay
+        try:
+            already = int(razorpay_api.get_payment(pay.transaction_reference).get("amount_refunded") or 0)
+        except (razorpay_api.RazorpayError, httpx.HTTPError):
+            return "We couldn't reach Razorpay. Nothing was refunded; please try again."
+        rupee_paise = paid_paise - already
+    else:
+        rupee_paise = int((Decimal(paid_paise) * amount / _money(pay.amount)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    if rupee_paise <= 0:
+        return "This payment has already been refunded in full."
+    try:
+        result = razorpay_api.refund_payment(pay.transaction_reference, rupee_paise,
+                                             {"payment_number": pay.payment_number, "usd": str(amount)})
+    except razorpay_api.RazorpayError as e:
+        return f"Razorpay didn't make the refund ({e.code or 'error'}). Nothing was refunded."
+    except httpx.HTTPError:
+        return "We couldn't reach Razorpay. Nothing was refunded; please try again."
+    _apply_refund(db, pay, _money(pay.refunded_amount) + amount, actor_id, result.get("id"))
+    return None
+
+
+def sync_razorpay(db: Session, pay: Payment) -> str | None:
+    """Read the payment back from Razorpay and record it (for when a webhook was missed)."""
+    if pay.gateway != "razorpay" or not pay.gateway_payment_id:
+        return "This isn't a Razorpay payment."
+    try:
+        if pay.gateway_payment_id.startswith("order_"):
+            attempts = razorpay_api.order_payments(pay.gateway_payment_id)
+            order = {"captured": 0, "refunded": 0, "authorized": 1, "failed": 2}
+            attempts.sort(key=lambda a: order.get(a.get("status", ""), 3))
+            rp = attempts[0] if attempts else None
+        else:
+            rp = razorpay_api.get_payment(pay.gateway_payment_id)
+    except (razorpay_api.RazorpayError, httpx.HTTPError):
+        return "We couldn't reach Razorpay. Please try again."
+    if rp:
+        _apply_razorpay_payment(db, pay, rp)
+    return None
+
+
+# Smart Collect: bank transfer (NEFT / RTGS / IMPS) to the client's own account number
+
+def bank_account_for(db: Session, client_id: str) -> VirtualAccount | None:
+    return db.query(VirtualAccount).filter(VirtualAccount.gateway == "razorpay", VirtualAccount.client_id == client_id).first()
+
+
+def open_bank_account(db: Session, client_id: str, client_name: str) -> str | None:
+    """Give the client their own account number to transfer rupees to. Returns an error or None."""
+    if not razorpay_api.smart_collect_enabled() or inr_rate(db) is None:
+        return "Bank transfer isn't available right now. Please choose another way to pay."
+    if bank_account_for(db, client_id):
+        return None
+    try:
+        account = razorpay_api.create_virtual_account(client_id=client_id, client_name=client_name,
+                                                      description=f"{settings.APP_NAME} payments from {client_name}")
+    except (razorpay_api.RazorpayError, httpx.HTTPError):
+        return "We couldn't set up your bank transfer details right now. Please try again in a few minutes."
+    bank = razorpay_api.bank_receiver(account)
+    if not bank.get("account_number"):
+        return "We couldn't set up your bank transfer details right now. Please contact your tax team."
+    db.add(VirtualAccount(gateway="razorpay", client_id=client_id, gateway_account_id=account["id"],
+                          account_number=bank["account_number"], ifsc=bank.get("ifsc", ""),
+                          bank_name=bank.get("bank_name"), account_name=bank.get("name")))
+    db.add(AuditLog(actor_account_id=None, action="bank_transfer_account_opened", entity_type="client", entity_id=client_id,
+                    old_values=None, new_values={"virtual_account": account["id"]}))
+    try:
+        db.commit()
+    except IntegrityError:  # opened twice at once; keep the first
+        db.rollback()
+    return None
+
+
+def _record_bank_transfer(db: Session, va: VirtualAccount, rp: dict, utr: str | None) -> Payment:
+    """Rupees arrived in a client's Smart Collect account. They count towards the client's oldest open invoice, or,
+    with none, as an advance payment on their latest filing, at today's rate. Commits."""
+    rate = inr_rate(db)
+    if rate is None:
+        raise RuntimeError("No USD -> INR rate set; the webhook will be retried once an admin sets it.")
+    rupees = (Decimal(rp.get("amount") or 0) / 100).quantize(CENT)
+    usd = max((rupees / rate).quantize(CENT, rounding=ROUND_HALF_UP), CENT)
+    inv = (db.query(Invoice).filter(Invoice.client_id == va.client_id, Invoice.status.in_(OPEN))
+           .order_by(Invoice.invoice_date, Invoice.created_at).first())
+    filing = None if inv else (db.query(TaxFiling).filter(TaxFiling.client_id == va.client_id)
+                               .order_by(TaxFiling.tax_year.desc(), TaxFiling.created_at.desc()).first())
+    pay = Payment(invoice_id=inv.id if inv else None, case_id=inv.case_id if inv else (filing.id if filing else None),
+                  client_id=va.client_id, amount=usd, payment_method="bank_transfer", status="pending", gateway="razorpay",
+                  gateway_payment_id=rp["id"][:100], transaction_reference=rp["id"][:100],
+                  original_amount=rupees, original_currency="INR",
+                  fee_amount=(Decimal(rp["fee"]) / 100).quantize(CENT) if rp.get("fee") is not None else None)
+    db.add(pay)
+    db.flush()
+    _record_success(db, pay, "razorpay_bank_transfer_received",
+                    {"razorpay_payment": rp["id"], "utr": utr, "rate": str(rate), "virtual_account": va.gateway_account_id})
+    return pay
+
+
+def _razorpay_entity(payload: dict, name: str) -> dict:
+    return ((payload or {}).get(name) or {}).get("entity") or {}
+
+
+def _by_razorpay_payment(db: Session, rp: dict) -> Payment | None:
+    if not rp.get("id"):
+        return None
+    pay = db.query(Payment).filter(Payment.gateway == "razorpay", Payment.transaction_reference == rp["id"]).first()
+    if not pay and rp.get("order_id"):
+        pay = db.query(Payment).filter(Payment.gateway == "razorpay", Payment.gateway_payment_id == rp["order_id"]).first()
+    return pay
+
+
+def handle_razorpay_event(db: Session, event: dict, event_id: str) -> str:
+    """Apply one signed Razorpay webhook (already checked by razorpay_api.verify_event). Safe to receive twice.
+    Returns "applied", "ignored" or "duplicate"."""
+    kind = str(event.get("event") or "")
+    payload = event.get("payload") or {}
+    event_id = (event_id or "")[:100]
+    if not event_id:
+        return "ignored"
+    if db.query(PaymentEvent).filter(PaymentEvent.gateway == "razorpay", PaymentEvent.event_id == event_id).first():
+        return "duplicate"
+    rp = _razorpay_entity(payload, "payment")
+    pay = None
+    if kind == "virtual_account.credited":
+        va_id = _razorpay_entity(payload, "virtual_account").get("id")
+        va = db.query(VirtualAccount).filter(VirtualAccount.gateway_account_id == va_id).first() if va_id else None
+        pay = _by_razorpay_payment(db, rp)
+        if va and rp.get("id") and not pay:
+            pay = _record_bank_transfer(db, va, rp, _razorpay_entity(payload, "bank_transfer").get("utr"))
+    elif kind in ("payment.captured", "payment.authorized", "payment.failed", "order.paid"):
+        pay = _by_razorpay_payment(db, rp)
+        if pay and pay.payment_method != "bank_transfer":
+            _apply_razorpay_payment(db, pay, rp)
+    elif kind in ("refund.processed", "refund.created"):
+        pay = _by_razorpay_payment(db, rp)
+        if pay and rp.get("amount_refunded") is not None:
+            _apply_refund(db, pay, _usd_share(pay, int(rp["amount_refunded"])), None, _razorpay_entity(payload, "refund").get("id"))
+    elif kind.startswith("payment.dispute."):
+        pay = _by_razorpay_payment(db, rp)
+        dispute = _razorpay_entity(payload, "dispute")
+        if pay:
+            _apply_dispute(db, pay, {"id": dispute.get("id"), "reason": dispute.get("reason_code"),
+                                     "status": dispute.get("status") or kind.rsplit(".", 1)[-1]})
+    db.add(PaymentEvent(gateway="razorpay", event_id=event_id, event_type=kind[:100], payment_id=pay.id if pay else None))
+    try:
+        db.commit()
+    except IntegrityError:
         db.rollback()
         return "duplicate"
     return "applied" if pay else "ignored"

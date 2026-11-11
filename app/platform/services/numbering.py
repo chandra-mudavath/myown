@@ -26,6 +26,7 @@ from app.modules.client.models.client import Client
 from app.modules.admin.models.admin import Admin
 from app.platform.models.filing_document import FilingDocument
 from app.modules.hr.models.hr import HR
+from app.modules.hr.models.records import HrDocument
 from app.platform.models.id_sequence import IdSequence
 from app.modules.staff.models.staff import Staff
 from app.modules.staff.models.staff_records import StaffDocument, StaffEmploymentDetails
@@ -59,6 +60,14 @@ SEQUENCES: dict[str, SequenceSpec] = {
     "INVOICE": SequenceSpec("INV-", 7, Invoice, "invoice_number"),
     "PAYMENT": SequenceSpec("PAY-", 7, Payment, "payment_number"),
     "CHAT_THREAD": SequenceSpec("MSG-", 7, ChatThread, "thread_number"),
+    # HR documents: one counter per kind of document (see _hr_document_sequence)
+    "HRDOC_PAYSLIP": SequenceSpec("PS-", 7, HrDocument, "document_number"),
+    "HRDOC_OFFER": SequenceSpec("OL-", 6, HrDocument, "document_number"),
+    "HRDOC_APPOINTMENT": SequenceSpec("AL-", 6, HrDocument, "document_number"),
+    "HRDOC_SALARY_REVISION": SequenceSpec("SR-", 6, HrDocument, "document_number"),
+    "HRDOC_PROBATION": SequenceSpec("PC-", 6, HrDocument, "document_number"),
+    "HRDOC_RELIEVING": SequenceSpec("RL-", 6, HrDocument, "document_number"),
+    "HRDOC_EXPERIENCE": SequenceSpec("EX-", 6, HrDocument, "document_number"),
 }
 
 
@@ -72,6 +81,7 @@ _SEQUENCE_FOR: dict[type, Callable[[object], str]] = {AuthAccount: _account_sequ
 for _name, _spec in SEQUENCES.items():
     if _spec.model is not AuthAccount:
         _SEQUENCE_FOR[_spec.model] = lambda _target, _name=_name: _name
+_SEQUENCE_FOR[HrDocument] = lambda doc: f"HRDOC_{doc.kind}"
 
 
 def _highest_in_use(conn: Connection, spec: SequenceSpec) -> int:

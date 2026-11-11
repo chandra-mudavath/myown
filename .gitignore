@@ -222,3 +222,6 @@ storage/
 
 # Chat attachments - private runtime data, served only through permission-checked routes
 private_storage/
+
+# Word/Excel lock files created while a document is open
+~$*

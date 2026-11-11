@@ -98,8 +98,9 @@ class Payment(Base):
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     # How the payment arrived: "manual" (recorded by admin, or submitted by the client for checking), "stripe"
-    # (Pay in USD; gateway_payment_id is the Checkout Session, transaction_reference the PaymentIntent) or "paypal"
-    # (old rows only). A client submission stays "pending" until an admin verifies it; a Stripe ACH debit stays
+    # (Pay in USD; gateway_payment_id is the Checkout Session, transaction_reference the PaymentIntent), "razorpay"
+    # (Pay in INR; gateway_payment_id is the order, or the payment for a bank transfer; transaction_reference the
+    # payment; amount is USD and original_amount the rupees paid) or "paypal" (old rows only). A client submission stays "pending" until an admin verifies it; a Stripe ACH debit stays
     # "pending" while the bank clears it.
     gateway: Mapped[str] = mapped_column(String(20), default="manual", nullable=False)
     gateway_payment_id: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
@@ -114,7 +115,8 @@ class Payment(Base):
     verified_by_account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="SET NULL"), nullable=True)
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)  # why a submission was rejected
-    # Stripe (Pay in USD): what Stripe kept as its fee, how much has been refunded, and any card dispute.
+    # Online payments (Stripe: Pay in USD, Razorpay: Pay in INR): the gateway's fee, in the currency the client paid
+    # (original_currency), how much has been refunded (in the invoice currency, like amount), and any dispute.
     # A part-refunded payment stays "succeeded" and counts amount - refunded_amount; a full refund makes it "refunded".
     fee_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     refunded_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0"), server_default="0", nullable=False)
@@ -134,3 +136,20 @@ class PaymentEvent(Base):
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     payment_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("payments.id", ondelete="SET NULL"), index=True, nullable=True)
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
+
+
+class VirtualAccount(Base):
+    """A client's own bank account number at the gateway (Razorpay Smart Collect). Every transfer into it is theirs,
+    so it is recorded as their payment without anyone matching references by hand."""
+    __tablename__ = "virtual_accounts"
+    __table_args__ = (UniqueConstraint("gateway", "client_id", name="uq_virtual_accounts_gateway_client"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    gateway: Mapped[str] = mapped_column(String(20), nullable=False)
+    client_id: Mapped[str] = mapped_column(String(36), ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
+    gateway_account_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)  # va_…
+    account_number: Mapped[str] = mapped_column(String(40), nullable=False)
+    ifsc: Mapped[str] = mapped_column(String(20), nullable=False)
+    bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    account_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)

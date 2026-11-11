@@ -2899,3 +2899,84 @@ html[data-theme=dark] .landing-page .services-nav-dropdown a:focus-visible {
     background: rgba(37, 99, 235, 0.22);
     color: #93c5fd;
 }
+
+/* ── Contact Us (Nov 2026): US and India branch cards ─────────────────────── */
+.contact-page .about-intro h1 { color: var(--landing-ink); font-size: 2rem; font-weight: 700; line-height: 1.25; margin: 0.45rem 0 0.8rem; }
+.contact-page .about-intro h1 span { color: var(--landing-primary); }
+.contact-page .about-intro > p:not(.eyebrow) { color: var(--landing-muted); line-height: 1.7; }
+
+.contact-branches { display: grid; gap: 1.75rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+.contact-branch {
+    background: var(--landing-section-card-bg);
+    border: 1px solid var(--landing-line);
+    border-radius: 1.1rem;
+    box-shadow: var(--landing-card-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1.6rem;
+    position: relative;
+    transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+/* a thin colour band along the top of each card */
+.contact-branch::before { content: ""; height: 4px; inset: 0 0 auto 0; position: absolute;
+    background: linear-gradient(90deg, var(--landing-primary), var(--landing-primary-dark)); }
+.contact-branch--in::before { background: linear-gradient(90deg, #f59e0b, var(--landing-primary) 55%, #16a34a); }
+.contact-branch:hover { border-color: var(--landing-primary); box-shadow: var(--landing-card-hover-shadow); transform: translateY(-4px); }
+
+.contact-branch__head { align-items: center; display: flex; gap: 0.9rem; margin-bottom: 1.25rem; }
+.contact-branch__flag { border-radius: 0.35rem; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08); flex: none; height: 28px; object-fit: cover; width: 40px; }
+.contact-branch__tag { color: var(--landing-primary); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; margin: 0; text-transform: uppercase; }
+.contact-branch h2 { color: var(--landing-ink); font-size: 1.3rem; font-weight: 700; line-height: 1.3; margin: 0.1rem 0 0; }
+.contact-branch h2 span { color: var(--landing-primary); }
+.contact-branch__cur { background: var(--landing-icon-bg); border-radius: 999px; color: var(--landing-primary); font-size: 0.72rem;
+    font-weight: 700; letter-spacing: 0.08em; margin-left: auto; padding: 0.3rem 0.7rem; }
+
+.contact-branch__list { display: grid; gap: 0.85rem; list-style: none; margin: 0 0 1.25rem; padding: 0; }
+.contact-branch__list li { align-items: flex-start; color: var(--landing-muted); display: flex; font-size: 0.92rem; gap: 0.75rem; line-height: 1.6; }
+.contact-branch__list address { font-style: normal; }
+.contact-branch__list a { color: var(--landing-ink); font-weight: 600; text-decoration: none; }
+.contact-branch__list a:hover { color: var(--landing-primary); text-decoration: underline; }
+.contact-ico { color: var(--landing-primary); flex: none; height: 1.2rem; margin-top: 0.15rem; width: 1.2rem; }
+.contact-muted { font-style: italic; }
+
+.contact-branch__map { border: 1px solid var(--landing-line); border-radius: 0.8rem; margin-top: auto; overflow: hidden; }
+.contact-branch__map iframe { border: 0; display: block; height: 13rem; width: 100%; }
+.contact-branch__dir { align-items: center; align-self: flex-start; color: var(--landing-primary); display: inline-flex; font-size: 0.85rem;
+    font-weight: 700; gap: 0.35rem; margin-top: 0.8rem; text-decoration: none; }
+.contact-branch__dir .contact-ico { height: 1rem; margin: 0; transition: transform 0.2s ease; width: 1rem; }
+.contact-branch__dir:hover .contact-ico { transform: translateX(3px); }
+
+.contact-help { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); margin-top: 2.5rem; }
+.contact-help__item { background: var(--landing-section-card-bg); border-bottom: 2px solid var(--landing-line); border-radius: 0.9rem;
+    color: var(--landing-muted); display: flex; flex-direction: column; font-size: 0.86rem; gap: 0.35rem; line-height: 1.6;
+    padding: 1.3rem 1.4rem; text-decoration: none; transition: border-color 0.25s ease, transform 0.25s ease; }
+.contact-help__item strong { color: var(--landing-ink); font-size: 1rem; }
+.contact-help__item:hover { border-color: var(--landing-primary); transform: translateY(-3px); }
+.contact-help__ico { align-items: center; background: var(--landing-icon-bg); border-radius: 0.7rem; display: inline-flex; height: 2.4rem;
+    justify-content: center; margin-bottom: 0.35rem; width: 2.4rem; }
+.contact-help__ico .contact-ico { margin: 0; }
+
+html[data-theme=dark] .contact-page .about-intro h1,
+html[data-theme=dark] .contact-branch h2,
+html[data-theme=dark] .contact-branch__list a,
+html[data-theme=dark] .contact-help__item strong { color: var(--ink); }
+html[data-theme=dark] .contact-branch,
+html[data-theme=dark] .contact-help__item { background: rgba(15, 23, 42, 0.55); border-color: rgba(148, 163, 184, 0.22); }
+html[data-theme=dark] .contact-branch__list li,
+html[data-theme=dark] .contact-help__item { color: #cbd5e1; }
+@media (prefers-reduced-motion: reduce) {
+    .contact-branch, .contact-help__item, .contact-branch__dir .contact-ico { transition: none; }
+    .contact-branch:hover, .contact-help__item:hover { transform: none; }
+}
+.terms-page .terms-content .solution-card p strong { color: var(--landing-ink); }
+.terms-page .terms-content .solution-card a { color: var(--landing-primary); font-weight: 600; }
+html[data-theme=dark] .terms-page .terms-content .solution-card p strong { color: var(--ink); }
+.contact-branch__soon { align-items: center; background: var(--landing-icon-bg); border: 1px dashed var(--landing-line); border-radius: 0.8rem;
+    color: var(--landing-muted); display: flex; flex: 1; flex-direction: column; font-size: 0.88rem; gap: 0.4rem; justify-content: center;
+    line-height: 1.6; margin-top: auto; min-height: 13rem; padding: 1.5rem; text-align: center; }
+.contact-branch__soon strong { color: var(--landing-ink); font-size: 1rem; }
+.contact-branch__soon .contact-help__ico { background: var(--landing-section-card-bg); }
+.contact-branch__soon .contact-branch__dir { align-self: center; }
+html[data-theme=dark] .contact-branch__soon { background: rgba(37, 99, 235, 0.08); border-color: rgba(148, 163, 184, 0.25); color: #cbd5e1; }
+html[data-theme=dark] .contact-branch__soon strong { color: var(--ink); }

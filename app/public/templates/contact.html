@@ -1,0 +1,95 @@
+{% extends "_site_layout.html" %}
+{% block title %}Contact Us | {{ app_name }}{% endblock %}
+{% block meta_desc %}Contact {{ app_name }} in the United States and India: office addresses, phone, email and hours.{% endblock %}
+{% block body_class %}landing-page contact-page{% endblock %}
+
+{#- Contact Us (Nov 2026): our US and India branches, from BRANCHES in app/public/api/pages.py -#}
+{% macro icon(name) -%}
+<svg class="contact-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    {%- if name == "pin" %}<path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>
+    {%- elif name == "phone" %}<path d="M5 4h3l1.5 4.5-2 1.5a12 12 0 0 0 6.5 6.5l1.5-2L20 16v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>
+    {%- elif name == "mail" %}<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>
+    {%- elif name == "clock" %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+    {%- elif name == "user" %}<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
+    {%- elif name == "chat" %}<path d="M4 5h16v11H8l-4 4z"/><path d="M8 10h8M8 13h5"/>
+    {%- elif name == "card" %}<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>
+    {%- elif name == "arrow" %}<path d="M5 12h14M13 6l6 6-6 6"/>
+    {%- endif %}
+</svg>
+{%- endmacro %}
+
+{% block page %}
+<main id="content" class="pt-24">
+    <section class="section py-16 md:py-20 bg-white">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header about-intro">
+                <p class="eyebrow">Contact us</p>
+                <h1>Two offices, <span>one tax team</span></h1>
+                <p>Reach us in the United States or India. Whichever office you contact, your case stays with the same team.</p>
+            </header>
+
+            <div class="contact-branches">
+                {% for b in branches %}
+                <article class="contact-branch contact-branch--{{ b.key }}" id="branch-{{ b.key }}">
+                    <div class="contact-branch__head">
+                        <img class="contact-branch__flag" src="https://flagcdn.com/w80/{{ b.flag }}.png" alt="" width="40" height="28" loading="lazy" />
+                        <div>
+                            <p class="contact-branch__tag">{{ b.tag }}</p>
+                            <h2>{{ b.name }} <span>branch</span></h2>
+                        </div>
+                        <span class="contact-branch__cur" title="Payments to this branch are in {{ b.currency }}">{{ b.currency }}</span>
+                    </div>
+
+                    <ul class="contact-branch__list">
+                        <li>
+                            {{ icon("pin") }}
+                            {% if b.address %}
+                            <address>{{ app_name }}<br />{{ b.address | join("<br />" | safe) }}</address>
+                            {% else %}
+                            <span class="contact-muted">Office address coming soon</span>
+                            {% endif %}
+                        </li>
+                        {% if b.phone %}<li>{{ icon("phone") }}<a href="tel:{{ b.phone | replace(' ', '') | replace('(', '') | replace(')', '') | replace('-', '') }}">{{ b.phone }}</a></li>{% endif %}
+                        {% if b.email %}<li>{{ icon("mail") }}<a href="mailto:{{ b.email }}">{{ b.email }}</a></li>{% endif %}
+                        {% if b.hours %}<li>{{ icon("clock") }}<span>{{ b.hours }}</span></li>{% endif %}
+                    </ul>
+
+                    {% if b.map_query %}
+                    <div class="contact-branch__map">
+                        <iframe title="{{ app_name }} {{ b.name }} office on the map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                                src="https://maps.google.com/maps?q={{ b.map_query | urlencode }}&amp;output=embed"></iframe>
+                    </div>
+                    <a class="contact-branch__dir" href="https://maps.google.com/?q={{ b.map_query | urlencode }}" target="_blank" rel="noopener noreferrer">Get directions {{ icon("arrow") }}</a>
+                    {% else %}
+                    <div class="contact-branch__soon">
+                        <span class="contact-help__ico">{{ icon("pin") }}</span>
+                        <strong>Our {{ b.name }} office details are on the way</strong>
+                        <span>Meanwhile, email us and the {{ b.name }} team will get back to you.</span>
+                        {% if b.email %}<a class="contact-branch__dir" href="mailto:{{ b.email }}">Email the {{ b.name }} team {{ icon("arrow") }}</a>{% endif %}
+                    </div>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            </div>
+
+            <div class="contact-help">
+                <a class="contact-help__item" href="/auth/register">
+                    <span class="contact-help__ico">{{ icon("user") }}</span>
+                    <strong>New client</strong>
+                    <span>Create your account and upload your documents to get started.</span>
+                </a>
+                <a class="contact-help__item" href="/auth/login">
+                    <span class="contact-help__ico">{{ icon("chat") }}</span>
+                    <strong>Existing client</strong>
+                    <span>Log in and message your tax team from your portal.</span>
+                </a>
+                <a class="contact-help__item" href="/terms-and-conditions#refund-and-cancellation-policy">
+                    <span class="contact-help__ico">{{ icon("card") }}</span>
+                    <strong>Billing &amp; refunds</strong>
+                    <span>Read our refund and cancellation policy.</span>
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

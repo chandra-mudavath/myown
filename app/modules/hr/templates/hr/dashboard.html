@@ -1,0 +1,90 @@
+{% extends "hr/_layout.html" %}
+{% block title %}Dashboard - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'Dashboard' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">HR workspace</span>
+                <h1>Welcome back, {{ hr_name }}</h1>
+                <p>Your team at a glance, and every employee below.</p>
+            </div>
+            <div class="hr-form-actions">
+                <a href="/hr/employees/new" class="modal-btn-submit admin-btn-action"><b>+</b> New staff account</a>
+                <a href="/hr/documents/new?kind=OFFER" class="admin-mini-btn">+ New offer letter</a>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <section class="admin-section" aria-labelledby="stats-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">At a glance</span><h2 id="stats-title">Team</h2></div>
+        </div>
+        <div class="admin-stat-grid">
+            <a class="admin-stat-card blue" href="/hr/dashboard#employees-title"><span>Total employees</span><strong>{{ stats.total }}</strong><small>{{ stats.joined_this_month }} joined this month</small></a>
+            <a class="admin-stat-card teal" href="/hr/dashboard?status=active#employees-title"><span>Active</span><strong>{{ stats.active }}</strong><small>Can sign in &#8594;</small></a>
+            <a class="admin-stat-card coral" href="/hr/dashboard?status=inactive#employees-title"><span>Inactive</span><strong>{{ stats.inactive }}</strong><small>Deactivated &#8594;</small></a>
+            <a class="admin-stat-card amber" href="/hr/dashboard?status=missing#employees-title"><span>Job details missing</span><strong>{{ stats.missing_records }}</strong><small>Fill them in &#8594;</small></a>
+        </div>
+        <div class="admin-stat-grid hr-stat-row">
+            <a class="admin-stat-card teal" href="/hr/attendance"><span>On leave today</span><strong>{{ stats.on_leave_today }}</strong><small>Attendance &#8594;</small></a>
+            <a class="admin-stat-card amber" href="/hr/attendance"><span>Not checked in today</span><strong>{{ stats.not_checked_in }}</strong><small>Attendance &#8594;</small></a>
+            <a class="admin-stat-card coral" href="/hr/leaves"><span>Leave requests waiting</span><strong>{{ pending_leaves }}</strong><small>Leaves &#8594;</small></a>
+            <a class="admin-stat-card blue" href="/hr/payslips"><span>Payslips</span><strong>&#8594;</strong><small>This month's payslips</small></a>
+        </div>
+        {% if stats.expiring_documents %}
+        <p class="admin-form-hint admin-team-hint">{{ stats.expiring_documents }} HR document{{ 's' if stats.expiring_documents != 1 else '' }} expire{{ '' if stats.expiring_documents != 1 else 's' }} within 30 days.</p>
+        {% endif %}
+    </section>
+
+    <section class="admin-section" aria-labelledby="employees-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">People</span><h2 id="employees-title">All employees ({{ employees | length }})</h2></div>
+        </div>
+        <form method="get" action="/hr/dashboard">
+            <div class="admin-filter-bar">
+                <label for="hr-q" class="sr-only">Search employees</label>
+                <input id="hr-q" type="text" name="q" value="{{ q }}" placeholder="Search by name, email, staff #, department..." class="admin-filter-input">
+                <label for="hr-status" class="sr-only">Status</label>
+                <select id="hr-status" name="status" class="admin-filter-select">
+                    <option value="" {% if not status %}selected{% endif %}>All employees</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                    <option value="missing" {% if status == 'missing' %}selected{% endif %}>Job details missing</option>
+                </select>
+                <button type="submit" class="admin-filter-btn">Search</button>
+                {% if q or status %}<a href="/hr/dashboard" class="admin-filter-clear">Clear</a>{% endif %}
+            </div>
+        </form>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--compact">
+                <thead>
+                    <tr><th>Employee</th><th>Staff #</th><th>Designation</th><th>Department</th><th>Status</th><th>Email Address</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for e in employees %}
+                    <tr data-href="/hr/employees/{{ e.id }}">
+                        <td class="admin-nowrap"><a href="/hr/employees/{{ e.id }}" class="link-primary hr-emp-name"><span class="hr-initials" aria-hidden="true">{{ e.initials }}</span>{{ e.name }}</a></td>
+                        <td class="admin-nowrap">{{ e.staff_number }}</td>
+                        <td>{{ e.designation or '—' }}</td>
+                        <td>{{ e.department or '—' }}</td>
+                        <td>
+                            {% if not e.is_active %}<span class="admin-pill admin-pill--coral">Inactive</span>
+                            {% elif e.employment_status %}<span class="admin-pill admin-pill--green">{{ e.employment_status }}</span>
+                            {% else %}<span class="admin-pill admin-pill--amber">Job details missing</span>{% endif %}
+                        </td>
+                        <td>{{ e.email }}</td>
+                        <td class="admin-nowrap"><a href="/hr/employees/{{ e.id }}" class="link-primary">Open &#8250;</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="empty-cell">{{ 'No employees match this search.' if q or status else 'No staff accounts yet. Use + New staff account to add the first one.' }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

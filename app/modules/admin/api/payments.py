@@ -1,5 +1,5 @@
 """Admin Payments: invoice list and totals, new invoice, invoice detail, issue / void, record a payment,
-verify client UPI / bank transfers, refund or re-check Stripe payments."""
+verify client UPI / bank transfers, refund or re-check online payments (Stripe: USD, Razorpay: INR)."""
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
@@ -125,11 +125,11 @@ def payment_reject(payment_id: str, account: AdminAccount, db: Session = Depends
     return _to_invoice(pay.invoice_id, client_payments.reject(db, account.id, pay, reason), "Payment rejected; the client can see why.")
 
 
-# ── Stripe payments (Pay in USD) ─────────────────────────────────────────────
+# ── Online payments (Stripe: Pay in USD, Razorpay: Pay in INR) ────────────────
 
 @router.post("/payments/{payment_id}/refund")
 def payment_refund(payment_id: str, account: AdminAccount, db: Session = Depends(get_db), amount: str = Form("")):
-    """Refund all (blank amount) or part of a Stripe payment to the client's card / bank account."""
+    """Refund all or part of an online payment (amount in USD, always typed) back to how the client paid."""
     pay = _payment_or_404(db, payment_id)
     return _to_invoice(pay.invoice_id, client_payments.refund(db, account.id, pay, amount),
                        "Refund sent. It reaches the client's card or bank in 5-10 business days.")
@@ -137,10 +137,10 @@ def payment_refund(payment_id: str, account: AdminAccount, db: Session = Depends
 
 @router.post("/payments/{payment_id}/sync")
 def payment_sync(payment_id: str, account: AdminAccount, db: Session = Depends(get_db)):
-    """Read the payment back from Stripe (for when a webhook was missed)."""
+    """Read the payment back from Stripe or Razorpay (for when a webhook was missed)."""
     pay = _payment_or_404(db, payment_id)
-    err = client_payments.sync_stripe(db, pay)
-    return _to_invoice(pay.invoice_id, err, f"Checked with Stripe: {pay.status.replace('_', ' ')}." if not err else "")
+    err = client_payments.sync_gateway(db, pay)
+    return _to_invoice(pay.invoice_id, err, f"Checked with {pay.gateway.title()}: {pay.status.replace('_', ' ')}." if not err else "")
 
 
 @router.get("/payments/{payment_id}/proof", name="admin_payment_proof")

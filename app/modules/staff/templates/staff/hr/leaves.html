@@ -1,0 +1,73 @@
+{% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% block title %}My leaves - {{ app_name }}{% endblock %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />{% endblock %}
+
+{% block main %}
+    <div class="staff-pagehead">
+        <div>
+            <p class="eyebrow">My HR</p>
+            <h1>My leaves</h1>
+        </div>
+        <p class="staff-pagehead__meta">Leave year {{ today.year }}</p>
+    </div>
+
+    {% if error %}<div class="alert alert--error" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success" role="status">{{ saved }}</div>{% endif %}
+
+    <section class="staff-summary" aria-label="Leave left this year">
+        {% for b in balances %}
+        <div class="staff-summary-card">
+            <span class="staff-summary-card__label">{{ b.leave_type.name }}{% if b.carried %} (incl. {{ (b.carried | num) }} carried over){% endif %}</span>
+            <strong class="staff-summary-card__value">{{ (b.left | num) if b.left is not none else '—' }}</strong>
+            <span class="staff-cell-muted">{{ 'left of ' ~ (b.allowance | num) if b.allowance is not none else 'no fixed limit' }}{% if b.pending %} · {{ (b.pending | num) }} waiting{% endif %}</span>
+        </div>
+        {% endfor %}
+    </section>
+
+    <section class="staff-panel" aria-labelledby="apply-title">
+        <div class="staff-cases-head"><div class="staff-cases-title"><h2 id="apply-title">Apply for leave</h2></div></div>
+        <form method="post" action="/staff/hr/leaves" class="hr-form-grid">
+            <label><span>Leave type</span>
+                <select class="staff-select" name="leave_type_id" required>{% for t in leave_types %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select></label>
+            <label><span>From</span><input class="staff-input" type="date" name="start_date" required></label>
+            <label><span>To <em>(leave empty for one day)</em></span><input class="staff-input" type="date" name="end_date"></label>
+            <label><span>Reason</span><input class="staff-input" name="reason" maxlength="255" placeholder="e.g. Family function"></label>
+            <label class="hr-check"><input type="checkbox" name="half_day" value="1"> Half day (one day only)</label>
+            <div class="hr-form-actions"><button type="submit" class="staff-btn staff-btn--primary">{{ ci("send", "ci ci--sm") }} Send to HR</button></div>
+        </form>
+        <p class="staff-cell-muted">Week offs and holidays inside your dates aren't counted. HR emails you once it's decided.</p>
+    </section>
+
+    <section class="staff-panel" aria-labelledby="requests-title">
+        <div class="staff-cases-head"><div class="staff-cases-title"><h2 id="requests-title">My requests</h2><span class="staff-count-chip">{{ leave_requests | length }}</span></div></div>
+        <div class="staff-table-scroll">
+            <table class="staff-table">
+                <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    {% for r in leave_requests %}
+                    <tr>
+                        <td>{{ r.leave_type.name }}</td>
+                        <td>{{ r.start_date.strftime('%d %b %Y') }}{% if r.end_date != r.start_date %} – {{ r.end_date.strftime('%d %b %Y') }}{% endif %}{% if r.half_day %} (half day){% endif %}</td>
+                        <td>{{ (r.days | num) }}</td>
+                        <td>{{ r.reason or '—' }}{% if r.hr_note %}<br><span class="staff-cell-muted">HR: {{ r.hr_note }}</span>{% endif %}</td>
+                        <td><span class="staff-stage-pill tone-{{ {'pending': 'amber', 'approved': 'green', 'rejected': 'red', 'cancelled': 'slate'}.get(r.status, 'slate') }}">{{ 'Waiting' if r.status == 'pending' else r.status.title() }}</span></td>
+                        <td>{% if r.status == 'pending' or (r.status == 'approved' and r.start_date > today) %}
+                            <form method="post" action="/staff/hr/leaves/{{ r.id }}/cancel" onsubmit="return confirm('Cancel this leave?');"><button type="submit" class="staff-row-action">Cancel</button></form>
+                            {% endif %}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="staff-empty">{{ ci("calendar") }}<strong>No leave yet</strong><span>Requests you send appear here.</span></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if holidays %}
+    <section class="staff-panel" aria-labelledby="holidays-title">
+        <div class="staff-cases-head"><div class="staff-cases-title"><h2 id="holidays-title">Coming holidays</h2></div></div>
+        <ul class="hr-legend">{% for h in holidays %}<li><span class="hr-day--H"></span>{{ h.day.strftime('%a %d %b') }} · {{ h.name }}</li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+{% endblock %}

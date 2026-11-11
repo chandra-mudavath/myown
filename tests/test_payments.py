@@ -94,7 +94,7 @@ def as_(env, key) -> TestClient:
 
 def submit(client: TestClient, invoice_id: str, ref: str = "UTR412345678901", **extra):
     data = {"invoice_id": invoice_id, "payment_method": "upi", "transaction_reference": ref,
-            "sent_amount": "12500", "sent_currency": "INR", **extra}
+            "sent_amount": "12500", "sent_currency": "INR", "pay_amount": "150", **extra}
     return client.post("/client/payments/manual", data=data, follow_redirects=False)
 
 
@@ -105,6 +105,17 @@ def test_client_sees_amount_due(env):
     assert 'name="pay_option" value="usd"' in page.text and 'name="pay_option" value="inr"' in page.text
     assert 'name="pay_amount"' in page.text and 'max="150.00"' in page.text and 'value="150.00"' not in page.text
     assert 'action="/client/payments/manual"' in page.text
+
+
+def test_no_default_amount(env):
+    """The client always types the amount; a blank amount is refused, not taken as the full balance (Nov 2026)."""
+    client = as_(env, "client")
+    assert "error=" in submit(client, env["invoice_id"], pay_amount="").headers["location"]
+    page = client.get("/client/make-payment").text
+    assert 'value="150.00"' not in page and 'name="sent_amount" type="number" min="1" step="0.01" required placeholder' in page
+    db = env["Session"]()
+    assert db.query(Payment).count() == 0
+    db.close()
 
 
 def test_partial_payment_leaves_the_rest_due(env):
@@ -127,7 +138,7 @@ def test_submit_reject_resubmit_verify(env):
     client, admin = as_(env, "client"), as_(env, "admin")
     r = client.post("/client/payments/manual", data={"invoice_id": env["invoice_id"], "payment_method": "bank_transfer",
                                                      "transaction_reference": "FED123456", "sent_amount": "150",
-                                                     "sent_currency": "USD"},
+                                                     "sent_currency": "USD", "pay_amount": "150"},
                     files={"proof": ("slip.png", b"\x89PNG data", "image/png")}, follow_redirects=False)
     assert r.status_code == 303 and "saved=" in r.headers["location"]
     db = env["Session"]()
@@ -175,6 +186,50 @@ def test_rejects_bad_input(env):
                                                              "sent_currency": "INR"},
                             files={"proof": ("x.exe", b"MZ", "application/octet-stream")}, follow_redirects=False)
     assert "error=" in bad_proof.headers["location"]
+
+
+# ── Pay in INR without a gateway: UPI QR with the amount filled in, and bank transfer ──
+
+def test_upi_qr_has_the_amount_and_invoice(env, monkeypatch):
+    from app.platform.services import payments
+    monkeypatch.setattr(settings, "PAYMENT_UPI_ID", "covrenttax@icici")
+    monkeypatch.setattr(settings, "PAYMENT_UPI_PAYEE", "CovrentTax India")
+    link = payments.upi_link("13275", "INV-0001<script>")
+    assert link == "upi://pay?pa=covrenttax@icici&pn=CovrentTax%20India&am=13275.00&cu=INR&tn=INV-0001script"
+    assert "am=" not in payments.upi_link("abc", "")  # no amount yet: a QR for any amount
+    client = as_(env, "client")
+    r = client.get("/client/payments/upi-qr?am=13275&tn=INV-0001")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("image/svg+xml") and b"<svg" in r.content
+    page = client.get("/client/make-payment").text
+    assert "data-upi-qr" in page and "Pay with UPI app" in page
+    assert TestClient(app).get("/client/payments/upi-qr", follow_redirects=False).status_code in (303, 401)  # signed in only
+
+
+def test_upi_qr_off_without_upi_id(env):
+    assert as_(env, "client").get("/client/payments/upi-qr?am=10").status_code == 404
+
+
+def test_inr_bank_transfer_with_rate(env, monkeypatch):
+    from app.platform.services import payments
+    monkeypatch.setattr(settings, "PAYMENT_BANK_DETAILS_IN", "Account name: CovrentTax\nIFSC: HDFC0001234")
+    db = env["Session"]()
+    payments.set_inr_rate(db, env["admin"]["account"].id, "88.50")
+    db.close()
+    client, admin = as_(env, "client"), as_(env, "admin")
+    page = client.get("/client/make-payment").text
+    assert 'value="bank_transfer"' in page and "IFSC: HDFC0001234" in page and 'data-rate="88.5000"' in page
+    r = client.post("/client/payments/manual", follow_redirects=False, data={
+        "invoice_id": env["invoice_id"], "payment_method": "bank_transfer", "transaction_reference": "HDFCN52024111012345",
+        "pay_amount": "150", "sent_amount": "13275", "sent_currency": "INR"})
+    assert "saved=" in r.headers["location"]
+    db = env["Session"]()
+    pay = db.query(Payment).one()
+    assert pay.payment_method == "bank_transfer" and pay.original_amount == Decimal("13275.00") and pay.status == "pending"
+    assert "In use" in admin.get("/admin/settings").text
+    admin.post(f"/admin/payments/payments/{pay.id}/verify", follow_redirects=False)
+    db.expire_all()
+    assert db.get(Invoice, env["invoice_id"]).status == "paid"
+    db.close()
 
 
 # ── Stripe (the Stripe API is faked; webhooks are signed for real) ────────────
@@ -241,7 +296,8 @@ def send_event(event: dict, secret: str = WHSEC, age: int = 0):
 
 
 def start(client: TestClient, invoice_id: str, **extra):
-    return client.post("/client/payments/stripe/start", data={"invoice_id": invoice_id, **extra}, follow_redirects=False)
+    data = {"invoice_id": invoice_id, "pay_amount": "150", **extra}
+    return client.post("/client/payments/stripe/start", data=data, follow_redirects=False)
 
 
 def completed(sid: str, event_id: str = "evt_1", kind: str = "checkout.session.completed") -> dict:
@@ -357,6 +413,8 @@ def test_admin_refund_and_dispute(env, fake_stripe):
     assert "Refund payment" in admin.get(f"/admin/payments/invoices/{env['invoice_id']}").text
     assert "error=" in admin.post(f"/admin/payments/payments/{pay.id}/refund", data={"amount": "200"},
                                   follow_redirects=False).headers["location"]
+    assert "error=" in admin.post(f"/admin/payments/payments/{pay.id}/refund", data={"amount": ""},
+                                  follow_redirects=False).headers["location"]  # no "blank refunds it all"
     assert "saved=" in admin.post(f"/admin/payments/payments/{pay.id}/refund", data={"amount": "50"},
                                   follow_redirects=False).headers["location"]
     assert fake_stripe.refunds == [("pi_cs_test_1", Decimal("50.00"))]

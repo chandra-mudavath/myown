@@ -1,5 +1,5 @@
-"""Admin account controls for clients and staff: activate / deactivate, unlock, reset password,
-change a staff member's role, and edit a client's name and phone.
+"""Admin account controls for clients, staff and HR: activate / deactivate, unlock, reset password,
+change a staff member's role (or move them to HR), and edit a client's name and phone.
 
 Deactivating blocks sign-in and every page at once (deps.get_current_account checks is_active),
 revokes saved sessions, and for staff ends their case assignments so cases don't sit with
@@ -19,10 +19,10 @@ from app.modules.staff.models.staff import Staff, StaffRole
 from app.platform.models.auth import AccountType, AuthAccount, AuthRefreshToken
 from app.platform.models.case_workflow import CaseAssignment
 from app.platform.models.system import AuditLog
-from app.platform.services import auth_service, chat_service
+from app.platform.services import auth_service, chat_service, team_accounts
 from app.platform.services.catalog import staff_account_roles
 
-_MANAGED = (AccountType.CLIENT, AccountType.STAFF)
+_MANAGED = (AccountType.CLIENT, AccountType.STAFF, AccountType.HR)
 
 
 def _audit(db: Session, actor_id: str, action: str, entity_type: str, entity_id: str, old: dict | None, new: dict | None) -> None:
@@ -41,7 +41,7 @@ def _check(actor_id: str, account: AuthAccount | None) -> str | None:
     if account.id == actor_id:
         return "You can't change your own account here; use My Profile."
     if account.account_type not in _MANAGED:
-        return "Only client and staff accounts can be managed here."
+        return "Only client, staff and HR accounts can be managed here."
     return None
 
 
@@ -125,12 +125,12 @@ def change_staff_role(db: Session, actor_id: str, staff: Staff, role_code: str) 
     if old == role_code:
         return None
     if role_code == StaffRole.HR.value:
-        # HR has no case access, so they can't stay on a case team
-        open_cases = db.query(CaseAssignment).filter(CaseAssignment.staff_id == staff.id,
-                                                     CaseAssignment.status == "active").count()
-        if open_cases:
-            return (f"Remove {staff.first_name} from {open_cases} case{'s' if open_cases != 1 else ''} first. "
-                    "HR has no access to cases.")
+        # HR is its own account type with its own portal (and no case access)
+        try:
+            team_accounts.move_staff_to_hr(db, actor_id, staff)
+        except team_accounts.AccountError as e:
+            return str(e)
+        return None
     staff.role = StaffRole(role_code)
     _audit(db, actor_id, "staff_role_changed", "staff", staff.id, {"role": old}, {"role": role_code})
     db.commit()

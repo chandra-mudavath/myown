@@ -1,0 +1,18 @@
+{% extends "hr/letters/_frame.html" %}
+{% block letter_body %}
+<p style="margin:0;"><strong>{{ d.employee_name }}</strong></p>
+<p style="margin:0 0 16px;color:#6b7280;">Employee number {{ d.employee_number }} · {{ d.designation }}</p>
+<p style="margin:16px 0;font-weight:bold;">Subject: Revision of salary</p>
+<p style="margin:0 0 10px;">Dear {{ d.employee_name }},</p>
+<p style="margin:0 0 10px;">Following {{ 'your promotion' if d.reason == 'Promotion' else ('a correction to your salary record' if d.reason == 'Correction' else 'the annual review') }}, we are pleased to let you know that your salary has been revised with effect from <strong>{{ fmt_date(d.effective_date) }}</strong>.{% if d.new_designation %} Your designation is now <strong>{{ d.new_designation }}</strong>.{% endif %}</p>
+<table role="presentation" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;margin:12px 0;font-family:Arial,sans-serif;font-size:13px;">
+    <tr><td style="border:1px solid #e5e7eb;color:#6b7280;width:50%;">Previous monthly salary</td><td style="border:1px solid #e5e7eb;text-align:right;">{{ company.currency }} {{ money(d.previous_salary) if d.previous_salary else '—' }}</td></tr>
+    <tr><td style="border:1px solid #e5e7eb;color:#6b7280;">New monthly salary</td><td style="border:1px solid #e5e7eb;text-align:right;font-weight:bold;">{{ company.currency }} {{ money(d.monthly_salary) }}</td></tr>
+    {% if d.previous_salary and (d.previous_salary | float) > 0 %}<tr><td style="border:1px solid #e5e7eb;color:#6b7280;">Change</td><td style="border:1px solid #e5e7eb;text-align:right;">{{ '%+.1f' | format(((d.monthly_salary | float) - (d.previous_salary | float)) / (d.previous_salary | float) * 100) }}%</td></tr>{% endif %}
+</table>
+<p style="margin:0 0 10px;">Your new monthly salary is made up as follows:</p>
+<table role="presentation" cellpadding="6" cellspacing="0" style="border-collapse:collapse;width:100%;margin:8px 0;font-family:Arial,sans-serif;font-size:13px;">
+    {% for label, amount in breakup %}<tr><td style="border:1px solid #e5e7eb;">{{ label }}</td><td style="border:1px solid #e5e7eb;text-align:right;">{{ money(amount) }}</td></tr>{% endfor %}
+</table>
+<p style="margin:0 0 10px;">All other terms of your employment remain unchanged. Thank you for your contribution, and we look forward to your continued work with us.</p>
+{% endblock %}

@@ -51,7 +51,7 @@ myown/
 │   │   │   └── static/     ← css/, js/ — served at /static/client/
 │   │   ├── staff/      ← same layout, static at /static/staff/
 │   │   ├── admin/      ← same layout, static at /static/admin/
-│   │   └── hr/         ← same layout (placeholder), static at /static/hr/
+│   │   └── hr/         ← HR workspace (staff records, no cases), static at /static/hr/
 │   ├── public/         ← Marketing site: landing, about, services, refer, terms
 │   │   ├── api/  templates/  static/   ← static at /static/public/
 │   ├── db_models.py    ← Imports every model so Base.metadata/Alembic see all tables

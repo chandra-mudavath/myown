@@ -55,7 +55,7 @@ def login_page(request: Request, next: str = ""):
 
 _NEXT_COOKIE = "login_next"
 # A return path must be in the signed-in person's own portal, or it would just show "You don't have access"
-_PORTAL = {AccountType.CLIENT: "/client/", AccountType.STAFF: "/staff/", AccountType.ADMIN: "/admin/"}
+_PORTAL = {AccountType.CLIENT: "/client/", AccountType.STAFF: "/staff/", AccountType.ADMIN: "/admin/", AccountType.HR: "/hr/"}
 
 
 def _safe_next(path: str | None) -> str | None:
@@ -256,6 +256,7 @@ def _signed_in(request: Request, db: Session, account: AuthAccount) -> RedirectR
         AccountType.CLIENT: "select_year_page",
         AccountType.STAFF:  "staff_dashboard",
         AccountType.ADMIN:  "admin_dashboard",
+        AccountType.HR:     "hr_dashboard",
     }
     target = _safe_next(request.cookies.get(_NEXT_COOKIE))
     if not (target and target.startswith(_PORTAL[account.account_type])):
@@ -397,7 +398,8 @@ def refresh(
 
 # ── Change a temporary password (accounts an admin created or reset) ──────────
 
-_HOME = {AccountType.CLIENT: "select_year_page", AccountType.STAFF: "staff_dashboard", AccountType.ADMIN: "admin_dashboard"}
+_HOME = {AccountType.CLIENT: "select_year_page", AccountType.STAFF: "staff_dashboard", AccountType.ADMIN: "admin_dashboard",
+         AccountType.HR: "hr_dashboard"}
 
 
 @router.get("/change-password", response_class=HTMLResponse, name="change_password_page")

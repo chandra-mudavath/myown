@@ -1,0 +1,131 @@
+/* HR workspace: the admin console layout (admin.css) in the HR colour, Copper (design 2c).
+   Like admin.css, only these four colours change the theme; everything else derives from them. */
+.admin-page.hr-page {
+    --p-main: #b4572e;
+    --p-dark: #8a3f1f;
+    --p-tile: #fbe3d6;
+    --p-soft: #fdf5f0;
+}
+
+/* Sidebar: HR role line under the name, and group labels in the employee menu */
+.hr-page .hr-nav-group {
+    margin: 14px 12px 4px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--side-ink) 60%, transparent);
+}
+.hr-page .hr-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 12px 10px;
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--brand);
+    text-decoration: none;
+}
+.hr-page .hr-back:hover { text-decoration: underline; }
+.hr-page .hr-picker { display: grid; gap: 4px; margin: 0 12px 10px; }
+.hr-page .hr-picker label { font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: color-mix(in srgb, var(--side-ink) 60%, transparent); }
+.hr-page .hr-picker select { width: 100%; }
+.hr-page .hr-who {
+    display: grid;
+    gap: 4px;
+    margin: 0 12px 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--side-line);
+    border-radius: 10px;
+    background: var(--brand-soft);
+}
+.hr-page .hr-who strong { font-size: .95rem; }
+.hr-page .hr-who .hr-id { justify-self: start; font-family: "JetBrains Mono", monospace; font-size: .72rem; padding: 1px 6px; border-radius: 4px; background: var(--p-tile); color: var(--p-dark); }
+html[data-theme="dark"] .hr-page .hr-who .hr-id { background: color-mix(in srgb, var(--p-main) 25%, transparent); color: var(--accent-text); }
+
+/* Employees table: whole row opens the employee */
+.hr-page .hr-emp-name { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; }
+.hr-page .hr-initials {
+    width: 30px; height: 30px; flex: none; border-radius: 50%;
+    display: grid; place-items: center; font-size: .72rem; font-weight: 800;
+    background: var(--p-tile); color: var(--p-dark);
+}
+html[data-theme="dark"] .hr-page .hr-initials { background: color-mix(in srgb, var(--p-main) 25%, transparent); color: var(--accent-text); }
+.hr-page tr[data-href] { cursor: pointer; }
+.hr-page tr[data-href]:hover td { background: var(--brand-soft); }
+
+/* Employee page */
+.hr-page .hr-emp-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.hr-page .hr-emp-head .hr-initials { width: 52px; height: 52px; font-size: 1rem; }
+.hr-page .hr-emp-head h1 { margin: 0; }
+.hr-page .hr-tab-title { margin: 0 0 12px; font-size: 1.05rem; }
+.hr-page .hr-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 18px; }
+.hr-page .hr-form-grid select, .hr-page .hr-form-grid input { width: 100%; }
+.hr-page .hr-form-actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+.hr-page .hr-later { color: var(--muted, #64748b); font-size: .9rem; }
+
+/* Shared bits for the HR pages (also used by the admin HR records and the staff "My HR" pages) */
+.hr-count { margin-left: auto; min-width: 18px; padding: 0 6px; border-radius: 999px; background: var(--p-main, #b4572e); color: #fff; font-size: .66rem; font-weight: 700; line-height: 1.6; text-align: center; }
+.hr-subhead { margin: 18px 0 8px; font-size: .95rem; }
+.hr-later { color: var(--muted, #64748b); font-size: .9rem; }
+.hr-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; align-items: center; }
+.hr-chip { display: inline-flex; gap: 6px; align-items: baseline; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--side-line, #e2e8f0); background: var(--brand-soft, #fdf5f0); font-size: .88rem; }
+.hr-chip strong { font-size: 1.05rem; }
+.admin-mini-btn.is-active { background: var(--brand, #b4572e); color: #fff; border-color: transparent; }
+.hr-monthbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.hr-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 18px; }
+.hr-form-grid select, .hr-form-grid input:not([type=checkbox]), .hr-form-grid textarea { width: 100%; }
+.hr-form-actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+.hr-span-2 { grid-column: span 2; }
+.hr-check { display: flex; gap: 6px 14px; align-items: center; flex-wrap: wrap; font-weight: 500; }
+.hr-check input { width: auto; }
+.hr-email-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px 18px; margin-top: 10px; }
+.hr-stat-row { margin-top: 12px; }
+.hr-decide { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.hr-decide .admin-filter-input { min-width: 170px; }
+@media (max-width: 640px) { .hr-span-2 { grid-column: auto; } }
+
+/* Day colours (attendance grid, calendar, legend) */
+.hr-day--P { background: #e6f4ea; color: #1f7a3d; }
+.hr-day--HALF { background: #fef3c7; color: #92400e; }
+.hr-day--L, .hr-day--HL { background: #e7efff; color: #1e40af; }
+.hr-day--UL { background: #ede9fe; color: #5b21b6; }
+.hr-day--A { background: #fdecea; color: #b42318; }
+.hr-day--H { background: #fdf1e3; color: #b45309; }
+.hr-day--W { background: #eef2f6; color: #94a3b8; }
+html[data-theme="dark"] .hr-day--P { background: rgba(34, 197, 94, .18); color: #86efac; }
+html[data-theme="dark"] .hr-day--HALF { background: rgba(245, 158, 11, .18); color: #fcd34d; }
+html[data-theme="dark"] .hr-day--L, html[data-theme="dark"] .hr-day--HL { background: rgba(59, 130, 246, .2); color: #93c5fd; }
+html[data-theme="dark"] .hr-day--UL { background: rgba(139, 92, 246, .2); color: #c4b5fd; }
+html[data-theme="dark"] .hr-day--A { background: rgba(239, 68, 68, .2); color: #fca5a5; }
+html[data-theme="dark"] .hr-day--H { background: rgba(249, 115, 22, .18); color: #fdba74; }
+html[data-theme="dark"] .hr-day--W { background: rgba(148, 163, 184, .14); color: #94a3b8; }
+.hr-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; padding: 0; margin: 10px 0 0; font-size: .82rem; }
+.hr-legend span { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* Month grid: one row per employee */
+.hr-att-scroll { overflow-x: auto; }
+.hr-att { font-variant-numeric: tabular-nums; }
+.hr-att th, .hr-att td { text-align: center; padding: 4px 3px !important; font-size: .75rem; min-width: 26px; }
+.hr-att th small { font-weight: 400; opacity: .7; }
+.hr-att .hr-att-name { text-align: left; min-width: 150px; position: sticky; left: 0; background: var(--side-card, #fff); z-index: 1; white-space: nowrap; }
+.hr-att th.is-today { color: var(--brand, #b4572e); }
+.hr-att td.is-editable, .hr-cal td[data-day] { cursor: pointer; }
+.hr-att td.is-editable:hover, .hr-cal td[data-day]:hover { outline: 2px solid var(--brand, #b4572e); outline-offset: -2px; }
+
+/* One person's month as a calendar */
+.hr-cal-wrap { overflow-x: auto; }
+.hr-cal { border-collapse: separate; border-spacing: 4px; font-variant-numeric: tabular-nums; }
+.hr-cal th { font-size: .75rem; font-weight: 600; opacity: .7; }
+.hr-cal td { width: 54px; height: 46px; border-radius: 8px; vertical-align: top; padding: 4px 6px; font-size: .8rem; }
+.hr-cal td span { display: block; font-weight: 700; }
+.hr-cal td small { font-size: .68rem; font-weight: 700; }
+.hr-cal .hr-day--none { border: 1px dashed var(--side-line, #e2e8f0); }
+.hr-cal .hr-day--blank { background: transparent; }
+
+/* A document beside its form */
+.hr-doc-layout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
+.hr-doc-paper { border: 1px solid var(--side-line, #e2e8f0); border-radius: 10px; overflow: auto; background: #fff; }
+.hr-doc-side { display: grid; gap: 14px; }
+.hr-doc-side .hr-form-grid { grid-template-columns: 1fr; }
+@media (max-width: 1100px) { .hr-doc-layout { grid-template-columns: 1fr; } }

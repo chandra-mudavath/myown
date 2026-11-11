@@ -98,4 +98,31 @@
             </table>
         </div>
     </section>
+
+    <!-- HR team: their own account type and workspace; no cases -->
+    <section class="admin-section" aria-labelledby="hr-team-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">HR workspace</span><h2 id="hr-team-title">HR team ({{ hr_list | length }})</h2></div>
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--compact">
+                <thead>
+                    <tr><th>Name</th><th>HR #</th><th>Email Address</th><th>Created Date</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    {% for h in hr_list %}
+                    <tr>
+                        <td class="admin-nowrap"><a href="/admin/hr/{{ h.id }}" class="link-primary">{{ h.first_name }} {{ h.last_name or '' }}</a>{% if h.account and not h.account.is_active %} <span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}</td>
+                        <td class="admin-nowrap"><a href="/admin/hr/{{ h.id }}" class="link-primary">{{ h.hr_number }}</a></td>
+                        <td>{{ h.account.email if h.account else 'N/A' }}</td>
+                        <td>{{ h.created_at.strftime('%b %d, %Y') if h.created_at else 'N/A' }}</td>
+                        <td><a href="/admin/hr/{{ h.id }}" class="admin-eye-btn" aria-label="View {{ h.first_name }} {{ h.last_name or '' }}" title="View HR details">{{ ci("eye") }}</a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty-cell">No HR accounts yet. Use Add New Staff and choose the HR role.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 {% endblock %}

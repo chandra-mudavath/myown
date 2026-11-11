@@ -33,6 +33,7 @@ class AccountType(str, enum.Enum):
     CLIENT = "CLIENT"
     STAFF = "STAFF"
     ADMIN = "ADMIN"
+    HR = "HR"  # staff management only: no clients, cases or case chats
 
 
 # ─────────────────────────────────────────────

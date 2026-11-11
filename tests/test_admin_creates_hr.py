@@ -1,9 +1,12 @@
-"""Staff sign-up is off, so admins create HR accounts too (Nov 2026), from + New Staff and the role menus."""
+"""Staff sign-up is off, so admins create HR accounts too (Nov 2026), from + New Staff and the role menus.
+HR is its own account type (AccountType.HR, a row in `hr`), never a staff role."""
 from __future__ import annotations
 
 from sqlalchemy import text
 
+from app.modules.hr.models.hr import HR
 from app.modules.staff.models.staff import Staff, StaffRole
+from app.platform.models.auth import AccountType
 from app.platform.models.case_workflow import CaseAssignment
 from app.platform.models.lookups import StaffRoleLookup
 
@@ -23,6 +26,22 @@ def _new_staff(admin, email, role):
     return admin.post("/admin/quick-action/staff", data={"first_name": "Hema", "last_name": "R", "email": email, "role": role})
 
 
+def _hr(env, account_id):
+    db = env["Session"]()
+    try:
+        return db.query(HR).filter(HR.account_id == account_id).one()
+    finally:
+        db.close()
+
+
+def _no_staff_row(env, account_id) -> bool:
+    db = env["Session"]()
+    try:
+        return db.query(Staff).filter(Staff.account_id == account_id).first() is None
+    finally:
+        db.close()
+
+
 def _staff(env, email):
     db = env["Session"]()
     try:
@@ -37,9 +56,11 @@ def test_admin_creates_an_hr_account(env):
     assert {"code": "HR", "name": "HR"} in admin.get("/admin/api/form-options").json()["staff_roles"]
 
     r = _new_staff(admin, "hr.test1@covrenttax.com", "HR")
-    assert r.status_code == 200 and r.json()["temp_password"]
-    assert _staff(env, "hr.test1@covrenttax.com").role == StaffRole.HR
-    assert _account(env, "hr.test1@covrenttax.com").must_change_password
+    assert r.status_code == 200 and r.json()["temp_password"] and r.json()["staff_number"].startswith("HR-")
+    acc = _account(env, "hr.test1@covrenttax.com")
+    assert acc.account_type == AccountType.HR and acc.must_change_password
+    assert _hr(env, acc.id).first_name == "Hema"
+    assert _no_staff_row(env, acc.id)
 
     # Only a case role or HR: never ADMIN, never an unknown code
     assert _new_staff(admin, "sneaky@covrenttax.com", "ADMIN").status_code == 400
@@ -72,5 +93,11 @@ def test_change_role_to_hr(env):
     _new_staff(admin, "reviewer.test1@covrenttax.com", "REVIEWER")
     staff = _staff(env, "reviewer.test1@covrenttax.com")
     r = admin.post(f"/admin/staff/{staff.id}/role", data={"role_code": "HR"}, follow_redirects=False)
-    assert r.status_code == 303 and "error" not in r.headers["location"]
-    assert _staff(env, "reviewer.test1@covrenttax.com").role == StaffRole.HR
+    acc = _account(env, "reviewer.test1@covrenttax.com")
+    hr = _hr(env, acc.id)
+    assert r.status_code == 303 and r.headers["location"].startswith(f"/admin/hr/{hr.id}?saved=")
+    assert acc.account_type == AccountType.HR and _no_staff_row(env, acc.id)
+    # Their page and the HR team list show them; the staff list doesn't
+    assert hr.hr_number in admin.get(f"/admin/hr/{hr.id}").text
+    page = admin.get("/admin/staff").text
+    assert f'href="/admin/hr/{hr.id}"' in page and f'href="/admin/staff/{staff.id}"' not in page

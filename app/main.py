@@ -13,6 +13,10 @@ from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.session import renew_session
 import app.db_models  # noqa: F401 — registers all models with Base.metadata
+from app.modules.admin.api import hr_accounts as admin_hr_accounts
+from app.modules.hr.api import documents as hr_documents, hr as hr_portal, time_off as hr_time_off
+from app.modules.admin.api import hr_records as admin_hr_records
+from app.modules.staff.api import my_hr as staff_my_hr
 from app.modules.admin.api import email_requests as admin_email_requests
 from app.modules.admin.api import referrals as admin_referrals, accounts as admin_accounts, admin, assignments as admin_assignments, case_actions as admin_case_actions, notifications as admin_notifications, profile as admin_profile, payments as admin_payments, reports as admin_reports, system_settings as admin_settings
 from app.modules.client.api import client as client_routes, dashboard, profile
@@ -43,16 +47,17 @@ error_handlers.register(app)
 _SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",            # browsers never guess a file's type
     "X-Frame-Options": "SAMEORIGIN",                # no framing by other sites (document previews are same-site)
-    # Only our own site plus the few outside hosts the pages use (fonts, Tailwind, flag images, the footer map).
+    # Only our own site plus the few outside hosts the pages use (fonts, Tailwind, flag images, the footer map,
+    # and Razorpay's Checkout window for Pay in INR: its script, its frames and the calls it makes).
     # 'unsafe-inline' stays until the inline <script> blocks and onclick= handlers move into .js files.
     "Content-Security-Policy": "; ".join([
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com",
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://checkout.razorpay.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' data: https://fonts.gstatic.com",
-        "img-src 'self' data: blob: https://flagcdn.com",
-        "frame-src 'self' https://www.google.com https://maps.google.com",
-        "connect-src 'self'",  # fetch() can't send data to another site
+        "img-src 'self' data: blob: https://flagcdn.com https://cdn.razorpay.com",
+        "frame-src 'self' https://www.google.com https://maps.google.com https://api.razorpay.com https://checkout.razorpay.com",
+        "connect-src 'self' https://api.razorpay.com https://lumberjack.razorpay.com",  # fetch() can't send data elsewhere
         "frame-ancestors 'self'", "base-uri 'self'", "object-src 'none'",
     ]),
     "Referrer-Policy": "strict-origin-when-cross-origin",  # reset-password tokens in a URL never leave the site
@@ -101,6 +106,7 @@ app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(profile.router)
 app.include_router(client_routes.router)
+app.include_router(staff_my_hr.router)  # before staff.router: /staff/hr/... pages
 app.include_router(staff.router)
 app.include_router(admin.router)
 app.include_router(admin_profile.router)
@@ -110,6 +116,11 @@ app.include_router(admin_reports.router)
 app.include_router(admin_payments.router)
 app.include_router(admin_assignments.router)
 app.include_router(admin_accounts.router)
+app.include_router(admin_hr_accounts.router)
+app.include_router(admin_hr_records.router)
+app.include_router(hr_portal.router)
+app.include_router(hr_time_off.router)
+app.include_router(hr_documents.router)
 app.include_router(admin_case_actions.router)
 app.include_router(admin_referrals.router)
 app.include_router(admin_email_requests.router)

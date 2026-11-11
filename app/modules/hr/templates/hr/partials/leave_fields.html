@@ -1,0 +1,9 @@
+{#- Leave type, dates, half day and reason. Used by HR "Add leave" and the staff "Apply for leave" form. -#}
+<div class="hr-form-grid">
+    <div class="modal-form-group"><label for="leave_type_id">Leave type</label>
+        <select id="leave_type_id" name="leave_type_id" required>{% for t in leave_types %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}</select></div>
+    <div class="modal-form-group"><label for="start_date">From</label><input id="start_date" name="start_date" type="date" required></div>
+    <div class="modal-form-group"><label for="end_date">To (leave empty for one day)</label><input id="end_date" name="end_date" type="date"></div>
+    <div class="modal-form-group"><label for="reason">Reason</label><input id="reason" name="reason" maxlength="255"></div>
+    <div class="modal-form-group hr-check"><label><input type="checkbox" name="half_day" value="1"> Half day (one day only)</label></div>
+</div>

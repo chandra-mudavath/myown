@@ -1,0 +1,128 @@
+{% extends "hr/_layout.html" %}
+{% block title %}HR Settings - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'HR Settings' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">HR workspace</span>
+                <h1>HR Settings</h1>
+                <p>Letterhead and signature on documents, working time, payslip breakup, emails, leave types and holidays.</p>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <form method="post" action="/hr/settings" class="admin-form">
+        {% for group, keys in [
+            ('Letterhead and signature', ['company_name', 'company_address', 'company_phone', 'company_website', 'company_reg', 'company_pf_code', 'signatory_name', 'signatory_title', 'hr_email', 'hr_phone', 'currency']),
+            ('Working time', ['check_in_cutoff', 'working_hours']),
+            ('Offer letter pages', ['about_company', 'work_culture', 'policies']),
+            ('Payslip breakup', ['basic_pct', 'hra_pct', 'pf_pct', 'pf_cap', 'professional_tax']),
+        ] %}
+        <section class="admin-section">
+            <div class="admin-card">
+                <h3 class="admin-card-title">{{ group }}</h3>
+                <div class="hr-form-grid">
+                    {% for key, label, default, kind in fields if key in keys %}
+                    {% if kind == 'textarea' %}
+                    <div class="modal-form-group hr-span-2"><label for="s-{{ key }}">{{ label }} <small class="hr-later">(one paragraph or point per line)</small></label>
+                        <textarea id="s-{{ key }}" name="{{ key }}" rows="6" maxlength="4000">{{ values[key] }}</textarea></div>
+                    {% else %}
+                    <div class="modal-form-group"><label for="s-{{ key }}">{{ label }}</label>
+                        <input id="s-{{ key }}" name="{{ key }}" value="{{ values[key] }}" maxlength="500"{% if kind == 'number' %} inputmode="decimal"{% endif %}></div>
+                    {% endif %}
+                    {% endfor %}
+                    {% if group == 'Working time' %}
+                    <fieldset class="modal-form-group hr-span-2"><legend>Week offs</legend>
+                        <div class="hr-chips">{% for code, label in weekdays %}<label class="hr-check"><input type="checkbox" name="week_off_{{ code }}" value="1" {% if code in values.week_offs.split(',') %}checked{% endif %}> {{ label }}</label>{% endfor %}</div>
+                    </fieldset>
+                    {% endif %}
+                </div>
+                {% if group == 'Payslip breakup' %}<p class="admin-form-hint">The rest of the monthly salary after basic and HRA is shown as special allowance. Salary components and deductions are still to be confirmed; change these when they are.</p>{% endif %}
+            </div>
+        </section>
+        {% endfor %}
+
+        <section class="admin-section" id="emails">
+            <div class="admin-card">
+                <h3 class="admin-card-title">Emails</h3>
+                <p class="admin-form-hint">Only ticked emails are sent. None of them contains a password; payslips are never attached.</p>
+                <div class="hr-email-grid">
+                    {% for number, (label, to) in emails.items() %}
+                    <label class="hr-check"><input type="checkbox" name="email_{{ number }}" value="1" {% if number in emails_on %}checked{% endif %}> {{ number }} · {{ label }} <small class="hr-later">to {{ to }}</small></label>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        <div class="hr-form-actions"><button type="submit" class="modal-btn-submit admin-form-submit">Save settings</button></div>
+    </form>
+
+    <section class="admin-section" id="leave-types">
+        <div class="admin-card">
+            <h3 class="admin-card-title">Leave types</h3>
+            <p class="admin-form-hint">The leave policy is still being agreed: these are placeholders. Change days per year and carry-over here at any time.</p>
+            {% for t in leave_types %}<form method="post" action="/hr/settings/leave-types" id="lt-{{ t.id }}"><input type="hidden" name="id" value="{{ t.id }}"></form>{% endfor %}
+            <div class="admin-table-panel">
+                <table class="admin-table admin-table--compact">
+                    <thead><tr><th>Name</th><th>Days / year</th><th>Paid</th><th>Carry over</th><th>Carry-over limit</th><th>Active</th><th></th></tr></thead>
+                    <tbody>
+                        {% for t in leave_types %}
+                        <tr>
+                            <td><input form="lt-{{ t.id }}" name="name" value="{{ t.name }}" maxlength="80" class="admin-filter-input" aria-label="Name"></td>
+                            <td><input form="lt-{{ t.id }}" name="days_per_year" value="{{ t.days_per_year }}" inputmode="numeric" class="admin-input-xs" aria-label="Days per year"></td>
+                            <td><input form="lt-{{ t.id }}" type="checkbox" name="is_paid" value="1" {% if t.is_paid %}checked{% endif %} aria-label="Paid"></td>
+                            <td><input form="lt-{{ t.id }}" type="checkbox" name="carry_over" value="1" {% if t.carry_over %}checked{% endif %} aria-label="Carry over"></td>
+                            <td><input form="lt-{{ t.id }}" name="max_carry_over" value="{{ t.max_carry_over if t.max_carry_over is not none else '' }}" inputmode="numeric" class="admin-input-xs" placeholder="No limit" aria-label="Carry-over limit"></td>
+                            <td><input form="lt-{{ t.id }}" type="checkbox" name="is_active" value="1" {% if t.is_active %}checked{% endif %} aria-label="Active"></td>
+                            <td><button form="lt-{{ t.id }}" type="submit" class="admin-mini-btn">Save</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <form method="post" action="/hr/settings/leave-types" class="admin-form">
+                <h3 class="hr-subhead">Add a leave type</h3>
+                <div class="hr-form-grid">
+                    <div class="modal-form-group"><label for="lt-name">Name</label><input id="lt-name" name="name" maxlength="80" required placeholder="e.g. Maternity leave"></div>
+                    <div class="modal-form-group"><label for="lt-days">Days per year (0 = no limit)</label><input id="lt-days" name="days_per_year" inputmode="numeric" value="0"></div>
+                    <div class="modal-form-group"><label for="lt-cap">Carry-over limit</label><input id="lt-cap" name="max_carry_over" inputmode="numeric" placeholder="No limit"></div>
+                    <div class="modal-form-group hr-check"><label><input type="checkbox" name="is_paid" value="1" checked> Paid</label>
+                        <label><input type="checkbox" name="carry_over" value="1"> Carry over unused days</label></div>
+                </div>
+                <div class="hr-form-actions"><button type="submit" class="modal-btn-submit admin-form-submit">Add leave type</button></div>
+            </form>
+        </div>
+    </section>
+
+    <section class="admin-section" id="holidays">
+        <div class="admin-card">
+            <h3 class="admin-card-title">Holidays {{ year }}</h3>
+            <div class="hr-monthbar">
+                <a class="admin-mini-btn" href="/hr/settings?year={{ year - 1 }}#holidays">&#8249; {{ year - 1 }}</a>
+                <a class="admin-mini-btn" href="/hr/settings?year={{ year + 1 }}#holidays">{{ year + 1 }} &#8250;</a>
+            </div>
+            <div class="admin-table-panel">
+                <table class="admin-table admin-table--compact">
+                    <thead><tr><th>Date</th><th>Day</th><th>Holiday</th><th></th></tr></thead>
+                    <tbody>
+                        {% for h in holidays %}
+                        <tr><td class="admin-nowrap">{{ h.day.strftime('%d %b %Y') }}</td><td>{{ h.day.strftime('%A') }}</td><td>{{ h.name }}</td>
+                            <td><form method="post" action="/hr/settings/holidays/{{ h.id }}/remove" onsubmit="return confirm('Remove {{ h.name }}?');"><button type="submit" class="admin-mini-btn admin-mini-btn--danger">Remove</button></form></td></tr>
+                        {% else %}<tr><td colspan="4" class="empty-cell">No holidays added for {{ year }}.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <form method="post" action="/hr/settings/holidays" class="admin-form">
+                <div class="hr-form-grid">
+                    <div class="modal-form-group"><label for="h-day">Date</label><input id="h-day" name="day" type="date" required></div>
+                    <div class="modal-form-group"><label for="h-name">Holiday</label><input id="h-name" name="name" maxlength="80" required placeholder="e.g. Diwali"></div>
+                </div>
+                <div class="hr-form-actions"><button type="submit" class="modal-btn-submit admin-form-submit">Add holiday</button></div>
+            </form>
+        </div>
+    </section>
+{% endblock %}

@@ -3,7 +3,9 @@
     - Pay in USD: "Pay now" opens a "Complete your payment" window (amount, phone, email), then hands over
       to Stripe Checkout (card, Apple Pay, Google Pay or US bank account / ACH; was PayPal until Nov 2026).
       Card and bank details are never entered on our site.
-    - Pay in INR: UPI, as before.
+    - Pay in INR (Nov 2026): Razorpay's Checkout window (UPI / QR, cards, net banking, wallets) at the admin-set
+      USD -> INR rate, plus bank transfer to the client's own account number (Smart Collect) when switched on.
+      Until Razorpay is set up (keys + a rate), the manual UPI form below shows, as before.
     The previous form (India / US, then method, with bank transfer) is kept in _make_payment_v1.html.
     Needs the billing context from _billing_extra() in app/modules/client/api/client.py. -#}
 {#- Round 3 (client feedback, Nov 2026): payment is open at every stage, with no conditions. The amount starts empty.
@@ -46,7 +48,7 @@
                 </label>
                 <label class="cx-pay__option">
                     <input type="radio" name="pay_option" value="inr" data-pay-option />
-                    <span><strong>Pay in INR</strong><small>UPI from any Indian bank app</small></span>
+                    <span><strong>Pay in INR</strong><small>{% if rzp_on %}UPI / QR, cards, net banking{% if smart_collect_on %}, bank transfer{% endif %}{% else %}UPI / QR{% if bank_lines_in %} or bank transfer{% endif %}{% endif %}</small></span>
                 </label>
             </div>
 
@@ -58,44 +60,122 @@
                 </div>
 
                 <div data-pay-panel="inr" hidden>
-                    <form method="post" action="/client/payments/manual" enctype="multipart/form-data" class="cx-stack">
-                        <input type="hidden" name="payment_method" value="upi" />
+                    {% if rzp_on %}
+                    <div class="cx-stack" data-rzp>
+                        {% if one %}<input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" data-rzp-field />
+                        {% elif payable %}
+                        <div class="cx-field"><label class="cx-label" for="rzp-invoice">Invoice</label>
+                            <select class="cx-select" id="rzp-invoice" name="invoice_id" data-rzp-field>{% for row in payable %}<option value="{{ row.invoice.id }}" data-balance="{{ '%.2f' | format(row.balance) }}">{{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }} due</option>{% endfor %}</select></div>
+                        {% endif %}
+                        <div class="cx-field">
+                            <label class="cx-label" for="rzp-amount">Amount (USD)</label>
+                            <input class="cx-input" id="rzp-amount" name="pay_amount" type="number" min="1" step="0.01" required placeholder="Enter amount, e.g. 150.00"
+                                   {% if one %}max="{{ '%.2f' | format(one.balance) }}"{% endif %} data-rzp-field data-rzp-amount data-rate="{{ inr_rate }}" />
+                            <span class="cx-hint">{% if payable %}Up to ${{ "{:,.2f}".format(one.balance if one else due) }}. You can pay part now and the rest later.{% else %}Any amount. It counts towards your fee once your tax team issues the invoice.{% endif %}</span>
+                        </div>
+                        <p class="cx-pay__inr">You pay <strong>₹<span data-rzp-inr>0.00</span></strong><small>at $1 = ₹{{ "{:,.2f}".format(inr_rate) }}</small></p>
+                        <div class="cx-alert cx-alert--error" role="alert" data-rzp-error hidden>{{ ci("alert") }}<p></p></div>
+                        <button type="button" class="cx-pay__now" data-rzp-pay>PAY NOW</button>
+                        <div class="cx-pay__brands"><span>UPI / QR · Debit &amp; credit cards · Net banking · Wallets</span><span>Secured by Razorpay</span></div>
+                    </div>
+                    {#- Razorpay Checkout's signed result is posted here; the server checks it with Razorpay -#}
+                    <form method="post" action="/client/payments/razorpay/verify" data-rzp-done hidden>
+                        <input type="hidden" name="razorpay_order_id" /><input type="hidden" name="razorpay_payment_id" /><input type="hidden" name="razorpay_signature" />
+                    </form>
+
+                    {% if smart_collect_on %}
+                    <div class="cx-pay__bank" id="bank-transfer">
+                        <h3 class="cx-legend">Or pay by bank transfer <small>NEFT · RTGS · IMPS</small></h3>
+                        {% if bank_account %}
+                        <p class="cx-muted">Transfer from any Indian bank account to your own {{ app_name }} account below. It is matched to you automatically, at the rate on the day it arrives; no reference needed.</p>
+                        <dl class="cx-pay__acct" id="bank-acct">
+                            <div><dt>Account name</dt><dd>{{ bank_account.account_name or app_name }}</dd></div>
+                            <div><dt>Account number</dt><dd class="cx-mono">{{ bank_account.account_number }}</dd></div>
+                            <div><dt>IFSC</dt><dd class="cx-mono">{{ bank_account.ifsc }}</dd></div>
+                            {% if bank_account.bank_name %}<div><dt>Bank</dt><dd>{{ bank_account.bank_name }}</dd></div>{% endif %}
+                        </dl>
+                        <button type="button" class="cx-btn cx-btn--soft" data-cx-copy="bank-acct">{{ ci("copy", "ci ci--sm") }} Copy details</button>
+                        {% else %}
+                        <p class="cx-muted">Get an account number that is yours alone. Every transfer to it is recorded as your payment automatically.</p>
+                        <form method="post" action="/client/payments/bank-account"><button type="submit" class="cx-btn cx-btn--soft">{{ ci("bank", "ci ci--sm") }} Get bank transfer details</button></form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    {#- No gateway yet (Nov 2026): a UPI QR with the rupee amount and the invoice number filled in, or the India
+                        account for a bank transfer. The client then sends the UPI / UTR reference and an admin verifies it.
+                        Was: a placeholder QR icon and UPI only. -#}
+                    <form method="post" action="/client/payments/manual" enctype="multipart/form-data" class="cx-stack" data-inr-manual
+                          data-rate="{{ inr_rate or '' }}" data-advance-ref="{{ advance_ref }}">
                         <input type="hidden" name="sent_currency" value="INR" />
-                        {% if one %}<input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" />
+                        {% if one %}<input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" data-ref="{{ one.invoice.invoice_number }}" data-inr-invoice />
                         {% elif payable %}
                         <div class="cx-field"><label class="cx-label" for="inr-invoice">Invoice<span class="cx-req">*</span></label>
-                            <select class="cx-select" id="inr-invoice" name="invoice_id" required>{% for row in payable %}<option value="{{ row.invoice.id }}">{{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }}</option>{% endfor %}</select></div>
+                            <select class="cx-select" id="inr-invoice" name="invoice_id" required data-inr-invoice>{% for row in payable %}<option value="{{ row.invoice.id }}" data-ref="{{ row.invoice.invoice_number }}" data-balance="{{ '%.2f' | format(row.balance) }}">{{ row.invoice.invoice_number }} · ${{ "{:,.2f}".format(row.balance) }}</option>{% endfor %}</select></div>
                         {% endif %}
-                        <div class="cx-upi">
+
+                        <div class="cx-inr-ways" role="radiogroup" aria-label="How you'll pay in INR">
+                            <label class="cx-inr-way"><input type="radio" name="payment_method" value="upi" checked data-inr-way />
+                                <span>{{ ci("qr") }}<strong>UPI / QR</strong><small>GPay, PhonePe, Paytm, BHIM or any bank app</small></span></label>
+                            {% if bank_lines_in %}
+                            <label class="cx-inr-way"><input type="radio" name="payment_method" value="bank_transfer" data-inr-way />
+                                <span>{{ ci("bank") }}<strong>Bank transfer</strong><small>NEFT · IMPS · RTGS from any Indian bank</small></span></label>
+                            {% endif %}
+                        </div>
+
+                        {#- Both amounts are typed by the client; nothing is filled in (client feedback, Nov 2026) -#}
+                        <div class="cx-form-grid">
+                            <div class="cx-field"><label class="cx-label" for="inr-usd">Amount it covers (USD)<span class="cx-req">*</span></label>
+                                <input class="cx-input" id="inr-usd" name="pay_amount" type="number" min="1" step="0.01" required placeholder="e.g. 150.00" {% if one %}max="{{ '%.2f' | format(one.balance) }}"{% endif %} data-inr-usd /></div>
+                            <div class="cx-field"><label class="cx-label" for="upi-amt">Amount you pay (₹)<span class="cx-req">*</span></label>
+                                <input class="cx-input" id="upi-amt" name="sent_amount" type="number" min="1" step="0.01" required placeholder="e.g. 13275.00" data-inr-sent /></div>
+                            {% if inr_rate %}<p class="cx-hint cx-span-2" style="margin:0;">Today's rate: $1 = ₹{{ "{:,.2f}".format(inr_rate) }}</p>{% endif %}
+                        </div>
+
+                        <div class="cx-upi" data-inr-panel="upi">
                             <div class="cx-qr">
                                 <strong style="font-size: 0.9rem;">Scan &amp; pay</strong>
-                                <div class="cx-qr__box">{{ ci("qr") }}</div>
                                 {% if upi_id %}
+                                <img class="cx-qr__img" data-upi-qr src="/client/payments/upi-qr?tn={{ (one.invoice.invoice_number if one else advance_ref) | urlencode }}" width="180" height="180" alt="UPI QR code to pay {{ upi_payee or app_name }}" />
+                                <a class="cx-btn cx-btn--primary cx-upi__app" data-upi-app href="#" data-pa="{{ upi_id }}" data-pn="{{ upi_payee or app_name }}">{{ ci("card", "ci ci--sm") }} Pay with UPI app</a>
                                 <small>UPI ID: <span id="upi-id" class="cx-mono">{{ upi_id }}</span>{% if upi_payee %} ({{ upi_payee }}){% endif %}</small>
                                 <button type="button" class="cx-btn cx-btn--soft" data-cx-copy="upi-id">{{ ci("copy", "ci ci--sm") }} Copy UPI ID</button>
                                 {% else %}
+                                <div class="cx-qr__box">{{ ci("qr") }}</div>
                                 <small>UPI QR code is shared by your tax team</small>
                                 {% endif %}
                             </div>
-                            <div>
-                                <ol class="cx-numsteps">
-                                    <li>Open any UPI app and pay the INR equivalent of the amount you want to pay.</li>
-                                    <li>Enter the amount it covers in USD, the rupees you paid, and the UPI transaction ID.</li>
-                                </ol>
-                                <div class="cx-form-grid">
-                                    <div class="cx-field"><label class="cx-label" for="inr-usd">Amount it covers (USD)<span class="cx-req">*</span></label>
-                                        <input class="cx-input" id="inr-usd" name="pay_amount" type="number" min="1" step="0.01" required placeholder="Enter amount, e.g. 150.00" {% if one %}max="{{ '%.2f' | format(one.balance) }}"{% endif %} /></div>
-                                    <div class="cx-field"><label class="cx-label" for="upi-amt">Amount paid (₹)<span class="cx-req">*</span></label>
-                                        <input class="cx-input" id="upi-amt" name="sent_amount" type="number" min="1" step="0.01" required placeholder="Rupees paid, e.g. 12500" /></div>
-                                    <div class="cx-field cx-span-2"><label class="cx-label" for="upi-txn">UPI transaction ID<span class="cx-req">*</span></label>
-                                        <input class="cx-input cx-mono" id="upi-txn" name="transaction_reference" required minlength="4" maxlength="100" placeholder="e.g. 412345678901" /></div>
-                                    <div class="cx-field cx-span-2"><label class="cx-label" for="pay-proof">Payment screenshot<span class="cx-opt">Optional</span></label>
-                                        <input class="cx-input" id="pay-proof" name="proof" type="file" accept=".pdf,.png,.jpg,.jpeg" /></div>
-                                </div>
+                            <ol class="cx-numsteps">
+                                <li>Enter both amounts above. The QR then carries the rupees you entered and your invoice number.</li>
+                                <li>Scan it with any UPI app (or tap <strong>Pay with UPI app</strong> on your phone) and pay.</li>
+                                <li>Enter the UPI transaction ID below and submit. We confirm it, usually within one working day.</li>
+                            </ol>
+                        </div>
+
+                        {% if bank_lines_in %}
+                        <div class="cx-upi" data-inr-panel="bank_transfer" hidden>
+                            <div class="cx-qr">
+                                <strong style="font-size: 0.9rem;">Transfer to</strong>
+                                <div id="bank-details-in" class="cx-mono cx-bank-lines">{{ bank_lines_in | join("\n") }}</div>
+                                <button type="button" class="cx-btn cx-btn--soft" data-cx-copy="bank-details-in">{{ ci("copy", "ci ci--sm") }} Copy details</button>
                             </div>
+                            <ol class="cx-numsteps">
+                                <li>Add this account as a payee in your bank app or net banking, and send the rupee amount by NEFT, IMPS or RTGS.</li>
+                                <li>In the remarks, write <strong class="cx-mono" data-inr-ref>{{ one.invoice.invoice_number if one else advance_ref }}</strong> so we can match it.</li>
+                                <li>Enter the UTR / reference number below and submit. We confirm it once it reaches our account.</li>
+                            </ol>
+                        </div>
+                        {% endif %}
+
+                        <div class="cx-form-grid">
+                            <div class="cx-field cx-span-2"><label class="cx-label" for="upi-txn" data-inr-ref-label>UPI transaction ID<span class="cx-req">*</span></label>
+                                <input class="cx-input cx-mono" id="upi-txn" name="transaction_reference" required minlength="4" maxlength="100" placeholder="e.g. 412345678901" data-inr-ref-input /></div>
+                            <div class="cx-field cx-span-2"><label class="cx-label" for="pay-proof">Payment screenshot<span class="cx-opt">Optional</span></label>
+                                <input class="cx-input" id="pay-proof" name="proof" type="file" accept=".pdf,.png,.jpg,.jpeg" /></div>
                         </div>
                         <div style="display:flex; justify-content:flex-end;"><button type="submit" class="cx-btn cx-btn--primary">{{ ci("send", "ci ci--sm") }} Submit payment details</button></div>
                     </form>
+                    {% endif %}
                 </div>
             </div>
         </div>

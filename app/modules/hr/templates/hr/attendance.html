@@ -1,0 +1,75 @@
+{% extends "hr/_layout.html" %}
+{% block title %}Attendance - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'Attendance' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Time</span>
+                <h1>Attendance · {{ nav.label }}</h1>
+                <p>Staff check in from their portal. Approved leave, holidays and week offs fill in by themselves. Click a day to correct it.</p>
+            </div>
+            <div class="hr-monthbar">
+                <a class="admin-mini-btn" href="/hr/attendance?month={{ nav.prev }}">&#8249; Previous</a>
+                <a class="admin-mini-btn" href="/hr/attendance">This month</a>
+                <a class="admin-mini-btn" href="/hr/attendance?month={{ nav.next }}">Next &#8250;</a>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <section class="admin-section">
+        <div class="admin-table-panel hr-att-scroll" tabindex="0" aria-label="Attendance grid">
+            <table class="admin-table admin-table--compact hr-att">
+                <thead>
+                    <tr>
+                        <th scope="col" class="hr-att-name">Employee</th>
+                        {% for d in nav.days %}<th scope="col" class="{% if d == today %}is-today{% endif %}">{{ d.day }}<br><small>{{ d.strftime('%a')[0] }}</small></th>{% endfor %}
+                        <th scope="col">P</th><th scope="col">Leave</th><th scope="col">A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <th scope="row" class="hr-att-name"><a class="link-primary" href="/hr/employees/{{ row.staff.id }}?tab=attendance&month={{ nav.value }}">{{ row.name }}</a></th>
+                        {% for code in row.codes %}{% set d = nav.days[loop.index0] %}
+                        <td class="hr-day hr-day--{{ code or 'none' }}{% if d <= today %} is-editable{% endif %}" title="{{ row.name }}, {{ d.strftime('%d %b') }}: {{ code_labels.get(code, code) }}"
+                            {% if d <= today %}data-staff="{{ row.staff.id }}" data-day="{{ d.isoformat() }}" data-name="{{ row.name }}"{% endif %}>{{ code if code not in ('W', '') else '' }}</td>
+                        {% endfor %}
+                        <td><strong>{{ (row.totals.P + row.totals.HALF * 0.5) | num }}</strong></td>
+                        <td>{{ (row.totals.L + row.totals.HL * 0.5 + row.totals.UL) | num }}</td>
+                        <td>{{ row.totals.A }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="{{ nav.days | length + 4 }}" class="empty-cell">No active staff.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <ul class="hr-legend">
+            {% for code in ['P', 'HALF', 'L', 'HL', 'UL', 'A', 'H', 'W'] %}<li><span class="hr-day--{{ code }}"></span>{{ code }} = {{ code_labels[code] }}</li>{% endfor %}
+        </ul>
+    </section>
+
+    <section class="admin-section" aria-labelledby="correct-title">
+        <div class="admin-card">
+            <h3 class="admin-card-title" id="correct-title">Correct a day</h3>
+            <form method="post" action="/hr/attendance/correct" class="admin-form" data-hr-correct>
+                <input type="hidden" name="back" value="/hr/attendance?month={{ nav.value }}">
+                <div class="hr-form-grid">
+                    <div class="modal-form-group"><label for="att-staff">Employee</label>
+                        <select id="att-staff" name="staff_id" required>{% for row in rows %}<option value="{{ row.staff.id }}">{{ row.name }}</option>{% endfor %}</select></div>
+                    <div class="modal-form-group"><label for="att-day">Day</label><input id="att-day" name="day" type="date" required max="{{ today.isoformat() }}"></div>
+                    <div class="modal-form-group"><label for="att-status">Mark as</label>
+                        <select id="att-status" name="status">{% for code, label in corrections %}<option value="{{ code }}">{{ label }}</option>{% endfor %}<option value="CLEAR">Undo my correction</option></select></div>
+                    <div class="modal-form-group"><label for="att-note">Reason</label><input id="att-note" name="note" maxlength="255" placeholder="e.g. Forgot to check in"></div>
+                </div>
+                <div class="hr-form-actions"><button type="submit" class="modal-btn-submit admin-form-submit">Save</button>
+                    <span class="admin-form-hint">Every correction is logged, and the employee is told when that email is on.</span></div>
+            </form>
+        </div>
+    </section>
+{% endblock %}

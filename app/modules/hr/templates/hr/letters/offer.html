@@ -1,0 +1,147 @@
+{% extends "hr/letters/_frame.html" %}
+{#- Offer letter, five pages: the offer, the company and its culture, policies, reporting and leave, then the
+    package breakup with the acceptance. Each page starts on a new sheet when printed. Company texts come
+    from HR Settings, leave types and holidays from the HR tables, the package from the monthly salary. -#}
+{%- set H = "font-family:Arial,sans-serif;" -%}
+{%- set eyebrow = H ~ "font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#2563eb;margin:0 0 4px;" -%}
+{%- set h2 = H ~ "font-size:20px;font-weight:bold;color:#1e2a4a;margin:0 0 14px;" -%}
+{%- set h3 = H ~ "font-size:14px;font-weight:bold;color:#1e2a4a;margin:18px 0 8px;" -%}
+{%- set td = "border:1px solid #e5e7eb;padding:6px 8px;" -%}
+{%- set tdl = td ~ "color:#6b7280;width:40%;" -%}
+{%- set th = "border:1px solid #e5e7eb;padding:6px 8px;background:#eff6ff;text-align:left;" -%}
+{%- set table = "border-collapse:collapse;width:100%;margin:8px 0 12px;" ~ H ~ "font-size:13px;" -%}
+{%- macro page(n) -%}
+<div style="page-break-before:always;break-before:page;border-top:1px dashed #cbd5e1;margin:30px 0 20px;padding-top:6px;{{ H }}font-size:10px;color:#9ca3af;text-align:right;">Page {{ n }} of 5 · {{ doc.document_number }}</div>
+{%- endmacro -%}
+
+{% block letter_body %}
+{# ── Page 1: the offer ───────────────────────────────────────────────── #}
+<p style="margin:0;"><strong>{{ d.candidate_name }}</strong></p>
+{% if d.candidate_address %}<p style="margin:0 0 16px;white-space:pre-line;">{{ d.candidate_address }}</p>{% endif %}
+<p style="margin:16px 0;font-weight:bold;">Subject: Offer of employment: {{ d.designation }}</p>
+<p style="margin:0 0 10px;">Dear {{ d.candidate_name }},</p>
+<p style="margin:0 0 10px;">Thank you for the time you spent with us during the interviews. We are pleased to offer you the position of <strong>{{ d.designation }}</strong> in our {{ d.department }} team at {{ company.company_name }}. The main terms are below; the following pages tell you about the company, how we work, our policies, your first day and your leave, and the last page sets out your salary package.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ table }}">
+    <tr><td style="{{ tdl }}">Designation</td><td style="{{ td }}"><strong>{{ d.designation }}</strong></td></tr>
+    <tr><td style="{{ tdl }}">Department</td><td style="{{ td }}">{{ d.department }}</td></tr>
+    {% if d.reporting_manager %}<tr><td style="{{ tdl }}">Reporting to</td><td style="{{ td }}">{{ d.reporting_manager }}</td></tr>{% endif %}
+    <tr><td style="{{ tdl }}">Work location</td><td style="{{ td }}">{{ d.work_location }}</td></tr>
+    <tr><td style="{{ tdl }}">Employment type</td><td style="{{ td }}">{{ d.employment_type }}</td></tr>
+    <tr><td style="{{ tdl }}">Date of joining</td><td style="{{ td }}">{{ fmt_date(d.joining_date) }}{% if d.reporting_time %}, {{ d.reporting_time }}{% endif %}</td></tr>
+    <tr><td style="{{ tdl }}">Monthly gross salary</td><td style="{{ td }}">{{ company.currency }} {{ money(d.monthly_salary) }} (details on page 5)</td></tr>
+    <tr><td style="{{ tdl }}">Probation</td><td style="{{ td }}">{{ d.probation_months | int }} months</td></tr>
+    <tr><td style="{{ tdl }}">Notice period after probation</td><td style="{{ td }}">{{ d.notice_days | int }} days</td></tr>
+    <tr><td style="{{ tdl }}">Please accept by</td><td style="{{ td }}"><strong>{{ fmt_date(d.accept_by) }}</strong></td></tr>
+</table>
+<p style="{{ h3 }}">In this letter</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ H }}font-size:13px;width:100%;">
+    {% for n, title in [(1, 'The offer'), (2, 'About ' ~ company.company_name ~ ' and how we work'), (3, 'Policies and working hours'), (4, 'Reporting, your first day and leave'), (5, 'Salary package and acceptance')] %}
+    <tr><td style="padding:3px 0;border-bottom:1px dotted #d1d5db;">{{ title }}</td><td style="padding:3px 0;border-bottom:1px dotted #d1d5db;text-align:right;color:#6b7280;">Page {{ n }}</td></tr>
+    {% endfor %}
+</table>
+
+{# ── Page 2: about the company, work culture ─────────────────────────── #}
+{{ page(2) }}
+<p style="{{ eyebrow }}">About us</p>
+<p style="{{ h2 }}">{{ company.company_name }}</p>
+{% for line in lines(company.about_company) %}<p style="margin:0 0 10px;">{{ line }}</p>{% endfor %}
+{% if company.company_address or company.company_website %}
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ table }}">
+    {% if company.company_address %}<tr><td style="{{ tdl }}">Office</td><td style="{{ td }}">{{ company.company_address }}</td></tr>{% endif %}
+    {% if company.company_website %}<tr><td style="{{ tdl }}">Website</td><td style="{{ td }}">{{ company.company_website }}</td></tr>{% endif %}
+    {% if company.hr_email %}<tr><td style="{{ tdl }}">HR contact</td><td style="{{ td }}">{{ company.hr_email }}{% if company.hr_phone %} · {{ company.hr_phone }}{% endif %}</td></tr>{% endif %}
+</table>
+{% endif %}
+<p style="{{ eyebrow }}margin-top:22px;">Work culture</p>
+<p style="{{ h2 }}">How we work</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;">
+    {% for line in lines(company.work_culture) %}
+    <tr><td style="vertical-align:top;width:22px;padding:4px 0;{{ H }}color:#2563eb;font-weight:bold;">&#10003;</td><td style="padding:4px 0;">{{ line }}</td></tr>
+    {% endfor %}
+</table>
+
+{# ── Page 3: policies, working hours ─────────────────────────────────── #}
+{{ page(3) }}
+<p style="{{ eyebrow }}">Policies</p>
+<p style="{{ h2 }}">What we expect from everyone</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;">
+    {% for line in lines(company.policies) %}{% set parts = line.split(':', 1) %}
+    <tr><td style="vertical-align:top;width:26px;padding:6px 0;{{ H }}font-size:12px;color:#2563eb;font-weight:bold;">{{ loop.index }}.</td>
+        <td style="padding:6px 0;border-bottom:1px solid #f1f5f9;">{% if parts | length == 2 %}<strong>{{ parts[0] }}:</strong>{{ parts[1] }}{% else %}{{ line }}{% endif %}</td></tr>
+    {% endfor %}
+</table>
+<p style="{{ h3 }}">Working hours</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ table }}">
+    <tr><td style="{{ tdl }}">Working days and hours</td><td style="{{ td }}">{{ company.working_hours }}</td></tr>
+    <tr><td style="{{ tdl }}">Week offs</td><td style="{{ td }}">{{ week_offs | join(', ') or '—' }}</td></tr>
+    <tr><td style="{{ tdl }}">Attendance</td><td style="{{ td }}">Check in from the staff portal by {{ company.check_in_cutoff }} on working days</td></tr>
+</table>
+
+{# ── Page 4: reporting, first day, leave ─────────────────────────────── #}
+{{ page(4) }}
+<p style="{{ eyebrow }}">Reporting</p>
+<p style="{{ h2 }}">Your first day</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ table }}">
+    <tr><td style="{{ tdl }}">Date and time</td><td style="{{ td }}"><strong>{{ fmt_date(d.joining_date) }}</strong>{% if d.reporting_time %}, {{ d.reporting_time }}{% endif %}</td></tr>
+    <tr><td style="{{ tdl }}">Place</td><td style="{{ td }}">{{ d.work_location }}{% if company.company_address %}, {{ company.company_address }}{% endif %}</td></tr>
+    <tr><td style="{{ tdl }}">Reporting manager</td><td style="{{ td }}">{{ d.reporting_manager or 'HR will introduce you on the day' }}</td></tr>
+    <tr><td style="{{ tdl }}">Team</td><td style="{{ td }}">{{ d.department }}</td></tr>
+    <tr><td style="{{ tdl }}">HR contact</td><td style="{{ td }}">{{ company.hr_email }}{% if company.hr_phone %} · {{ company.hr_phone }}{% endif %}</td></tr>
+</table>
+<p style="{{ h3 }}">Please bring (original and one copy)</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;{{ H }}font-size:13px;">
+    {% for item in ['ID proof (Aadhaar, passport or voter ID)', 'PAN card', 'Address proof', 'Education certificates and mark sheets', "Previous employer's relieving letter and last 3 payslips", 'Two passport-size photographs', 'Bank account details (cancelled cheque or passbook page)'] %}
+    <tr><td style="vertical-align:top;width:22px;padding:3px 0;color:#2563eb;">&#9744;</td><td style="padding:3px 0;">{{ item }}</td></tr>
+    {% endfor %}
+</table>
+<p style="{{ eyebrow }}margin-top:22px;">Leave</p>
+<p style="{{ h2 }}">Leave and holidays</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ table }}">
+    <tr><th style="{{ th }}">Leave type</th><th style="{{ th }}text-align:right;">Days a year</th><th style="{{ th }}">Paid</th><th style="{{ th }}">Unused days</th></tr>
+    {% for lt in leave_types %}
+    <tr><td style="{{ td }}">{{ lt.name }}</td><td style="{{ td }}text-align:right;">{{ lt.days_per_year if lt.days_per_year else 'As approved' }}</td>
+        <td style="{{ td }}">{{ 'Yes' if lt.is_paid else 'No' }}</td>
+        <td style="{{ td }}">{% if lt.carry_over %}Carried to next year{% if lt.max_carry_over is not none %} (up to {{ lt.max_carry_over }}){% endif %}{% else %}Lapse at year end{% endif %}</td></tr>
+    {% endfor %}
+</table>
+<p style="margin:0 0 10px;{{ H }}font-size:12px;color:#6b7280;">Leave for your first year is counted from your date of joining. Apply for leave through the staff portal; HR confirms it there. Week offs and company holidays inside your leave dates aren't counted.</p>
+{% if holidays %}
+<p style="{{ h3 }}">Company holidays {{ holiday_year }}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ table }}">
+    {% for h in holidays %}<tr><td style="{{ td }}width:30%;">{{ h.day.strftime('%d %b %Y') }}</td><td style="{{ td }}width:20%;color:#6b7280;">{{ h.day.strftime('%A') }}</td><td style="{{ td }}">{{ h.name }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+
+{# ── Page 5: package breakup and acceptance ──────────────────────────── #}
+{{ page(5) }}
+<p style="{{ eyebrow }}">Compensation</p>
+<p style="{{ h2 }}">Salary package</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="{{ table }}">
+    <tr><th style="{{ th }}">Component</th><th style="{{ th }}text-align:right;">Per month ({{ company.currency }})</th><th style="{{ th }}text-align:right;">Per year ({{ company.currency }})</th></tr>
+    <tr><td colspan="3" style="{{ td }}{{ H }}font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#1e2a4a;background:#f8fafc;">A · Earnings</td></tr>
+    {% for label, amount in package.earnings %}<tr><td style="{{ td }}">{{ label }}</td><td style="{{ td }}text-align:right;">{{ money(amount) }}</td><td style="{{ td }}text-align:right;">{{ money(amount * 12) }}</td></tr>{% endfor %}
+    <tr><td style="{{ td }}font-weight:bold;">Gross salary (A)</td><td style="{{ td }}text-align:right;font-weight:bold;">{{ money(package.gross) }}</td><td style="{{ td }}text-align:right;font-weight:bold;">{{ money(package.gross * 12) }}</td></tr>
+    <tr><td colspan="3" style="{{ td }}{{ H }}font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#1e2a4a;background:#f8fafc;">B · Company contributions</td></tr>
+    <tr><td style="{{ td }}">Employer PF</td><td style="{{ td }}text-align:right;">{{ money(package.employer_pf) }}</td><td style="{{ td }}text-align:right;">{{ money(package.employer_pf * 12) }}</td></tr>
+    <tr style="background:#dbeafe;"><td style="{{ td }}font-weight:bold;">Cost to company (A + B)</td><td style="{{ td }}text-align:right;font-weight:bold;">{{ money(package.ctc) }}</td><td style="{{ td }}text-align:right;font-weight:bold;">{{ money(package.ctc * 12) }}</td></tr>
+    <tr><td colspan="3" style="{{ td }}{{ H }}font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#1e2a4a;background:#f8fafc;">C · Usual monthly deductions</td></tr>
+    <tr><td style="{{ td }}">Employee PF</td><td style="{{ td }}text-align:right;">{{ money(package.employee_pf) }}</td><td style="{{ td }}text-align:right;">{{ money(package.employee_pf * 12) }}</td></tr>
+    {% if package.pt %}<tr><td style="{{ td }}">Professional tax</td><td style="{{ td }}text-align:right;">{{ money(package.pt) }}</td><td style="{{ td }}text-align:right;">{{ money(package.pt * 12) }}</td></tr>{% endif %}
+    <tr><td style="{{ td }}font-weight:bold;">Estimated take-home (A − C)</td><td style="{{ td }}text-align:right;font-weight:bold;">{{ money(package.take_home) }}</td><td style="{{ td }}text-align:right;font-weight:bold;">{{ money(package.take_home * 12) }}</td></tr>
+</table>
+<p style="margin:0 0 10px;{{ H }}font-size:12px;color:#6b7280;">Annual cost to company: <strong style="color:#1f2937;">{{ company.currency }} {{ money(package.ctc * 12) }}</strong> ({{ in_words(package.ctc * 12) }}). PF is {{ package.pf_pct | int }}% of basic{% if package.pf_cap %}, up to {{ money(package.pf_cap) }} a month{% endif %}. Income tax (TDS) is deducted as per law and isn't included in the take-home figure. Salary is paid monthly by bank transfer and is confidential.</p>
+
+<div style="margin-top:28px;">
+    <div>For {{ company.company_name }},</div>
+    <div style="height:42px;"></div>
+    <div style="font-weight:bold;">{{ company.signatory_name or 'Authorised signatory' }}</div>
+    <div style="color:#6b7280;">{{ company.signatory_title }}</div>
+</div>
+<div style="margin-top:26px;border:1px solid #cbd5e1;border-radius:6px;padding:14px 16px;">
+    <div style="{{ H }}font-weight:bold;color:#1e2a4a;">Acceptance</div>
+    <p style="margin:6px 0 0;">I, {{ d.candidate_name }}, accept this offer of employment on the terms set out in this letter (pages 1 to 5).</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:30px;"><tr>
+        <td>Signature: ______________________</td><td style="text-align:right;">Date: ______________</td></tr></table>
+</div>
+{% endblock %}
+{% block signature %}{% endblock %}

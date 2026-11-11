@@ -37,6 +37,12 @@ def send_password_reset(self, to: str, link: str, minutes: int) -> None:
     _retry_on_failure(self, email_service.send_password_reset(to, link, minutes))
 
 
+@celery_app.task(name="email.hr_notice", **_RETRY)
+def send_hr_notice(self, to: str, subject: str, greeting: str, lines: list[str], link: list[str] | None,
+                   letter_html: str | None, company_name: str, hr_email: str) -> None:
+    _retry_on_failure(self, email_service.send_hr_notice(to, subject, greeting, lines, link, letter_html, company_name, hr_email))
+
+
 @celery_app.task(name="email.login_code", **_RETRY)
 def send_login_code(self, to: str, code: str, purpose: str, minutes: int) -> None:
     _retry_on_failure(self, email_service.send_login_code(to, code, purpose, minutes))

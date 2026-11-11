@@ -16,7 +16,8 @@ from app.modules.staff.models.staff import Staff, StaffRole
 from app.platform.models.auth import AccountType, AuthAccount
 
 # How the 403 screen names the signed-in person ("You're signed in as …")
-_WHO = {AccountType.CLIENT: "a client", AccountType.STAFF: "a member of the tax team", AccountType.ADMIN: "an administrator"}
+_WHO = {AccountType.CLIENT: "a client", AccountType.STAFF: "a member of the tax team", AccountType.ADMIN: "an administrator",
+        AccountType.HR: "a member of the HR team"}
 
 
 def get_current_account(
@@ -62,6 +63,9 @@ def require_staff(account: AuthAccount = Depends(require_verified)) -> AuthAccou
 
 
 def is_hr(db: Session, account: AuthAccount) -> bool:
+    """An HR account, or an older staff account that still has the HR role (moved to AccountType.HR by migration)."""
+    if account.account_type == AccountType.HR:
+        return True
     return db.query(Staff.role).filter(Staff.account_id == account.id).scalar() == StaffRole.HR
 
 
@@ -78,6 +82,12 @@ def require_admin(account: AuthAccount = Depends(require_verified)) -> AuthAccou
     return account
 
 
+def require_hr(account: AuthAccount = Depends(require_verified)) -> AuthAccount:
+    if account.account_type != AccountType.HR:
+        raise AppError("AUTH-010", "HR only", you=_WHO.get(account.account_type, ""))
+    return account
+
+
 # Convenience type aliases for route signatures
 CurrentAccount = Annotated[AuthAccount, Depends(get_current_account)]
 VerifiedAccount = Annotated[AuthAccount, Depends(require_verified)]
@@ -85,3 +95,4 @@ ClientAccount = Annotated[AuthAccount, Depends(require_client)]
 StaffAccount = Annotated[AuthAccount, Depends(require_staff)]
 CaseStaffAccount = Annotated[AuthAccount, Depends(require_case_staff)]
 AdminAccount = Annotated[AuthAccount, Depends(require_admin)]
+HrAccount = Annotated[AuthAccount, Depends(require_hr)]

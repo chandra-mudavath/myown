@@ -1,0 +1,8 @@
+{% extends "emails/_layout.html" %}
+{% block body %}
+{% if greeting %}<p>{{ greeting }}</p>{% endif %}
+{% for line in lines %}<p>{{ line | e | replace("\n", "<br>" | safe) }}</p>{% endfor %}
+{% if link %}<p style="margin:22px 0;"><a href="{{ link[1] }}" style="background:#b4572e;color:#ffffff;text-decoration:none;font-weight:bold;padding:10px 18px;border-radius:6px;display:inline-block;">{{ link[0] }}</a></p>{% endif %}
+{% if letter_html %}<div style="border:1px solid #e5e7eb;border-radius:6px;padding:18px;margin:18px 0;">{{ letter_html | safe }}</div>{% endif %}
+<p>Regards,<br>HR team, {{ company_name }}</p>
+{% endblock %}

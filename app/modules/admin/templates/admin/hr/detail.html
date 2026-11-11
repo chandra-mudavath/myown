@@ -1,0 +1,31 @@
+{% extends "admin/_layout.html" %}
+{% block title %}HR Member - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'Staff / ' ~ hr_member.hr_number %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <h1>HR: {{ hr_member.first_name }} {{ hr_member.last_name or '' }}</h1>
+                <p>HR ID: <strong>{{ hr_member.hr_number }}</strong></p>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-labelledby="personal-title">
+        <div class="admin-card">
+            <h3 class="admin-card-title" id="personal-title">Personal Details</h3>
+            <dl class="admin-facts">
+                <div><dt>HR Number</dt><dd>{{ hr_member.hr_number }}</dd></div>
+                <div><dt>Full Name</dt><dd>{{ hr_member.first_name }} {{ hr_member.last_name or '' }}</dd></div>
+                <div><dt>Email Address</dt><dd>{{ hr_member.account.email if hr_member.account else 'N/A' }}</dd></div>
+                <div><dt>Phone</dt><dd>{{ hr_member.phone or '—' }}</dd></div>
+                <div><dt>Account Status</dt><dd>{% if target and target.is_active %}<span class="admin-status-active">Active</span>{% else %}<span class="admin-pill admin-pill--coral">Inactive</span>{% endif %}</dd></div>
+                <div><dt>Joined Date</dt><dd>{{ hr_member.created_at.strftime('%b %d, %Y') if hr_member.created_at else 'N/A' }}</dd></div>
+            </dl>
+            <p class="admin-form-hint admin-team-hint">HR manages staff records in the HR workspace. HR has no access to clients, cases or client conversations.</p>
+        </div>
+    </section>
+
+    {% include "admin/partials/account_controls.html" %}
+{% endblock %}

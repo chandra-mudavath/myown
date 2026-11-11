@@ -1,0 +1,54 @@
+{% extends "hr/_layout.html" %}
+{% block title %}Payslips - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'Payslips' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Pay</span>
+                <h1>Payslips · {{ nav.label }}</h1>
+                <p>Generate the month's drafts from each salary and the month's attendance, check them, add any one-off items, then finalise.</p>
+            </div>
+            <div class="hr-monthbar">
+                <a class="admin-mini-btn" href="/hr/payslips?month={{ nav.prev }}">&#8249; Previous</a>
+                <a class="admin-mini-btn" href="/hr/payslips?month={{ nav.next }}">Next &#8250;</a>
+            </div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <section class="admin-section">
+        <div class="hr-form-actions">
+            <form method="post" action="/hr/payslips/generate"><input type="hidden" name="month" value="{{ nav.value }}">
+                <button type="submit" class="modal-btn-submit admin-form-submit">{{ 'Refresh drafts' if docs else 'Generate drafts' }}</button></form>
+            {% if drafts %}
+            <form method="post" action="/hr/payslips/finalise" onsubmit="return confirm('Finalise {{ drafts }} payslip(s) for {{ nav.label }}? They are locked and shown to staff.');">
+                <input type="hidden" name="month" value="{{ nav.value }}">
+                <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Finalise {{ drafts }} draft{{ 's' if drafts != 1 else '' }}</button></form>
+            {% endif %}
+            <span class="admin-form-hint">Refreshing recalculates drafts from today's attendance and keeps one-off items. Final payslips never change.</span>
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--compact admin-table--money">
+                <thead><tr><th>Employee</th><th>Number</th><th>Paid days</th><th>LOP days</th><th>Gross</th><th>Deductions</th><th>Net pay</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for d in docs %}
+                    <tr data-href="/hr/documents/{{ d.id }}">
+                        <td class="admin-nowrap"><a class="link-primary" href="/hr/documents/{{ d.id }}">{{ d.data.employee_name }}</a></td>
+                        <td class="admin-nowrap">{{ d.document_number }}</td>
+                        <td>{{ d.data.paid_days }}</td><td>{{ d.data.lop_days }}</td>
+                        <td>{{ money(d.data.gross) }}</td><td>{{ money(d.data.total_deductions) }}</td>
+                        <td><strong>{{ money(d.net_amount) }}</strong></td>
+                        <td>{% if d.status == 'final' %}<span class="admin-pill admin-pill--green">Final</span>{% else %}<span class="admin-pill admin-pill--amber">Draft</span>{% endif %}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="8" class="empty-cell">No payslips for {{ nav.label }} yet. Generate drafts to start. Employees need job details and a salary first.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

@@ -8,6 +8,7 @@ from decimal import Decimal
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.crypto import EncryptedJSON
 from app.core.database import Base
 
 
@@ -51,6 +52,8 @@ class StaffEmploymentDetails(Base):
     employment_status: Mapped[str] = mapped_column(String(30), default="ACTIVE", nullable=False)
     termination_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     current_salary: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    # PAN, UAN, PF number and bank details for payslips; encrypted in the database (app/core/crypto.py)
+    payroll_ids: Mapped[dict | None] = mapped_column(EncryptedJSON, nullable=True)
     updated_by_account_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("auth_accounts.id", ondelete="SET NULL"), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now, nullable=False)
 

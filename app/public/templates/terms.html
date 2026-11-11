@@ -1,6 +1,6 @@
 {% extends "_site_layout.html" %}
 {% block title %}Terms &amp; Conditions | {{ app_name }}{% endblock %}
-{% block meta_desc %}Read the Terms and Conditions, Privacy Policy, security, disclosure, and consent information for {{ app_name }}.{% endblock %}
+{% block meta_desc %}Read the Terms and Conditions, Privacy Policy, refund and cancellation policy, security, disclosure, and consent information for {{ app_name }}.{% endblock %}
 {% block body_class %}landing-page terms-page{% endblock %}
 
 {% block page %}
@@ -56,10 +56,16 @@
                     <h3><span>Disclosure</span></h3>
                     <p>Except as otherwise stated, information submitted through this site may be used to improve content, customize the site, communicate requested information, and conduct internal marketing and research, subject to this Privacy Policy and applicable law.</p>
                 </article>
-                <article class="solution-card" id="return-policy">
+                {#- Was "Return policy" (one paragraph). Expanded Nov 2026: payment gateways ask for a refund and cancellation policy. -#}
+                <article class="solution-card lg:col-span-2" id="refund-and-cancellation-policy">
+                    <span id="return-policy"></span>{#- old links -#}
                     <b>09</b>
-                    <h3>Return <span>policy</span></h3>
-                    <p>Fees once collected will not be returned except where required by law or where a service delivery issue is confirmed. For questions about fees or refunds, please contact our team through the information provided on this website.</p>
+                    <h3>Refund &amp; cancellation <span>policy</span></h3>
+                    <p><strong>Cancelling a service.</strong> You can cancel at any time before your return is filed by emailing <a href="mailto:info@covrenttax.com">info@covrenttax.com</a> or messaging your tax team from the client portal. If you cancel before our team has started preparing your return, everything you paid is refunded. If work has already started, we refund what you paid less a charge for the work completed, which we explain to you in writing before the refund is made.</p>
+                    <p><strong>After filing.</strong> Once your return has been e-filed or submitted to the tax authority, the service has been delivered and its fee is not refundable, except where required by law or where a service delivery issue on our part is confirmed. If we made an error, we will work with you to correct it.</p>
+                    <p><strong>Duplicate or extra payments.</strong> If you pay twice, or pay more than your invoice, the extra amount is refunded in full.</p>
+                    <p><strong>How refunds are paid.</strong> Approved refunds are started within 7 working days and go back to the payment method you used (card, bank account or UPI), in the currency you paid. Card and bank refunds usually reach your account within 5–10 business days, depending on your bank. We are not responsible for differences caused by exchange rates or charges applied by your bank.</p>
+                    <p><strong>Questions.</strong> For anything about fees, cancellations or refunds, contact us at <a href="mailto:info@covrenttax.com">info@covrenttax.com</a> or through our <a href="/contact-us">Contact Us</a> page.</p>
                 </article>
                 <article class="solution-card" id="consent-form-disclosure">
                     <b>10</b>

@@ -35,8 +35,9 @@ from app.platform.models.auth import AuthAccount
 from app.platform.models.case_workflow import CaseAssignment
 from app.platform.models.chat import ChatAttachment, ChatMessage, ChatParticipant, ChatThread, direct_key_for
 from app.modules.client.models.client import Client
+from app.modules.hr.models.hr import HR
 from app.platform.models.lookups import AccountTypeLookup, CaseStage, ChatQueryTopic
-from app.modules.staff.models.staff import Staff
+from app.modules.staff.models.staff import Staff, StaffRole
 from app.platform.models.system import AuditLog
 from app.platform.models.tax_filing import TaxFiling
 from app.platform.services.document_review import account_names
@@ -111,11 +112,16 @@ def viewer_for(db: Session, account: AuthAccount) -> Viewer:
     code = account_code(account)
     kind = db.query(AccountTypeLookup).filter(AccountTypeLookup.code == code).first()
     client = db.query(Client).filter(Client.account_id == account.id).first() if code == "CLIENT" else None
+    case_access = bool(kind and kind.has_case_access)
+    # HR never sees client or case conversations, whatever the lookup row says; an older staff
+    # account still holding the HR role counts as HR too.
+    if code == "HR" or (code == "STAFF" and db.query(Staff.role).filter(Staff.account_id == account.id).scalar() == StaffRole.HR):
+        case_access = False
     return Viewer(
         account=account,
         code=code,
         internal=bool(kind and kind.is_internal),
-        case_access=bool(kind and kind.has_case_access),
+        case_access=case_access,
         client=client,
     )
 
@@ -127,6 +133,15 @@ def _internal_codes(db: Session) -> set[str]:
 def _active_internal_account(db: Session, account_id: str) -> AuthAccount | None:
     acc = db.query(AuthAccount).filter(AuthAccount.id == account_id, AuthAccount.is_active.is_(True)).first()
     return acc if acc and account_code(acc) in _internal_codes(db) else None
+
+
+def _no_case_access(db: Session, account_id: str) -> bool:
+    """HR (or an older staff account with the HR role): kept out of chats linked to a filing."""
+    acc = db.get(AuthAccount, account_id)
+    return bool(acc) and not viewer_for(db, acc).case_access
+
+
+_NO_HR_ON_CASES = "HR can't join a conversation about a client's filing."
 
 
 # ── participants ──────────────────────────────────────────────────────────
@@ -427,12 +442,14 @@ def _linked_filing(db: Session, v: Viewer, case_id: str | None) -> TaxFiling | N
 def open_direct(db: Session, v: Viewer, other_account_id: str, case_id: str | None = None) -> ChatThread:
     """Open the one-to-one thread with someone, creating it the first time."""
     if not v.internal:
-        raise _fail(status.HTTP_403_FORBIDDEN, "Direct messages are for staff and admins.")
+        raise _fail(status.HTTP_403_FORBIDDEN, "Direct messages are for staff, admins and HR.")
     if other_account_id == v.id:
         raise _fail(status.HTTP_400_BAD_REQUEST, "Pick someone other than yourself.")
     if not _active_internal_account(db, other_account_id):
-        raise _fail(status.HTTP_400_BAD_REQUEST, "You can only message active staff and admins.")
+        raise _fail(status.HTTP_400_BAD_REQUEST, "You can only message active staff, admins and HR.")
     filing = _linked_filing(db, v, case_id)
+    if filing and _no_case_access(db, other_account_id):
+        raise _fail(status.HTTP_400_BAD_REQUEST, _NO_HR_ON_CASES)
     key = direct_key_for(v.id, other_account_id, filing.id if filing else None)
 
     t = db.query(ChatThread).filter(ChatThread.direct_key == key).first()
@@ -455,7 +472,7 @@ def open_direct(db: Session, v: Viewer, other_account_id: str, case_id: str | No
 
 def create_group(db: Session, v: Viewer, name: str, member_ids: list[str], case_id: str | None = None) -> ChatThread:
     if not v.internal:
-        raise _fail(status.HTTP_403_FORBIDDEN, "Groups are for staff and admins.")
+        raise _fail(status.HTTP_403_FORBIDDEN, "Groups are for staff, admins and HR.")
     name = (name or "").strip()
     if not name or len(name) > 100:
         raise _fail(status.HTTP_400_BAD_REQUEST, "Give the group a name (up to 100 characters).")
@@ -464,8 +481,10 @@ def create_group(db: Session, v: Viewer, name: str, member_ids: list[str], case_
         raise _fail(status.HTTP_400_BAD_REQUEST, f"Pick at least {GROUP_MIN_OTHERS} people for a group.")
     for m in others:
         if not _active_internal_account(db, m):
-            raise _fail(status.HTTP_400_BAD_REQUEST, "Groups can only include active staff and admins.")
+            raise _fail(status.HTTP_400_BAD_REQUEST, "Groups can only include active staff, admins and HR.")
     filing = _linked_filing(db, v, case_id)
+    if filing and any(_no_case_access(db, m) for m in others):
+        raise _fail(status.HTTP_400_BAD_REQUEST, _NO_HR_ON_CASES)
 
     t = ChatThread(kind="GROUP", name=name, case_id=filing.id if filing else None, created_by_account_id=v.id)
     db.add(t)
@@ -498,7 +517,9 @@ def add_members(db: Session, v: Viewer, t: ChatThread, account_ids: list[str]) -
     names = []
     for account_id in {a for a in account_ids if a}:
         if not _active_internal_account(db, account_id):
-            raise _fail(status.HTTP_400_BAD_REQUEST, "Groups can only include active staff and admins.")
+            raise _fail(status.HTTP_400_BAD_REQUEST, "Groups can only include active staff, admins and HR.")
+        if t.case_id and _no_case_access(db, account_id):
+            raise _fail(status.HTTP_400_BAD_REQUEST, _NO_HR_ON_CASES)
         if _active_participant(db, t.id, account_id):
             continue
         _add_participant(db, t, account_id, "member")
@@ -746,12 +767,15 @@ def restore_thread(db: Session, v: Viewer, t: ChatThread) -> None:
 # ── pickers ───────────────────────────────────────────────────────────────
 
 def internal_people(db: Session, v: Viewer, q: str | None = None, case_workers_only: bool = False, limit: int = 30) -> list[dict]:
-    """Active staff and admins, for the new-chat and group pickers. Clients never appear."""
+    """Active staff, admins and HR, for the new-chat and group pickers. Clients never appear."""
     if not v.internal:
         raise _fail(status.HTTP_403_FORBIDDEN, "Only staff and admins can browse people.")
     people = []
     term = f"%{q.strip()}%" if q and q.strip() else None
-    for model, label, number in ((Staff, "Staff", "staff_number"), (Admin, "Admin", "admin_number")):
+    models = ((Staff, "Staff", "staff_number"), (Admin, "Admin", "admin_number"), (HR, "HR", "hr_number"))
+    if case_workers_only:  # people who can join a case conversation: never HR
+        models = models[:2]
+    for model, label, number in models:
         query = (
             db.query(model, AuthAccount.email)
             .join(AuthAccount, AuthAccount.id == model.account_id)

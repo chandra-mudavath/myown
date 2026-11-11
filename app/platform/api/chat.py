@@ -16,9 +16,10 @@ from app.modules.staff.api.staff import _nav_context
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.files import send_file
-from app.core.deps import AdminAccount, ClientAccount, StaffAccount, VerifiedAccount
+from app.core.deps import AdminAccount, ClientAccount, HrAccount, StaffAccount, VerifiedAccount
 from app.core.templates import templates
 from app.modules.admin.models.admin import Admin
+from app.modules.hr.models.hr import HR
 from app.modules.staff.models.staff import Staff
 from app.platform.services import chat_service as chat
 
@@ -47,6 +48,15 @@ def admin_messages(request: Request, account: AdminAccount, thread: str | None =
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
     return templates.TemplateResponse(request, "admin/messages.html", {
         **_chat_context(request, thread, case), "account": account, "admin": admin, "active_nav": "messages",
+    })
+
+
+@router.get("/hr/messages", response_class=HTMLResponse, name="hr_messages")
+def hr_messages(request: Request, account: HrAccount, thread: str | None = None, db: Session = Depends(get_db)):
+    """Internal direct and group chats only: HR never sees client or case conversations."""
+    hr = db.query(HR).filter(HR.account_id == account.id).first()
+    return templates.TemplateResponse(request, "hr/messages.html", {
+        **_chat_context(request, thread, None), "account": account, "hr": hr, "active_nav": "messages",
     })
 
 

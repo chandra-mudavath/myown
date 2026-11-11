@@ -1,0 +1,18 @@
+{% extends "hr/letters/_frame.html" %}
+{% block letter_body %}
+<p style="margin:0;"><strong>{{ d.employee_name }}</strong></p>
+<p style="margin:0 0 16px;color:#6b7280;">Employee number {{ d.employee_number }} · {{ d.designation }}</p>
+{% if d.outcome == 'Confirmed' %}
+<p style="margin:16px 0;font-weight:bold;">Subject: Confirmation of employment</p>
+<p style="margin:0 0 10px;">Dear {{ d.employee_name }},</p>
+<p style="margin:0 0 10px;">Further to your appointment as {{ d.designation }} on {{ fmt_date(d.joining_date) }}, we are pleased to confirm your employment with {{ company.company_name }} with effect from <strong>{{ fmt_date(d.effective_date) }}</strong>.</p>
+<p style="margin:0 0 10px;">From this date, either side may end the employment with {{ d.notice_days | int }} days' written notice. All other terms of your appointment remain unchanged.</p>
+<p style="margin:0 0 10px;">Congratulations, and thank you for your work so far.</p>
+{% else %}
+<p style="margin:16px 0;font-weight:bold;">Subject: Extension of probation</p>
+<p style="margin:0 0 10px;">Dear {{ d.employee_name }},</p>
+<p style="margin:0 0 10px;">Further to your appointment as {{ d.designation }} on {{ fmt_date(d.joining_date) }}, your probation period has been extended until <strong>{{ fmt_date(d.effective_date) }}</strong>.</p>
+{% if d.reason %}<p style="margin:0 0 10px;white-space:pre-line;">{{ d.reason }}</p>{% endif %}
+<p style="margin:0 0 10px;">Your manager and HR will review your progress before that date. All other terms of your appointment remain unchanged.</p>
+{% endif %}
+{% endblock %}

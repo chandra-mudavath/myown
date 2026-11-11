@@ -16,7 +16,7 @@ from app.core.config import settings
 celery_app = Celery(
     "covrenttax",
     broker=settings.CELERY_BROKER_URL,
-    include=["app.platform.tasks.email_tasks", "app.platform.tasks.chat_hide"],
+    include=["app.platform.tasks.email_tasks", "app.platform.tasks.chat_hide", "app.platform.tasks.hr_tasks"],
 )
 
 celery_app.conf.update(
@@ -34,5 +34,10 @@ celery_app.conf.update(
             "task": "chat.hide_due_threads",
             "schedule": crontab(hour=2, minute=30),
         },
+        # HR emails (each sent only if HR turned it on); times are office time (Asia/Kolkata)
+        "hr-missed-check-ins": {"task": "hr.missed_check_ins", "schedule": crontab(hour=10, minute=30, day_of_week="mon-sat")},
+        "hr-daily-summary": {"task": "hr.daily_summary", "schedule": crontab(hour=11, minute=0, day_of_week="mon-sat")},
+        "hr-documents-expiring": {"task": "hr.documents_expiring", "schedule": crontab(hour=9, minute=0, day_of_week="mon")},
+        "hr-offer-emails": {"task": "hr.offer_emails", "schedule": crontab(hour=9, minute=30)},
     },
 )

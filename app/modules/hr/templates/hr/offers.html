@@ -1,0 +1,50 @@
+{% extends "hr/_layout.html" %}
+{% block title %}Offer letters - HR - {{ app_name }}{% endblock %}
+{% set crumb = 'Offer letters' %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">People</span>
+                <h1>Offer letters</h1>
+                <p>Make an offer from the company template, send it, and track the answer. An accepted offer becomes the new staff member's record.</p>
+            </div>
+            <div><a href="/hr/documents/new?kind=OFFER" class="modal-btn-submit admin-btn-action"><b>+</b> New offer letter</a></div>
+        </div>
+    </section>
+
+    {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+
+    <section class="admin-section">
+        <div class="hr-chips">
+            {% for key, label in [('', 'All'), ('draft', 'Draft')] + offer_statuses.items() | list %}
+            <a class="admin-mini-btn{% if status == key %} is-active{% endif %}" href="/hr/offers{{ '?status=' ~ key if key else '' }}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--compact">
+                <thead><tr><th>Candidate</th><th>Number</th><th>Role</th><th>Joining</th><th>Salary / month</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% set tone = {'sent': 'blue', 'accepted': 'green', 'declined': 'coral', 'withdrawn': 'slate'} %}
+                    {% for d in offers %}
+                    <tr data-href="/hr/documents/{{ d.id }}">
+                        <td class="admin-nowrap"><a class="link-primary" href="/hr/documents/{{ d.id }}">{{ d.data.candidate_name }}</a></td>
+                        <td class="admin-nowrap">{{ d.document_number }}</td>
+                        <td>{{ d.data.designation }}</td>
+                        <td class="admin-nowrap">{{ d.data.joining_date }}</td>
+                        <td>{{ money(d.data.monthly_salary) }}</td>
+                        <td>{% if d.status == 'void' %}<span class="admin-pill admin-pill--slate">Void</span>
+                            {% elif d.status == 'draft' %}<span class="admin-pill admin-pill--amber">Draft</span>
+                            {% elif d.offer_status %}<span class="admin-pill admin-pill--{{ tone[d.offer_status] }}">{{ offer_statuses[d.offer_status] }}</span>
+                            {% else %}<span class="admin-pill admin-pill--teal">Final, not sent</span>{% endif %}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="empty-cell">No offers here yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

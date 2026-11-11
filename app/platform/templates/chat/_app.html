@@ -1,5 +1,5 @@
 {#- Shared chat UI, placed inside each portal's layout. app/platform/static/js/chat.js renders into it.
-    Needs: portal ("staff" | "admin" | "client"), open_thread, open_case. -#}
+    Needs: portal ("staff" | "admin" | "hr" | "client"), open_thread, open_case. HR gets no filing links. -#}
 {% from "client/_icons.html" import ci %}
 {% set is_client = portal == "client" %}
 <div class="chat" data-chat data-portal="{{ portal }}" data-open-thread="{{ open_thread }}" data-open-case="{{ open_case }}">
@@ -81,7 +81,7 @@
             <div class="chat-field">
                 <span data-new-people-label>Person</span>
                 <div class="chat-chips" data-new-chosen></div>
-                <input type="search" id="chat-people-search" placeholder="Search staff and admins" data-new-search autocomplete="off" />
+                <input type="search" id="chat-people-search" placeholder="Search staff, admins and HR" data-new-search autocomplete="off" />
                 <div class="chat-picker" data-new-results role="listbox" aria-label="People"></div>
             </div>
             {% if portal in ("staff", "admin") %}
@@ -115,7 +115,7 @@
             <ul class="chat-memberlist" data-members-list></ul>
             <div class="chat-field" data-members-add hidden>
                 <span>Add people</span>
-                <input type="search" id="chat-members-search" placeholder="Search staff and admins" data-members-search autocomplete="off" />
+                <input type="search" id="chat-members-search" placeholder="Search staff, admins and HR" data-members-search autocomplete="off" />
                 <div class="chat-picker" data-members-results role="listbox" aria-label="People"></div>
             </div>
             <p class="chat-error" data-members-error hidden></p>

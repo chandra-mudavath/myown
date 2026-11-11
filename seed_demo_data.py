@@ -1,7 +1,7 @@
 """Demo data for showing the portals to a client.
 
 Adds, without touching existing records:
-  - 4 staff, one per case role (Initiator, Preparer, Reviewer, Manager)
+  - 4 staff, one per case role (Initiator, Preparer, Reviewer, Manager), and 1 HR
   - 2 admins
   - a small service price list (only services that don't exist yet)
   - 9 clients, each with one case at a different point of the workflow. Billing starts once
@@ -59,6 +59,7 @@ STAFF = [
     ("rahul.verma@covrenttax.com", "Rahul", "Verma", "Senior Tax Preparer", StaffRole.PREPARER, "+1 (415) 555-0142"),
     ("sophia.nguyen@covrenttax.com", "Sophia", "Nguyen", "Tax Reviewer, CPA", StaffRole.REVIEWER, "+1 (415) 555-0143"),
     ("david.miller@covrenttax.com", "David", "Miller", "Tax Operations Manager", StaffRole.MANAGER, "+1 (415) 555-0144"),
+    ("kavya.reddy.hr@covrenttax.com", "Kavya", "Reddy", "HR Manager", StaffRole.HR, "+1 (415) 555-0145"),  # HR portal only
 ]
 
 ADMINS = [

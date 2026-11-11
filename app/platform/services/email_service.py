@@ -1,4 +1,4 @@
-"""Outgoing email: password reset links and staff/admin sign-in codes.
+"""Outgoing email: password reset links, staff/admin sign-in codes and HR notices.
 
 EMAIL_BACKEND="console" writes each message to the server log instead of sending it, so local
 development and tests never send real mail. EMAIL_BACKEND="smtp" sends through SMTP_HOST.
@@ -65,6 +65,13 @@ def send(to: str, subject: str, template: str, **ctx) -> bool:
 
 def send_password_reset(to: str, link: str, minutes: int) -> bool:
     return send(to, f"Reset your {settings.APP_NAME} password", "password_reset", link=link, minutes=minutes)
+
+
+def send_hr_notice(to: str, subject: str, greeting: str, lines: list[str], link: list[str] | None,
+                   letter_html: str | None, company_name: str, hr_email: str) -> bool:
+    """One HR email (app/modules/hr/services/notify.py): short paragraphs, an optional button, an optional letter."""
+    return send(to, subject, "hr_notice", greeting=greeting, lines=lines, link=link, letter_html=letter_html,
+                company_name=company_name, hr_email=hr_email)
 
 
 def send_login_code(to: str, code: str, purpose: str, minutes: int) -> bool:

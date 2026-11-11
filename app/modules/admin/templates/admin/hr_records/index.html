@@ -1,0 +1,79 @@
+{% extends "admin/_layout.html" %}
+{% block title %}HR records - Admin - {{ app_name }}{% endblock %}
+{% set crumb = 'HR records' %}
+{% set no_rail = true %}
+{% block extra_styles %}<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />{% endblock %}
+
+{% block main %}
+    <section class="admin-welcome">
+        <div class="admin-page-topbar">
+            <div>
+                <span class="admin-kicker">Read-only</span>
+                <h1>HR records</h1>
+                <p>What HR keeps for each employee: job details, salary, documents, attendance, leaves and payslips. HR makes the changes; this view is for reading.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="admin-section">
+        <div class="admin-stat-grid">
+            <div class="admin-stat-card blue"><span>Total employees</span><strong>{{ stats.total }}</strong><small>{{ stats.active }} active</small></div>
+            <div class="admin-stat-card amber"><span>Job details missing</span><strong>{{ stats.missing_records }}</strong><small>Active staff</small></div>
+            <div class="admin-stat-card coral"><span>Leave requests waiting</span><strong>{{ leave_requests | length }}</strong><small>HR decides</small></div>
+            <div class="admin-stat-card teal"><span>Documents expiring</span><strong>{{ stats.expiring_documents }}</strong><small>Within 30 days</small></div>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-labelledby="emp-title">
+        <div class="admin-section-heading"><div><span class="admin-kicker">People</span><h2 id="emp-title">Employees ({{ employees | length }})</h2></div></div>
+        <form method="get" action="/admin/hr-records">
+            <div class="admin-filter-bar">
+                <label for="hr-q" class="sr-only">Search employees</label>
+                <input id="hr-q" type="text" name="q" value="{{ q }}" placeholder="Search by name, email, staff #, department..." class="admin-filter-input">
+                <button type="submit" class="admin-filter-btn">Search</button>
+                {% if q %}<a href="/admin/hr-records" class="admin-filter-clear">Clear</a>{% endif %}
+            </div>
+        </form>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--compact">
+                <thead><tr><th>Employee</th><th>Staff #</th><th>Designation</th><th>Department</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    {% for e in employees %}
+                    <tr>
+                        <td class="admin-nowrap"><a class="link-primary" href="/admin/hr-records/{{ e.id }}">{{ e.name }}</a></td>
+                        <td class="admin-nowrap">{{ e.staff_number }}</td><td>{{ e.designation or '—' }}</td><td>{{ e.department or '—' }}</td>
+                        <td>{% if not e.is_active %}<span class="admin-pill admin-pill--coral">Inactive</span>{% elif e.employment_status %}<span class="admin-pill admin-pill--green">{{ e.employment_status }}</span>{% else %}<span class="admin-pill admin-pill--amber">Job details missing</span>{% endif %}</td>
+                        <td><a class="link-primary" href="/admin/hr-records/{{ e.id }}">Open &#8250;</a></td>
+                    </tr>
+                    {% else %}<tr><td colspan="6" class="empty-cell">No employees found.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-labelledby="pay-title">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Pay</span><h2 id="pay-title">Payslips · {{ nav.label }}</h2></div>
+            <span class="admin-period"><a href="/admin/hr-records?month={{ nav.prev }}#pay-title">&#8249; Previous</a> · <a href="/admin/hr-records?month={{ nav.next }}#pay-title">Next &#8250;</a></span>
+        </div>
+        <div class="admin-table-panel">
+            <table class="admin-table admin-table--compact admin-table--money">
+                <thead><tr><th>Employee</th><th>Number</th><th>Paid days</th><th>Gross</th><th>Deductions</th><th>Net pay</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for d in payslip_docs %}
+                    <tr><td><a class="link-primary" href="/admin/hr-records/documents/{{ d.id }}">{{ d.data.employee_name }}</a></td><td>{{ d.document_number }}</td>
+                        <td>{{ d.data.paid_days }}</td><td>{{ money(d.data.gross) }}</td><td>{{ money(d.data.total_deductions) }}</td><td><strong>{{ money(d.net_amount) }}</strong></td>
+                        <td>{% if d.status == 'final' %}<span class="admin-pill admin-pill--green">Final</span>{% else %}<span class="admin-pill admin-pill--amber">Draft</span>{% endif %}</td></tr>
+                    {% else %}<tr><td colspan="7" class="empty-cell">No payslips for {{ nav.label }}.</td></tr>{% endfor %}
+                    {% if payslip_docs %}<tr class="admin-total-row"><th colspan="5">Total net pay</th><th>{{ money(payslip_docs | sum(attribute='net_amount')) }}</th><th></th></tr>{% endif %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="admin-section" aria-labelledby="leave-title">
+        <div class="admin-section-heading"><div><span class="admin-kicker">Time</span><h2 id="leave-title">Leave requests waiting for HR</h2></div></div>
+        {% set show_staff, editable, base = true, false, '/admin/hr-records' %}
+        {% include "hr/partials/leave_table.html" %}
+    </section>
+{% endblock %}

@@ -29,6 +29,7 @@ from app.platform.models.auth import (
 from app.modules.client.models.client import Client
 from app.modules.staff.models.staff import Staff, StaffRole
 from app.modules.admin.models.admin import Admin
+from app.modules.hr.models.hr import HR
 from app.platform.models.system import AuditLog
 from app.platform.schemas.auth import RegisterRequest, validate_password_strength
 
@@ -84,7 +85,7 @@ def register_by_email_domain(db: Session, data: RegisterRequest) -> tuple[AuthAc
     Inspect the email domain and role prefix/suffix and create the correct account type:
       - Non-@covrenttax.com  → Client  (is_verified=True, no email check needed)
       - admin@covrenttax.com, admin. prefix (or .admin/.info suffix) → Admin  (is_verified=False, requires email verification)
-      - hr@covrenttax.com, hr. prefix (or .hr suffix)             → Staff[HR]  (is_verified=False)
+      - hr@covrenttax.com, hr. prefix (or .hr suffix)             → HR  (is_verified=False)
       - @covrenttax.com (plain)                                   → Staff[INITIATOR]  (is_verified=False)
     Returns (account, profile_record).
     """
@@ -99,7 +100,7 @@ def register_by_email_domain(db: Session, data: RegisterRequest) -> tuple[AuthAc
         return _register_admin(db, data, email_lower)
 
     if _is_hr_local(local_part):
-        return _register_staff(db, data, email_lower, StaffRole.HR)
+        return _register_hr(db, data, email_lower)
 
     # Plain staff — default role: INITIATOR
     return _register_staff(db, data, email_lower, StaffRole.INITIATOR)
@@ -170,6 +171,25 @@ def _register_staff(db: Session, data: RegisterRequest, email: str, role: StaffR
     db.refresh(account)
     db.refresh(staff)
     return account, staff
+
+
+def _register_hr(db: Session, data: RegisterRequest, email: str) -> tuple[AuthAccount, HR]:
+    """Create an HR account. It can sign in once the emailed code confirms the address."""
+    account = AuthAccount(
+        email=email,
+        password_hash=hash_password(data.password),
+        account_type=AccountType.HR,
+        is_active=True,
+        is_verified=False,
+    )
+    db.add(account)
+    db.flush()
+    hr = HR(account_id=account.id, first_name=data.first_name, last_name=data.last_name, phone=data.phone)
+    db.add(hr)
+    db.commit()
+    db.refresh(account)
+    db.refresh(hr)
+    return account, hr
 
 
 def _register_admin(db: Session, data: RegisterRequest, email: str) -> tuple[AuthAccount, Admin]:

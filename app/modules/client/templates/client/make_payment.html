@@ -3,7 +3,7 @@
 {% set active_nav = "make_payment" %}
 {% set page_section = "Make Payment" %}
 {% set page_title = "Make Payment" %}
-{% set page_subtitle = "Pay in USD by card, or in INR by UPI." %}
+{% set page_subtitle = "Pay in USD by card or US bank, or in INR by UPI, card, net banking or bank transfer." %}
 
 {% block page %}
 <div class="cx-stack">
@@ -46,6 +46,118 @@
     dialog.querySelector("[data-pay-close]").addEventListener("click", () => dialog.close());
     dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
     sync();
+})();
+
+// Pay in INR without a gateway: UPI or bank transfer, and a QR redrawn with the rupees the client typed (no default amount)
+(function () {
+    const form = document.querySelector("[data-inr-manual]");
+    if (!form) return;
+    const usd = form.querySelector("[data-inr-usd]");
+    const sent = form.querySelector("[data-inr-sent]");
+    const invoice = form.querySelector("[data-inr-invoice]");
+    const qr = form.querySelector("[data-upi-qr]");
+    const app = form.querySelector("[data-upi-app]");
+    const refLabel = form.querySelector("[data-inr-ref-label]");
+    const refInput = form.querySelector("[data-inr-ref-input]");
+    let timer;
+
+    const ref = () => {
+        const o = invoice?.tagName === "SELECT" ? invoice.selectedOptions[0] : invoice;
+        return o?.dataset.ref || form.dataset.advanceRef || "";
+    };
+    const rupees = () => { const v = parseFloat(sent.value); return !isNaN(v) && v > 0 ? v.toFixed(2) : ""; };
+    const update = () => {
+        const inr = rupees();
+        form.querySelectorAll("[data-inr-ref]").forEach((el) => { el.textContent = ref(); });
+        const q = new URLSearchParams({ tn: ref() });
+        if (inr) q.set("am", inr);
+        clearTimeout(timer);
+        timer = setTimeout(() => { if (qr) qr.src = "/client/payments/upi-qr?" + q; }, 300);
+        if (app) {
+            const link = new URLSearchParams({ pa: app.dataset.pa, pn: app.dataset.pn });
+            if (inr) link.set("am", inr);
+            link.set("cu", "INR");
+            if (ref()) link.set("tn", ref());
+            app.href = "upi://pay?" + link.toString();
+        }
+    };
+    const way = () => {
+        const picked = form.querySelector("[data-inr-way]:checked")?.value || "upi";
+        form.querySelectorAll("[data-inr-panel]").forEach((p) => { p.hidden = p.dataset.inrPanel !== picked; });
+        const bank = picked === "bank_transfer";
+        refLabel.firstChild.textContent = bank ? "UTR / reference number" : "UPI transaction ID";
+        refInput.placeholder = bank ? "e.g. HDFCN52024111012345" : "e.g. 412345678901";
+        form.querySelectorAll(".cx-inr-way").forEach((l) => l.classList.toggle("is-on", l.querySelector("input").checked));
+    };
+    sent.addEventListener("input", update);
+    invoice?.addEventListener?.("change", () => { usd.max = invoice.selectedOptions[0].dataset.balance; update(); });
+    if (invoice?.tagName === "SELECT") usd.max = invoice.selectedOptions[0].dataset.balance;
+    form.querySelectorAll("[data-inr-way]").forEach((r) => r.addEventListener("change", way));
+    way();
+    update();
+})();
+
+// Pay in INR: the rupee amount as it's typed, then Razorpay's Checkout window (loaded only when used)
+(function () {
+    const box = document.querySelector("[data-rzp]");
+    if (!box) return;
+    const amount = box.querySelector("[data-rzp-amount]");
+    const rate = parseFloat(amount.dataset.rate);
+    const inr = box.querySelector("[data-rzp-inr]");
+    const invoice = box.querySelector("#rzp-invoice");
+    const errorBox = box.querySelector("[data-rzp-error]");
+    const payBtn = box.querySelector("[data-rzp-pay]");
+    const done = document.querySelector("[data-rzp-done]");
+    const rupees = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const sync = () => { const v = parseFloat(amount.value); inr.textContent = rupees.format(isNaN(v) ? 0 : v * rate); };
+    const fail = (msg) => { errorBox.querySelector("p").textContent = msg; errorBox.hidden = false; payBtn.disabled = false; };
+    amount.addEventListener("input", sync);
+    invoice?.addEventListener("change", () => { amount.max = invoice.selectedOptions[0].dataset.balance; });
+    if (invoice?.selectedOptions[0]) amount.max = invoice.selectedOptions[0].dataset.balance;
+    sync();
+
+    const loadCheckout = () => window.Razorpay ? Promise.resolve() : new Promise((ok, no) => {
+        const s = document.createElement("script");
+        s.src = "https://checkout.razorpay.com/v1/checkout.js";
+        s.onload = ok; s.onerror = () => no(new Error("load"));
+        document.head.appendChild(s);
+    });
+
+    payBtn.addEventListener("click", async () => {
+        errorBox.hidden = true;
+        if (!amount.reportValidity()) return;
+        payBtn.disabled = true;
+        const body = new FormData();
+        box.querySelectorAll("[data-rzp-field]").forEach((f) => body.append(f.name, f.value));
+        let order;
+        try {
+            const r = await fetch("/client/payments/razorpay/start", { method: "POST", body, credentials: "same-origin" });
+            order = await r.json();
+            if (!r.ok) return fail(order.error || "We couldn't start the payment. Please try again.");
+            await loadCheckout();
+        } catch (e) {
+            return fail("We couldn't reach the payment service. Please check your connection and try again.");
+        }
+        const checkout = new window.Razorpay({
+            key: order.key, order_id: order.order_id, amount: order.amount, currency: order.currency,
+            name: order.name, description: order.description, prefill: order.prefill, notes: order.notes,
+            theme: { color: "#2563eb" },
+            handler: (resp) => {
+                done.razorpay_order_id.value = resp.razorpay_order_id;
+                done.razorpay_payment_id.value = resp.razorpay_payment_id;
+                done.razorpay_signature.value = resp.razorpay_signature;
+                done.submit();
+            },
+            modal: {
+                ondismiss: () => {
+                    const b = new FormData(); b.append("payment", order.payment);
+                    fetch("/client/payments/razorpay/cancel", { method: "POST", body: b, credentials: "same-origin" });
+                    payBtn.disabled = false;
+                },
+            },
+        });
+        checkout.open();
+    });
 })();
 </script>
 {% endblock %}

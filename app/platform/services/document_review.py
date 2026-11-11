@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.modules.admin.models.admin import Admin
 from app.modules.client.models.client import Client
+from app.modules.hr.models.hr import HR
 from app.platform.models.filing_document import DocumentComment, FilingDocument
 from app.modules.staff.models.staff import Staff
 from app.platform.models.tax_filing import TaxFiling
@@ -28,12 +29,12 @@ def _full_name(person) -> str:
 
 
 def account_names(db: Session, account_ids: set[str]) -> dict[str, dict]:
-    """Map login account ids to {"name", "role"} across clients, staff and admins."""
+    """Map login account ids to {"name", "role"} across clients, staff, admins and HR."""
     ids = {a for a in account_ids if a}
     if not ids:
         return {}
     names: dict[str, dict] = {}
-    for model, role in ((Client, "client"), (Staff, "staff"), (Admin, "admin")):
+    for model, role in ((Client, "client"), (Staff, "staff"), (Admin, "admin"), (HR, "hr")):
         for person in db.query(model).filter(model.account_id.in_(ids)).all():
             names[person.account_id] = {"name": _full_name(person), "role": role}
     return names

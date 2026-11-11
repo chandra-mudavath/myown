@@ -14,7 +14,9 @@ from app.platform.models.auth import AccountType, AuthAccount
 from app.modules.client.models.client import Client
 from app.platform.models.filing_document import FilingDocument
 from app.platform.models.lookups import DocumentType
-from app.modules.staff.models.staff import Staff, StaffRole
+from app.modules.hr.models.hr import HR
+from app.modules.hr.services import notify as hr_notify
+from app.modules.staff.models.staff import Staff
 from app.platform.models.tax_filing import TaxFiling
 from app.platform.services.catalog import (
     case_document_types,
@@ -29,7 +31,7 @@ from app.platform.services.catalog import (
 )
 from app.modules.admin.services.billing import list_invoices
 from app.platform.models.case_workflow import CaseStageHistory
-from app.platform.services import assignments, email_change
+from app.platform.services import assignments, email_change, team_accounts
 from app.platform.services.document_review import account_names, comment_threads
 from app.modules.admin.services import accounts as admin_accounts
 from app.modules.admin.services.accounts import lock_state
@@ -389,7 +391,9 @@ def admin_staff_directory(
 ):
     admin = db.query(Admin).filter(Admin.account_id == account.id).first()
     
-    query = db.query(Staff)
+    # Staff logins only: a staff row kept after its person moved to HR doesn't show here
+    query = db.query(Staff).join(AuthAccount, AuthAccount.id == Staff.account_id).filter(AuthAccount.account_type == AccountType.STAFF)
+    hr_query = db.query(HR).join(AuthAccount, AuthAccount.id == HR.account_id)
     if q and q.strip():
         search_term = f"%{q.strip()}%"
         query = query.filter(
@@ -398,6 +402,8 @@ def admin_staff_directory(
             (Staff.last_name.ilike(search_term)) |
             ((Staff.first_name + " " + Staff.last_name).ilike(search_term))
         )
+        hr_query = hr_query.filter(HR.hr_number.ilike(search_term) | HR.first_name.ilike(search_term)
+                                   | HR.last_name.ilike(search_term) | AuthAccount.email.ilike(search_term))
 
     staff_records = query.order_by(Staff.created_at.desc()).all()
     load = assignments.workload(db)
@@ -423,6 +429,7 @@ def admin_staff_directory(
             "account": account,
             "admin": admin,
             "staff_list": formatted_staff,
+            "hr_list": hr_query.order_by(HR.created_at.desc()).all(),
             "case_roles": staff_account_roles(db),
             "saved": saved,
             "error": error,
@@ -570,6 +577,7 @@ def quick_create_client(
 
 @router.post("/quick-action/staff", response_class=JSONResponse)
 def quick_create_staff(
+    request: Request,
     account: AdminAccount,
     first_name: str = Form(...),
     last_name: str = Form(...),
@@ -578,43 +586,19 @@ def quick_create_staff(
     role: str = Form("INITIATOR"),
     db: Session = Depends(get_db)
 ):
-    existing_auth = db.query(AuthAccount).filter(AuthAccount.email == email.strip().lower()).first()
-    if existing_auth:
-        raise HTTPException(status_code=400, detail="An account with this email already exists.")
-
-    temp_password = admin_accounts.temp_password()  # meets the strength rules; changed at first sign-in
-    hashed_pwd = hash_password(temp_password)
-
-    if role.upper() not in {r.code for r in staff_account_roles(db)}:  # a case role or HR; never ADMIN
-        raise HTTPException(status_code=400, detail="Choose a role.")
-    staff_role_enum = StaffRole(role.upper())
-
-    auth_acc = AuthAccount(
-        email=email.strip().lower(),
-        password_hash=hashed_pwd,
-        account_type=AccountType.STAFF,
-        is_active=True,
-        is_verified=True,
-        must_change_password=True,
-    )
-    db.add(auth_acc)
-    db.flush()
-
-    new_staff = Staff(
-        account_id=auth_acc.id,
-        first_name=first_name.strip(),
-        last_name=last_name.strip(),
-        phone=phone.strip() if phone else None,
-        role=staff_role_enum,
-    )
-    db.add(new_staff)
-    db.commit()
-
+    """+ New Staff: a case role makes a staff account; HR makes an HR account (its own portal, no cases)."""
+    try:
+        acc, person, temp_password = team_accounts.create(db, account.id, first_name, last_name, email, phone, role)
+    except team_accounts.AccountError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    admin = db.query(Admin).filter(Admin.account_id == account.id).first()
+    hr_notify.account_created(db, hr_notify.base_url(request), person.first_name, acc.email, team_accounts.number_of(person),
+                              f"{admin.first_name} {admin.last_name or ''}".strip() if admin else "your administrator")
     return {
         "success": True,
-        "message": "Staff created successfully!",
-        "staff_number": new_staff.staff_number,
-        "email": email.strip().lower(),
+        "message": "HR account created successfully!" if acc.account_type == AccountType.HR else "Staff created successfully!",
+        "staff_number": team_accounts.number_of(person),
+        "email": acc.email,
         "temp_password": temp_password,
     }
 

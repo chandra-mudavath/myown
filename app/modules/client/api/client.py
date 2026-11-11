@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from urllib.parse import urlencode
 from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, File, Request, UploadFile, status
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.modules.client.api.dashboard import client_shell_context, resolve_tax_year
@@ -17,7 +17,7 @@ from app.platform.models.filing_document import FilingDocument
 from app.platform.models.lookups import CaseStage, ChatQueryTopic
 from app.platform.models.tax_filing import TaxFiling
 from app.modules.client.schemas.tax_filing import TaxFilingCreate
-from app.platform.services import chat_service, email_change, intake, payments, referrals, stripe_api
+from app.platform.services import chat_service, email_change, intake, payments, razorpay_api, referrals, stripe_api
 from app.platform.models.auth import AuthAccount
 from app.platform.services.catalog import case_document_types, document_categories, open_tax_years, tax_types
 from app.platform.services.document_review import (REVIEW_CATEGORY, account_names, add_comment, comment_threads, review_documents,
@@ -611,8 +611,14 @@ async def client_save_tax_notes(request: Request, account: ClientAccount, db: Se
 def _billing_extra(request: Request, db: Session):
     def billing(client, filing):
         return {**payments.client_billing(db, client.id, filing), "pay_methods": payments.CLIENT_METHODS,
-                "currencies": payments.CURRENCIES, "stripe_on": stripe_api.enabled(), "upi_id": settings.PAYMENT_UPI_ID, "upi_payee": settings.PAYMENT_UPI_PAYEE,
+                "currencies": payments.CURRENCIES, "stripe_on": stripe_api.enabled(),
+                "rzp_on": payments.razorpay_ready(db), "inr_rate": payments.inr_rate(db),
+                "smart_collect_on": razorpay_api.smart_collect_enabled() and payments.inr_rate(db) is not None,
+                "bank_account": payments.bank_account_for(db, client.id) if client else None, "upi_id": settings.PAYMENT_UPI_ID, "upi_payee": settings.PAYMENT_UPI_PAYEE,
                 "bank_lines": [line for line in settings.PAYMENT_BANK_DETAILS.splitlines() if line.strip()],
+                "bank_lines_in": [line for line in settings.PAYMENT_BANK_DETAILS_IN.splitlines() if line.strip()],
+                # what the client writes in the UPI note / bank remarks when there is no invoice yet
+                "advance_ref": filing.get_case_id(db) if filing else (client.client_number or ""),
                 "pay_saved": request.query_params.get("saved", ""), "pay_error": request.query_params.get("error", "")}
     return billing
 
@@ -699,6 +705,56 @@ async def client_stripe_return(account: ClientAccount, db: Session = Depends(get
 async def client_stripe_cancel(account: ClientAccount, db: Session = Depends(get_db), payment: str = ""):
     payments.cancel_stripe(db, payment, _own_client(db, account).id)
     return _back_to_payments("Payment was cancelled. You were not charged.", "")
+
+
+# ── Pay in INR: Razorpay Checkout (UPI / QR, cards, net banking, wallets) and Smart Collect bank transfer ──
+
+@router.post("/payments/razorpay/start", name="client_razorpay_start")
+async def client_razorpay_start(account: ClientAccount, db: Session = Depends(get_db), invoice_id: str = Form(""),
+                                pay_amount: str = Form(""), tax_year: str | None = Cookie(None)):
+    """Create a Razorpay order; the page opens Razorpay's Checkout window with what this returns (JSON)."""
+    client = _own_client(db, account)
+    filing = None if invoice_id else _payment_filing(db, client, account, tax_year)
+    checkout, err = payments.start_razorpay(db, account.id, client.id, invoice_id, pay_amount=pay_amount, filing=filing,
+                                            email=account.email, phone=client.phone or "",
+                                            name=f"{client.first_name or ''} {client.last_name or ''}".strip())
+    if err:
+        return JSONResponse({"error": err}, status_code=400)
+    return checkout
+
+
+@router.post("/payments/razorpay/verify", name="client_razorpay_verify")
+async def client_razorpay_verify(account: ClientAccount, db: Session = Depends(get_db), razorpay_order_id: str = Form(""),
+                                 razorpay_payment_id: str = Form(""), razorpay_signature: str = Form("")):
+    """Checkout posts its signed result here after the client pays."""
+    err, saved = payments.finish_razorpay(db, razorpay_order_id, razorpay_payment_id, razorpay_signature,
+                                          _own_client(db, account).id)
+    return _back_to_payments(err, saved)
+
+
+@router.post("/payments/razorpay/cancel", name="client_razorpay_cancel")
+async def client_razorpay_cancel(account: ClientAccount, db: Session = Depends(get_db), payment: str = Form("")):
+    """The client closed the Checkout window without paying."""
+    payments.cancel_razorpay(db, payment, _own_client(db, account).id)
+    return {"ok": True}
+
+
+@router.get("/payments/upi-qr", name="client_upi_qr")
+async def client_upi_qr(account: ClientAccount, am: str = "", tn: str = ""):
+    """The UPI QR for Pay in INR, with the rupee amount and the invoice number filled in (redrawn as the client types)."""
+    link = payments.upi_link(am, tn)
+    if not link:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="UPI isn't set up.")
+    return Response(payments.upi_qr_svg(link), media_type="image/svg+xml", headers={"Cache-Control": "private, max-age=300"})
+
+
+@router.post("/payments/bank-account", name="client_open_bank_account")
+async def client_open_bank_account(account: ClientAccount, db: Session = Depends(get_db)):
+    """Give the client their own account number for INR bank transfers (Razorpay Smart Collect)."""
+    client = _own_client(db, account)
+    err = payments.open_bank_account(db, client.id, f"{client.first_name or ''} {client.last_name or ''}".strip() or account.email)
+    query = urlencode({"error": err} if err else {"bank": "1"})
+    return RedirectResponse(f"/client/make-payment?{query}#bank-transfer", status_code=303)
 
 
 @router.get("/bank-details", response_class=HTMLResponse, name="client_bank_details")

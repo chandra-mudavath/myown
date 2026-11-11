@@ -79,12 +79,22 @@ class Settings(BaseSettings):
     PAYMENT_UPI_ID: str = ""             # e.g. "covrenttax@icici"
     PAYMENT_UPI_PAYEE: str = ""          # name shown in the UPI app
     PAYMENT_BANK_DETAILS: str = ""       # wire / ACH instructions, one item per line (a quoted multi-line value in .env)
+    # CovrentTax India current account for Pay in INR by bank transfer (NEFT / IMPS / RTGS), one item per line.
+    # Shown with the UPI QR while Razorpay isn't set up; an admin checks each transfer. Blank hides bank transfer.
+    PAYMENT_BANK_DETAILS_IN: str = ""
     PAYMENT_PROOFS_DIR: str = "private_storage/payment_proofs"  # not under the public /storage mount
     # Stripe Checkout: Pay in USD (card, Apple Pay, Google Pay, ACH) into the CovrentTax US account.
     # A blank secret key hides it. Test keys start sk_test_ / rk_test_; live keys sk_live_ / rk_live_.
     STRIPE_SECRET_KEY: str = ""          # a restricted key (rk_) with Checkout Sessions, PaymentIntents, Charges, Refunds write
     STRIPE_WEBHOOK_SECRET: str = ""      # whsec_… from the webhook endpoint (or from `stripe listen` locally)
     STRIPE_STATEMENT_DESCRIPTOR: str = ""  # optional suffix on the client's card statement, e.g. "TAX FEE"
+    # Razorpay: Pay in INR (UPI / QR, cards, net banking, wallets) into the CovrentTax India account.
+    # Blank keys hide it and the manual UPI form shows instead. Test keys start rzp_test_, live keys rzp_live_.
+    # The USD -> INR rate clients pay at is set by an admin in Settings > Payments.
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    RAZORPAY_WEBHOOK_SECRET: str = ""    # the secret typed when adding the webhook in the Razorpay Dashboard
+    RAZORPAY_SMART_COLLECT: bool = False  # bank transfer (NEFT / RTGS / IMPS) to a per-client account; Razorpay activates it
     PUBLIC_BASE_URL: str = ""            # e.g. "https://app.covrenttax.com"; blank uses the request's own host
 
     # Chat

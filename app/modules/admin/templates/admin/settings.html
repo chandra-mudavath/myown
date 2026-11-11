@@ -171,6 +171,41 @@
         </form>
     </section>
 
+    {# ── Payments (Nov 2026): the rate Pay in INR charges at, and whether each gateway is switched on ── #}
+    <section class="admin-section admin-settings-block" id="payments">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">Billing</span><h2>Payments</h2></div>
+        </div>
+        <p class="admin-form-hint">Invoices are in US dollars. A client who chooses <strong>Pay in INR</strong> pays the rupee amount at this rate, and
+            each payment keeps the rate it was made at. Update it when the exchange rate moves.</p>
+        <form method="post" action="/admin/settings/inr-rate" class="admin-inline-form">
+            <label for="inr-rate" class="admin-form-hint" style="margin:0;">$1 =</label>
+            <input id="inr-rate" name="rate" inputmode="decimal" class="admin-filter-input admin-input-xs" required
+                   placeholder="e.g. 88.50" value="{{ '%.2f' | format(inr_rate) if inr_rate else '' }}" aria-label="Rupees for one US dollar">
+            <span class="admin-form-hint" style="margin:0;">₹</span>
+            <button type="submit" class="admin-filter-btn">Save rate</button>
+        </form>
+        <p class="admin-form-hint">
+            {% if inr_rate %}Last changed {{ inr_rate_updated.strftime('%b %d, %Y') if inr_rate_updated else '' }}. $150 is charged as ₹{{ "{:,.2f}".format(inr_rate * 150) }}.
+            {% else %}<strong>No rate yet.</strong> Pay in INR online stays off until a rate is saved.{% endif %}
+        </p>
+        <div class="admin-table-panel">
+            <table class="admin-table">
+                <thead><tr><th>Payment option</th><th>Gateway</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>Pay in USD (card, Apple Pay, Google Pay, ACH)</td><td>Stripe</td>
+                        <td>{% if stripe_on %}<span class="admin-pill admin-pill--green">On</span>{% else %}<span class="admin-pill admin-pill--slate">Not set up</span>{% endif %}</td></tr>
+                    <tr><td>Pay in INR (UPI / QR, cards, net banking, wallets)</td><td>Razorpay</td>
+                        <td>{% if razorpay_on and inr_rate %}<span class="admin-pill admin-pill--green">On</span>{% elif razorpay_on %}<span class="admin-pill admin-pill--amber">Needs a rate</span>{% else %}<span class="admin-pill admin-pill--slate">Not set up</span> <small class="admin-muted">clients see the manual UPI form</small>{% endif %}</td></tr>
+                    <tr><td>Pay in INR without a gateway: UPI QR{% if bank_in_on %} and bank transfer{% endif %}, checked by an admin</td><td>None (direct to the India account)</td>
+                        <td>{% if razorpay_on and inr_rate %}<span class="admin-pill admin-pill--slate">Standby</span> <small class="admin-muted">Razorpay is used instead</small>{% elif upi_on or bank_in_on %}<span class="admin-pill admin-pill--green">In use</span>{% else %}<span class="admin-pill admin-pill--slate">Not set up</span> <small class="admin-muted">add the UPI ID / India account in .env</small>{% endif %}</td></tr>
+                    <tr><td>Pay in INR by bank transfer (NEFT / RTGS / IMPS)</td><td>Razorpay Smart Collect</td>
+                        <td>{% if smart_collect_on %}<span class="admin-pill admin-pill--green">On</span>{% else %}<span class="admin-pill admin-pill--slate">Not set up</span>{% endif %}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     {# ── Admin sign-up link (client feedback, Oct 2026): admins can only sign up from this separate URL ── #}
     <section class="admin-section admin-settings-block" id="admin-signup">
         <div class="admin-section-heading">

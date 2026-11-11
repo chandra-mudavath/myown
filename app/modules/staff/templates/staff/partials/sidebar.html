@@ -55,6 +55,20 @@
         <a class="sidebar-nav-item{% if active_nav == 'referrals' %} active{% endif %}" href="/staff/referrals">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("phone") }}</span> Referrals
         </a>
+        {#- My HR: their own attendance, leaves, payslips and letters (HR workspace, Nov 2026) -#}
+        <p class="sidebar-nav-label">My HR</p>
+        <a class="sidebar-nav-item{% if active_nav == 'my_attendance' %} active{% endif %}" href="/staff/hr/attendance">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("clock") }}</span> Attendance
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'my_leaves' %} active{% endif %}" href="/staff/hr/leaves">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("calendar") }}</span> Leaves
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'my_payslips' %} active{% endif %}" href="/staff/hr/payslips">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("card") }}</span> Payslips
+        </a>
+        <a class="sidebar-nav-item{% if active_nav == 'my_documents' %} active{% endif %}" href="/staff/hr/documents">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("file") }}</span> My documents
+        </a>
         {% endif %}
         {# Notifications: hidden for now (client feedback, Oct 2026)
         <a class="sidebar-nav-item{% if active_nav == 'notifications' %} active{% endif %}" href="/staff/notifications">
