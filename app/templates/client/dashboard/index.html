@@ -1,0 +1,174 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci, status_badge %}
+{% set active_nav = "dashboard" %}
+{% set page_title = "Dashboard" %}
+{% set page_heading = "My | Dashboard" %}
+{% set page_subtitle = "Track every stage of your " ~ selected_year ~ " tax return and pick up where you left off." %}
+{% set f = dashboard.filing %}
+
+{% block page %}
+<div class="cx-stack">
+    <section class="cx-hero" aria-labelledby="hero-title">
+        <div>
+            <p class="cx-hero__eyebrow" data-cx-today>Welcome back</p>
+            <h2 class="cx-hero__title" id="hero-title"><span data-cx-greeting>Hello</span>, {{ dashboard.display_name }}</h2>
+            <p class="cx-hero__text">
+                {% if f %}
+                Your {{ selected_year }} return <strong>{{ f.case_id }}</strong> is <strong>{{ f.status | lower }}</strong>.
+                {{ dashboard.stages_done }} of {{ dashboard.filing_stages | length }} filing stages are complete.
+                {% else %}
+                You haven't started a return for tax year {{ selected_year }} yet. Start a filing and we'll guide you through each stage.
+                {% endif %}
+            </p>
+        </div>
+        <div class="cx-hero__side">
+            {% if f %}
+            {%- set circ = 251.3 -%}
+            <div class="cx-ring" role="img" aria-label="{{ dashboard.stages_pct }}% of filing stages complete">
+                <svg viewBox="0 0 92 92"><circle class="cx-ring__track" cx="46" cy="46" r="40" /><circle class="cx-ring__bar" cx="46" cy="46" r="40" stroke-dasharray="{{ circ }}" stroke-dashoffset="{{ circ - circ * dashboard.stages_pct / 100 }}" /></svg>
+                <div class="cx-ring__label"><strong>{{ dashboard.stages_pct }}%</strong><span>complete</span></div>
+            </div>
+            {% else %}
+            <a class="cx-btn cx-btn--lg" href="{{ url_for('new_filing_page') }}">{{ ci("plus") }} Start {{ selected_year }} filing</a>
+            {% endif %}
+        </div>
+    </section>
+
+    <div class="cx-grid cx-grid--4">
+        <div class="cx-stat">
+            <span class="cx-stat__icon">{{ ci("calendar") }}</span>
+            <div><span class="cx-stat__label">Tax year</span><strong class="cx-stat__value">{{ selected_year }}</strong></div>
+            <a class="cx-stat__meta cx-link" href="/client/years">Change</a>
+        </div>
+        <div class="cx-stat">
+            <span class="cx-stat__icon cx-stat__icon--amber">{{ ci("clock") }}</span>
+            <div><span class="cx-stat__label">Filing status</span><strong class="cx-stat__value">{{ f.status if f else "Not started" }}</strong></div>
+        </div>
+        <div class="cx-stat">
+            <span class="cx-stat__icon cx-stat__icon--green">{{ ci("check-circle") }}</span>
+            <div><span class="cx-stat__label">Stages done</span><strong class="cx-stat__value">{{ dashboard.stages_done }} / {{ dashboard.filing_stages | length }}</strong></div>
+        </div>
+        <div class="cx-stat">
+            <span class="cx-stat__icon cx-stat__icon--violet">{{ ci("folder") }}</span>
+            <div><span class="cx-stat__label">Documents</span><strong class="cx-stat__value">{{ dashboard.document_count }}</strong></div>
+            <a class="cx-stat__meta cx-link" href="/client/documents">Open</a>
+        </div>
+    </div>
+
+    <div class="cx-grid cx-grid--main">
+        <div class="cx-stack">
+            <section class="cx-card" aria-labelledby="stages-title">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="stages-title">{{ ci("stage") }} Tax-year {{ selected_year }} <span class="cx-accent">filing stages</span></h2>
+                        <p class="cx-card__sub">Complete each stage in order. We'll mark them off as your tax team progresses.</p>
+                    </div>
+                    <span class="cx-badge cx-badge--pending cx-badge--plain">{{ dashboard.stages_pct }}%</span>
+                </div>
+                <div style="padding: 0.9rem 1.35rem 0.2rem;">
+                    <div class="cx-progress" role="progressbar" aria-valuenow="{{ dashboard.stages_pct }}" aria-valuemin="0" aria-valuemax="100"><span style="width: {{ dashboard.stages_pct }}%"></span></div>
+                </div>
+                {%- set ns = namespace(current_marked=false) -%}
+                <ol class="cx-stages">
+                    {% for stage in dashboard.filing_stages %}
+                    {%- set is_current = stage.status != "complete" and not ns.current_marked -%}
+                    {%- if is_current %}{% set ns.current_marked = true %}{% endif -%}
+                    <li class="cx-stage cx-stage--{{ stage.status }}{% if is_current %} cx-stage--current{% endif %}">
+                        <span class="cx-stage__dot">{% if stage.status == "complete" %}{{ ci("check") }}{% else %}{{ loop.index }}{% endif %}</span>
+                        <span class="cx-stage__label">
+                            {{ stage.label }}
+                            {% if is_current %}<span class="cx-stage__hint">Next up</span>{% endif %}
+                        </span>
+                        {{ status_badge(stage.status) }}
+                        <a class="cx-btn cx-btn--sm {% if is_current %}cx-btn--primary{% else %}cx-btn--ghost{% endif %}" href="{{ stage.url }}">
+                            {% if stage.status == "complete" %}View{% elif is_current %}Continue{% else %}Open{% endif %} {{ ci("arrow-right", "ci ci--sm") }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ol>
+            </section>
+
+            {% if f and f.section_statuses %}
+            <section class="cx-card" aria-labelledby="sections-title">
+                <div class="cx-card__head">
+                    <div>
+                        <h2 class="cx-card__title" id="sections-title">{{ ci("notes") }} Return <span class="cx-accent">sections</span></h2>
+                        <p class="cx-card__sub">{{ f.completed_sections }} of {{ f.total_applicable_sections }} sections of your filing form are complete.</p>
+                    </div>
+                </div>
+                <div class="cx-table-wrap">
+                    <table class="cx-table">
+                        <tbody>
+                            {% for section in f.section_statuses %}
+                            <tr>
+                                <td class="cx-muted cx-mono" style="width: 3rem;">{{ section.number }}</td>
+                                <td><strong>{{ section.label }}</strong></td>
+                                <td style="text-align: right;">{{ status_badge(section.status) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+        </div>
+
+        <aside class="cx-stack">
+            <section class="cx-card" aria-labelledby="case-title">
+                <div class="cx-card__head">
+                    <h2 class="cx-card__title" id="case-title">{{ ci("file") }} Your <span class="cx-accent">return</span></h2>
+                    {% if f %}{{ status_badge("in_progress" if f.status != "Complete" else "complete", {"in_progress": f.status, "complete": f.status}) }}{% endif %}
+                </div>
+                <div class="cx-card__body">
+                    {% if f %}
+                    <dl class="cx-kv">
+                        <div><dt>Case ID</dt><dd class="cx-mono">{{ f.case_id }}</dd></div>
+                        <div><dt>Filing type</dt><dd>{{ f.filing_type | replace("_", " ") | title }}</dd></div>
+                        <div><dt>Created</dt><dd>{{ f.created_date }}</dd></div>
+                        <div><dt>Last updated</dt><dd>{{ f.last_updated }}</dd></div>
+                    </dl>
+                    {% else %}
+                    <div class="cx-empty" style="padding: 1rem 0;">
+                        <span class="cx-empty__icon">{{ ci("file") }}</span>
+                        <h3>No filing <span class="cx-accent">for {{ selected_year }}</span></h3>
+                        <p>Start a filing to open your case and unlock document uploads.</p>
+                        <a class="cx-btn cx-btn--primary" href="{{ url_for('new_filing_page') }}">{{ ci("plus") }} New filing</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="cx-card" aria-labelledby="quick-title">
+                <div class="cx-card__head cx-card__head--plain">
+                    <h2 class="cx-card__title" id="quick-title">{{ ci("sparkle") }} Quick <span class="cx-accent">actions</span></h2>
+                </div>
+                <div class="cx-card__body">
+                    <div class="cx-quick">
+                        <a href="/client/documents">{{ ci("upload") }} Upload documents</a>
+                        <a href="/client/tax-notes">{{ ci("notes") }} Fill tax notes</a>
+                        <a href="/client/bank-details">{{ ci("bank") }} Bank details</a>
+                        <a href="/client/referrals">{{ ci("gift") }} Refer &amp; earn</a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="cx-card" aria-labelledby="activity-title">
+                <div class="cx-card__head cx-card__head--plain">
+                    <h2 class="cx-card__title" id="activity-title">{{ ci("history") }} Recent <span class="cx-accent">activity</span></h2>
+                </div>
+                <div class="cx-card__body">
+                    {% if dashboard.activities %}
+                    <dl class="cx-kv">
+                        {% for activity in dashboard.activities %}
+                        <div><dt>{{ activity.label }}</dt><dd><time datetime="{{ activity.datetime }}">{{ activity.date }}</time></dd></div>
+                        {% endfor %}
+                    </dl>
+                    {% else %}
+                    <p class="cx-muted" style="margin: 0; font-size: 0.88rem;">No activity yet. Updates from your tax team will appear here.</p>
+                    {% endif %}
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

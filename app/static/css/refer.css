@@ -1,0 +1,855 @@
+/* ── Refer & Earn page ── */
+
+.refer-page {
+    --refer-money: var(--green);
+    --refer-money-soft: rgba(22, 163, 74, 0.12);
+    --refer-radius: 1.25rem;
+}
+
+.refer-page svg.refer-icon,
+.refer-page .refer-journey-icon svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+/* Hero */
+.refer-hero {
+    overflow: hidden;
+    padding: 3rem 0 4.5rem;
+    position: relative;
+}
+
+.refer-hero::before {
+    background: radial-gradient(closest-side, var(--brand-soft), transparent);
+    content: "";
+    height: 38rem;
+    pointer-events: none;
+    position: absolute;
+    right: -10rem;
+    top: -8rem;
+    width: 38rem;
+}
+
+.refer-hero-grid {
+    align-items: center;
+    display: grid;
+    gap: 3.5rem;
+    grid-template-columns: 1.05fr 1fr;
+    position: relative;
+}
+
+.refer-pill {
+    align-items: center;
+    background: var(--brand-soft);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--brand);
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 700;
+    gap: 0.5rem;
+    letter-spacing: 0.06em;
+    padding: 0.4rem 0.9rem;
+    text-transform: uppercase;
+}
+
+.refer-pill-dot {
+    animation: refer-pulse 2s ease-in-out infinite;
+    background: var(--refer-money);
+    border-radius: 50%;
+    height: 0.5rem;
+    width: 0.5rem;
+}
+
+.refer-hero h1 {
+    color: var(--ink);
+    font-family: "Roboto Slab", serif;
+    font-size: clamp(2.1rem, 4.2vw, 3.3rem);
+    font-weight: 700;
+    line-height: 1.12;
+    margin: 1.2rem 0 1rem;
+}
+
+.refer-hero h1 span {
+    background: linear-gradient(90deg, var(--brand), var(--refer-money));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: block;
+}
+
+.refer-lead {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.75;
+    max-width: 34rem;
+}
+
+.refer-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.8rem;
+}
+
+.refer-hero-stats {
+    border-top: 1px solid var(--line);
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(3, auto);
+    justify-content: start;
+    column-gap: 2.5rem;
+    margin-top: 2.2rem;
+    padding-top: 1.4rem;
+}
+
+.refer-hero-stats dt {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.refer-hero-stats dd {
+    color: var(--ink);
+    font-family: "Roboto Slab", serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.refer-hero-visual {
+    position: relative;
+}
+
+.refer-hero-dots {
+    color: var(--brand);
+    height: 11rem;
+    left: -2.2rem;
+    opacity: 0.22;
+    position: absolute;
+    top: -2.2rem;
+    width: 11rem;
+}
+
+.refer-hero-frame {
+    aspect-ratio: 4 / 3.4;
+    border-radius: 2rem 2rem 2rem 0.5rem;
+    box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.35);
+    overflow: hidden;
+    position: relative;
+}
+
+.refer-hero-frame::after {
+    background: linear-gradient(160deg, transparent 45%, rgba(37, 99, 235, 0.45));
+    content: "";
+    inset: 0;
+    position: absolute;
+}
+
+.refer-hero-frame img {
+    height: 100%;
+    object-fit: cover;
+    width: 100%;
+}
+
+.refer-float {
+    animation: refer-float 5s ease-in-out infinite;
+    backdrop-filter: blur(10px);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1rem;
+    box-shadow: 0 18px 40px -12px rgba(15, 23, 42, 0.3);
+    position: absolute;
+}
+
+.refer-float-credit {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    left: -1.5rem;
+    padding: 0.75rem 1rem;
+    top: 1.75rem;
+}
+
+.refer-avatar {
+    align-items: center;
+    background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+    border-radius: 50%;
+    color: #fff;
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    height: 2.4rem;
+    justify-content: center;
+    width: 2.4rem;
+}
+
+.refer-float-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.refer-float-text b {
+    color: var(--ink);
+    font-size: 0.85rem;
+}
+
+.refer-float-text small,
+.refer-float-wallet small {
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.refer-float-credit em {
+    background: var(--refer-money-soft);
+    border-radius: 0.5rem;
+    color: var(--refer-money);
+    font-style: normal;
+    font-weight: 800;
+    padding: 0.25rem 0.55rem;
+}
+
+.refer-float-wallet {
+    animation-delay: -2.5s;
+    bottom: 1.75rem;
+    padding: 0.9rem 1.1rem;
+    right: -1.5rem;
+    width: 11rem;
+}
+
+.refer-float-wallet b {
+    color: var(--ink);
+    display: block;
+    font-family: "Roboto Slab", serif;
+    font-size: 1.45rem;
+}
+
+.refer-spark {
+    color: var(--refer-money);
+    height: 1.9rem;
+    margin-top: 0.3rem;
+    width: 100%;
+}
+
+.refer-coin {
+    animation: refer-spin 7s linear infinite;
+    height: 4.2rem;
+    position: absolute;
+    right: 1.5rem;
+    top: -1.8rem;
+    width: 4.2rem;
+}
+
+.refer-coin svg {
+    filter: drop-shadow(0 8px 14px rgba(202, 138, 4, 0.4));
+    height: 100%;
+    width: 100%;
+}
+
+.refer-coin-rim {
+    fill: #eab308;
+}
+
+.refer-coin-face {
+    fill: #facc15;
+    stroke: #ca8a04;
+    stroke-dasharray: 3 3;
+    stroke-width: 1.5;
+}
+
+.refer-coin text {
+    fill: #a16207;
+    font-family: "Roboto Slab", serif;
+    font-size: 26px;
+    font-weight: 700;
+}
+
+/* Reward tickets */
+.refer-tickets {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.refer-ticket {
+    --notch: 0.9rem;
+    --stub: 6.5rem;
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--refer-radius);
+    display: grid;
+    grid-template-columns: var(--stub) 1fr;
+    /* Punch notches where the stub meets the body */
+    -webkit-mask:
+        radial-gradient(circle var(--notch) at var(--stub) 0, transparent 98%, #000) top / 100% 51% no-repeat,
+        radial-gradient(circle var(--notch) at var(--stub) 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+    mask:
+        radial-gradient(circle var(--notch) at var(--stub) 0, transparent 98%, #000) top / 100% 51% no-repeat,
+        radial-gradient(circle var(--notch) at var(--stub) 100%, transparent 98%, #000) bottom / 100% 51% no-repeat;
+    transition: transform 0.25s ease;
+}
+
+.refer-ticket:hover {
+    transform: translateY(-6px) rotate(-0.6deg);
+}
+
+.refer-ticket-stub {
+    align-items: center;
+    background: var(--brand-soft);
+    border-right: 2px dashed var(--line);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.5rem 0.5rem;
+}
+
+.refer-ticket-stub small {
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.refer-ticket-stub strong {
+    color: var(--brand);
+    font-family: "Roboto Slab", serif;
+    font-size: 2.3rem;
+    line-height: 1.1;
+}
+
+.refer-ticket-stub .refer-infinity {
+    font-family: var(--font-body);
+    font-size: 3rem;
+    line-height: 1;
+}
+
+.refer-ticket-body {
+    padding: 1.6rem 1.5rem;
+}
+
+.refer-ticket-body .refer-icon {
+    color: var(--brand);
+    height: 1.7rem;
+    margin-bottom: 0.8rem;
+    width: 1.7rem;
+}
+
+.refer-ticket-body h3 {
+    color: var(--ink);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.refer-ticket-body h3 span,
+.refer-help-body h3 span {
+    color: var(--brand);
+}
+
+.refer-ticket-body p {
+    color: var(--muted);
+    font-size: 0.87rem;
+    line-height: 1.6;
+}
+
+.refer-ticket-featured {
+    background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+    border-color: transparent;
+}
+
+.refer-ticket-featured .refer-ticket-stub {
+    background: rgba(255, 255, 255, 0.12);
+    border-right-color: rgba(255, 255, 255, 0.35);
+}
+
+.refer-ticket-featured .refer-ticket-stub small,
+.refer-ticket-featured .refer-ticket-body p {
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.refer-ticket-featured .refer-ticket-stub strong,
+.refer-ticket-featured .refer-ticket-body h3,
+.refer-ticket-featured .refer-ticket-body h3 span,
+.refer-ticket-featured .refer-icon {
+    color: #fff;
+}
+
+/* Journey */
+.refer-journey {
+    counter-reset: none;
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(4, 1fr);
+    position: relative;
+}
+
+.refer-journey::before {
+    border-top: 2px dashed var(--brand);
+    content: "";
+    left: 12.5%;
+    opacity: 0.35;
+    position: absolute;
+    right: 12.5%;
+    top: 2.25rem;
+}
+
+.refer-journey li {
+    position: relative;
+    text-align: center;
+}
+
+.refer-journey-icon {
+    align-items: center;
+    background: var(--surface);
+    border: 2px solid var(--brand);
+    border-radius: 50%;
+    box-shadow: 0 0 0 8px var(--brand-soft);
+    color: var(--brand);
+    display: inline-flex;
+    height: 4.5rem;
+    justify-content: center;
+    margin-bottom: 1.2rem;
+    position: relative;
+    transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+    width: 4.5rem;
+}
+
+.refer-journey-icon svg {
+    height: 1.8rem;
+    width: 1.8rem;
+}
+
+.refer-journey li:hover .refer-journey-icon {
+    background: var(--brand);
+    color: #fff;
+    transform: scale(1.06);
+}
+
+.refer-journey b {
+    color: var(--brand);
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+}
+
+.refer-journey h3 {
+    color: var(--ink);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0.25rem 0 0.4rem;
+}
+
+.refer-journey p {
+    color: var(--muted);
+    font-size: 0.87rem;
+    line-height: 1.6;
+    margin: 0 auto;
+    max-width: 15rem;
+}
+
+/* Who to refer */
+.refer-people {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.refer-person {
+    aspect-ratio: 3 / 4;
+    border-radius: var(--refer-radius);
+    overflow: hidden;
+    position: relative;
+}
+
+.refer-person:nth-child(even) {
+    margin-top: 2.5rem;
+}
+
+.refer-person img {
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+    width: 100%;
+}
+
+.refer-person:hover img {
+    transform: scale(1.07);
+}
+
+.refer-person div {
+    background: linear-gradient(to top, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.35) 70%, transparent);
+    bottom: 0;
+    left: 0;
+    padding: 3.5rem 1.2rem 1.2rem;
+    position: absolute;
+    right: 0;
+}
+
+.refer-person h3 {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.refer-person p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin-top: 0.2rem;
+}
+
+/* Calculator */
+.refer-calc-grid {
+    align-items: center;
+    display: grid;
+    gap: 3rem;
+    grid-template-columns: 1fr 1fr;
+}
+
+.refer-calc {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 1.5rem;
+    box-shadow: 0 24px 50px -24px rgba(15, 23, 42, 0.3);
+    display: grid;
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+.refer-calc-row {
+    color: var(--ink);
+    display: flex;
+    font-size: 0.9rem;
+    font-weight: 600;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.refer-calc-row output {
+    background: var(--brand-soft);
+    border-radius: 0.5rem;
+    color: var(--brand);
+    font-weight: 800;
+    min-width: 2.5rem;
+    padding: 0.1rem 0.5rem;
+    text-align: center;
+}
+
+.refer-calc input[type="range"] {
+    accent-color: var(--brand);
+    cursor: pointer;
+    width: 100%;
+}
+
+.refer-calc-total {
+    background: var(--refer-money-soft);
+    border-radius: 1rem;
+    padding: 1.2rem 1.4rem;
+}
+
+.refer-calc-total small {
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.refer-calc-total strong {
+    color: var(--refer-money);
+    display: block;
+    font-family: "Roboto Slab", serif;
+    font-size: 2.6rem;
+    line-height: 1.15;
+}
+
+.refer-calc-bar {
+    background: var(--line);
+    border-radius: 999px;
+    height: 0.45rem;
+    margin-top: 0.7rem;
+    overflow: hidden;
+}
+
+.refer-calc-bar span {
+    background: linear-gradient(90deg, var(--brand), var(--refer-money));
+    border-radius: inherit;
+    display: block;
+    height: 100%;
+    transition: width 0.35s ease;
+    width: 6%;
+}
+
+.refer-calc-note {
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+/* FAQ */
+.refer-faq-grid {
+    align-items: start;
+    display: grid;
+    gap: 3rem;
+    grid-template-columns: 20rem 1fr;
+}
+
+.refer-help {
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--refer-radius);
+    overflow: hidden;
+    position: sticky;
+    top: 6.5rem;
+}
+
+.refer-help img {
+    aspect-ratio: 16 / 11;
+    object-fit: cover;
+    object-position: 70% 30%;
+    width: 100%;
+}
+
+.refer-help-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 1.4rem;
+}
+
+.refer-help-body h3 {
+    color: var(--ink);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.refer-help-body p {
+    color: var(--muted);
+    font-size: 0.87rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+}
+
+.refer-help-body a {
+    color: var(--brand);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.refer-help-body a:hover {
+    text-decoration: underline;
+}
+
+.refer-help-body small {
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+/* Closing CTA */
+.refer-cta {
+    align-items: center;
+    background:
+        linear-gradient(100deg, rgba(29, 78, 216, 0.96) 30%, rgba(37, 99, 235, 0.82) 60%, rgba(14, 165, 233, 0.55)),
+        url("../img/refer/cta-celebrate.jpg") center 35% / cover;
+    border-radius: 1.75rem;
+    color: #fff;
+    display: flex;
+    gap: 2rem;
+    justify-content: space-between;
+    overflow: hidden;
+    padding: 2.8rem 3rem;
+    position: relative;
+}
+
+.refer-cta-coins {
+    fill: rgba(255, 255, 255, 0.1);
+    height: 100%;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    stroke: rgba(255, 255, 255, 0.25);
+    stroke-dasharray: 4 5;
+    top: 0;
+    width: 60%;
+}
+
+.refer-cta > div,
+.refer-cta-btn {
+    position: relative;
+}
+
+.refer-cta h2 {
+    font-family: "Roboto Slab", serif;
+    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.refer-cta p {
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 0.5rem;
+}
+
+.refer-cta-btn {
+    background: #fff;
+    border-radius: 999px;
+    color: var(--brand-dark);
+    flex-shrink: 0;
+    font-weight: 800;
+    padding: 0.95rem 1.6rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.refer-cta-btn:hover {
+    box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+/* Motion */
+@keyframes refer-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes refer-spin {
+    from { transform: rotateY(0deg); }
+    to { transform: rotateY(360deg); }
+}
+
+@keyframes refer-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+    50% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .refer-float,
+    .refer-coin,
+    .refer-pill-dot {
+        animation: none;
+    }
+}
+
+/* Dark theme */
+html[data-theme="dark"] .refer-ticket-stub {
+    border-right-color: rgba(148, 163, 184, 0.3);
+}
+
+html[data-theme="dark"] .refer-hero-frame {
+    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.7);
+}
+
+html[data-theme="dark"] .refer-calc-section {
+    background: transparent;
+}
+
+/* Responsive */
+@media (max-width: 1023px) {
+    .refer-hero-grid,
+    .refer-calc-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .refer-hero-visual {
+        margin: 0 auto;
+        max-width: 34rem;
+        width: 100%;
+    }
+
+    .refer-tickets {
+        grid-template-columns: 1fr;
+        margin: 0 auto;
+        max-width: 32rem;
+    }
+
+    .refer-journey {
+        grid-template-columns: repeat(2, 1fr);
+        row-gap: 2.5rem;
+    }
+
+    .refer-journey::before {
+        display: none;
+    }
+
+    .refer-people {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .refer-faq-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .refer-help {
+        display: grid;
+        grid-template-columns: 12rem 1fr;
+        position: static;
+    }
+
+    .refer-help img {
+        aspect-ratio: auto;
+        height: 100%;
+    }
+
+    .refer-cta {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 2.2rem;
+    }
+}
+
+@media (max-width: 639px) {
+    .refer-hero {
+        padding-top: 1.5rem;
+    }
+
+    .refer-hero-stats {
+        column-gap: 1.5rem;
+    }
+
+    .refer-float-credit {
+        left: 0.75rem;
+        top: 0.75rem;
+    }
+
+    .refer-float-wallet {
+        bottom: 0.75rem;
+        right: 0.75rem;
+        width: 9.5rem;
+    }
+
+    .refer-coin {
+        height: 3.2rem;
+        right: 1rem;
+        top: -1.4rem;
+        width: 3.2rem;
+    }
+
+    .refer-hero-dots {
+        left: -1rem;
+    }
+
+    .refer-journey {
+        grid-template-columns: 1fr;
+    }
+
+    .refer-person:nth-child(even) {
+        margin-top: 0;
+    }
+
+    .refer-help {
+        grid-template-columns: 1fr;
+    }
+
+    .refer-help img {
+        aspect-ratio: 16 / 10;
+    }
+}
+
+.refer-person .refer-person-img-right {
+    object-position: 78% center;
+}

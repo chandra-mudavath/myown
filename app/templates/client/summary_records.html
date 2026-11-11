@@ -1,0 +1,28 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "summary_records" %}
+{% set page_section = "Account" %}
+{% set page_title = "Summary Records" %}
+{% set page_subtitle = "An archive of your completed returns and their key figures, year by year." %}
+
+{% block page %}
+<section class="cx-card" aria-labelledby="records-title">
+    <div class="cx-card__head">
+        <div>
+            <h2 class="cx-card__title" id="records-title">{{ ci("archive") }} Filing <span class="cx-accent">history</span></h2>
+            <p class="cx-card__sub">Completed returns appear here after filing.</p>
+        </div>
+        <a class="cx-btn cx-btn--soft cx-btn--sm" href="/client/filings">{{ ci("history", "ci ci--sm") }} My filings</a>
+    </div>
+    <div class="cx-table-wrap">
+        <table class="cx-table">
+            <thead><tr><th>Tax year</th><th>Filing type</th><th>Filed on</th><th>Refund / due</th><th>Status</th></tr></thead>
+        </table>
+    </div>
+    <div class="cx-empty">
+        <span class="cx-empty__icon">{{ ci("archive") }}</span>
+        <h3>No completed <span class="cx-accent">returns yet</span></h3>
+        <p>Once a return is filed and accepted, its summary is saved here so you can reference it in future years.</p>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Repo copy of the published schema map. Open directly in a browser (needs internet for fonts and Mermaid).
+     Keep in sync with Final-Data-Model.md and schema.sql. -->
+<title>UrTax Schema Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --ink:#1b2430; --muted:#5b6676; --line:#dfe3ea;
+  --accent:#2f5d8a; --accent-soft:#e6eef7; --warn:#8a5a12; --warn-soft:#fbf1df;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --display:"Fraunces",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#12161c; --surface:#1a2029; --ink:#e4e8ee; --muted:#9aa5b4; --line:#2c3440;
+    --accent:#8fb6e0; --accent-soft:#1f2b3a; --warn:#e3b46a; --warn-soft:#2d2416;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#12161c; --surface:#1a2029; --ink:#e4e8ee; --muted:#9aa5b4; --line:#2c3440;
+  --accent:#8fb6e0; --accent-soft:#1f2b3a; --warn:#e3b46a; --warn-soft:#2d2416;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 64px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+header{padding-top:40px;display:flex;flex-direction:column;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(28px,4vw,40px);line-height:1.15;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:24px;margin:0;text-wrap:balance}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted);font-size:16px}
+code,.mono{font-family:var(--mono);font-size:.9em}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding-block:10px;display:flex;flex-wrap:wrap;gap:8px}
+nav a{font-family:var(--mono);font-size:12.5px;color:var(--ink);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+nav a:hover,nav a:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.legend div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.legend b{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--accent)}
+.legend span{color:var(--muted);font-size:13.5px}
+section{display:flex;flex-direction:column;gap:14px;scroll-margin-top:64px}
+.sec-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.count{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto}
+.diagram pre{margin:0;min-width:min-content}
+.note{background:var(--warn-soft);color:var(--ink);border-left:3px solid var(--warn);padding:10px 14px;border-radius:0 6px 6px 0;font-size:14px}
+.note b{color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-weight:500;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td code{color:var(--accent)}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:4px;background:var(--accent-soft);color:var(--accent);margin-left:6px;vertical-align:1px}
+</style>
+</head>
+<body>
+
+<style>
+.changes{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.changes div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.changes h3{margin:0;font-size:15px;font-weight:600}
+.changes p{font-size:14px;color:var(--muted)}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.k{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:4px;margin-right:4px;vertical-align:1px}
+.k-new{background:var(--accent-soft);color:var(--accent)}
+.k-kept{background:var(--line);color:var(--ink)}
+.k-chg{background:var(--warn-soft);color:var(--warn)}
+</style>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Data Models / Final-Data-Model.md · revision 2</div>
+  <h1>UrTax schema map</h1>
+  <p class="lede">Revision 2 of the data model, checked against the tables that already exist in <code>app/models/</code>. Option lists such as roles, document types and tax years are now lookup tables, so adding one is a single row. Every account kind shares one profile table. Staff, staff profile and documents are filled in from the real code.</p>
+  <p>Every table and column here matches <code>Data Models/schema.sql</code> in the repo. Ids are UUIDs generated by the app, except on lookup tables, which use small fixed integers. Every record the UI shows also has its own unique readable number, such as <code>CLI-00000001</code>, <code>FLI_0000001</code> or <code>DOC-0000001</code>. URLs keep using the UUID.</p>
+  <p><span class="k k-kept">kept</span>already in <code>app/models/</code> &nbsp; <span class="k k-chg">changed</span>existing table with column changes &nbsp; <span class="k k-new">new</span>new table</p>
+</header>
+
+<nav aria-label="Sections">
+  <a href="#changes">What changed</a>
+  <a href="#overview">Overview</a>
+  <a href="#lookups">Lookups</a>
+  <a href="#identity">Identity</a>
+  <a href="#staff">Staff</a>
+  <a href="#case">Tax case</a>
+  <a href="#documents">Documents</a>
+  <a href="#irs">IRS filing</a>
+  <a href="#financial">Financial</a>
+  <a href="#system">System</a>
+  <a href="#messaging">Messaging</a>
+  <a href="#newkind">Adding a kind</a>
+</nav>
+
+<section id="changes">
+  <div class="sec-head"><h2>Your three points</h2></div>
+  <div class="changes">
+    <div>
+      <h3>1. New roles, document types and tax years</h3>
+      <p><code>staff_roles</code>, <code>document_types</code> and <code>tax_years</code> share one lookup shape: <code>code</code>, <code>name</code>, <code>sort_order</code>, <code>is_active</code>. Adding an option is one row from an admin settings screen. The same pattern now covers <code>tax_types</code> and <code>case_stages</code>, which replace free-text columns.</p>
+    </div>
+    <div>
+      <h3>2. New account kinds beside client, staff, admin and HR</h3>
+      <p>The <code>AccountType</code> enum becomes an <code>account_types</code> table that holds each kind's number prefix and portal path. Name, phone, picture and address move to one shared <code>user_profiles</code> table. Every "who did it" column becomes a real <code>*_account_id</code> foreign key, so a new kind is one row.</p>
+    </div>
+    <div>
+      <h3>3. Staff schema, staff profile and documents</h3>
+      <p>Filled in from the real code. <code>staff</code> keeps <code>job_title</code> and <code>notifications_seen_at</code>, and its profile is in <code>user_profiles</code>. Case documents reuse <code>filing_documents</code> and <code>document_comments</code>. HR staff documents reuse the same <code>document_types</code> catalog.</p>
+    </div>
+  </div>
+  <p class="note"><b>Reused instead of replaced:</b> the tax case is the existing <code>tax_filings</code> table, which keeps all its intake fields. <code>document_comments</code> replaces revision 1's <code>document_reviews</code>. Revision 1's <code>filings</code> is renamed <code>irs_submissions</code> so it can't be confused with <code>tax_filings</code>. HR moves out of <code>StaffRole</code> and becomes an account type.</p>
+</section>
+
+<section id="overview">
+  <div class="sec-head"><h2>Overview</h2><span class="count">relationships only</span></div>
+  <p>Each account has one profile and one kind-specific record. A client opens tax cases, and documents, IRS submissions and invoices attach to each case. Every "done by" column points back to <code>auth_accounts</code>.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  ACCOUNT_TYPES ||--o{ AUTH_ACCOUNTS : "kind of"
+  AUTH_ACCOUNTS ||--|| USER_PROFILES : "profile"
+  AUTH_ACCOUNTS ||--o| CLIENTS : "is a"
+  AUTH_ACCOUNTS ||--o| STAFF : "is a"
+  AUTH_ACCOUNTS ||--o| ADMINS : "is a"
+  AUTH_ACCOUNTS ||--o| HR : "is a"
+  STAFF ||--o{ STAFF_ROLE_ASSIGNMENTS : "holds"
+  STAFF_ROLES ||--o{ STAFF_ROLE_ASSIGNMENTS : "granted in"
+  STAFF ||--o| STAFF_EMPLOYMENT_DETAILS : has
+  STAFF ||--o{ STAFF_DOCUMENTS : has
+  STAFF ||--o{ STAFF_SALARY_HISTORY : has
+  CLIENTS ||--o{ TAX_FILINGS : opens
+  TAX_YEARS ||--o{ TAX_FILINGS : scopes
+  TAX_TYPES ||--o{ TAX_FILINGS : "type of"
+  CASE_STAGES ||--o{ TAX_FILINGS : "current stage"
+  TAX_FILINGS ||--o{ CASE_ASSIGNMENTS : "staffed by"
+  STAFF ||--o{ CASE_ASSIGNMENTS : "works on"
+  TAX_FILINGS ||--o{ CASE_STAGE_HISTORY : logs
+  DOCUMENT_TYPES ||--o{ REQUIRED_DOCUMENTS : "required as"
+  TAX_FILINGS ||--o{ FILING_DOCUMENTS : contains
+  DOCUMENT_TYPES ||--o{ FILING_DOCUMENTS : classifies
+  DOCUMENT_TYPES ||--o{ STAFF_DOCUMENTS : classifies
+  FILING_DOCUMENTS ||--o{ DOCUMENT_COMMENTS : "discussed in"
+  TAX_FILINGS ||--o{ IRS_SUBMISSIONS : "e-filed as"
+  IRS_SUBMISSIONS ||--o{ ACKNOWLEDGMENTS : receives
+  TAX_FILINGS ||--o{ CASE_SERVICES : includes
+  TAX_FILINGS ||--o{ INVOICES : "billed by"
+  INVOICES ||--o{ PAYMENTS : "settled by"
+  AUTH_ACCOUNTS ||--o{ NOTIFICATIONS : receives
+  AUTH_ACCOUNTS ||--o{ AUDIT_LOGS : "acts in"
+  </pre></div>
+</section>
+
+<section id="lookups">
+  <div class="sec-head"><h2>Lookups</h2><span class="count">account_types · staff_roles · tax_years · tax_types · document_categories · document_types · case_stages</span></div>
+  <p>Every lookup has the same base columns. Code compares against <code>code</code>, which never changes once used. Options are retired with <code>is_active = false</code>, never deleted, so older records keep their value.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  ACCOUNT_TYPES {
+    int id PK
+    string code UK "CLIENT, STAFF, ADMIN, HR"
+    string name
+    string description
+    string number_prefix "CLT, STF, ADM, HR"
+    string portal_path "/client, /staff ..."
+    bool has_case_access
+    bool is_internal "STAFF, ADMIN, HR: internal chat"
+    int sort_order
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+  STAFF_ROLES {
+    int id PK
+    string code UK "INITIATOR, PREPARER, REVIEWER, MANAGER"
+    string name
+    string description
+    bool is_case_role
+    int sort_order
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+  TAX_YEARS {
+    int id PK
+    int year UK
+    string name
+    string description
+    bool is_open "drives the year picker"
+    bool is_default
+    date filing_deadline
+    int sort_order
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+  TAX_TYPES {
+    int id PK
+    string code UK "individual, business, estate ..."
+    string name
+    string description
+    int sort_order
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+  DOCUMENT_CATEGORIES {
+    int id PK
+    string code UK "Personal, Income, Foreign_Information ..."
+    string name
+    string description
+    int sort_order
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+  DOCUMENT_TYPES {
+    int id PK
+    string code UK "W2, 1099, OFFER_LETTER ..."
+    string name
+    string description
+    string category FK "document_categories.code"
+    string applies_to "CASE or STAFF"
+    string allowed_mime_types
+    int max_file_mb
+    int sort_order
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+  CASE_STAGES {
+    int id PK
+    string code UK "pending_review, docs_pending ... (20)"
+    string name
+    string description
+    string client_status "one of the 5 client statuses"
+    bool is_terminal
+    int sort_order
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+  REQUIRED_DOCUMENTS {
+    string id PK
+    int tax_year_id FK
+    int tax_type_id FK
+    int document_type_id FK
+    bool is_required
+    datetime created_at
+  }
+  DOCUMENT_CATEGORIES ||--o{ DOCUMENT_TYPES : "category"
+  TAX_YEARS ||--o{ REQUIRED_DOCUMENTS : "tax_year_id"
+  TAX_TYPES ||--o{ REQUIRED_DOCUMENTS : "tax_type_id"
+  DOCUMENT_TYPES ||--o{ REQUIRED_DOCUMENTS : "document_type_id"
+  </pre></div>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>case_stages.code</th><th>client_status (what the client sees)</th></tr></thead>
+      <tbody>
+        <tr><td>pending_review</td><td>Submitted</td></tr>
+        <tr><td>info_pending, docs_pending, docs_received, in_progress, drip, preparation, review, payment_pending, draft_uploading, client_review, rev_doc_rej, form_8879, e_filing, paper_filing, paper_filing_coa, state_filing, signed_docs_uploaded</td><td>In Progress</td></tr>
+        <tr><td>complete</td><td>Completed</td></tr>
+        <tr><td>amendments</td><td>Amendment</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="identity">
+  <div class="sec-head"><h2>Identity</h2><span class="count"><span class="k k-chg">changed</span>auth_accounts, clients, admins · <span class="k k-new">new</span>user_profiles, hr</span></div>
+  <p>Login data stays only in <code>auth_accounts</code>. Profile details move to <code>user_profiles</code>, one row per account of any kind. <code>clients</code>, <code>admins</code> and <code>hr</code> keep only what is specific to that kind.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  ACCOUNT_TYPES { string code UK }
+  AUTH_ACCOUNTS {
+    string id PK
+    string account_number UK
+    string email UK
+    string password_hash
+    string account_type FK "was enum, now account_types.code"
+    bool is_active
+    bool is_verified
+    datetime email_verified_at
+    datetime last_login_at
+    int failed_login_count
+    datetime locked_until
+    datetime created_at
+    datetime updated_at
+  }
+  USER_PROFILES {
+    string id PK
+    string account_id FK, UK
+    string first_name
+    string last_name
+    string phone
+    string profile_picture
+    date date_of_birth
+    string address_line_1
+    string address_line_2
+    string city
+    string state_province
+    string postal_code
+    string country
+    datetime created_at
+    datetime updated_at
+  }
+  CLIENTS {
+    string id PK
+    string account_id FK, UK
+    string client_number UK
+    datetime created_at
+    datetime updated_at
+  }
+  ADMINS {
+    string id PK
+    string account_id FK, UK
+    string admin_number UK
+    datetime created_at
+    datetime updated_at
+  }
+  HR {
+    string id PK
+    string account_id FK, UK
+    string hr_number UK
+    string department
+    datetime created_at
+    datetime updated_at
+  }
+  STAFF { string id PK }
+  ACCOUNT_TYPES ||--o{ AUTH_ACCOUNTS : "account_type"
+  AUTH_ACCOUNTS ||--|| USER_PROFILES : "account_id"
+  AUTH_ACCOUNTS ||--o| CLIENTS : "account_id"
+  AUTH_ACCOUNTS ||--o| ADMINS : "account_id"
+  AUTH_ACCOUNTS ||--o| HR : "account_id"
+  AUTH_ACCOUNTS ||--o| STAFF : "account_id"
+  </pre></div>
+  <p class="note"><b>Moves to user_profiles:</b> <code>first_name</code>, <code>last_name</code>, <code>phone</code> and <code>profile_picture</code> from <code>clients</code>, <code>staff</code> and <code>admins</code>, plus <code>date_of_birth</code> and the address fields from <code>clients</code>. These columns are read in the most places, so this is the last migration step. Unchanged and not drawn: <code>auth_sessions</code>, <code>auth_refresh_tokens</code>, <code>auth_password_reset_tokens</code>, <code>auth_email_verification_tokens</code>, <code>auth_login_attempts</code>.</p>
+</section>
+
+<section id="staff">
+  <div class="sec-head"><h2>Staff</h2><span class="count"><span class="k k-chg">changed</span>staff · <span class="k k-new">new</span>role assignments, employment, documents, salary</span></div>
+  <p>One staff member, the whole picture: login, shared profile, roles, and the employment records that HR manages. <code>staff.role</code> becomes rows in <code>staff_role_assignments</code>, so one person can hold several roles. <code>HR</code> and <code>ADMIN</code> leave the role list because they are account types.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  AUTH_ACCOUNTS { string id PK }
+  USER_PROFILES { string account_id FK, UK }
+  STAFF {
+    string id PK
+    string account_id FK, UK
+    string staff_number UK
+    string job_title
+    datetime notifications_seen_at
+    datetime created_at
+    datetime updated_at
+  }
+  STAFF_ROLES { int id PK }
+  STAFF_ROLE_ASSIGNMENTS {
+    string id PK
+    string staff_id FK
+    int role_id FK
+    bool is_primary
+    string assigned_by_account_id FK
+    datetime assigned_at
+  }
+  STAFF_EMPLOYMENT_DETAILS {
+    string id PK
+    string staff_id FK, UK
+    string employee_number UK
+    date date_of_joining
+    string employment_type
+    string department
+    string designation
+    string reporting_manager_staff_id FK "nullable"
+    string employment_status
+    date termination_date
+    decimal current_salary
+    string updated_by_account_id FK
+    datetime updated_at
+  }
+  DOCUMENT_TYPES { int id PK }
+  STAFF_DOCUMENTS {
+    string id PK
+    string document_number UK "SDOC-0000001"
+    string staff_id FK
+    int document_type_id FK "applies_to = STAFF"
+    string original_filename
+    string stored_filename
+    string file_path
+    string mime_type
+    int file_size
+    string uploaded_by_account_id FK
+    datetime uploaded_at
+    date expiry_date
+    string notes
+  }
+  STAFF_SALARY_HISTORY {
+    string id PK
+    string staff_id FK
+    date effective_date
+    decimal previous_salary
+    decimal new_salary
+    decimal hike_percentage
+    string reason
+    string approved_by_account_id FK
+    datetime created_at
+  }
+  AUTH_ACCOUNTS ||--o| STAFF : "account_id"
+  AUTH_ACCOUNTS ||--|| USER_PROFILES : "account_id"
+  STAFF ||--o{ STAFF_ROLE_ASSIGNMENTS : "staff_id"
+  STAFF_ROLES ||--o{ STAFF_ROLE_ASSIGNMENTS : "role_id"
+  STAFF ||--o| STAFF_EMPLOYMENT_DETAILS : "staff_id"
+  STAFF ||--o{ STAFF_EMPLOYMENT_DETAILS : "reporting_manager_staff_id"
+  STAFF ||--o{ STAFF_DOCUMENTS : "staff_id"
+  DOCUMENT_TYPES ||--o{ STAFF_DOCUMENTS : "document_type_id"
+  STAFF ||--o{ STAFF_SALARY_HISTORY : "staff_id"
+  </pre></div>
+</section>
+
+<section id="case">
+  <div class="sec-head"><h2>Tax case</h2><span class="count"><span class="k k-chg">changed</span>tax_filings · <span class="k k-new">new</span>case_assignments, case_stage_history</span></div>
+  <p>The case is the existing <code>tax_filings</code> table, and it keeps all its intake form fields. Year, type and stage now point at lookups instead of storing free text. A case can have up to four active assignments, one per role.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  CLIENTS { string id PK }
+  TAX_YEARS { int id PK }
+  TAX_TYPES { int id PK }
+  CASE_STAGES { string code UK }
+  TAX_FILINGS {
+    string id PK
+    string case_number UK "FLI_0000001, required"
+    string client_id FK
+    int tax_year_id FK "was tax_year int"
+    int tax_type_id FK "was filing_type string"
+    string stage_code FK "was status string"
+    enum filing_method "PAPER_FILING or FORM_8879"
+    string priority
+    datetime submitted_at
+    datetime closed_at
+    string first_name "intake snapshot"
+    string last_name
+    string email
+    string phone
+    date date_of_birth
+    string country_of_citizenship
+    string current_country_of_residence
+    string us_tax_residency_status
+    string filing_status
+    string filed_us_taxes_before
+    int previous_tax_year_filed
+    string address_line_1
+    string address_line_2
+    string city
+    string state_province
+    string postal_code
+    string country
+    string spouse_first_name
+    string spouse_last_name
+    date spouse_date_of_birth
+    string spouse_email
+    string spouse_phone
+    string spouse_country_of_citizenship
+    string spouse_us_tax_residency_status
+    json dependents
+    json income_categories
+    json deductions_credits
+    json special_situations
+    string has_previous_return_copy
+    string received_irs_notice
+    string unresolved_tax_issues
+    string is_amended_return
+    datetime created_at
+    datetime updated_at
+  }
+  STAFF { string id PK }
+  STAFF_ROLES { int id PK }
+  CASE_ASSIGNMENTS {
+    string id PK
+    string case_id FK
+    string staff_id FK
+    int role_id FK
+    string assigned_by_account_id FK
+    datetime assigned_at
+    datetime unassigned_at
+    string status "active or ended"
+  }
+  CASE_STAGE_HISTORY {
+    string id PK
+    string case_id FK
+    string from_stage_code FK
+    string to_stage_code FK
+    string changed_by_account_id FK
+    string comment
+    datetime created_at
+  }
+  CLIENTS ||--o{ TAX_FILINGS : "client_id"
+  TAX_YEARS ||--o{ TAX_FILINGS : "tax_year_id"
+  TAX_TYPES ||--o{ TAX_FILINGS : "tax_type_id"
+  CASE_STAGES ||--o{ TAX_FILINGS : "stage_code"
+  TAX_FILINGS ||--o{ CASE_ASSIGNMENTS : "case_id"
+  STAFF ||--o{ CASE_ASSIGNMENTS : "staff_id"
+  STAFF_ROLES ||--o{ CASE_ASSIGNMENTS : "role_id"
+  TAX_FILINGS ||--o{ CASE_STAGE_HISTORY : "case_id"
+  </pre></div>
+</section>
+
+<section id="documents">
+  <div class="sec-head"><h2>Documents</h2><span class="count"><span class="k k-chg">changed</span>filing_documents, document_comments · <span class="k k-new">new</span>required_documents</span></div>
+  <p>Versions of one document share a <code>document_group_id</code>, and only one has <code>is_latest = true</code>. Every review action (accept, reject, reply, re-upload) is a row in <code>document_comments</code>, which replaces revision 1's <code>document_reviews</code>.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  TAX_FILINGS { string id PK }
+  DOCUMENT_TYPES { int id PK }
+  AUTH_ACCOUNTS { string id PK }
+  FILING_DOCUMENTS {
+    string id PK
+    string document_number UK "DOC-0000001"
+    string filing_id FK
+    string document_group_id "groups versions"
+    int document_type_id FK "new, applies_to = CASE"
+    string category "kept during migration"
+    string document_name
+    string original_filename
+    string stored_filename
+    string file_path
+    int file_size
+    string mime_type
+    int version
+    bool is_latest
+    string status "pending_review, accepted, rejected_reupload_requested, superseded"
+    string rejection_reason
+    string uploaded_by_account_id FK "was uploaded_by_type + id"
+    datetime uploaded_at
+    string reviewed_by_account_id FK "was reviewed_by_id"
+    datetime reviewed_at
+  }
+  DOCUMENT_COMMENTS {
+    string id PK
+    string filing_id FK
+    string document_group_id
+    string document_id FK "nullable"
+    string kind "rejection, reply, reupload, note, accepted"
+    string body
+    string author_type
+    string author_account_id FK
+    string author_name "snapshot"
+    datetime created_at
+  }
+  TAX_FILINGS ||--o{ FILING_DOCUMENTS : "filing_id"
+  DOCUMENT_TYPES ||--o{ FILING_DOCUMENTS : "document_type_id"
+  FILING_DOCUMENTS ||--o{ DOCUMENT_COMMENTS : "document_id"
+  TAX_FILINGS ||--o{ DOCUMENT_COMMENTS : "filing_id"
+  AUTH_ACCOUNTS ||--o{ FILING_DOCUMENTS : "uploaded_by_account_id"
+  AUTH_ACCOUNTS ||--o{ DOCUMENT_COMMENTS : "author_account_id"
+  </pre></div>
+</section>
+
+<section id="irs">
+  <div class="sec-head"><h2>IRS filing</h2><span class="count"><span class="k k-new">new</span>irs_submissions, acknowledgments</span></div>
+  <p>Only Form 8879 cases get a submission and wait for an acknowledgment. Paper filings go straight to completed.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  TAX_FILINGS { string id PK }
+  IRS_SUBMISSIONS {
+    string id PK
+    string submission_number UK
+    string case_id FK
+    string submitted_by_account_id FK
+    string irs_submission_id
+    string status
+    datetime submitted_at
+    datetime created_at
+    datetime updated_at
+  }
+  ACKNOWLEDGMENTS {
+    string id PK
+    string ack_number UK
+    string submission_id FK
+    string recorded_by_account_id FK
+    string irs_ack_number
+    string status "accepted or rejected"
+    datetime received_at
+    string message
+    datetime created_at
+  }
+  TAX_FILINGS ||--o{ IRS_SUBMISSIONS : "case_id"
+  IRS_SUBMISSIONS ||--o{ ACKNOWLEDGMENTS : "submission_id"
+  </pre></div>
+</section>
+
+<section id="financial">
+  <div class="sec-head"><h2>Financial</h2><span class="count"><span class="k k-new">new</span>services, case_services, invoices, payments</span></div>
+  <p>Unchanged from revision 1, except that cases are now <code>tax_filings</code>. <code>case_services</code> copies <code>unit_price</code> when a service is added, so later price changes don't alter past invoices.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  TAX_FILINGS { string id PK }
+  CLIENTS { string id PK }
+  SERVICES {
+    string id PK
+    string service_code UK
+    string name
+    string description
+    decimal base_price
+    bool is_active
+    datetime created_at
+    datetime updated_at
+  }
+  CASE_SERVICES {
+    string id PK
+    string case_id FK
+    string service_id FK
+    int quantity
+    decimal unit_price
+    decimal total_amount
+    datetime created_at
+  }
+  INVOICES {
+    string id PK
+    string invoice_number UK
+    string client_id FK
+    string case_id FK
+    decimal subtotal
+    decimal discount_amount
+    decimal tax_amount
+    decimal total_amount
+    string status
+    date invoice_date
+    date due_date
+    datetime created_at
+  }
+  PAYMENTS {
+    string id PK
+    string payment_number UK
+    string invoice_id FK
+    string client_id FK
+    decimal amount
+    string payment_method
+    string transaction_reference
+    string status
+    datetime paid_at
+    datetime created_at
+  }
+  TAX_FILINGS ||--o{ CASE_SERVICES : "case_id"
+  SERVICES ||--o{ CASE_SERVICES : "service_id"
+  TAX_FILINGS ||--o{ INVOICES : "case_id"
+  CLIENTS ||--o{ INVOICES : "client_id"
+  INVOICES ||--o{ PAYMENTS : "invoice_id"
+  CLIENTS ||--o{ PAYMENTS : "client_id"
+  </pre></div>
+</section>
+
+<section id="system">
+  <div class="sec-head"><h2>System</h2><span class="count"><span class="k k-new">new</span>audit_logs, notifications, id_sequences</span></div>
+  <p>The person columns are now real foreign keys to <code>auth_accounts</code>. Only <code>entity_type</code> + <code>entity_id</code> stays open-ended, because these tables can point at any record. <code>id_sequences</code> holds one counter per kind of readable number. The app increments it when a record is saved, so a number is never reused, even after a delete.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  AUTH_ACCOUNTS { string id PK }
+  AUDIT_LOGS {
+    string id PK
+    string actor_account_id FK "null for system jobs"
+    string action
+    string entity_type
+    string entity_id
+    json old_values
+    json new_values
+    string ip_address
+    datetime created_at
+  }
+  ID_SEQUENCES {
+    string name PK "CLIENT, CASE, DOCUMENT ..."
+    string prefix "CLI-, FLI_, DOC- ..."
+    int width
+    int current_value
+    datetime updated_at
+  }
+  NOTIFICATIONS {
+    string id PK
+    string recipient_account_id FK
+    string type
+    string title
+    string message
+    string entity_type
+    string entity_id
+    bool is_read
+    datetime created_at
+    datetime read_at
+  }
+  AUTH_ACCOUNTS ||--o{ AUDIT_LOGS : "actor_account_id"
+  AUTH_ACCOUNTS ||--o{ NOTIFICATIONS : "recipient_account_id"
+  </pre></div>
+</section>
+
+<section id="messaging">
+  <div class="sec-head"><h2>Messaging</h2><span class="count"><span class="k k-new">new</span>chat_threads, chat_participants, chat_messages, chat_attachments, chat_query_topics</span></div>
+  <p>Every conversation is one <code>chat_threads</code> row. <code>kind</code> is <code>DIRECT</code> (two internal members), <code>GROUP</code> (named internal group), <code>CASE</code> (client and case team, one per filing) or <code>QUERY</code> (a client question). <code>case_id</code> is set only when the conversation is about a filing. Clients never join DIRECT or GROUP threads; <code>account_types.is_internal</code> decides who may. Nothing is deleted: a daily job sets <code>hidden_at</code> 3 months after the case completes, the query is resolved, or (general chats) the last message, and hidden threads stay for audit.</p>
+  <div class="diagram"><pre class="mermaid">
+erDiagram
+  AUTH_ACCOUNTS { string id PK }
+  TAX_FILINGS { string id PK }
+  FILING_DOCUMENTS { string id PK }
+  CHAT_QUERY_TOPICS {
+    int id PK
+    string code UK "FILING_STATUS, REFUND ..."
+    string name
+    int sort_order
+    bool is_active
+  }
+  CHAT_THREADS {
+    string id PK
+    string thread_number UK "MSG-0000001"
+    string kind "DIRECT, GROUP, CASE, QUERY"
+    string name "GROUP only"
+    string case_id FK "only when about a filing"
+    int topic_id FK "QUERY only"
+    string subject "QUERY only"
+    string direct_key UK "pair ids (+ case id)"
+    string status "open, resolved, closed"
+    string owner_account_id FK "QUERY owner; null = unclaimed"
+    string created_by_account_id FK
+    datetime last_message_at
+    string last_message_preview
+    datetime resolved_at
+    string resolved_by_account_id FK
+    datetime hide_after
+    datetime hidden_at "kept for audit"
+    datetime created_at
+    datetime updated_at
+  }
+  CHAT_PARTICIPANTS {
+    string id PK
+    string thread_id FK
+    string account_id FK
+    string member_role "owner, member"
+    string added_reason
+    datetime joined_at
+    datetime left_at
+    datetime last_read_at "unread after this"
+    bool is_muted
+  }
+  CHAT_MESSAGES {
+    string id PK
+    string thread_id FK
+    string sender_account_id FK "null for system"
+    string sender_type
+    string sender_name
+    string kind "text, system"
+    string visibility "all, internal"
+    text body
+    string reply_to_message_id FK
+    datetime edited_at
+    datetime deleted_at "soft delete"
+    string deleted_by_account_id FK
+    datetime created_at
+  }
+  CHAT_ATTACHMENTS {
+    string id PK
+    string message_id FK
+    string original_filename
+    string stored_filename
+    string file_path
+    string mime_type
+    int file_size
+    string filing_document_id FK "Save to case documents"
+    datetime created_at
+  }
+  CHAT_THREADS ||--|{ CHAT_PARTICIPANTS : "thread_id"
+  CHAT_THREADS ||--o{ CHAT_MESSAGES : "thread_id"
+  CHAT_MESSAGES ||--o{ CHAT_ATTACHMENTS : "message_id"
+  CHAT_MESSAGES |o--o{ CHAT_MESSAGES : "reply_to_message_id"
+  AUTH_ACCOUNTS ||--o{ CHAT_PARTICIPANTS : "account_id"
+  AUTH_ACCOUNTS |o--o{ CHAT_MESSAGES : "sender_account_id"
+  TAX_FILINGS |o--o{ CHAT_THREADS : "case_id"
+  CHAT_QUERY_TOPICS |o--o{ CHAT_THREADS : "topic_id"
+  FILING_DOCUMENTS |o--o{ CHAT_ATTACHMENTS : "filing_document_id"
+  </pre></div>
+</section>
+
+<section id="newkind">
+  <div class="sec-head"><h2>Adding a new kind of account</h2><span class="count">example: Auditor</span></div>
+  <ol class="steps">
+    <li>Insert a row into <code>account_types</code>: <code>AUDITOR</code>, prefix <code>AUD</code>, portal <code>/auditor</code>.</li>
+    <li>Sign-up writes <code>auth_accounts</code> and <code>user_profiles</code>. Name, phone, picture and address need no new table.</li>
+    <li>Only if auditors have fields of their own, add a small <code>auditors</code> table keyed by <code>account_id</code>.</li>
+    <li>Uploads, comments, notifications and the audit log already work, because they all point at <code>auth_accounts.id</code>.</li>
+    <li>Code still needed: the portal's routes and pages, and a <code>require_account_type("AUDITOR")</code> guard in <code>app/core/deps.py</code>.</li>
+  </ol>
+  <p class="note"><b>Later:</b> if a new role or account kind should get different powers without code changes, add <code>permissions</code> and link it to <code>account_types</code> and <code>staff_roles</code>. That is phase 2 and not part of this revision.</p>
+</section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    securityLevel: "strict",
+    theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default"
+  });
+</script>
+</body>
+</html>

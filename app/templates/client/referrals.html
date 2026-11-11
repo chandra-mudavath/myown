@@ -1,0 +1,40 @@
+{% extends "client/_layout.html" %}
+{% from "client/_icons.html" import ci %}
+{% set active_nav = "referrals" %}
+{% set page_section = "Account" %}
+{% set page_title = "Refer & Earn" %}
+{% set page_subtitle = "Share your link with friends and family and earn credits when they file with us." %}
+{% set ref_code = (client.id | string)[:8] | upper if client else "" %}
+
+{% block page %}
+<div class="cx-stack">
+    <section class="cx-refer" aria-labelledby="refer-title">
+        <h2 id="refer-title">Give friends a smoother tax season</h2>
+        <p>Your friends get expert help with their US return, and you earn a credit on your next filing for every friend who completes one.</p>
+        <label class="sr-only" for="referral_link">Your referral link</label>
+        <div class="cx-inputgroup" style="max-width: 560px;">
+            <input class="cx-input" id="referral_link" readonly value="{{ request.base_url }}auth/register?ref={{ ref_code }}" />
+            <button type="button" class="cx-btn" data-cx-copy="referral_link">{{ ci("copy", "ci ci--sm") }} Copy link</button>
+        </div>
+    </section>
+
+    <div class="cx-grid cx-grid--3">
+        <div class="cx-stat"><span class="cx-stat__icon">{{ ci("users") }}</span><div><span class="cx-stat__label">Friends referred</span><strong class="cx-stat__value">0</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--amber">{{ ci("clock") }}</span><div><span class="cx-stat__label">Pending</span><strong class="cx-stat__value">0</strong></div></div>
+        <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--green">{{ ci("gift") }}</span><div><span class="cx-stat__label">Credits earned</span><strong class="cx-stat__value">$0.00</strong></div></div>
+    </div>
+
+    <section class="cx-card" aria-labelledby="how-title">
+        <div class="cx-card__head cx-card__head--plain">
+            <h2 class="cx-card__title" id="how-title">{{ ci("sparkle") }} How <span class="cx-accent">it works</span></h2>
+        </div>
+        <div class="cx-card__body">
+            <ol class="cx-howto">
+                <li><span class="cx-stat__icon">{{ ci("share") }}</span><strong>1. Share your link</strong><span>Send it by message, email or social media.</span></li>
+                <li><span class="cx-stat__icon cx-stat__icon--violet">{{ ci("user") }}</span><strong>2. They sign up &amp; file</strong><span>Your friend registers with your link and files their return.</span></li>
+                <li><span class="cx-stat__icon cx-stat__icon--green">{{ ci("gift") }}</span><strong>3. You earn credit</strong><span>The credit is applied to your next preparation fee.</span></li>
+            </ol>
+        </div>
+    </section>
+</div>
+{% endblock %}
