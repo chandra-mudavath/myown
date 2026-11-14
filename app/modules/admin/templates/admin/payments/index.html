@@ -77,14 +77,26 @@
         <form method="get" action="/admin/payments" class="admin-filter-bar">
             <input type="hidden" name="status" value="{{ status }}">
             <input type="text" name="q" value="{{ q }}" placeholder="Search invoice #, case # or client name..." class="admin-filter-input" aria-label="Search invoices">
+            {#- Period (client feedback, Nov 2026): monthly / quarterly / yearly, by invoice date -#}
+            <select name="period" class="admin-filter-select admin-period-select" aria-label="Invoice period" onchange="this.form.submit()">
+                <option value="">All time</option>
+                {% for group, options in period_options %}
+                <optgroup label="{{ group }}">
+                    {% for value, label in options %}<option value="{{ value }}"{% if period == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+                </optgroup>
+                {% endfor %}
+            </select>
             <button type="submit" class="admin-filter-btn">Search</button>
-            {% if q %}<a href="/admin/payments?status={{ status }}" class="admin-filter-clear">Clear</a>{% endif %}
+            {% if q or period %}<a href="/admin/payments?status={{ status }}" class="admin-filter-clear">Clear</a>{% endif %}
         </form>
         <nav class="admin-chips" aria-label="Filter invoices by status">
             {% for key, label in filters %}
-            <a href="/admin/payments?status={{ key }}{% if q %}&amp;q={{ q | urlencode }}{% endif %}" class="admin-chip{% if status == key %} is-active{% endif %}">{{ label }}</a>
+            <a href="/admin/payments?status={{ key }}{% if q %}&amp;q={{ q | urlencode }}{% endif %}{% if period %}&amp;period={{ period }}{% endif %}" class="admin-chip{% if status == key %} is-active{% endif %}">{{ label }}</a>
             {% endfor %}
         </nav>
+        {% if period %}
+        <p class="admin-period-totals" role="status"><strong>{{ period_label }}</strong> · {{ invoices | length }} invoice{{ 's' if invoices | length != 1 else '' }} · Invoiced ${{ '{:,.2f}'.format(totals.total) }} · Paid ${{ '{:,.2f}'.format(totals.paid) }} · Balance ${{ '{:,.2f}'.format(totals.balance) }}</p>
+        {% endif %}
 
         <div class="admin-table-panel">
             <table class="admin-table admin-table--money">
@@ -108,7 +120,7 @@
                         <td><strong>${{ '{:,.2f}'.format(r.balance) }}</strong></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="9" class="admin-empty">{% if q or status %}No invoices match.{% else %}No invoices yet. Create one with <strong>New invoice</strong>.{% endif %}</td></tr>
+                    <tr><td colspan="9" class="admin-empty">{% if q or status or period %}No invoices match.{% else %}No invoices yet. Create one with <strong>New invoice</strong>.{% endif %}</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

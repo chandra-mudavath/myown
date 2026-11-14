@@ -124,11 +124,14 @@ def register(
     ref: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    # What was typed comes back on an error, so only the wrong field needs fixing (never the passwords)
+    form = {"first_name": first_name, "last_name": last_name or "", "email": email, "country_code": country_code,
+            "phone_local": phone_local}
     # Clients need a mobile number (clients.phone can't be empty). The admin form has no phone field and admins
     # have no phone column; an "admin" sign-up without a valid link is still refused below.
     if signup_role != "admin" and not (country_code and phone_local):
         return templates.TemplateResponse(request, "auth/register.html", _ctx(
-            request, error="Enter your mobile number.", signup_role=signup_role, admin_key=admin_key, ref=ref))
+            request, form=form, error="Enter your mobile number.", signup_role=signup_role, admin_key=admin_key, ref=ref))
     try:
         phone = f"{country_code}{phone_local}" if country_code and phone_local else None
         data = RegisterRequest(
@@ -146,16 +149,16 @@ def register(
             msg = errors[0]["msg"].replace("Value error, ", "")
         except Exception:
             msg = str(e)
-        return templates.TemplateResponse(request, "auth/register.html", _ctx(request, error=msg, signup_role=signup_role, admin_key=admin_key, ref=ref))
+        return templates.TemplateResponse(request, "auth/register.html", _ctx(request, form=form, error=msg, signup_role=signup_role, admin_key=admin_key, ref=ref))
 
     ip = request.client.host if request.client else None
     if auth_service.registrations_blocked(db, ip):
         return templates.TemplateResponse(request, "auth/register.html", _ctx(
-            request, error="Too many accounts were created from your network. Please try again in an hour.",
+            request, form=form, error="Too many accounts were created from your network. Please try again in an hour.",
             signup_role=signup_role, admin_key=admin_key, ref=ref), status_code=status.HTTP_429_TOO_MANY_REQUESTS)
 
     if auth_service.get_account_by_email(db, data.email):
-        return templates.TemplateResponse(request, "auth/register.html", _ctx(request, error="An account with this email already exists.", signup_role=signup_role, admin_key=admin_key, ref=ref))
+        return templates.TemplateResponse(request, "auth/register.html", _ctx(request, form=form, error="An account with this email already exists.", signup_role=signup_role, admin_key=admin_key, ref=ref))
 
     # Admins sign up only through the admin link (client feedback, Oct 2026)
     from_admin_link = signup_role == "admin" and admin_signup.is_valid(db, admin_key)
@@ -163,16 +166,16 @@ def register(
         raise AppError("AUTH-015", "This sign-up link is not valid.")
     if not from_admin_link and auth_service.is_admin_email(data.email):
         return templates.TemplateResponse(request, "auth/register.html", _ctx(
-            request, error="Admin accounts can only be created from the admin sign-up link.", signup_role=signup_role))
+            request, form=form, error="Admin accounts can only be created from the admin sign-up link.", signup_role=signup_role))
 
     # Staff and HR accounts are made by an admin, unless STAFF_SELF_SIGNUP is on
     if not from_admin_link and auth_service.is_internal_email(data.email) and not settings.STAFF_SELF_SIGNUP:
-        return templates.TemplateResponse(request, "auth/register.html", _ctx(request, error=_STAFF_BY_ADMIN, signup_role=signup_role, ref=ref))
+        return templates.TemplateResponse(request, "auth/register.html", _ctx(request, form=form, error=_STAFF_BY_ADMIN, signup_role=signup_role, ref=ref))
 
     # The admin link is for the internal team only: company email addresses (@covrenttax.com)
     if from_admin_link and not auth_service.is_internal_email(data.email):
         return templates.TemplateResponse(request, "auth/register.html", _ctx(
-            request, error="Use your company email address (@covrenttax.com) to create an admin account.",
+            request, form=form, error="Use your company email address (@covrenttax.com) to create an admin account.",
             signup_role=signup_role, admin_key=admin_key))
 
     if from_admin_link:

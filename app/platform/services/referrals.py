@@ -15,6 +15,7 @@ from app.platform.models.auth import AuthAccount
 from app.platform.models.referral import ReferralFollowUp, ReferralLead
 from app.platform.models.system import AuditLog
 from app.platform.models.tax_filing import TaxFiling
+from app.platform.services import email_check
 from app.platform.services.document_review import author_for
 
 # (code, label, pill tone). Order is the pipeline order.
@@ -49,7 +50,6 @@ SOURCE_LABEL = {c: label for c, label, _ in SOURCES}
 SOURCE_TONE = {c: tone for c, _, tone in SOURCES}
 
 _PHONE = re.compile(r"^\+?[0-9 ()\-]{7,20}$")
-_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
 def _now() -> datetime:
@@ -89,8 +89,10 @@ def _clean(name: str, phone: str, email: str, relationship: str, note: str) -> t
         return data, "Enter your colleague's phone number so we can call them."
     if data["phone"] and not _PHONE.match(data["phone"]):
         return data, "Enter a valid phone number, e.g. +1 415 555 0142."
-    if data["email"] and not _EMAIL.match(data["email"]):
-        return data, "Enter a valid email address."
+    if data["email"]:  # same email rules as sign-up (Nov 2026); was a loose x@y.z check
+        data["email"], err = email_check.clean(data["email"])
+        if err:
+            return data, err
     return data, None
 
 

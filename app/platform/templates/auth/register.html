@@ -9,6 +9,7 @@
 {% block form_modifier %} au-form--wide{% endblock %}
 {% block auth_heading %}{% if signup_role == "client" %}Create your free <span>{{ app_name }} account</span>{% else %}Request your <span>{{ signup_role }} account</span>{% endif %}{% endblock %}
 {% block auth_form %}
+{% set form = form|default({}) %}
 <form id="register-form" class="au-fields" method="POST" action="/auth/register">
     <input type="hidden" name="signup_role" value="{{ signup_role }}" />
     {% if admin_key %}<input type="hidden" name="admin_key" value="{{ admin_key }}" />{% endif %}
@@ -25,16 +26,16 @@
             <label class="au-sr" for="first_name">First name</label>
             {{ icon("user") }}
             <input name="first_name" id="first_name" type="text" placeholder="First name *" class="form-input" required
-                autocomplete="given-name" maxlength="15" pattern="^[A-Za-z]+$"
-                title="Only alphabets allowed, max 15 characters" />
+                autocomplete="given-name" maxlength="15" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*"
+                title="Letters, numbers and spaces, with at least one letter (max 15 characters)" value="{{ form.first_name }}" />
         </div>
 
         <div class="au-input">
             <label class="au-sr" for="last_name">Last name</label>
             {{ icon("user") }}
             <input name="last_name" id="last_name" type="text" placeholder="Last name" class="form-input"
-                autocomplete="family-name" maxlength="15" pattern="^[A-Za-z]+$"
-                title="Only alphabets allowed, max 15 characters" />
+                autocomplete="family-name" maxlength="15" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*"
+                title="Letters, numbers and spaces, with at least one letter (max 15 characters)" value="{{ form.last_name }}" />
         </div>
     </div>
 
@@ -42,7 +43,8 @@
         <label class="au-sr" for="email">Email</label>
         {{ icon("mail") }}
         <input name="email" id="email" type="email" placeholder="{{ 'Company email (name@covrenttax.com) *' if admin_key else 'Enter your email *' }}" class="form-input"
-            autocomplete="email" required />
+            autocomplete="email" required autocapitalize="none" spellcheck="false" pattern="[A-Za-z][A-Za-z0-9._+\-]*@[A-Za-z][A-Za-z0-9\-]*(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}"
+            title="Start with a letter; then letters, numbers and . _ + - before the @, then a domain such as gmail.com" value="{{ form.email }}" />
     </div>
 
     {% if signup_role == "client" %}
@@ -62,12 +64,12 @@
                     placeholder="Search country" aria-label="Search country" />
                 <div class="country-options" id="country-options" role="listbox" aria-label="Countries"></div>
             </div>
-            <input name="country_code" id="country_code" type="hidden" required />
+            <input name="country_code" id="country_code" type="hidden" required data-initial="{{ form.country_code }}" />
         </div>
         <label class="au-sr" for="phone_local">Mobile number</label>
         <input name="phone_local" id="phone_local" type="tel" inputmode="numeric" autocomplete="tel-national"
             placeholder="Mobile number *" class="phone-number-input" required minlength="10" maxlength="10"
-            pattern="[0-9]{10}" title="Enter exactly 10 digits after the country code" />
+            pattern="[0-9]{10}" title="Enter exactly 10 digits after the country code" value="{{ form.phone_local }}" />
         <input name="phone" id="phone" type="hidden" />
     </div>
     {% endif %}

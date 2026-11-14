@@ -651,17 +651,12 @@ html[data-theme="dark"] .modal-form-group select {
     color: var(--ink) !important;
 }
 
-@media (max-width: 1100px) { .admin-layout { grid-template-columns: 210px minmax(0, 1fr); }.admin-rail { position: static; height: auto; overflow: visible; grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; padding: 22px var(--admin-pad) 50px; border-top: 1px solid var(--line); border-left: 0; }.recent-section { margin-top: 0; }.admin-main { grid-column: 2; }.admin-sidebar { grid-row: 1 / span 2; } }
-@media (max-width: 760px) { .admin-layout { display: block; }.admin-sidebar { position: static; height: auto; min-height: auto; padding: 16px; }.admin-profile { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; text-align: left; }.admin-avatar-wrapper { flex: none; width: 46px; height: 46px; margin: 0; }.admin-photo, .admin-sidebar-avatar-img { width: 46px; height: 46px; margin: 0; border-width: 3px; font-size: .85rem; }.admin-avatar-upload-label { right: -4px; bottom: -4px; width: 20px; height: 20px; font-size: .6rem; }.admin-profile h2 { font-size: .86rem; }.admin-profile p { margin: 0 0 0 auto; }.admin-nav { display: grid; grid-template-columns: repeat(2, 1fr); padding: 14px 0; }.admin-nav-item { padding: 8px; }.admin-logout { display: none; }.admin-main { padding: 0 16px 35px; --admin-pad: 16px; }.admin-header { min-height: 64px; }.admin-header-brand span:last-child { display: none; }.admin-welcome { margin-top: 16px; padding: 20px 18px; }.admin-stat-grid, .business-grid { grid-template-columns: repeat(2, 1fr); }.admin-rail { display: block; padding: 0 16px 35px; }.recent-section { margin-top: 35px; } }
-@media (max-width: 420px) { .admin-stat-grid, .business-grid { grid-template-columns: 1fr; }.admin-nav { grid-template-columns: 1fr 1fr; }.admin-stat-card { min-height: 120px; } }
 
 /* Readable document number next to a file name (DOC-0000001) */
 .admin-doc-number { margin-left: 6px; font: 500 0.75rem var(--font-mono); color: var(--muted); }
 
 /* ── Profile, Notifications & Settings pages ── */
 .admin-layout.admin-layout--no-rail { grid-template-columns: var(--admin-sidebar) minmax(0, 1fr); }
-@media (max-width: 1100px) { .admin-layout.admin-layout--no-rail { grid-template-columns: 210px minmax(0, 1fr); } }
-@media (max-width: 760px) { .admin-layout.admin-layout--no-rail { display: block; } }
 .admin-alert { margin: 0 0 1rem; }
 .admin-muted { display: block; color: var(--muted); font-size: .75rem; }
 .admin-nowrap { white-space: nowrap; }
@@ -937,3 +932,97 @@ html[data-theme="dark"] .admin-welcome .admin-pill { background: #fff; }
 .admin-alert--notice { padding: 12px 16px; border: 1px solid color-mix(in srgb, #d97706 35%, transparent); border-radius: 12px;
     background: color-mix(in srgb, #d97706 10%, var(--surface)); color: var(--ink); font-size: .9rem; }
 .admin-alert--notice a { margin-left: 6px; font-weight: 700; }
+
+/* ── Responsive shell ─────────────────────────────────────────────
+   1280px+      sidebar | content | rail (as designed)
+   1024–1279px  sidebar | content; the rail is a drawer opened by the ⚡ button
+   768–1023px   content only; the sidebar is a drawer opened by ☰, the rail by ⚡
+   under 768px  same drawers; on the dashboard the shortcuts sit under the welcome
+                banner and System Activity follows the page instead of the ⚡ drawer */
+.admin-menu-toggle, .admin-rail-toggle, .admin-drawer-close, .admin-quick-row { display: none; }
+.admin-menu-toggle, .admin-rail-toggle, .admin-drawer-close { flex: none; padding: 0; cursor: pointer; }
+.admin-drawer-close { position: absolute; top: 14px; right: 12px; z-index: 1; width: 34px; height: 34px; }
+.admin-header-brand { min-width: 0; }
+.admin-header-brand span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-backdrop { position: fixed; inset: 0; z-index: 65; background: rgba(15, 23, 42, .45); opacity: 0; visibility: hidden; transition: opacity .2s, visibility .2s; }
+body.admin-drawer-open .admin-backdrop { opacity: 1; visibility: visible; }
+body.admin-drawer-open { overflow: hidden; }
+/* Drawers fill the visible screen only (dvh), so on phones the browser toolbar can't cover Logout */
+.admin-page { --drawer-h: calc(100vh / var(--page-zoom)); }
+@supports (height: 100dvh) { .admin-page { --drawer-h: calc(100dvh / var(--page-zoom)); } }
+.admin-sidebar, .admin-rail { overscroll-behavior: contain; }
+
+@media (max-width: 1279px) {
+    .admin-layout, .admin-layout.admin-layout--no-rail { grid-template-columns: 210px minmax(0, 1fr); }
+    .admin-rail-toggle:not([hidden]) { display: grid; }
+    .admin-rail { position: fixed; top: 0; right: 0; bottom: auto; z-index: 70; width: min(320px, 88vw); height: var(--drawer-h); max-height: var(--drawer-h); padding-top: 56px; border-left: 1px solid var(--side-line); box-shadow: -18px 0 40px -24px rgba(15, 23, 42, .5); transform: translateX(100%); visibility: hidden; transition: transform .25s ease, visibility .25s; }
+    body.admin-rail-open .admin-rail { transform: none; visibility: visible; }
+    .admin-rail .admin-drawer-close { display: grid; }
+    /* Dashboard: the shortcuts sit under the welcome banner; ⚡ opens System Activity only */
+    .admin-quick-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .admin-quick-row button.quick-action-btn { flex: 1 1 0; min-width: max-content; width: auto; padding: 10px 14px 10px 10px; white-space: nowrap; }
+    .admin-layout--dash .admin-rail .admin-rail-section:not(.recent-section) { display: none; }
+    .admin-layout--dash .admin-rail .recent-section { margin-top: 0; }
+}
+
+@media (max-width: 1023px) {
+    .admin-layout, .admin-layout.admin-layout--no-rail, .admin-layout.chat-admin { display: block; }
+    .admin-menu-toggle { display: grid; }
+    .admin-sidebar { position: fixed; top: 0; left: 0; bottom: auto; z-index: 70; width: min(280px, 85vw); height: var(--drawer-h); max-height: var(--drawer-h); min-height: 0; padding-bottom: 0; padding-top: 18px; box-shadow: 18px 0 40px -24px rgba(15, 23, 42, .5); transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility .25s; }
+    body.admin-nav-open .admin-sidebar { transform: none; visibility: visible; }
+    .admin-sidebar .admin-drawer-close { display: grid; }
+    .admin-brand { padding-right: 44px; }
+    /* Logout stays pinned to the bottom of the drawer, above the phone's home bar */
+    .admin-logout { position: sticky; bottom: 0; margin: 0 -16px; padding: 10px 16px max(14px, env(safe-area-inset-bottom)); background: var(--side-bg); }
+}
+
+@media (max-width: 767px) {
+    .admin-main { padding: 0 16px 35px; --admin-pad: 16px; }
+    .admin-header { min-height: 60px; gap: 10px; }
+    .admin-header-actions { gap: 8px; }
+    .admin-header-brand { gap: 8px; }
+    .admin-header-brand .admin-mark { display: none; }
+    .admin-header-brand span:last-child { font-size: .8rem; }
+    .admin-welcome { margin-top: 16px; padding: 20px 18px; }
+    .admin-stat-grid, .business-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* Compact profile row in the menu drawer, so the whole menu fits on most phones */
+    .admin-profile { display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; column-gap: 12px; row-gap: 4px; margin-top: 12px; padding: 12px 14px; text-align: left; }
+    .admin-avatar-wrapper { grid-row: span 2; width: 46px; height: 46px; margin: 0; }
+    .admin-photo, .admin-sidebar-avatar-img { width: 46px; height: 46px; margin: 0; border-width: 3px; font-size: .85rem; }
+    .admin-avatar-upload-label { right: -4px; bottom: -4px; width: 20px; height: 20px; font-size: .6rem; }
+    .admin-profile h2 { align-self: end; margin: 0; font-size: .86rem; }
+    .admin-profile p { align-self: start; justify-self: start; margin: 0; }
+    .admin-nav { padding: 12px 0; }
+    .admin-nav-item { padding: 7px 12px; }
+
+    .admin-quick-row { flex-wrap: nowrap; gap: 8px; margin: 14px -16px 0; padding: 0 16px 4px; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 16px; scrollbar-width: none; }
+    .admin-quick-row::-webkit-scrollbar { display: none; }
+    .admin-quick-row button.quick-action-btn { flex: none; min-width: 0; width: auto; padding: 8px 12px 8px 8px; white-space: nowrap; scroll-snap-align: start; }
+
+    .admin-layout--dash .admin-rail-toggle:not([hidden]) { display: none; }
+    .admin-layout--dash .admin-rail { position: static; z-index: auto; width: auto; height: auto; overflow: visible; padding: 0 16px 35px; border-left: 0; background: transparent; box-shadow: none; transform: none; visibility: visible; transition: none; }
+    .admin-layout--dash .admin-rail .admin-drawer-close { display: none; }
+    .admin-layout--dash .admin-rail .recent-section { margin-top: 28px; }
+}
+
+@media (max-width: 359px) {
+    .admin-stat-grid, .business-grid { grid-template-columns: 1fr; }
+    .admin-stat-card { min-height: 120px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-sidebar, .admin-rail, .admin-backdrop { transition: none; }
+}
+
+/* Payments: period filter (monthly / quarterly / yearly) and the totals for that period */
+.admin-period-select { min-width: 190px; }
+.admin-period-totals { margin: -.35rem 0 1rem; color: var(--muted); font-size: .82rem; }
+.admin-period-totals strong { color: var(--ink); }
+@media (max-width: 767px) {
+    .admin-filter-bar .admin-filter-input { flex: 1 1 100%; min-width: 0; }
+    .admin-filter-bar .admin-period-select { flex: 1 1 auto; min-width: 0; }
+}
+@media (max-width: 767px) {
+    /* Two cards per row on phones: amounts like $12,345.00 shrink to fit instead of overflowing */
+    .admin-stat-card strong { font-size: clamp(1.15rem, 6vw, 2.1rem); overflow-wrap: anywhere; }
+}

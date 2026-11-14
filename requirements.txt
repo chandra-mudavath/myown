@@ -34,3 +34,6 @@ segno==1.6.1           # UPI QR codes for Pay in INR (pure Python, no image libr
 
 # ── File storage ──────────────────────────────────────────────
 boto3>=1.36,<2         # Cloudflare R2 (S3 API) for uploaded files when STORAGE_BACKEND=r2
+
+# ── PDF documents ─────────────────────────────────────────────
+playwright==1.64.1     # HR documents as PDF (headless Chromium). Once per server: playwright install --with-deps chromium

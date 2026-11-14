@@ -51,25 +51,8 @@
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("send") }}</span> Messages
             <span class="staff-unread-pill" data-chat-unread hidden style="display:none"></span>
         </a>
-        {% if not is_hr %}
-        <a class="sidebar-nav-item{% if active_nav == 'referrals' %} active{% endif %}" href="/staff/referrals">
-            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("phone") }}</span> Referrals
-        </a>
-        {#- My HR: their own attendance, leaves, payslips and letters (HR workspace, Nov 2026) -#}
-        <p class="sidebar-nav-label">My HR</p>
-        <a class="sidebar-nav-item{% if active_nav == 'my_attendance' %} active{% endif %}" href="/staff/hr/attendance">
-            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("clock") }}</span> Attendance
-        </a>
-        <a class="sidebar-nav-item{% if active_nav == 'my_leaves' %} active{% endif %}" href="/staff/hr/leaves">
-            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("calendar") }}</span> Leaves
-        </a>
-        <a class="sidebar-nav-item{% if active_nav == 'my_payslips' %} active{% endif %}" href="/staff/hr/payslips">
-            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("card") }}</span> Payslips
-        </a>
-        <a class="sidebar-nav-item{% if active_nav == 'my_documents' %} active{% endif %}" href="/staff/hr/documents">
-            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("file") }}</span> My documents
-        </a>
-        {% endif %}
+        {#- Referrals moved to the foot, between Profile and Logout; My HR (Attendance, Leaves, Payslips, My documents)
+            moved to the Profile page (client feedback, Nov 2026) -#}
         {# Notifications: hidden for now (client feedback, Oct 2026)
         <a class="sidebar-nav-item{% if active_nav == 'notifications' %} active{% endif %}" href="/staff/notifications">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("mail") }}</span> Notifications
@@ -84,23 +67,30 @@
                 ("review", case_url ~ "/documents#review-docs", "eye", "Review documents"), -#}
         {% set cn = client_nav if client_nav is defined else none %}
         {% if cn %}
-        {% set case_url = "/staff/cases/" ~ cn.case_id %}
+        {% set case_url = "/staff/cases/" ~ (cn.case_ref or cn.case_id) %}{#- readable number in links (Nov 2026) -#}
         {#- Round 3 (client feedback, Nov 2026): the same tabs the client has in their own portal, in the same groups,
             each opening the matching part of the case; then Update stage and Comments.
             Was: Personal details, Filing details, Spouse & dependents, Tax notes, Previous tax info, Documents,
             Bank details, Client profile, Message client. -#}
         <div class="staff-clientnav" aria-label="Client information">
+            {% if cn.no_case %}
+            {#- A client with no filing yet (client feedback, Nov 2026): same tabs, the case ones greyed out -#}
+            <p class="sidebar-nav-label">Tax year</p>
+            <p class="staff-clientnav__nofiling">No filing yet</p>
+            {% else %}
             <label class="sidebar-nav-label" for="clientnav-year">Tax year</label>
             <select id="clientnav-year" class="staff-select staff-clientnav__year" onchange="if (this.value) window.location = this.value">
                 {% for year, case_id in cn.years %}
                 <option value="/staff/cases/{{ case_id }}" {% if year == cn.tax_year %}selected{% endif %}>{{ year }}</option>
                 {% endfor %}
             </select>
+            {% endif %}
             <div class="staff-clientnav__who">
                 <span class="staff-id-chip">{{ cn.client_number or '—' }}</span>
                 <strong>{{ cn.client_name }}</strong>
             </div>
 
+            {% if not cn.no_case %}
             <div class="staff-clientnav__actions">
                 {% if cn.needs_assignment %}
                 {#- Unassigned: the reason shows on hover instead of as text on the case page (client feedback, Nov 2026) -#}
@@ -117,43 +107,50 @@
                     {{ ci("notes", "ci ci--sm") }} Comments{% if cn.comment_count %} <span class="staff-count-chip">{{ cn.comment_count }}</span>{% endif %}
                 </a>
             </div>
+            {% endif %}
 
-            {% for group, items in [
-                ("Overview", [
+            {#- Overview group (Dashboard, My Filings, Messages) removed: the names repeated the staff's own Dashboard and
+                Messages above (client feedback, Nov 2026). It was:
                     ("dashboard", case_url, "dashboard", "Dashboard"),
                     ("filings", "/staff/clients/" ~ cn.client_id ~ "#filings-title", "history", "My Filings"),
-                    ("messages", "/staff/messages?case=" ~ cn.case_id, "mail", "Messages"),
-                ]),
+                    ("messages", "/staff/messages?case=" ~ cn.case_id, "mail", "Messages"), -#}
+            {% for group, items in [
                 ("My tax return", [
-                    ("personal", case_url ~ "#sec-01", "user", "Personal Info"),
-                    ("notes", case_url ~ "#sec-notes", "notes", "Tax Notes"),
+                    ("personal", case_url ~ "#tab-personal", "user", "Personal Info"),
+                    ("notes", case_url ~ "#tab-notes", "notes", "Tax Notes"),
                     ("documents", case_url ~ "/documents", "upload", "Upload Documents"),
-                    ("summary", case_url ~ "#sec-payments", "calculator", "Tax Summary"),
-                    ("payment", case_url ~ "#sec-payments-list", "card", "Make Payment"),
-                    ("bank", case_url ~ "#sec-bank", "bank", "Bank Details"),
-                    ("fbar", case_url ~ "#sec-fbar", "globe", "FBAR"),
+                    ("summary", case_url ~ "#tab-summary", "calculator", "Tax Summary"),
+                    ("payment", case_url ~ "#tab-payment", "card", "Make Payment"),
+                    ("bank", case_url ~ "#tab-bank", "bank", "Bank Details"),
+                    ("fbar", case_url ~ "#tab-fbar", "globe", "FBAR"),
                 ]),
                 ("Review & file", [
                     ("review", case_url ~ "/documents#review-docs", "eye", "Review Documents"),
-                    ("efile", case_url ~ "#sec-efile", "sign", "E-File Authorization"),
+                    ("efile", case_url ~ "#tab-efile", "sign", "E-File Authorization"),
                     ("final", case_url ~ "/documents#docs-title", "download", "Download Tax Docs"),
                 ]),
                 ("Account", [
-                    ("refund", case_url ~ "#sec-refund", "refund", "Refund Status"),
+                    ("refund", case_url ~ "#tab-refund", "refund", "Refund Status"),
                     ("contact", "/staff/clients/" ~ cn.client_id ~ "#personal-title", "phone", "Email & Mobile"),
                     ("referrals", "/staff/referrals?q=" ~ (cn.client_number or cn.client_name) | urlencode, "gift", "Refer & Earn"),
                 ]),
             ] %}
             <p class="sidebar-nav-label staff-clientnav__group">{{ group }}</p>
             {% for key, href, icon, label in items %}
-            <a class="sidebar-nav-item staff-clientnav__item{% if (key == 'documents' and cn.section == 'documents') or (key == 'dashboard' and cn.section == 'case') %} active{% endif %}" href="{{ href }}">
+            {% if cn.no_case and key not in ('contact', 'referrals') %}
+            <span class="sidebar-nav-item staff-clientnav__item is-disabled" aria-disabled="true" title="No filing yet for this client">
+                <span class="sidebar-nav-icon" aria-hidden="true">{{ ci(icon) }}</span> {{ label }}
+            </span>
+            {% else %}
+            <a class="sidebar-nav-item staff-clientnav__item{% if (key == 'documents' and cn.section == 'documents') or (key == 'contact' and cn.section == 'client') %} active{% endif %}" href="{{ href }}">
                 <span class="sidebar-nav-icon" aria-hidden="true">{{ ci(icon) }}</span> {{ label }}
             </a>
+            {% endif %}
             {% endfor %}
             {% endfor %}
         </div>
         {#- The Update stage window (once per page; the case table pages include their own) -#}
-        {% include "staff/_stage_dialog.html" %}
+        {% if not cn.no_case %}{% include "staff/_stage_dialog.html" %}{% endif %}
         {% endif %}
 
         {% if stages and not cn and not is_hr %}
@@ -175,9 +172,14 @@
     </nav>
 
     <div class="sidebar-footer">
-        <a class="sidebar-nav-item{% if active_nav == 'profile' %} active{% endif %}" href="/staff/profile">
+        <a class="sidebar-nav-item{% if active_nav == 'profile' or (active_nav or '').startswith('my_') %} active{% endif %}" href="/staff/profile">
             <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("user") }}</span> Profile
         </a>
+        {% if not is_hr %}
+        <a class="sidebar-nav-item{% if active_nav == 'referrals' %} active{% endif %}" href="/staff/referrals">
+            <span class="sidebar-nav-icon" aria-hidden="true">{{ ci("phone") }}</span> Referrals
+        </a>
+        {% endif %}
         <script src="{{ asset('platform', 'js/chat-badge.js') }}" defer></script>
         <form action="/auth/logout" method="post">
             <button type="submit" class="sidebar-nav-item sidebar-nav-item--logout">

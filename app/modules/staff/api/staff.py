@@ -20,7 +20,7 @@ from app.modules.client.models.client import Client
 from app.platform.models.filing_document import DocumentComment, FilingDocument
 from app.modules.staff.models.staff import Staff, StaffRole
 from app.platform.models.tax_filing import TaxFiling
-from app.platform.services import access_log, assignments, case_actions, intake, payments, referrals
+from app.platform.services import access_log, assignments, case_actions, intake, payments, referrals, tax_summary
 from app.platform.services.activity_feed import client_activity
 from app.platform.services.catalog import case_stages, document_categories, stage_labels
 from app.platform.services.document_review import (REVIEW_CATEGORY, account_names, add_comment, comment_threads, review_documents,
@@ -115,14 +115,14 @@ def _client_nav(db: Session, filing: TaxFiling, section: str) -> dict:
     tax year switcher, the client number, then links to each part of that client's information."""
     client = db.query(Client).filter(Client.id == filing.client_id).first()
     years = (
-        db.query(TaxFiling.tax_year, TaxFiling.id)
+        db.query(TaxFiling.tax_year, TaxFiling.id, TaxFiling.case_number)
         .filter(TaxFiling.client_id == filing.client_id)
         .order_by(TaxFiling.tax_year.desc(), TaxFiling.created_at.desc())
         .all()
     )
     seen: dict[int, str] = {}
-    for year, case_id in years:
-        seen.setdefault(year, case_id)
+    for year, case_id, case_number in years:
+        seen.setdefault(year, case_number or case_id)
     labels = stage_labels(db)
     next_stage = _next_stage(filing.status, _stage_keys(db))
     return {
@@ -130,6 +130,7 @@ def _client_nav(db: Session, filing: TaxFiling, section: str) -> dict:
         "client_number": client.client_number if client else None,
         "client_name": f"{filing.first_name} {filing.last_name}",
         "case_id": filing.id,
+        "case_ref": case_ref(filing),  # links in the sidebar use the readable number
         "case_number": filing.get_case_id(db),
         "tax_year": filing.tax_year,
         "years": list(seen.items()),
@@ -141,6 +142,13 @@ def _client_nav(db: Session, filing: TaxFiling, section: str) -> dict:
         "needs_assignment": filing.status == case_actions.REGISTERED_STAGE and not assignments.team(db, filing.id),
         "comment_count": len(_case_comments(db, filing)),
     }
+
+
+def _client_nav_no_case(client: Client) -> dict:
+    """The sidebar's client tabs for a client who hasn't started a filing: name and number, the case tabs greyed out."""
+    return {"client_id": client.id, "client_number": client.client_number, "client_name": f"{client.first_name} {client.last_name or ''}".strip(),
+            "case_id": None, "case_number": None, "tax_year": None, "years": [], "section": "client", "no_case": True,
+            "needs_assignment": False, "comment_count": 0}
 
 
 def _case_comments(db: Session, filing: TaxFiling) -> list[dict]:
@@ -177,6 +185,20 @@ def _case_comments(db: Session, filing: TaxFiling) -> list[dict]:
 
 
 PER_PAGE_OPTIONS = (10, 25, 50, 100)
+# Case page tabs (client feedback, Nov 2026): the stage tracker opens the tab each stage is about. "#tab-…" is a
+# tab on the case page (see data-tab in cases/detail.html); "/documents…" is the case's Documents page.
+STAGE_TAB = {
+    "pending_review": "#tab-personal", "info_pending": "#tab-personal", "amendments": "#tab-personal",
+    "docs_pending": "/documents", "docs_received": "/documents",
+    "in_progress": "#tab-notes", "drip": "#tab-notes", "preparation": "#tab-notes",
+    "review": "#tab-summary", "payment_pending": "#tab-payment",
+    "draft_uploading": "/documents#review-docs", "client_review": "/documents#review-docs", "rev_doc_rej": "/documents#review-docs",
+    "form_8879": "#tab-efile",
+    "e_filing": "/documents#docs-title", "paper_filing": "/documents#docs-title", "paper_filing_coa": "/documents#docs-title",
+    "state_filing": "/documents#docs-title", "signed_docs_uploaded": "/documents#docs-title",
+    "complete": "#tab-refund",
+}
+
 _SORT_COLUMNS = {
     "created": TaxFiling.created_at,
     "case": TaxFiling.case_number,
@@ -185,6 +207,7 @@ _SORT_COLUMNS = {
     "email": TaxFiling.email,
     "year": TaxFiling.tax_year,
     "stage": TaxFiling.status,
+    "joined": Client.created_at,
 }
 
 
@@ -244,7 +267,9 @@ def _case_table(
     direction = "asc" if direction == "asc" else "desc"
     per_page = per_page if per_page in PER_PAGE_OPTIONS else PER_PAGE_OPTIONS[0]
 
-    query = db.query(TaxFiling, Client.client_number).outerjoin(Client, Client.id == TaxFiling.client_id)
+    # Client's phone and join date too: the table has the Dashboard's columns (client feedback, Nov 2026)
+    query = (db.query(TaxFiling, Client.client_number, Client.phone, Client.created_at)
+             .outerjoin(Client, Client.id == TaxFiling.client_id))
     if q:
         term = f"%{q}%"
         query = query.filter(
@@ -273,7 +298,14 @@ def _case_table(
         .all()
     )
 
-    ids = [f.id for f, _ in rows]
+    ids = [f.id for f, *_ in rows]
+    client_ids = {f.client_id for f, *_ in rows if f.client_id}
+    filing_counts = dict(
+        db.query(TaxFiling.client_id, func.count(TaxFiling.id))
+        .filter(TaxFiling.client_id.in_(client_ids))
+        .group_by(TaxFiling.client_id)
+        .all()
+    ) if client_ids else {}
     doc_counts = dict(
         db.query(FilingDocument.filing_id, func.count(FilingDocument.id))
         .filter(FilingDocument.filing_id.in_(ids))
@@ -287,23 +319,28 @@ def _case_table(
         {
             "sno": offset + i + 1,
             "id": f.id,
+            "ref": case_ref(f),  # readable case number for links
             "case_id": f.get_case_id(db),
             "client_id": f.client_id,
             "client_name": f"{f.first_name} {f.last_name}",
             "customer_no": client_number,
             "email": f.email,
+            "phone": f.phone or client_phone,
             "tax_year": f.tax_year,
+            "filings": filing_counts.get(f.client_id, 0),
+            "joined": joined.strftime("%b %d, %Y") if joined else "",
             "stage": labels.get(f.status, f.status.replace("_", " ").title()),
             "stage_tone": _stage_tone(f.status),
             "stage_key": f.status,
             "next_stage": _next_stage(f.status, stage_keys),
             "doc_count": doc_counts.get(f.id, 0),
             "staff": ", ".join(teams.get(f.id, [])) or None,
+            "staff_list": teams.get(f.id, []),  # one name per line in the table
             # A Registered case can't move on until someone is assigned (case_actions.move_stage)
             "needs_assignment": f.status == case_actions.REGISTERED_STAGE and not teams.get(f.id),
             "comment": comments.get(f.id),  # latest stage-move comment
         }
-        for i, (f, client_number) in enumerate(rows)
+        for i, (f, client_number, client_phone, joined) in enumerate(rows)
     ]
 
     state = {"q": q, "stage": stage, "year": year, "sort": sort, "dir": direction, "per_page": per_page, "page": page}
@@ -358,12 +395,14 @@ def _client_rows(db: Session, year: str | None = None, stage: str | None = None)
     )
     filing_counts: dict[str, int] = {}
     latest: dict[str, tuple] = {}
-    query = db.query(TaxFiling.client_id, TaxFiling.status, TaxFiling.tax_year, TaxFiling.id).order_by(TaxFiling.created_at)
-    for client_id, status, tax_year, filing_id in query.all():
+    refs: dict[str, str] = {}
+    query = db.query(TaxFiling.client_id, TaxFiling.status, TaxFiling.tax_year, TaxFiling.id, TaxFiling.case_number).order_by(TaxFiling.created_at)
+    for client_id, status, tax_year, filing_id, case_number in query.all():
         filing_counts[client_id] = filing_counts.get(client_id, 0) + 1
         if (year and tax_year != int(year)) or (stage and status != stage):
             continue
         latest[client_id] = (status, tax_year, filing_id)  # ordered oldest → newest, so the last one wins
+        refs[filing_id] = case_number or filing_id
     comments = _latest_comments(db, [f for _, _, f in latest.values()])
 
     rows = []
@@ -375,6 +414,7 @@ def _client_rows(db: Session, year: str | None = None, stage: str | None = None)
             "sno": len(rows) + 1,
             "tax_year": tax_year,
             "filing_id": filing_id,
+            "filing_ref": refs.get(filing_id),  # readable case number for the link
             "comment": comments.get(filing_id),
             "id": c.id,
             "name": f"{c.first_name} {c.last_name or ''}".strip(),
@@ -397,7 +437,7 @@ def staff_dashboard(
     stage: str | None = None,
     year: str | None = None,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = 50,  # 50 a page by default (client feedback, Nov 2026); was 10
     sort: str = "created",
     direction: str = Query("desc", alias="dir"),
     db: Session = Depends(get_db),
@@ -440,7 +480,7 @@ def staff_my_cases(
     stage: str | None = None,
     year: str | None = None,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = 50,  # 50 a page by default (client feedback, Nov 2026); was 10
     sort: str = "created",
     direction: str = Query("desc", alias="dir"),
     db: Session = Depends(get_db),
@@ -471,7 +511,7 @@ def staff_all_cases(
     stage: str | None = None,
     year: str | None = None,
     page: int = 1,
-    per_page: int = 10,
+    per_page: int = 50,  # 50 a page by default (client feedback, Nov 2026); was 10
     sort: str = "created",
     direction: str = Query("desc", alias="dir"),
     db: Session = Depends(get_db),
@@ -534,6 +574,21 @@ def _label(value, labels: dict = _CHOICE_LABELS) -> str | None:
     return labels.get(value, str(value).replace("_", " ").capitalize())
 
 
+def case_ref(f: TaxFiling) -> str:
+    """What staff links use for a case: the readable case number (FLI_0000015), else the id (client feedback, Nov 2026)."""
+    return f.case_number or f.id
+
+
+def _readable_redirect(request: Request, filing: TaxFiling | None, case_id: str) -> RedirectResponse | None:
+    """A case page opened by id (or a lower-case number) moves to its readable address; the query is kept and the
+    browser keeps the #tab. Old links and bookmarks keep working."""
+    if not filing or not filing.case_number or case_id == filing.case_number:
+        return None
+    path = request.url.path.replace(f"/cases/{case_id}", f"/cases/{filing.case_number}", 1)
+    query = f"?{request.url.query}" if request.url.query else ""
+    return RedirectResponse(path + query, status_code=status.HTTP_302_FOUND)
+
+
 def _find_filing(db: Session, case_id: str) -> TaxFiling | None:
     """Look up a filing by id, case number or 8-char id prefix. Each lookup is one indexed query."""
     key = case_id.strip()
@@ -556,6 +611,8 @@ def staff_case_detail(case_id: str, request: Request, account: CaseStaffAccount,
     labels = stage_labels(db)
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     filing = _find_filing(db, case_id)
+    if (moved := _readable_redirect(request, filing, case_id)):
+        return moved
     if filing:  # the case page shows bank, FBAR and e-file details
         access_log.record(db, request, account.id, "case_details_viewed", "tax_filing", filing.id)
 
@@ -598,6 +655,8 @@ def staff_case_detail(case_id: str, request: Request, account: CaseStaffAccount,
             {
                 "label": label,
                 "state": "done" if i < stage_index else "current" if i == stage_index else "todo",
+                # Clicking a stage opens the part of the case it is about (client feedback, Nov 2026)
+                "href": f"/staff/cases/{case_ref(f)}{STAGE_TAB.get(slug, '#tab-personal')}",
             }
             for i, (slug, label) in enumerate(stages)
         ]
@@ -619,6 +678,7 @@ def staff_case_detail(case_id: str, request: Request, account: CaseStaffAccount,
 
         case = {
             "id": f.id,
+            "ref": case_ref(f),
             "case_id": f.get_case_id(db),
             "needs_assignment": f.status == case_actions.REGISTERED_STAGE and not assignments.team(db, f.id),
             "team": assignments.team(db, f.id),
@@ -692,6 +752,12 @@ def staff_case_detail(case_id: str, request: Request, account: CaseStaffAccount,
             "client_nav": _client_nav(db, filing, "case") if filing else None,
             # Tax Summary / Make Payment in the client view (client feedback, Nov 2026)
             "billing": payments.client_billing(db, filing.client_id, filing) if filing else None,
+            # Estimated Tax Summary: entered here by a Preparer / Reviewer / Manager (client feedback, Nov 2026)
+            "tax_summary": tax_summary.view(db, filing) if filing else None,
+            "fee_details": tax_summary.fee_details(db, filing),
+            "can_edit_summary": tax_summary.can_edit(staff),
+            "summary_saved": request.query_params.get("summary_saved", ""),
+            "summary_error": request.query_params.get("summary_error", ""),
             # Saved by the client on Tax Notes / Bank Details (client feedback, Oct 2026)
             **_intake_context(db, filing),
             "app_name": settings.APP_NAME,
@@ -740,6 +806,8 @@ def staff_case_documents(
     labels = stage_labels(db)
     staff = db.query(Staff).filter(Staff.account_id == account.id).first()
     filing = _find_filing(db, case_id)
+    if (moved := _readable_redirect(request, filing, case_id)):
+        return moved
 
     case = None
     groups: list[dict] = []
@@ -747,6 +815,7 @@ def staff_case_documents(
     if filing:
         case = {
             "id": filing.id,
+            "ref": case_ref(filing),
             "case_id": filing.get_case_id(db),
             "client_id": filing.client_id,
             "client_name": f"{filing.first_name} {filing.last_name}",
@@ -933,6 +1002,8 @@ def staff_case_comments(case_id: str, request: Request, account: CaseStaffAccoun
     filing = _find_filing(db, case_id)
     if not filing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
+    if (moved := _readable_redirect(request, filing, case_id)):
+        return moved
     return templates.TemplateResponse(request, "staff/cases/comments.html", {
         "request": request, "account": account, "staff": staff, "app_name": settings.APP_NAME,
         "filing": filing, "case_number": filing.get_case_id(db), "comments": _case_comments(db, filing),
@@ -955,6 +1026,23 @@ def staff_add_case_comment(case_id: str, account: CaseStaffAccount, body: str = 
     db.add(CaseComment(case_id=filing.id, author_account_id=account.id, author_name=(names.get("name") or "Staff")[:80], body=text))
     db.commit()
     return RedirectResponse(f"/staff/cases/{filing.id}/comments?saved=1", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/cases/{filing_id}/tax-summary", name="staff_save_tax_summary")
+async def staff_save_tax_summary(filing_id: str, request: Request, account: CaseStaffAccount, db: Session = Depends(get_db)):
+    """Save the Estimated Tax Summary the client sees on Tax Summary. Preparer, Reviewer or Manager only."""
+    staff = db.query(Staff).filter(Staff.account_id == account.id).first()
+    if not tax_summary.can_edit(staff):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only a Preparer, Reviewer or Manager can update the tax summary.")
+    filing = db.query(TaxFiling).filter(TaxFiling.id == filing_id).first()
+    if not filing:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found.")
+    data, err = tax_summary.from_form(await request.form())
+    if not err:
+        tax_summary.save(db, filing, data, account.id)
+        access_log.record(db, request, account.id, "tax_summary_updated", "tax_filing", filing.id)
+    query = urlencode({"summary_error": err} if err else {"summary_saved": "Tax summary saved. The client can see it now."})
+    return RedirectResponse(f"/staff/cases/{filing_id}?{query}#sec-tax-summary", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/cases/{filing_id}/stage", name="staff_move_stage")
@@ -981,12 +1069,12 @@ def staff_move_stage(
     return RedirectResponse(back, status_code=status.HTTP_303_SEE_OTHER)
 
 
-def _notification_feed(db: Session, limit: int = 300) -> list[dict]:
+def _notification_feed(db: Session, limit: int = 1000) -> list[dict]:
     """Recent client activity: new filings, uploads / re-uploads, and replies on documents."""
     return client_activity(
         db,
-        case_link=lambda f: f"/staff/cases/{f.id}",
-        doc_link=lambda f, doc_id: f"/staff/cases/{f.id}/documents" + (f"?doc={doc_id}" if doc_id else ""),
+        case_link=lambda f: f"/staff/cases/{case_ref(f)}",
+        doc_link=lambda f, doc_id: f"/staff/cases/{case_ref(f)}/documents" + (f"?doc={doc_id}" if doc_id else ""),
         limit=limit,
     )
 
@@ -1031,6 +1119,7 @@ def staff_client_detail(client_id: str, request: Request, account: CaseStaffAcco
             )
 
     filings = []
+    records = []
     client_email = None
     if client:
         records = (
@@ -1049,6 +1138,7 @@ def staff_client_detail(client_id: str, request: Request, account: CaseStaffAcco
         filings = [
             {
                 "id": f.id,
+                "ref": case_ref(f),
                 "case_id": f.get_case_id(db),
                 "tax_year": f.tax_year,
                 "filing_type": f.filing_type,
@@ -1074,6 +1164,8 @@ def staff_client_detail(client_id: str, request: Request, account: CaseStaffAcco
             "client": client,
             "client_email": client_email,
             "filings": filings,
+            # The client tabs in the sidebar, also for a client with no filing yet (client feedback, Nov 2026)
+            "client_nav": (_client_nav(db, records[0], "client") if records else _client_nav_no_case(client)) if client else None,
             "app_name": settings.APP_NAME,
             **_nav_context(db, staff),
         },

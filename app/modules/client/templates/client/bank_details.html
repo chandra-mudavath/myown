@@ -82,16 +82,19 @@
     <aside class="cx-stack">
         <section class="cx-card">
             <div class="cx-card__head cx-card__head--plain">
-                <h2 class="cx-card__title">{{ ci("info") }} Where to <span class="cx-accent">find these numbers</span></h2>
+                {#- The (i) explains the picture on hover, focus or tap (Round 2 item 3, client feedback Nov 2026; was decoration only) -#}
+                <h2 class="cx-card__title"><button type="button" class="cx-tip" aria-label="Where to find these numbers: Look at the bottom of a cheque: the 9-digit routing number (electronic) comes first, then your account number. Your bank app or statement shows them too." data-tip="Look at the bottom of a cheque: the 9-digit routing number (electronic) comes first, then your account number. Your bank app or statement shows them too.">{{ ci("info") }}</button> Where to <span class="cx-accent">find these numbers</span></h2>
             </div>
             <div class="cx-card__body">
+                {#- What each part of a cheque is, instead of sample values (client feedback, Nov 2026).
+                    Was: YOUR NAME / No. 1024 / ⑆123456789⑆ 000123456789⑈ 1024 -#}
                 <div class="cx-cheque" aria-hidden="true">
-                    <div style="display:flex; justify-content:space-between;"><span>YOUR NAME</span><span>No. 1024</span></div>
-                    <div class="cx-cheque__line"></div>
-                    <div class="cx-cheque__line cx-cheque__line--short"></div>
-                    <div class="cx-cheque__micr"><span class="r">⑆123456789⑆</span><span class="a">000123456789⑈</span><span>1024</span></div>
+                    <div class="cx-cheque__top"><span>Your name &amp; address</span><span>Cheque no.</span></div>
+                    <div class="cx-cheque__field"><small>Pay to</small><span class="cx-cheque__line"></span></div>
+                    <div class="cx-cheque__field"><small>Signature</small><span class="cx-cheque__line cx-cheque__line--short"></span></div>
+                    <div class="cx-cheque__micr"><span class="r">Routing no.</span><span class="a">Account no.</span><span class="n">Cheque no.</span></div>
                 </div>
-                <div class="cx-legendkeys"><span class="r">Routing Number (Electronic)</span><span class="a">Account number</span></div>
+                <div class="cx-legendkeys"><span class="r">Routing Number (Electronic): the first 9 digits at the bottom</span><span class="a">Account number: the digits after it</span></div>
             </div>
         </section>
         <div class="cx-alert cx-alert--warn">

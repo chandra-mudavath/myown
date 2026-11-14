@@ -17,6 +17,8 @@ from app.platform.models.auth import AuthAccount
 from app.platform.models.filing_document import FilingDocument
 from app.platform.models.filing_intake import FilingIntake
 from app.platform.models.tax_filing import TaxFiling
+from app.platform.schemas.auth import clean_name
+from app.platform.services import email_check
 
 TAX_NOTES = "tax_notes"
 BANK = "bank"
@@ -233,6 +235,9 @@ def residency_from_form(form) -> tuple[dict, str | None]:
         if start and end and end < start:
             return {}, f"Earlier visa {i}: the end date is before the start date."
         earlier.append({"type": kind, "other": other, "from": start, "to": end})
+    # Residential status is required: Save & continue moved on with it unanswered (client feedback, Nov 2026)
+    if not _yes_no(form, "days_183"):
+        return {}, "Please answer: did you stay in the US for at least 183 days this year?"
     return {"nationality": nationality, "nationality_other": nationality_other, "visa_count": visa_count,
             "visa_type": visa_type, "visa_type_other": visa_type_other, "earlier_visas": earlier,
             "first_entry": _date(form, "first_entry"), "days_183": _yes_no(form, "days_183")}, None
@@ -255,6 +260,18 @@ def _tax_id(form, kind_field: str, number_field: str, saved: dict | None, who: s
 MARITAL_FILING = ("jointly", "separately")
 
 
+def _names(form, first_field: str, last_field: str, max_length: int, who: str) -> tuple[str, str, str | None]:
+    """(first, last, error): both required; letters, numbers and spaces, like sign-up (Nov 2026)."""
+    first, last = _clean(form, first_field, max_length), _clean(form, last_field, max_length)
+    if not first or not last:
+        return first, last, f"Enter {who} first and last name."
+    try:
+        return (clean_name(first, f"{who.capitalize()} first name", required=True),
+                clean_name(last, f"{who.capitalize()} last name", required=True), None)
+    except ValueError as e:
+        return first, last, str(e)
+
+
 def spouse_from_form(form, saved: dict | None) -> tuple[dict, str | None]:
     """Personal Info → Marital status (moved here from Tax Notes; client feedback, Nov 2026)."""
     married = _yes_no(form, "married")
@@ -262,22 +279,27 @@ def spouse_from_form(form, saved: dict | None) -> tuple[dict, str | None]:
         return {}, "Tell us whether you are married."
     if married == "no":
         return {"married": "no"}, None
-    first, last = _clean(form, "spouse_first", 50), _clean(form, "spouse_last", 50)
-    if not first or not last:
-        return {}, "Enter your spouse's first and last name."
+    first, last, err = _names(form, "spouse_first", "spouse_last", 50, "your spouse's")
+    if err:
+        return {}, err
+    spouse_email = _clean(form, "spouse_email", 120)
+    if spouse_email:  # optional; same email rules as sign-up (Nov 2026)
+        spouse_email, err = email_check.clean(spouse_email)
+        if err:
+            return {}, f"Spouse email: {err}"
     kind, number, err = _tax_id(form, "spouse_id", "spouse_id_number", (saved or {}).get("spouse"), "your spouse's")
     if err:
         return {}, err
     return {"married": "yes", "filing": _pick(form, "filing", MARITAL_FILING) or "jointly",
             "spouse": {"first_name": first, "last_name": last, "date_of_birth": _date(form, "spouse_dob"),
-                       "id_type": kind, "id_number": number, "email": _clean(form, "spouse_email", 120),
+                       "id_type": kind, "id_number": number, "email": spouse_email,
                        "phone": _clean(form, "spouse_phone", 25)}}, None
 
 
 def dependent_from_form(form) -> tuple[dict, str | None]:
-    first, last = _clean(form, "dep_first", 40), _clean(form, "dep_last", 40)
-    if not first or not last:
-        return {}, "Enter the dependent's first and last name."
+    first, last, err = _names(form, "dep_first", "dep_last", 40, "the dependent's")
+    if err:
+        return {}, err
     months = _clean(form, "dep_months", 2)
     if months and not (months.isdigit() and 0 <= int(months) <= 12):
         return {}, "Months lived with you must be between 0 and 12."

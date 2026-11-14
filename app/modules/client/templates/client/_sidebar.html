@@ -71,13 +71,14 @@
 
     <script src="{{ asset('platform', 'js/chat-badge.js') }}" defer></script>
     <div class="cx-sidebar__foot">
-        <div class="cx-helpcard">
+        {#- Opens Messages, the chat with the tax team (client feedback, Nov 2026; was text only, cut off) -#}
+        <a class="cx-helpcard" href="/client/messages" title="Message your tax team">
             {{ ci("help") }}
             <div>
                 <strong>Need help?</strong>
-                <span>Questions about your return? Contact your tax team.</span>
+                <span>Questions about your return? Message your tax team.</span>
             </div>
-        </div>
+        </a>
         <form action="/auth/logout" method="post">
             <button type="submit" class="cx-nav__item cx-nav__item--logout">{{ ci("logout") }}<span>Log out</span></button>
         </form>

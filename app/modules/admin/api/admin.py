@@ -539,7 +539,20 @@ def quick_create_client(
     phone: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    existing_auth = db.query(AuthAccount).filter(AuthAccount.email == email.strip().lower()).first()
+    # Same rules as sign-up (Nov 2026)
+    from app.platform.schemas.auth import clean_name
+    from app.platform.services import email_check
+    try:
+        first_name = clean_name(first_name, "First name", required=True)
+        last_name = clean_name(last_name, "Last name", required=True)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from None
+    if len(first_name) > 50 or len(last_name) > 50:
+        raise HTTPException(status_code=400, detail="Names can be at most 50 characters.")
+    email, email_err = email_check.clean(email)
+    if email_err:
+        raise HTTPException(status_code=400, detail=email_err)
+    existing_auth = db.query(AuthAccount).filter(AuthAccount.email == email).first()
     if existing_auth:
         raise HTTPException(status_code=400, detail="An account with this email already exists.")
 

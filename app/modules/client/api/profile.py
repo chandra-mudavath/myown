@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Cookie, Depends, File, UploadFile, Request, status
+from fastapi import APIRouter, Cookie, Depends, File, HTTPException, UploadFile, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -88,7 +88,9 @@ def get_profile(account: ClientAccount, db: Session = Depends(get_db)):
 @router.put("/api/personal")
 def save_personal(data: PersonalInformationUpdate, account: ClientAccount, db: Session = Depends(get_db)):
     client = _client_or_404(db, account.id)
-    update_personal(client, data)
+    err = update_personal(client, data)
+    if err:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, err)
     db.commit()
     db.refresh(client)
     return {"message": "Your personal information has been updated successfully.", "profile": serialize_profile(client, account)}
@@ -202,13 +204,16 @@ async def save_marital(request: Request, account: ClientAccount, db: Session = D
 
 @router.post("/profile/dependents", name="client_save_dependent")
 async def save_dependent(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    """Add a dependent, or remove one (action=remove, index=n)."""
+    """Add a dependent, remove one (action=remove, index=n), or save the list as complete (action=done; also with
+    no dependents: the Save button, client feedback Nov 2026)."""
     form = await request.form()
     client = _client_or_404(db, account.id)
     filing = intake.filing_for(db, client, resolve_tax_year(db, tax_year))
     row = intake.section(db, filing, intake.DEPENDENTS)
     items = list(((row.data or {}).get("items") if row else None) or [])
-    if form.get("action") == "remove":
+    if form.get("action") == "done":
+        saved = f"Dependents saved ({len(items)})." if items else "Saved: no dependents."
+    elif form.get("action") == "remove":
         index = str(form.get("index") or "")
         if not (index.isdigit() and int(index) < len(items)):
             return _back("That dependent was already removed.", "", "dependents")

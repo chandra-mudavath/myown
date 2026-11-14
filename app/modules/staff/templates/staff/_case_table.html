@@ -42,7 +42,7 @@
         <label>
             <span>Stage</span>
             <select name="stage" class="staff-select">
-                <option value="">All stages</option>
+                {% if not (active_nav == 'all_cases' and t.stage) %}<option value="">All stages</option>{% endif %}
                 {% for stage in stage_nav %}
                 <option value="{{ stage.slug }}" {% if t.stage == stage.slug %}selected{% endif %}>{{ stage.label }} ({{ stage.count }})</option>
                 {% endfor %}
@@ -67,7 +67,12 @@
         </label>
         <div class="staff-cases-filters__actions">
             <button type="submit" class="staff-btn staff-btn--primary">Apply</button>
-            {% if t.q or t.stage or t.year %}
+            {#- On a stage page (sidebar Stages), Clear all keeps that stage so its tab stays highlighted; the page with
+                no stage isn't in the menu any more (client feedback, Nov 2026). Was: href="?" whenever any filter was set -#}
+            {% set on_stage_page = active_nav == 'all_cases' and t.stage %}
+            {% if on_stage_page and (t.q or t.year) %}
+            <a class="staff-btn staff-btn--ghost" href="?stage={{ t.stage | urlencode }}">Clear all</a>
+            {% elif not on_stage_page and (t.q or t.stage or t.year) %}
             <a class="staff-btn staff-btn--ghost" href="?">Clear all</a>
             {% endif %}
         </div>
@@ -78,16 +83,21 @@
             <thead>
                 <tr>
                     <th scope="col" class="col-sno">S.No</th>
+                    {#- Same order as the Dashboard: Client name, then Customer no (client feedback, Nov 2026) -#}
+                    {{ sort_th("name", "Client name") }}
                     {{ sort_th("customer", "Customer no") }}
                     {# Filing ID column: hidden for now (client feedback, Oct 2026); Customer no opens the case.
                     {{ sort_th("case", "Filing ID") }}
                     #}
-                    {{ sort_th("name", "Client name") }}
+                    {#- The Dashboard's columns in the Dashboard's order, plus Staff (client feedback, Nov 2026) -#}
                     {{ sort_th("email", "Email") }}
+                    <th scope="col">Phone</th>
                     {{ sort_th("year", "Tax year") }}
+                    <th scope="col">Filings</th>
                     {{ sort_th("stage", "Stage") }}
                     <th scope="col">Staff</th>
-                    <th scope="col">Comments</th>
+                    <th scope="col">Comment</th>
+                    {{ sort_th("joined", "Joined") }}
                     <th scope="col" class="col-actions"><span class="sr-only">Actions</span></th>
                 </tr>
             </thead>
@@ -95,17 +105,20 @@
                 {% for c in t.cases %}
                 <tr>
                     <td class="col-sno">{{ c.sno }}</td>
+                    <td class="staff-cell-strong"><a class="staff-cell-link" href="/staff/cases/{{ c.ref }}" title="Open {{ c.client_name }} · {{ c.case_id }}">{{ c.client_name }}</a></td>
                     {#- Customer no opens the client's information with the client sidebar (client feedback, Oct 2026) #}
-                    <td class="col-mono">{% if c.customer_no %}<a class="staff-cell-link is-mono" href="/staff/cases/{{ c.id }}" title="Open {{ c.client_name }} · {{ c.case_id }}">{{ c.customer_no }}</a>{% else %}<a class="staff-cell-link is-mono" href="/staff/cases/{{ c.id }}">{{ c.case_id }}</a>{% endif %}</td>
+                    <td class="col-mono">{{ c.customer_no or c.case_id }}</td>{# was a link to the case; the client name opens it (client feedback, Nov 2026) #}
                     {# <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ c.id }}">{{ c.case_id }}</a></td> #}
-                    <td class="staff-cell-strong">{{ c.client_name }}</td>
                     <td class="col-email">{{ c.email }}</td>
+                    <td class="col-nowrap">{{ c.phone or '—' }}</td>
                     <td>{{ c.tax_year }}</td>
+                    <td>{{ c.filings }}</td>
                     <td><span class="staff-stage-pill tone-{{ c.stage_tone }}">{{ c.stage }}</span></td>
-                    <td>{% if c.staff %}{{ c.staff }}{% else %}<span class="staff-cell-muted">Unassigned</span>{% if c.needs_assignment %}<br /><small class="staff-assign-hint">Assign before moving</small>{% endif %}{% endif %}</td>
+                    <td class="col-staff">{% if c.staff %}{% for name in c.staff_list %}{{ name }}{% if not loop.last %}<br />{% endif %}{% endfor %}{% else %}<span class="staff-cell-muted">Unassigned</span>{% if c.needs_assignment %}<br /><small class="staff-assign-hint">Assign before moving</small>{% endif %}{% endif %}</td>
                     <td class="col-comment">{% if c.comment %}{{ c.comment }}{% else %}<span class="staff-cell-muted">—</span>{% endif %}</td>
+                    <td class="staff-cell-muted col-nowrap">{{ c.joined }}</td>
                     <td class="col-actions">
-                        <a class="staff-row-action" href="/staff/cases/{{ c.id }}/documents" title="Documents">{{ ci("file", "ci ci--sm") }}<span>{{ c.doc_count }}</span></a>
+                        <a class="staff-row-action" href="/staff/cases/{{ c.ref }}/documents" title="Documents">{{ ci("file", "ci ci--sm") }}<span>{{ c.doc_count }}</span></a>
                         {% if c.needs_assignment %}
                         {#- Registered cases stay put until a staff member is assigned (client feedback, Oct 2026) #}
                         <button type="button" class="staff-row-action staff-row-action--primary" disabled aria-disabled="true"
@@ -124,7 +137,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="staff-empty">
+                    <td colspan="12" class="staff-empty">
                         {{ ci("search") }}
                         <strong>No cases found</strong>
                         <span>{% if t.q or t.stage or t.year %}Try a different search or clear the filters.{% elif t.mine %}No cases are assigned to you yet. An admin assigns cases from the case page.{% else %}New filings will appear here as clients submit them.{% endif %}</span>

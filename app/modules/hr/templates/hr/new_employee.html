@@ -37,15 +37,15 @@
                 <div class="hr-form-grid">
                     <div class="modal-form-group">
                         <label for="first_name">First name</label>
-                        <input id="first_name" name="first_name" maxlength="15" required value="{{ form.first_name or '' }}" autocomplete="off">
+                        <input id="first_name" name="first_name" maxlength="15" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" required value="{{ form.first_name or '' }}" autocomplete="off">
                     </div>
                     <div class="modal-form-group">
                         <label for="last_name">Last name</label>
-                        <input id="last_name" name="last_name" maxlength="15" value="{{ form.last_name or '' }}" autocomplete="off">
+                        <input id="last_name" name="last_name" maxlength="15" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" value="{{ form.last_name or '' }}" autocomplete="off">
                     </div>
                     <div class="modal-form-group">
                         <label for="email">Company email</label>
-                        <input id="email" name="email" type="email" required value="{{ form.email or '' }}" placeholder="name@covrenttax.com" autocomplete="off">
+                        <input id="email" name="email" type="email" pattern="[A-Za-z][A-Za-z0-9._+\-]*@[A-Za-z][A-Za-z0-9\-]*(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}" title="Start with a letter, e.g. name@gmail.com" required value="{{ form.email or '' }}" placeholder="name@covrenttax.com" autocomplete="off">
                     </div>
                     <div class="modal-form-group">
                         <label for="phone">Mobile</label>

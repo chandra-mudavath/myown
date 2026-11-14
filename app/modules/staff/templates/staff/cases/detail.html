@@ -48,8 +48,9 @@
             <ul class="case-file__contact">
                 <li>{{ ci("mail", "ci ci--sm") }} {% if case.email %}<a href="mailto:{{ case.email }}">{{ case.email }}</a>{% else %}<span class="staff-cell-muted">No email</span>{% endif %}</li>
                 <li>{{ ci("phone", "ci ci--sm") }} {% if case.phone %}<a href="tel:{{ case.phone }}">{{ case.phone }}</a>{% else %}<span class="staff-cell-muted">No phone</span>{% endif %}</li>
+                {#- Message client on the contact line: a compact header (client feedback, Nov 2026); was its own paragraph -#}
+                <li><a class="staff-btn staff-btn--ghost case-file__msg" href="/staff/messages?case={{ case.id }}">{{ ci("send", "ci ci--sm") }} Message client</a></li>
             </ul>
-            <p><a class="staff-btn staff-btn--ghost" href="/staff/messages?case={{ case.id }}">{{ ci("send", "ci ci--sm") }} Message client</a></p>
         </div>
         <div class="case-file__stage">
             <span class="case-file__stage-label">Current stage</span>
@@ -86,47 +87,39 @@
         <ol class="case-pipeline__track" data-pipeline>
             {% for step in case.pipeline %}
             <li class="case-pipeline__step is-{{ step.state }}" {% if step.state == 'current' %}aria-current="step"{% endif %}>
-                <span class="case-pipeline__dot" aria-hidden="true">{% if step.state == 'done' %}{{ ci("check", "ci") }}{% else %}{{ loop.index }}{% endif %}</span>
-                <span class="case-pipeline__label">{{ step.label }}</span>
+                <a class="case-pipeline__link" href="{{ step.href }}" title="Open {{ step.label }}">
+                    <span class="case-pipeline__dot" aria-hidden="true">{% if step.state == 'done' %}{{ ci("check", "ci") }}{% else %}{{ loop.index }}{% endif %}</span>
+                    <span class="case-pipeline__label">{{ step.label }}</span>
+                </a>
             </li>
             {% endfor %}
         </ol>
     </nav>
 
-    <div class="case-layout">
+    <div class="case-layout" data-case-tabs>
         {# ── Left: intake checklist + section cards ── #}
         <div class="case-main">
-            <nav class="case-checklist" aria-label="Intake sections">
-                {% for s in case.sections %}
-                <a class="case-checklist__item case-checklist__item--{{ s.status }}" href="#sec-{{ s.number }}">
-                    <span class="case-checklist__mark" aria-hidden="true">{% if s.status == 'complete' %}{{ ci("check", "ci") }}{% elif s.status == 'not_applicable' %}–{% else %}{{ s.number }}{% endif %}</span>
-                    <span>{{ s.label }}</span>
-                </a>
-                {% endfor %}
-                <a class="case-checklist__item case-checklist__item--{{ 'complete' if case.documents else 'not_started' }}" href="#sec-docs">
-                    <span class="case-checklist__mark" aria-hidden="true">{% if case.documents %}{{ ci("check", "ci") }}{% else %}09{% endif %}</span>
-                    <span>Documents</span>
-                </a>
-            </nav>
+            {#- The row of section links (Basic Information … Documents) was here; the sidebar tabs and the stage tracker
+                open each part instead (client feedback, Nov 2026) -#}
 
-            <section class="case-section" id="sec-01">
+            <section class="case-section" id="sec-01" data-tab="personal">
                 {{ section_head("01", "Taxpayer", status["01"]) }}
                 {{ facts(case.taxpayer) }}
             </section>
 
-            <section class="case-section" id="sec-02">
+            <section class="case-section" id="sec-02" data-tab="personal">
                 {{ section_head("02", "Filing details", status["02"]) }}
                 {{ facts(case.filing_details) }}
             </section>
 
-            <section class="case-section" id="sec-03">
+            <section class="case-section" id="sec-03" data-tab="personal">
                 {{ section_head("03", "Spouse", status["03"]) }}
                 {% if case.married %}{{ facts(case.spouse) }}
                 {% if spouse_id %}{{ facts([("SSN / ITIN", 'Applying' if spouse_id.type == 'applying' else (spouse_id.type | upper) ~ ' ' ~ spouse_id.masked)]) }}{% endif %}
                 {% else %}<p class="case-none">Not needed for this filing status.</p>{% endif %}
             </section>
 
-            <section class="case-section" id="sec-04">
+            <section class="case-section" id="sec-04" data-tab="personal">
                 {{ section_head("04", "Dependents", status["04"]) }}
                 {% if case.dependents %}
                 <ul class="case-people">
@@ -142,17 +135,17 @@
                 {% endif %}
             </section>
 
-            <section class="case-section" id="sec-05">
+            <section class="case-section" id="sec-05" data-tab="notes">
                 {{ section_head("05", "Income sources", status["05"]) }}
                 {{ chips(case.income, "No income sources selected.") }}
             </section>
 
-            <section class="case-section" id="sec-06">
+            <section class="case-section" id="sec-06" data-tab="notes">
                 {{ section_head("06", "Deductions & credits", status["06"]) }}
                 {{ chips(case.deductions, "No deductions or credits selected.") }}
             </section>
 
-            <section class="case-section" id="sec-07">
+            <section class="case-section" id="sec-07" data-tab="notes">
                 {{ section_head("07", "Previous tax information", status["07"]) }}
                 <ul class="case-answers">
                     {% for label, answer in case.previous %}
@@ -164,12 +157,12 @@
                 </ul>
             </section>
 
-            <section class="case-section" id="sec-08">
+            <section class="case-section" id="sec-08" data-tab="notes">
                 {{ section_head("08", "Special situations", status["08"]) }}
                 {{ chips(case.situations, "No special situations reported.") }}
             </section>
 
-            <section class="case-section" id="sec-docs">
+            <section class="case-section" id="sec-docs" data-tab="notes">
                 {{ section_head("09", "Documents", 'complete' if case.documents else 'not_started') }}
                 {% if case.documents %}
                 <ul class="case-docs">
@@ -188,11 +181,11 @@
                 {% else %}
                 <p class="case-none">The client hasn't uploaded any documents yet.</p>
                 {% endif %}
-                <a class="staff-btn staff-btn--ghost case-docs__open" href="/staff/cases/{{ case.id }}/documents">{{ ci("folder", "ci ci--sm") }} Open document review</a>
+                <a class="staff-btn staff-btn--ghost case-docs__open" href="/staff/cases/{{ case.ref }}/documents">{{ ci("folder", "ci ci--sm") }} Open document review</a>
             </section>
 
             {#- What the client saved on Tax Notes, and the documents those answers call for (client feedback, Oct 2026) -#}
-            <section class="case-section" id="sec-notes">
+            <section class="case-section" id="sec-notes" data-tab="notes">
                 {{ section_head("10", "Tax notes", 'complete' if tax_notes_row and tax_notes_row.submitted_at else 'in_progress' if tax_notes_row else 'not_started') }}
                 {% if tax_notes %}
                 <p class="staff-cell-muted" style="margin:0 0 10px;">{{ 'Submitted' if tax_notes_row.submitted_at else 'Saved (Expenses sheet not submitted yet)' }} · last saved {{ tax_notes_row.updated_at.strftime('%b %d, %Y · %H:%M') }}</p>
@@ -214,7 +207,7 @@
             </section>
 
             {#- Refund bank details the client saved on Bank Details -#}
-            <section class="case-section" id="sec-bank">
+            <section class="case-section" id="sec-bank" data-tab="bank">
                 {{ section_head("11", "Bank details", 'complete' if bank else 'not_started') }}
                 {% if bank %}
                 {% if bank.refund_method == 'check' %}
@@ -230,9 +223,57 @@
                 {% endif %}
             </section>
 
+            {#- Estimated Tax Summary (client feedback, Nov 2026): a Preparer, Reviewer or Manager enters it here and the
+                client sees it on Tax Summary. A due is a negative amount; Benefits = after - before. -#}
+            <section class="case-section" id="sec-tax-summary" data-tab="summary">
+                {{ section_head(ci("calculator", "ci ci--sm"), "Estimated tax summary", 'complete' if tax_summary else 'not_started') }}
+                {% if summary_error %}<div class="alert alert--error" role="alert">{{ summary_error }}</div>{% endif %}
+                {% if summary_saved %}<div class="alert alert--success" role="status">{{ summary_saved }}</div>{% endif %}
+                {% if can_edit_summary %}
+                {% set saved_rows = tax_summary.raw if tax_summary else [] %}
+                <form method="post" action="/staff/cases/{{ case.id }}/tax-summary" class="tax-sum-form">
+                    <p class="staff-cell-muted" style="margin:0 0 10px;">Refund / (due) in USD. Type a due as a negative number, e.g. <code>-184</code> or <code>(184)</code>. Benefits are worked out for you.</p>
+                    <div class="staff-table-scroll">
+                        <table class="staff-table tax-sum-table">
+                            <thead><tr><th>Return</th><th>Before planning</th><th>After planning</th></tr></thead>
+                            <tbody>
+                                {% for i in range(7) %}
+                                {% set r = saved_rows[i] if i < saved_rows | length else {} %}
+                                {% if i < ([saved_rows | length, 1] | max) + 2 %}
+                                <tr>
+                                    <td>{% if i == 0 %}<input type="hidden" name="label[]" value="Federal" /><strong>Federal</strong>{% else %}<input class="staff-input" name="label[]" value="{{ r.label or '' }}" maxlength="40" placeholder="State, e.g. California" aria-label="State name, row {{ i }}" />{% endif %}</td>
+                                    <td><input class="staff-input tax-sum-amt" name="before[]" value="{{ r.before or '' }}" inputmode="decimal" placeholder="0.00" aria-label="{{ r.label or ('Federal' if i == 0 else 'State') }} before planning" {% if i == 0 %}required{% endif %} /></td>
+                                    <td><input class="staff-input tax-sum-amt" name="after[]" value="{{ r.after or '' }}" inputmode="decimal" placeholder="0.00" aria-label="{{ r.label or ('Federal' if i == 0 else 'State') }} after planning" {% if i == 0 %}required{% endif %} /></td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="staff-cell-muted" style="margin:8px 0 12px;">Leave a state row empty to skip it. Need more states? Save, and new empty rows appear (up to 6 states).</p>
+                    <button class="staff-btn staff-btn--primary" type="submit">Save tax summary</button>
+                </form>
+                {% endif %}
+                {% if tax_summary %}
+                <h3 class="case-subhead">What the client sees</h3>
+                <div class="staff-table-scroll">
+                    <table class="staff-table">
+                        <thead><tr><th>Refund/(Due)</th><th>Before planning</th><th>After planning</th><th>Benefits</th></tr></thead>
+                        <tbody>
+                            {% for r in tax_summary.rows %}<tr><td>{{ r.label }}</td><td>{{ r.before | signed_money }}</td><td>{{ r.after | signed_money }}</td><td>{{ r.benefit | signed_money }}</td></tr>{% endfor %}
+                            <tr><td><strong>Total</strong></td><td><strong>{{ tax_summary.total.before | signed_money }}</strong></td><td><strong>{{ tax_summary.total.after | signed_money }}</strong></td><td><strong>{{ tax_summary.total.benefit | signed_money }}</strong></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="staff-cell-muted" style="margin:8px 0 0;">Last updated {{ tax_summary.updated_at.strftime('%b %d, %Y') }}.</p>
+                {% elif not can_edit_summary %}
+                <p class="case-none">Not entered yet. A Preparer, Reviewer or Manager can add it.</p>
+                {% endif %}
+            </section>
+
             {#- Tax Summary and Make Payment, as the client sees them (client feedback, Nov 2026) -#}
             {% set bill = billing or {} %}
-            <section class="case-section" id="sec-payments">
+            <section class="case-section" id="sec-payments" data-tab="summary payment">
                 {{ section_head(ci("card", "ci ci--sm"), "Tax summary & payments", 'complete' if bill.payments else 'not_started') }}
                 <dl class="staff-detail-list">
                     <div><dt>Open invoices</dt><dd>{% if bill.open_invoices %}{% for r in bill.open_invoices %}{{ r.invoice.invoice_number }} · ${{ '{:,.2f}'.format(r.balance) }} due{% if not loop.last %}<br />{% endif %}{% endfor %}{% else %}<span class="staff-cell-muted">None</span>{% endif %}</dd></div>
@@ -264,7 +305,7 @@
             </section>
 
             {#- Refund Status, as the client sees it: how the refund comes, and the IRS tracker -#}
-            <section class="case-section" id="sec-refund">
+            <section class="case-section" id="sec-refund" data-tab="refund">
                 {{ section_head(ci("refund", "ci ci--sm"), "Refund status", 'complete' if bank else 'not_started') }}
                 {% if bank %}
                 <p class="case-none">Refund by <strong>{{ 'paper check' if bank.refund_method == 'check' else 'direct deposit' }}</strong>{% if bank.refund_method != 'check' and bank.bank_name %} to {{ bank.bank_name }} ({{ bank.account_masked }}){% endif %}.</p>
@@ -275,7 +316,7 @@
             </section>
 
             {#- Personal Info → Visa & residency and Dependents (saved per tax year) -#}
-            <section class="case-section" id="sec-residency">
+            <section class="case-section" id="sec-residency" data-tab="personal">
                 {{ section_head("12", "Residency & dependents", 'complete' if residency else 'not_started') }}
                 {% if residency %}
                 {{ facts([("Nationality", residency.nationality_other or residency.nationality), ("Visas held in " ~ case.tax_year, residency.visa_count),
@@ -304,7 +345,7 @@
             </section>
 
             {#- FBAR (FinCEN 114): account numbers and TINs masked -#}
-            <section class="case-section" id="sec-fbar">
+            <section class="case-section" id="sec-fbar" data-tab="fbar">
                 {{ section_head("13", "FBAR", 'complete' if fbar_row and fbar_row.submitted_at else 'in_progress' if fbar_row else 'not_started') }}
                 {% if fbar %}
                 {% set fl = fbar.filer %}
@@ -334,7 +375,7 @@
             </section>
 
             {#- E-File Authorization (Form 8879): the PINs are needed to transmit the return -#}
-            <section class="case-section" id="sec-efile">
+            <section class="case-section" id="sec-efile" data-tab="efile">
                 {{ section_head("14", "E-file authorization", 'complete' if efile_row else 'not_started') }}
                 {% if efile_row %}
                 {{ facts([("Signed", efile_row.submitted_at.strftime('%b %d, %Y · %H:%M')), ("Taxpayer PIN", efile_row.data.taxpayer_pin),

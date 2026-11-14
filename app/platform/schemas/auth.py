@@ -9,11 +9,28 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
+from app.platform.services import email_check
+
 
 # ── Validators ────────────────────────────────────────────────────────────────
 
-_NAME_RE = re.compile(r"^[A-Za-z0-9]+$")
-_NAME_STRICT_RE = re.compile(r"^[A-Za-z]+$")
+# Sign-up names: upper- and lower-case letters, numbers and spaces, with at least one letter (client feedback, Nov 2026).
+# Was: first name letters and numbers, last name letters only, no spaces.
+_NAME_RE = re.compile(r"^[A-Za-z0-9 ]+$")
+
+
+def clean_name(v: str | None, label: str, required: bool) -> str | None:
+    """Trim, fold runs of spaces into one, and check the characters."""
+    v = " ".join((v or "").split())
+    if not v:
+        if required:
+            raise ValueError(f"Enter your {label.lower()}.")
+        return None
+    if not _NAME_RE.match(v):
+        raise ValueError(f"{label} can only have letters, numbers and spaces.")
+    if not re.search(r"[A-Za-z]", v):
+        raise ValueError(f"{label} must have at least one letter.")
+    return v
 
 
 def validate_password_strength(v: str) -> str:
@@ -46,16 +63,20 @@ class RegisterRequest(BaseModel):
     @field_validator("first_name")
     @classmethod
     def validate_first_name(cls, v: str) -> str:
-        if not _NAME_RE.match(v):
-            raise ValueError("First name must contain only letters and numbers")
-        return v.strip()
+        return clean_name(v, "First name", required=True)
 
     @field_validator("last_name")
     @classmethod
     def validate_last_name(cls, v: Optional[str]) -> Optional[str]:
-        if v and not _NAME_STRICT_RE.match(v):
-            raise ValueError("Last name must contain only letters")
-        return v.strip() if v else None
+        return clean_name(v, "Last name", required=False)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        # Misspelt domains (gmil.com), dummy/throwaway domains and odd characters are refused (client feedback, Nov 2026)
+        if (why := email_check.problem(v)):
+            raise ValueError(why)
+        return v.strip().lower()  # Ravi@Gmail.com is saved and signs in as ravi@gmail.com
 
     @field_validator("password")
     @classmethod

@@ -4,6 +4,9 @@
 {% block extra_styles %}<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />{% endblock %}
 
 {% block main %}
+    {#- Back to the list this payslip / letter came from (client feedback, Nov 2026) -#}
+    {% if active_nav == 'my_payslips' %}<a class="staff-back" href="/staff/hr/payslips">{{ ci("chevron-left", "ci ci--sm") }} Back to my payslips</a>
+    {% else %}<a class="staff-back" href="/staff/hr/documents">{{ ci("chevron-left", "ci ci--sm") }} Back to my documents</a>{% endif %}
     <div class="staff-pagehead">
         <div>
             <p class="eyebrow">{{ doc.document_number }}</p>
@@ -11,7 +14,8 @@
         </div>
         <div class="hr-form-actions">
             <a class="staff-btn staff-btn--ghost" href="{{ '/staff/hr/payslips' if doc.kind == 'PAYSLIP' else '/staff/hr/documents' }}">{{ ci("chevron-left", "ci ci--sm") }} Back</a>
-            <a class="staff-btn staff-btn--primary" href="/staff/hr/documents/{{ doc.id }}/print" target="_blank" rel="noopener">{{ ci("download", "ci ci--sm") }} Print / Save as PDF</a>
+            <a class="staff-btn staff-btn--ghost" href="/staff/hr/documents/{{ doc.id }}/print" target="_blank" rel="noopener">Print</a>
+            <a class="staff-btn staff-btn--primary" href="/staff/hr/documents/{{ doc.id }}/pdf">{{ ci("download", "ci ci--sm") }} Download PDF</a>
         </div>
     </div>
     <section class="hr-doc-paper" aria-label="Document">{{ letter | safe }}</section>

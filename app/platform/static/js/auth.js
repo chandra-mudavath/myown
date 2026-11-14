@@ -59,9 +59,15 @@ const submitBtn = document.getElementById("submit-btn");
 const btnText = document.getElementById("btn-text");
 const btnSpinner = document.getElementById("btn-spinner");
 
+// Email addresses are kept in lower case (Ravi@Gmail.com -> ravi@gmail.com); the server does the same
+const emailInput = form?.querySelector('input[type="email"]');
+const lowerEmail = () => { if (emailInput) emailInput.value = emailInput.value.trim().toLowerCase(); };
+emailInput?.addEventListener("change", lowerEmail);
+
 if (form && submitBtn) {
     form.addEventListener("submit", (e) => {
         syncPhone();
+        lowerEmail();
         const inputs = form.querySelectorAll("input[required]");
         let valid = true;
         inputs.forEach((inp) => {

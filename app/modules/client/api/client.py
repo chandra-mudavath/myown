@@ -17,7 +17,7 @@ from app.platform.models.filing_document import FilingDocument
 from app.platform.models.lookups import CaseStage, ChatQueryTopic
 from app.platform.models.tax_filing import TaxFiling
 from app.modules.client.schemas.tax_filing import TaxFilingCreate
-from app.platform.services import chat_service, email_change, intake, payments, razorpay_api, referrals, stripe_api
+from app.platform.services import chat_service, email_change, intake, payments, razorpay_api, referrals, stripe_api, tax_summary, fx_rates
 from app.platform.models.auth import AuthAccount
 from app.platform.services.catalog import case_document_types, document_categories, open_tax_years, tax_types
 from app.platform.services.document_review import (REVIEW_CATEGORY, account_names, add_comment, comment_threads, review_documents,
@@ -625,7 +625,22 @@ def _billing_extra(request: Request, db: Session):
 
 @router.get("/tax-summary", response_class=HTMLResponse, name="client_tax_summary")
 async def client_tax_summary(request: Request, account: ClientAccount, db: Session = Depends(get_db), tax_year: str | None = Cookie(None)):
-    return _render_client_section("client/tax_summary.html", request, account, db, tax_year, "tax_summary", extra=_billing_extra(request, db))
+    billing = _billing_extra(request, db)
+
+    def extra(client, filing):
+        # Estimated Tax Summary entered by the tax team, and the case's fees (client feedback, Nov 2026)
+        return {**billing(client, filing), "tax_summary": tax_summary.view(db, filing),
+                "fee_details": tax_summary.fee_details(db, filing)}
+    return _render_client_section("client/tax_summary.html", request, account, db, tax_year, "tax_summary", extra=extra)
+
+
+@router.get("/payments/fx-rates", name="client_fx_rates")
+def client_fx_rates(account: ClientAccount):
+    """Market rates (base USD) for the currency converter on Pay in INR. For information only (client feedback, Nov 2026)."""
+    data = fx_rates.latest()
+    if not data:
+        return JSONResponse({"detail": "Exchange rates aren't available right now."}, status_code=503)
+    return JSONResponse(data, headers={"Cache-Control": "private, max-age=3600"})
 
 
 @router.get("/make-payment", response_class=HTMLResponse, name="client_make_payment")

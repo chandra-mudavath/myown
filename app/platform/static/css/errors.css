@@ -1,6 +1,13 @@
 /* Error screens (errors/error.html): the landing-page look. Colors come from theme.css tokens, so
    dark mode follows html[data-theme="dark"]; headings use Roboto Slab, buttons match .action-primary /
    .action-secondary on the landing page. */
+/* Widths include padding, so full-width buttons fit a phone screen (were 45px wider than it) */
+.error-page,
+.error-page *,
+.error-page *::before,
+.error-page *::after {
+    box-sizing: border-box;
+}
 .error-page {
     --e-display: "Roboto Slab", Georgia, serif;
     --e-coral-soft: rgba(220, 38, 38, 0.1);
@@ -57,6 +64,7 @@ html[data-theme="dark"] .error-page {
     flex: 1;
     display: grid;
     place-items: center;
+    grid-template-columns: minmax(0, 1fr); /* the card never grows past the screen (was 29px wider on a 360px phone) */
     padding: 48px 24px;
 }
 .e-tone-brand { --e-tone: var(--brand); --e-tone-soft: var(--brand-soft); }
@@ -64,6 +72,7 @@ html[data-theme="dark"] .error-page {
 .e-tone-amber { --e-tone: var(--amber); --e-tone-soft: var(--e-amber-soft); }
 .e-card {
     width: min(100%, 560px);
+    min-width: 0;
     display: grid;
     justify-items: center;
     padding: 48px 40px 40px;

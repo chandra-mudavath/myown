@@ -4,4 +4,3 @@ pytest-asyncio==0.24.0
 httpx==0.28.1
 ruff==0.9.0
 pip-audit==2.10.1  # python -m pip_audit -r requirements.txt — check dependencies for known vulnerabilities
-playwright==1.64.1  # browser screenshots / UI checks; uses the installed Chrome (channel="chrome")

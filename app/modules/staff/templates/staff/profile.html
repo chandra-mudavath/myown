@@ -1,4 +1,5 @@
 {% extends "staff/_layout.html" %}
+{% from "client/_icons.html" import ci %}
 {% block title %}Staff Profile - {{ app_name }}{% endblock %}
 {% set active_nav = 'profile' %}
 
@@ -37,4 +38,26 @@
             <dd>{{ staff.role.value if staff and staff.role else 'INITIATOR' }}</dd>
         </dl>
     </section>
+
+    {#- My HR (moved here from the sidebar, client feedback Nov 2026): the staff member's own HR pages -#}
+    {% if not is_hr %}
+    <section class="staff-panel" aria-labelledby="my-hr-title">
+        <p class="eyebrow">My HR</p>
+        <h2 class="staff-myhr-title" id="my-hr-title">Attendance, leaves, payslips and letters</h2>
+        <div class="staff-myhr-grid">
+            {% for href, icon, label, hint in [
+                ("/staff/hr/attendance", "clock", "Attendance", "Check in, check out and your days"),
+                ("/staff/hr/leaves", "calendar", "Leaves", "Apply for leave and see your balance"),
+                ("/staff/hr/payslips", "card", "Payslips", "Download your monthly payslips"),
+                ("/staff/hr/documents", "file", "My documents", "Offer letter and other HR letters"),
+            ] %}
+            <a class="staff-myhr-card" href="{{ href }}">
+                <span class="staff-myhr-icon" aria-hidden="true">{{ ci(icon) }}</span>
+                <span><strong>{{ label }}</strong><small>{{ hint }}</small></span>
+                <span class="staff-myhr-go" aria-hidden="true">{{ ci("arrow-right", "ci ci--sm") }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 {% endblock %}

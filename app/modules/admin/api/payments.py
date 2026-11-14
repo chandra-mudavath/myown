@@ -1,6 +1,7 @@
 """Admin Payments: invoice list and totals, new invoice, invoice detail, issue / void, record a payment,
 verify client UPI / bank transfers, refund or re-check online payments (Stripe: USD, Razorpay: INR)."""
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -43,11 +44,19 @@ def _invoice_or_404(db: Session, invoice_id: str) -> Invoice:
 
 @router.get("", response_class=HTMLResponse, name="admin_payments")
 def payments_home(request: Request, account: AdminAccount, db: Session = Depends(get_db), status: str = "", q: str = "",
-                  saved: str = "", error: str = ""):
+                  period: str = "", saved: str = "", error: str = ""):
+    # Only the current year's months / quarters / year (billing.period_options); anything else shows all invoices
+    period_options = billing.period_options()
+    period = period if any(period == value for _, opts in period_options for value, _ in opts) else ""
+    invoices = billing.list_invoices(db, status, q, period=period)
+    totals = {"total": sum((r["invoice"].total_amount for r in invoices if r["invoice"].status != "void"), Decimal("0")),
+              "paid": sum((r["paid"] for r in invoices), Decimal("0")),
+              "balance": sum((r["balance"] for r in invoices), Decimal("0"))}
     return templates.TemplateResponse(request, "admin/payments/index.html", _ctx(
-        request, account, db, summary=billing.summary(db), invoices=billing.list_invoices(db, status, q),
+        request, account, db, summary=billing.summary(db), invoices=invoices, totals=totals,
         pending=client_payments.pending_payments(db),
-        filters=FILTERS, status=status, q=q, saved=saved, error=error))
+        filters=FILTERS, status=status, q=q, period=period, period_label=billing.period_label(period),
+        period_options=period_options, saved=saved, error=error))
 
 
 @router.get("/invoices/new", response_class=HTMLResponse, name="admin_invoice_new")

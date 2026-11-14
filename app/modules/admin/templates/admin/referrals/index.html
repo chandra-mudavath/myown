@@ -41,7 +41,7 @@
                 <div class="modal-form-group"><label for="ra-referrer">Referred by (client number or email)</label><input id="ra-referrer" name="referrer" placeholder="e.g. CLI-00000006"></div>
                 <div class="modal-form-group"><label for="ra-name">Full name *</label><input id="ra-name" name="name" required minlength="2" maxlength="120"></div>
                 <div class="modal-form-group"><label for="ra-phone">Phone *</label><input id="ra-phone" name="phone" type="tel" required maxlength="30" placeholder="+1 415 555 0142"></div>
-                <div class="modal-form-group"><label for="ra-email">Email</label><input id="ra-email" name="email" type="email" maxlength="255"></div>
+                <div class="modal-form-group"><label for="ra-email">Email</label><input id="ra-email" name="email" type="email" pattern="[A-Za-z][A-Za-z0-9._+\-]*@[A-Za-z][A-Za-z0-9\-]*(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}" title="Start with a letter, e.g. name@gmail.com" maxlength="255"></div>
                 <div class="modal-form-group"><label for="ra-rel">Relationship</label><select id="ra-rel" name="relationship">{% for r in relationships %}<option>{{ r }}</option>{% endfor %}</select></div>
                 <div class="modal-form-group"><label for="ra-staff">Assign to</label><select id="ra-staff" name="staff_id"><option value="">Not assigned</option>{% for s in staff_options %}<option value="{{ s.id }}">{{ s.name }}{% if s.role %} ({{ s.role }}){% endif %}</option>{% endfor %}</select></div>
                 <div class="modal-form-group admin-ref-add__note"><label for="ra-note">Note</label><input id="ra-note" name="note" maxlength="2000" placeholder="e.g. Best time to call, what they need help with"></div>

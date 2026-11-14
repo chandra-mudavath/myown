@@ -47,7 +47,7 @@
                     <time class="staff-cell-muted" datetime="{{ c.when.isoformat() if c.when else '' }}">{{ c.when.strftime('%b %d, %Y · %H:%M') if c.when else '' }}</time>
                 </div>
                 <p class="case-comments__body">{{ c.body }}</p>
-                {% if c.doc_group %}<a class="staff-row-action" href="/staff/cases/{{ filing.id }}/documents">Open documents</a>{% endif %}
+                {% if c.doc_group %}<a class="staff-row-action" href="/staff/cases/{{ filing.case_number or filing.id }}/documents">Open documents</a>{% endif %}
             </li>
             {% endfor %}
         </ol>

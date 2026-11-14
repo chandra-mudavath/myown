@@ -47,7 +47,7 @@
                 {% endif %}
                 <div class="cx-field">
                     <label class="cx-label" for="primary_email">New email address<span class="cx-req">*</span></label>
-                    <input class="cx-input" type="email" id="primary_email" name="email" required placeholder="name@example.com" />
+                    <input class="cx-input" type="email" pattern="[A-Za-z][A-Za-z0-9._+\-]*@[A-Za-z][A-Za-z0-9\-]*(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}" title="Start with a letter, e.g. name@gmail.com" id="primary_email" name="email" required placeholder="name@example.com" />
                     {#- Was: "Your current email stays active until you verify the new one." -#}
                     <span class="cx-hint">An admin approves the change. After that you sign in with the new email; your password stays the same.</span>
                 </div>

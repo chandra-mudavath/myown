@@ -63,6 +63,14 @@ class Settings(BaseSettings):
     CLIENT_DOCUMENTS_DIR: str = "storage/client_documents"
     MAX_UPLOAD_SIZE_MB: int = 30
     ALLOWED_EXTENSIONS: list[str] = [".pdf", ".png", ".jpg", ".jpeg", ".csv", ".docx", ".xlsx", ".txt"]
+    # Where uploaded files (client documents, chat attachments, payment proofs, staff documents) are kept:
+    # "local" = this server's disk (development), "r2" = the private Cloudflare R2 bucket (production, token
+    # "app-documents"). Encrypted either way; profile pictures always stay on disk (app/platform/services/storage_provider.py).
+    STORAGE_BACKEND: str = "local"       # local | r2
+    R2_ENDPOINT: str = ""                # https://<account id>.r2.cloudflarestorage.com
+    R2_BUCKET: str = ""                  # e.g. "covrenttax-documents"
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
 
     # Email: "console" writes each message to the server log instead of sending it (development);
     # "smtp" sends through SMTP_HOST, e.g. Resend (smtp.resend.com) or Google Workspace (smtp.gmail.com).
@@ -125,6 +133,11 @@ class Settings(BaseSettings):
             problems.append("ALLOWED_HOSTS must list the site's host names")
         if not _valid_fernet_keys(self.DATA_ENCRYPTION_KEYS):
             problems.append("DATA_ENCRYPTION_KEYS must hold at least one Fernet key (see app/core/crypto.py)")
+        if self.STORAGE_BACKEND.lower() not in ("local", "r2"):
+            problems.append("STORAGE_BACKEND must be local or r2")
+        elif self.STORAGE_BACKEND.lower() == "r2" and not all(
+                (self.R2_ENDPOINT, self.R2_BUCKET, self.R2_ACCESS_KEY_ID, self.R2_SECRET_ACCESS_KEY)):
+            problems.append("STORAGE_BACKEND=r2 needs R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY")
         if problems:
             raise ValueError("Unsafe production settings: " + "; ".join(problems))
         return self

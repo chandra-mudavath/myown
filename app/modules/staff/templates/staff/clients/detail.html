@@ -4,7 +4,7 @@
 {% set active_nav = 'clients' %}
 
 {% block main %}
-    <a class="staff-back" href="/staff/clients">{{ ci("chevron-left", "ci ci--sm") }} Back to clients</a>
+    <a class="staff-back" href="/staff/dashboard">{{ ci("chevron-left", "ci ci--sm") }} Back to dashboard</a>{# was Back to clients: the Clients list is hidden (Nov 2026) #}
 
     {% if client %}
     {% set client_name = (client.first_name ~ ' ' ~ (client.last_name or '')) | trim %}
@@ -84,15 +84,15 @@
                     {% for f in filings %}
                     <tr>
                         <td class="col-sno">{{ loop.index }}</td>
-                        <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ f.id }}">{{ f.case_id }}</a></td>
+                        <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ f.ref }}">{{ f.case_id }}</a></td>
                         <td>{{ f.tax_year }}</td>
                         <td>{{ f.filing_type | capitalize }}</td>
                         <td><span class="staff-stage-pill tone-{{ f.stage_tone }}">{{ f.stage }}</span></td>
                         <td class="staff-cell-muted">{{ f.submitted }}</td>
                         <td class="staff-cell-muted">{{ f.updated }}</td>
                         <td class="col-actions">
-                            <a class="staff-row-action" href="/staff/cases/{{ f.id }}/documents" title="Documents">{{ ci("file", "ci ci--sm") }}<span>{{ f.doc_count }}</span></a>
-                            <a class="staff-row-action staff-row-action--primary" href="/staff/cases/{{ f.id }}">Review</a>
+                            <a class="staff-row-action" href="/staff/cases/{{ f.ref }}/documents" title="Documents">{{ ci("file", "ci ci--sm") }}<span>{{ f.doc_count }}</span></a>
+                            <a class="staff-row-action staff-row-action--primary" href="/staff/cases/{{ f.ref }}">Review</a>
                         </td>
                     </tr>
                     {% else %}

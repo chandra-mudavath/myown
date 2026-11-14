@@ -8,9 +8,13 @@ from app.modules.client.schemas.client import AddressInformationUpdate, ContactI
 
 
 COMPLETION_FIELDS = (
+    ("SSN", "ssn"),
     ("First name", "first_name"),
+    ("Middle name", "middle_name"),
     ("Last name", "last_name"),
+    ("Gender", "gender"),
     ("Date of birth", "date_of_birth"),
+    ("Occupation", "occupation"),
     ("Email address", "email"),
     ("Phone number", "phone"),
     ("Address line 1", "address_line_1"),
@@ -28,6 +32,7 @@ def get_client_for_account(db: Session, account_id: str) -> Client | None:
 def _profile_values(client: Client, account: AuthAccount) -> dict[str, object]:
     values = {field: getattr(client, field, None) for _, field in COMPLETION_FIELDS if field != "email"}
     values["email"] = account.email
+    values["middle_name"] = client.middle_name or client.no_middle_name  # "No middle name" counts as answered
     return values
 
 
@@ -41,9 +46,14 @@ def profile_completion(client: Client, account: AuthAccount) -> tuple[int, list[
 def serialize_profile(client: Client, account: AuthAccount) -> dict[str, object]:
     percentage, missing = profile_completion(client, account)
     return {
+        "ssn_masked": f"•••-••-{client.ssn[-4:]}" if client.ssn else "",  # the full SSN never goes to the browser
         "first_name": client.first_name,
+        "middle_name": client.middle_name,
+        "no_middle_name": bool(client.no_middle_name),
         "last_name": client.last_name,
+        "gender": client.gender,
         "date_of_birth": client.date_of_birth.isoformat() if client.date_of_birth else None,
+        "occupation": client.occupation,
         "email": account.email,
         "phone": client.phone,
         "address_line_1": client.address_line_1,
@@ -57,10 +67,20 @@ def serialize_profile(client: Client, account: AuthAccount) -> dict[str, object]
     }
 
 
-def update_personal(client: Client, data: PersonalInformationUpdate) -> None:
+def update_personal(client: Client, data: PersonalInformationUpdate) -> str | None:
+    """Save the taxpayer details; returns an error message instead when no SSN was ever given."""
+    if not data.ssn and not client.ssn:
+        return "Please enter your SSN."
+    if data.ssn:
+        client.ssn = data.ssn
     client.first_name = data.first_name
+    client.middle_name = data.middle_name
+    client.no_middle_name = data.no_middle_name
     client.last_name = data.last_name
+    client.gender = data.gender
     client.date_of_birth = data.date_of_birth
+    client.occupation = data.occupation
+    return None
 
 
 def update_address(client: Client, data: AddressInformationUpdate) -> None:

@@ -90,10 +90,22 @@ def test_staff_client_view_has_the_client_tabs_update_stage_and_comments(env):
     staff = _staff(env)
     page = staff.get(f"/staff/cases/{env['filing_id']}").text
     nav = page.split('aria-label="Client information"')[1].split("</nav>")[0]
-    for label in ("Dashboard", "My Filings", "Messages", "Personal Info", "Tax Notes", "Upload Documents", "Tax Summary",
+    for label in ("Personal Info", "Tax Notes", "Upload Documents", "Tax Summary",
                   "Make Payment", "Bank Details", "FBAR", "Review Documents", "E-File Authorization", "Download Tax Docs",
                   "Refund Status", "Email &amp; Mobile", "Refer &amp; Earn", "Update stage", "Comments"):
         assert label in nav, label
+    # The client's Overview group (Dashboard, My Filings, Messages) was removed: it repeated the staff's own items (Nov 2026)
+    assert "My Filings" not in nav and ">Overview<" not in nav
+    # Client tabs open one part of the case; the stage tracker's stages are links; the section-links row is gone (Nov 2026)
+    db = env["Session"]()
+    number = db.get(TaxFiling, env["filing_id"]).case_number
+    db.close()
+    assert f"/staff/cases/{number}#tab-personal" in nav and "#tab-bank" in nav  # readable case number in links
+    # Opening a case by its id moves to the readable address (client feedback, Nov 2026)
+    moved = staff.get(f"/staff/cases/{env['filing_id']}?x=1", follow_redirects=False)
+    assert moved.status_code == 302 and moved.headers["location"] == f"/staff/cases/{number}?x=1"
+    assert "data-case-tabs" in page and 'data-tab="personal"' in page and "case-pipeline__link" in page
+    assert 'class="case-checklist"' not in page
     assert "data-move-stage" in nav and page.count("data-stage-dialog") == 1
     # Case header: name, email, phone; no client number chip; payments section
     header = page.split('class="case-file"')[1].split("</header>")[0]

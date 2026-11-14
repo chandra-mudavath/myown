@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.platform.models.auth import AuthAccount, EmailChangeRequest
 from app.platform.models.system import AuditLog
+from app.platform.services import email_check
 
 PENDING = "pending"
 
@@ -38,9 +39,9 @@ def latest_for(db: Session, account_id: str) -> EmailChangeRequest | None:
 
 def request_change(db: Session, account: AuthAccount, new_email: str) -> tuple[str | None, str | None]:
     """(message, error). A new request replaces one still waiting."""
-    email = (new_email or "").strip().lower()
-    if not email or "@" not in email:
-        return None, "Enter a valid email address."
+    email, err = email_check.clean(new_email)  # same rules as sign-up (Nov 2026)
+    if err:
+        return None, err
     if email == account.email.lower():
         return "This is already your sign-in email.", None
     if _taken(db, email, account.id):

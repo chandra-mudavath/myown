@@ -25,6 +25,11 @@ def test_other_nationality_and_visa_and_earlier_visas(env):
     base["visa_type_other"] = "TN"
     assert "earlier+visa+1" in client.post("/client/profile/residency", data=base, follow_redirects=False).headers["location"]
     base.update(prev1_type="F1", prev1_from="2025-01-01", prev1_to="2025-03-31", prev2_type="Other", prev2_other="O-1")
+    # Residential status (183 days) is required (client feedback, Nov 2026)
+    unanswered = {k: v for k, v in base.items() if k != "days_183"}
+    moved = client.post("/client/profile/residency", data=unanswered, follow_redirects=False).headers["location"]
+    assert "183+days" in moved and moved.endswith("#return-type")
+    assert 'name="days_183" value="yes" required' in client.get("/client/profile").text
     assert client.post("/client/profile/residency", data=base, follow_redirects=False).headers["location"].endswith("#marital")
     residency, filing_id = _section(env, intake.RESIDENCY)
     assert residency.data["nationality_other"] == "Canadian" and residency.data["visa_type_other"] == "TN"
@@ -94,13 +99,13 @@ def test_yes_is_highlighted_and_refund_cards_hidden(env):
 def test_email_change_needs_admin_approval(env):
     client = as_(env, "client")
     db = env["Session"]()
-    db.add(AuthAccount(email="taken@example.com", password_hash="x", account_type=AccountType.CLIENT, is_active=True, is_verified=True))
+    db.add(AuthAccount(email="taken@fastmail.com", password_hash="x", account_type=AccountType.CLIENT, is_active=True, is_verified=True))
     db.commit()
     db.close()
-    r = client.post("/client/api/email-request", json={"email": "Mike.New@example.com"})
+    r = client.post("/client/api/email-request", json={"email": "Mike.New@fastmail.com"})
     assert r.status_code == 200 and "admin will approve" in r.json()["message"]
     assert "Waiting for approval" in client.get("/client/update-contact").text
-    assert client.post("/client/api/email-request", json={"email": "taken@example.com"}).status_code == 409  # taken
+    assert client.post("/client/api/email-request", json={"email": "taken@fastmail.com"}).status_code == 409  # taken
 
     db = env["Session"]()
     acc = AuthAccount(email="boss@x.test", password_hash="x", account_type=AccountType.ADMIN, is_active=True, is_verified=True)
@@ -113,17 +118,17 @@ def test_email_change_needs_admin_approval(env):
     admin = TestClient(app)
     admin.cookies.update({"access_token": create_access_token("boss@x.test", "ADMIN")})
     assert "1 email change request" in admin.get("/admin/dashboard").text
-    assert "mike.new@example.com" in admin.get("/admin/email-requests").text
+    assert "mike.new@fastmail.com" in admin.get("/admin/email-requests").text
     r = admin.post(f"/admin/email-requests/{req.id}/approve", follow_redirects=False)
     assert "saved=" in r.headers["location"]
     db = env["Session"]()
-    assert db.query(AuthAccount).filter(AuthAccount.email == "mike.new@example.com").count() == 1
+    assert db.query(AuthAccount).filter(AuthAccount.email == "mike.new@fastmail.com").count() == 1
     assert db.query(AuthAccount).filter(AuthAccount.email == "client@x.test").count() == 0
     db.close()
     # Rejecting needs a reason, and the client sees it
     new = TestClient(app)
-    new.cookies.update({"access_token": create_access_token("mike.new@example.com", "CLIENT"), "tax_year": "2025"})
-    new.post("/client/api/email-request", json={"email": "other@example.com"})
+    new.cookies.update({"access_token": create_access_token("mike.new@fastmail.com", "CLIENT"), "tax_year": "2025"})
+    new.post("/client/api/email-request", json={"email": "other@fastmail.com"})
     db = env["Session"]()
     req2 = db.query(EmailChangeRequest).filter(EmailChangeRequest.status == "pending").one()
     db.close()

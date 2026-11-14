@@ -1,5 +1,6 @@
 <!doctype html>
-{#- A document on its own page, ready for Print / Save as PDF. Used by HR, staff and admin. -#}
+{#- A document on its own page, ready for Print / Save as PDF; also the page the PDF download is made from.
+    Used by HR, staff and admin. -#}
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -16,9 +17,12 @@
             body { background: #fff; }
             .bar { display: none; }
             .sheet { box-shadow: none; margin: 0; max-width: none; }
-            .hr-letter { overflow: visible !important; }
-            .hr-wm { position: fixed !important; }  /* the watermark on every printed page */
-            @page { margin: 14mm; }
+            .hr-letter { overflow: visible !important; padding: 0 !important; }  /* the @page margin is the margin */
+            /* the watermark once in the middle of every printed page (and every PDF page) */
+            .hr-wm { position: fixed !important; background-repeat: no-repeat !important; background-position: center !important;
+                     background-size: contain !important; }
+            .hr-letter, .hr-wm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            @page { size: A4; margin: 10mm 12mm; }
         }
     </style>
 </head>

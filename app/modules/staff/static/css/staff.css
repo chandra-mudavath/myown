@@ -1051,3 +1051,66 @@ html[data-theme="dark"] .ref-today { color: #fbbf24; }
 .case-comments__meta time { margin-left: auto; }
 .case-comments__about { color: var(--ink); font-weight: 600; }
 .case-comments__body { margin: 6px 0 4px; white-space: pre-line; line-height: 1.5; }
+
+/* Estimated tax summary form on the case page (client feedback, Nov 2026) */
+.tax-sum-table td { vertical-align: middle; }
+.tax-sum-table .staff-input { width: 100%; min-width: 120px; }
+.tax-sum-table .tax-sum-amt { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Profile → My HR (moved from the sidebar, Nov 2026) */
+.staff-myhr-title { margin: 4px 0 16px; font-size: 1.05rem; }
+.staff-myhr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.staff-myhr-card { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-lg); color: var(--ink); background: var(--surface); text-decoration: none; transition: border-color .15s, background .15s; }
+.staff-myhr-card:hover { border-color: var(--brand); background: var(--brand-soft, var(--surface)); }
+.staff-myhr-card:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.staff-myhr-card strong { display: block; font-size: .92rem; }
+.staff-myhr-card small { display: block; margin-top: 2px; color: var(--muted); font-size: .78rem; }
+.staff-myhr-icon { display: grid; flex: none; place-items: center; width: 38px; height: 38px; border-radius: 10px; color: var(--brand); background: var(--brand-soft, rgba(37, 99, 235, .1)); }
+.staff-myhr-go { margin-left: auto; color: var(--muted); }
+
+/* Stage lists with the Dashboard's columns (Nov 2026): keep short values on one line, one assignee per line */
+.staff-cases-table .col-nowrap { white-space: nowrap; }
+.staff-cases-table .col-staff { min-width: 210px; line-height: 1.45; }
+
+/* Case page tabs (Nov 2026): one part of the case at a time, full width; the stage tracker's stages are links */
+.case-layout.is-tabbed { grid-template-columns: minmax(0, 1fr); }
+.case-layout.is-tabbed .case-aside { display: none; }
+.case-layout.is-tabbed .case-section[hidden] { display: none; }
+.case-pipeline__link { display: flex; flex-direction: column; align-items: center; gap: 8px; color: inherit; text-decoration: none; border-radius: 10px; padding: 0 4px 4px; }
+.case-pipeline__link:hover .case-pipeline__dot { border-color: var(--brand); }
+.case-pipeline__link:hover .case-pipeline__label { color: var(--brand); text-decoration: underline; }
+.case-pipeline__link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* Notifications header: title | search (centre) | filters (right) (client feedback, Nov 2026) */
+.notif-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 380px) minmax(0, 1fr); align-items: center; }
+.notif-head__search { width: 100%; justify-self: center; }
+.notif-head__filters { display: flex; justify-content: flex-end; min-width: 0; }
+@media (max-width: 1100px) {
+    .notif-head { grid-template-columns: minmax(0, 1fr) auto; }
+    .notif-head__search { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; }
+}
+@media (max-width: 640px) {
+    .notif-head { grid-template-columns: minmax(0, 1fr); }
+    .notif-head__filters { justify-content: flex-start; overflow-x: auto; }
+}
+
+/* Client tabs for a client with no filing yet (Nov 2026) */
+.staff-clientnav__nofiling { margin: 0 0 10px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: .82rem; }
+.staff-clientnav__item.is-disabled { opacity: .45; cursor: not-allowed; }
+.staff-clientnav__item.is-disabled:hover { background: none; }
+
+/* Compact case header (client feedback, Nov 2026): who | filing details (2 x 2, in the old empty middle) | stage */
+@media (min-width: 901px) {
+    .case-file { grid-template-columns: minmax(0, auto) minmax(260px, 1fr) auto; align-items: center; gap: 0 28px; padding: 16px 22px; }
+    .case-file__main { grid-column: 1; grid-row: 1; }
+    .case-file__meta { grid-column: 2; grid-row: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 20px; margin: 0; padding: 4px 0 4px 24px; border-top: 0; border-left: 1px dashed var(--line); }
+    .case-file__meta > div { padding: 0; }
+    .case-file__meta > div + div { border-left: 0; }
+    .case-file__stage { grid-column: 3; grid-row: 1; }
+}
+.case-file__id { font-size: clamp(1.45rem, 2.4vw, 1.9rem); }
+.case-file__client { margin-top: 4px; }
+.case-file__contact { margin: 6px 0 0; align-items: center; }
+.case-file__msg { height: 30px; padding: 0 10px; font-size: .8rem; }
+.case-file__stage { gap: 4px; }
+.case-file__pill { padding: 4px 12px; font-size: .85rem; }

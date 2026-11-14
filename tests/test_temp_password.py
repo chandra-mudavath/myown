@@ -36,12 +36,12 @@ def _sign_in(email: str, password: str) -> tuple[TestClient, object]:
 
 
 def test_admin_created_client_must_set_own_password_first(env):
-    made = _admin(env).post("/admin/quick-action/client", data={"first_name": "Nina", "last_name": "K", "email": "nina@x.test",
+    made = _admin(env).post("/admin/quick-action/client", data={"first_name": "Nina", "last_name": "K", "email": "nina@fastmail.com",
                                                                 "phone": "+15551234567"}).json()
     temp = made["temp_password"]
-    assert _account(env, "nina@x.test").must_change_password
+    assert _account(env, "nina@fastmail.com").must_change_password
 
-    c, r = _sign_in("nina@x.test", temp)
+    c, r = _sign_in("nina@fastmail.com", temp)
     assert r.headers["location"].endswith("/auth/change-password")
     # Nothing else opens yet: pages show the "Set your own password" screen, fetch() gets the code
     page = c.get("/client/dashboard", headers={"accept": "text/html"})
@@ -58,7 +58,7 @@ def test_admin_created_client_must_set_own_password_first(env):
     r = c.post("/auth/change-password", data={"current_password": temp, "new_password": NEW, "confirm_password": NEW},
                follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].endswith("/client/years")
-    acc = _account(env, "nina@x.test")
+    acc = _account(env, "nina@fastmail.com")
     assert not acc.must_change_password and verify_password(NEW, acc.password_hash)
     assert c.get("/client/dashboard").status_code == 200
     assert c.get("/auth/change-password", follow_redirects=False).status_code == 303  # done: the page sends them home

@@ -54,19 +54,43 @@
                     <button class="cx-btn cx-btn--soft cx-btn--sm edit-button" type="button">{{ ci("edit") }} Edit</button>
                 </div>
                 <div class="cx-card__body">
+                    {#- All required (client feedback, Nov 2026). The SSN is never sent back to the page: it shows masked,
+                        and leaving the box blank keeps the saved number. -#}
                     <div class="cx-form-grid">
                         <div class="cx-field">
+                            <label class="cx-label" for="pf-ssn">SSN<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="pf-ssn" name="ssn" inputmode="numeric" autocomplete="off" maxlength="11" pattern="\d{3}-?\d{2}-?\d{4}"
+                                   placeholder="{{ profile.ssn_masked or '123-45-6789' }}" {% if not profile.ssn_masked %}required{% endif %} disabled aria-describedby="ssn-hint" />
+                            <span class="cx-hint" id="ssn-hint" data-ssn-hint>{% if profile.ssn_masked %}Saved as {{ profile.ssn_masked }}. Leave blank to keep it.{% else %}9 digits, as on your Social Security card.{% endif %}</span>
+                        </div>
+                        <div class="cx-field">
                             <label class="cx-label" for="pf-first">First name<span class="cx-req">*</span></label>
-                            <input class="cx-input" id="pf-first" name="first_name" value="{{ profile.first_name }}" required maxlength="50" disabled />
+                            <input class="cx-input" id="pf-first" name="first_name" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" value="{{ profile.first_name }}" required maxlength="50" disabled />
                         </div>
                         <div class="cx-field">
-                            <label class="cx-label" for="pf-last">Last name</label>
-                            <input class="cx-input" id="pf-last" name="last_name" value="{{ profile.last_name or '' }}" maxlength="50" disabled />
+                            <label class="cx-label" for="pf-middle">Middle name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="pf-middle" name="middle_name" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" value="{{ profile.middle_name or '' }}" maxlength="50" {% if not profile.no_middle_name %}required{% endif %} disabled data-middle-name />
+                            <label class="cx-check" style="margin-top:.4rem;"><input type="checkbox" name="no_middle_name" value="true" {% if profile.no_middle_name %}checked{% endif %} disabled data-no-middle /> No middle name</label>
                         </div>
                         <div class="cx-field">
-                            <label class="cx-label" for="pf-dob">Date of birth</label>
-                            <input class="cx-input" id="pf-dob" name="date_of_birth" type="date" value="{{ profile.date_of_birth or '' }}" disabled aria-describedby="dob-hint" />
+                            <label class="cx-label" for="pf-last">Last name<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="pf-last" name="last_name" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" value="{{ profile.last_name or '' }}" required maxlength="50" disabled />
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="pf-gender">Gender<span class="cx-req">*</span></label>
+                            <select class="cx-select" id="pf-gender" name="gender" required disabled>
+                                <option value="">Choose…</option>
+                                {% for v, l in (("male", "Male"), ("female", "Female"), ("other", "Other")) %}<option value="{{ v }}"{% if profile.gender == v %} selected{% endif %}>{{ l }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="pf-dob">Date of birth<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="pf-dob" name="date_of_birth" type="date" value="{{ profile.date_of_birth or '' }}" required disabled aria-describedby="dob-hint" />
                             <span class="cx-hint" id="dob-hint">You must be at least 18 years old.</span>
+                        </div>
+                        <div class="cx-field">
+                            <label class="cx-label" for="pf-occupation">Occupation<span class="cx-req">*</span></label>
+                            <input class="cx-input" id="pf-occupation" name="occupation" value="{{ profile.occupation or '' }}" required maxlength="80" placeholder="e.g. Software engineer" disabled />
                         </div>
                         <div class="cx-field">
                             <label class="cx-label" for="pf-email">Login email</label>
@@ -160,7 +184,7 @@
                     <p class="cx-muted" style="margin: 0 0 0.75rem; font-size: 0.86rem;">An admin approves the change. Until then you sign in with your current email; your password stays the same.</p>
                     <label class="sr-only" for="new-email">New email address</label>
                     <div class="cx-inputgroup">
-                        <input class="cx-input" id="new-email" name="email" type="email" required placeholder="you@example.com" />
+                        <input class="cx-input" id="new-email" name="email" type="email" pattern="[A-Za-z][A-Za-z0-9._+\-]*@[A-Za-z][A-Za-z0-9\-]*(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}" title="Start with a letter, e.g. name@gmail.com" required placeholder="you@example.com" />
                         <button class="cx-btn cx-btn--soft" type="submit">Request change</button>
                     </div>
                 </form>
@@ -252,10 +276,10 @@
 
                     <h3 class="cx-legend">Residential status</h3>
                     <div class="cx-q cx-q--lead" style="counter-increment: none;">
-                        <span class="cx-q__text">Did you stay in the US for at least 183 days in {{ selected_year }}?<small>Counts days present under the substantial presence test.</small></span>
+                        <span class="cx-q__text">Did you stay in the US for at least 183 days in {{ selected_year }}?<span class="cx-req">*</span><small>Counts days present under the substantial presence test.</small></span>
                         <div class="cx-seg" role="radiogroup">
-                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="yes" {% if residency.get("days_183") == "yes" %}checked{% endif %} /><span>Yes</span></label>
-                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="no" {% if residency.get("days_183") == "no" %}checked{% endif %} /><span>No</span></label>
+                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="yes" required {% if residency.get("days_183") == "yes" %}checked{% endif %} /><span>Yes</span></label>
+                            <label class="cx-seg__opt"><input type="radio" name="days_183" value="no" required {% if residency.get("days_183") == "no" %}checked{% endif %} /><span>No</span></label>
                         </div>
                     </div>
                 </div>
@@ -294,11 +318,11 @@
                         <div class="cx-form-grid cx-form-grid--3">
                             <div class="cx-field">
                                 <label class="cx-label" for="sp-first">First name<span class="cx-req">*</span></label>
-                                <input class="cx-input" id="sp-first" name="spouse_first" maxlength="50" required value="{{ sp.get('first_name', '') }}" />
+                                <input class="cx-input" id="sp-first" name="spouse_first" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" maxlength="50" required value="{{ sp.get('first_name', '') }}" />
                             </div>
                             <div class="cx-field">
                                 <label class="cx-label" for="sp-last">Last name<span class="cx-req">*</span></label>
-                                <input class="cx-input" id="sp-last" name="spouse_last" maxlength="50" required value="{{ sp.get('last_name', '') }}" />
+                                <input class="cx-input" id="sp-last" name="spouse_last" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" maxlength="50" required value="{{ sp.get('last_name', '') }}" />
                             </div>
                             <div class="cx-field">
                                 <label class="cx-label" for="sp-dob">Date of birth</label>
@@ -320,7 +344,7 @@
                             </div>
                             <div class="cx-field">
                                 <label class="cx-label" for="sp-email">Email<span class="cx-opt">Optional</span></label>
-                                <input class="cx-input" id="sp-email" name="spouse_email" type="email" maxlength="120" value="{{ sp.get('email', '') }}" />
+                                <input class="cx-input" id="sp-email" name="spouse_email" type="email" pattern="[A-Za-z][A-Za-z0-9._+\-]*@[A-Za-z][A-Za-z0-9\-]*(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}" title="Start with a letter, e.g. name@gmail.com" maxlength="120" value="{{ sp.get('email', '') }}" />
                             </div>
                             <div class="cx-field">
                                 <label class="cx-label" for="sp-phone">Phone<span class="cx-opt">Optional</span></label>
@@ -360,15 +384,15 @@
             <form method="post" action="/client/profile/dependents">{# was data-cx-demo (nothing saved) #}
                 <div class="cx-card__body">
                     {% if form_for == "dependents" and form_error %}<div class="cx-alert cx-alert--error" role="alert" style="margin-bottom:1rem;">{{ ci("alert") }}<p>{{ form_error }}</p></div>{% endif %}
-                    {% if form_for == "dependents" and form_saved %}<div class="cx-alert cx-alert--success" role="status" style="margin-bottom:1rem;">{{ ci("check-circle") }}<p>{{ form_saved }} Your tax team can see it now.</p></div>{% endif %}
+                    {% if form_for == "dependents" and form_saved %}<div class="cx-alert cx-alert--success" role="status" style="margin-bottom:1rem;">{{ ci("check-circle") }}<p>{{ form_saved }} Your tax team can see it now. <a class="cx-link" href="/client/tax-notes">Next: Tax Notes &rarr;</a></p></div>{% endif %}
                     <div class="cx-form-grid cx-form-grid--3">
                         <div class="cx-field">
                             <label class="cx-label" for="dp-first">First name<span class="cx-req">*</span></label>
-                            <input class="cx-input" id="dp-first" name="dep_first" required />
+                            <input class="cx-input" id="dp-first" name="dep_first" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" required />
                         </div>
                         <div class="cx-field">
                             <label class="cx-label" for="dp-last">Last name<span class="cx-req">*</span></label>
-                            <input class="cx-input" id="dp-last" name="dep_last" required />
+                            <input class="cx-input" id="dp-last" name="dep_last" pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" required />
                         </div>
                         <div class="cx-field">
                             <label class="cx-label" for="dp-rel">Relationship</label>
@@ -401,8 +425,14 @@
                     </div>
                 </div>
                 <div class="cx-card__foot">
-                    <button class="cx-btn cx-btn--primary" type="submit">{{ ci("plus") }} Add dependent</button>
+                    <button class="cx-btn cx-btn--soft" type="submit">{{ ci("plus") }} Add dependent</button>
                 </div>
+            </form>
+            {#- Save button (client feedback, Nov 2026): confirms the list, also when there are no dependents -#}
+            <form method="post" action="/client/profile/dependents" class="cx-card__foot" style="justify-content:space-between;flex-wrap:wrap;gap:.75rem;">
+                <input type="hidden" name="action" value="done" />
+                <p class="cx-hint" style="margin:0;">{% if dependents %}{{ dependents | length }} dependent{{ 's' if dependents | length != 1 else '' }} added.{% else %}No dependents? Just save.{% endif %}</p>
+                <button class="cx-btn cx-btn--primary" type="submit">Save &amp; continue {{ ci("arrow-right", "ci ci--sm") }}</button>
             </form>
         </section>
     </div>

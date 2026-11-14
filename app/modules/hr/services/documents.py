@@ -3,11 +3,13 @@
 One template per kind (templates/hr/letters/<kind>.html). HR fills a short form; known data is
 pre-filled from the employee's record. A document is a draft until HR finalises it: then the
 rendered page is stored and never changes, even if the template is edited later. The same
-rendered page is shown on screen, printed (Print / Save as PDF) and placed in emails.
+rendered page is shown on screen, printed (Print / Save as PDF), downloaded as a PDF and placed in emails.
 """
 from __future__ import annotations
 
+import base64
 import calendar
+import re
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -22,6 +24,16 @@ from app.modules.staff.models.staff_records import StaffEmploymentDetails, Staff
 from app.platform.models.system import AuditLog
 
 TWO = Decimal("0.01")
+
+# Background watermark of every HR document: always "CovrentTax" (not the editable company name), large,
+# faint and diagonal. One tile is about one A4 page tall, so on screen it repeats once per page; in print
+# and in the PDF it is fixed to each page.
+_WATERMARK_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1000" viewBox="0 0 720 1000">'
+    '<text x="360" y="500" text-anchor="middle" dominant-baseline="middle" transform="rotate(-32 360 500)" '
+    'font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="112" letter-spacing="-2" '
+    'fill="#2563eb" fill-opacity="0.06">CovrentTax</text></svg>')
+WATERMARK = "data:image/svg+xml;base64," + base64.b64encode(_WATERMARK_SVG.encode()).decode()
 
 
 @dataclass(frozen=True)
@@ -299,7 +311,7 @@ def render(db: Session, doc: HrDocument) -> str:
     return templates.get_template(f"hr/letters/{kind}.html").render(
         doc=doc, d=doc.data, company=hr_settings.get_all(db), money=money, fmt_date=_fmt_date, in_words=in_words,
         breakup=breakup(db, _dec(doc.data.get("monthly_salary"))) if doc.kind != "PAYSLIP" else [],
-        kind=KINDS.get(doc.kind), draft=doc.status == "draft", **extra)
+        kind=KINDS.get(doc.kind), draft=doc.status == "draft", watermark=WATERMARK, **extra)
 
 
 def finalise(db: Session, actor_id: str, doc: HrDocument) -> str | None:
@@ -337,6 +349,29 @@ def title(doc: HrDocument) -> str:
         return f"Payslip · {date(y, m, 1).strftime('%B %Y')}"
     who = doc.data.get("candidate_name") or doc.data.get("employee_name") or ""
     return f"{KINDS[doc.kind].label}{' · ' + who if who else ''}"
+
+
+# ── PDF download ────────────────────────────────────────────────────────────
+
+def print_page(db: Session, doc: HrDocument) -> str:
+    """The document on its own page (the Print / Save as PDF page), which is also what goes into the PDF."""
+    return templates.get_template("hr/letters/print.html").render(letter=render(db, doc), title=title(doc), doc=doc)
+
+
+def pdf_filename(doc: HrDocument) -> str:
+    who = doc.data.get("candidate_name") or doc.data.get("employee_name") or ""
+    parts = [doc.document_number or "document", KINDS[doc.kind].label if doc.kind in KINDS else doc.kind.title(), who]
+    if doc.kind == "PAYSLIP" and doc.period:
+        parts.insert(2, doc.period)
+    name = "_".join(re.sub(r"[^A-Za-z0-9-]+", "-", p).strip("-") for p in parts if p)
+    return f"{name or 'document'}.pdf"
+
+
+def pdfs(db: Session, docs: list[HrDocument]) -> list[tuple[str, bytes]]:
+    """(filename, PDF bytes) per document. Raises pdf.PdfUnavailable when the server can't make PDFs."""
+    from app.platform.services.pdf import html_to_pdfs
+    files = html_to_pdfs([print_page(db, d) for d in docs])
+    return [(pdf_filename(d), data) for d, data in zip(docs, files)]
 
 
 # ── Offers ──────────────────────────────────────────────────────────────────

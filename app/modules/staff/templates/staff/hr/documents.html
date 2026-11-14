@@ -3,6 +3,8 @@
 {% block title %}{{ heading }} - {{ app_name }}{% endblock %}
 
 {% block main %}
+    {#- Back to Profile, where My HR now lives (client feedback, Nov 2026) -#}
+    <a class="staff-back" href="/staff/profile">{{ ci("chevron-left", "ci ci--sm") }} Back to profile</a>
     <div class="staff-pagehead">
         <div>
             <p class="eyebrow">My HR</p>
@@ -21,7 +23,8 @@
                         <td>{{ d.document_number }}</td>
                         <td>{{ d.finalised_at.strftime('%d %b %Y') if d.finalised_at else '' }}</td>
                         {% if active_nav == 'my_payslips' %}<td><strong>{{ d.data.currency }} {{ money(d.net_amount) }}</strong></td>{% endif %}
-                        <td><a class="staff-row-action staff-row-action--primary" href="/staff/hr/documents/{{ d.id }}">View</a></td>
+                        <td style="white-space:nowrap;"><a class="staff-row-action" href="/staff/hr/documents/{{ d.id }}">View</a>
+                            <a class="staff-row-action staff-row-action--primary" href="/staff/hr/documents/{{ d.id }}/pdf">Download</a></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="5" class="staff-empty">{{ ci("file") }}<strong>Nothing here yet</strong><span>{{ empty }}</span></td></tr>

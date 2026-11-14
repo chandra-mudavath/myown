@@ -90,7 +90,11 @@ function initCountryPhonePicker(prefix) {
                 }))
                 .sort((left, right) => left.name.localeCompare(right.name));
 
-            const defaultMatch = items.find((country) => country.region === "US") || items[0];
+            // After a sign-up error the country typed before comes back (+1 means the US, not Canada)
+            const initial = countryCode.dataset.initial || "";
+            const dial = (country) => `+${String(country.dial_code).replace(/\D/g, "")}`;
+            const again = initial && (items.find((c) => dial(c) === initial && c.region === "US") || items.find((c) => dial(c) === initial));
+            const defaultMatch = again || items.find((country) => country.region === "US") || items[0];
             if (defaultMatch) chooseCountry(defaultMatch);
             renderCountries();
         } catch {

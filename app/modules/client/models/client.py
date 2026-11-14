@@ -3,9 +3,10 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, String
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.crypto import EncryptedJSON
 from app.core.database import Base
 
 
@@ -28,6 +29,12 @@ class Client(Base):
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     last_name: Mapped[str | None] = mapped_column(String(50), nullable=True)
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Taxpayer details (client feedback, Nov 2026): all required on Personal Info; "no middle name" is a valid answer
+    middle_name: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    no_middle_name: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0", nullable=False)
+    gender: Mapped[str | None] = mapped_column(String(10), nullable=True)       # male / female / other
+    occupation: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    ssn: Mapped[str | None] = mapped_column(EncryptedJSON, nullable=True)       # 9 digits, encrypted at rest; shown masked
     phone: Mapped[str] = mapped_column(String(25), nullable=False)
     address_line_1: Mapped[str | None] = mapped_column(String(120), nullable=True)
     address_line_2: Mapped[str | None] = mapped_column(String(120), nullable=True)

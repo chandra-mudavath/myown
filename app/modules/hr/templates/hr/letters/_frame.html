@@ -1,14 +1,13 @@
 {#- Common frame of every HR document: watermark, letterhead, reference and date, body, signature, footer.
     Inline styles only, so the same HTML looks the same on screen, on paper and in an email.
-    The watermark is the company name, large, faint and diagonal behind the text; the print page repeats it
-    on every printed page. Email apps that ignore positioning simply leave it out.
+    The watermark is "CovrentTax", large, faint and diagonal behind the text, on every page: on screen the
+    tile repeats about once per A4 page; the print page and the PDF fix it to each printed page. Email apps
+    that ignore background images simply leave it out.
     Needs: doc, company, draft; pages fill `letter_body` (and may turn the signature off). -#}
 {%- set ink = "#1f2937" -%}{%- set muted = "#6b7280" -%}{%- set brand = "#2563eb" -%}{%- set navy = "#1e2a4a" -%}
 {%- set name = company.company_name or 'CovrentTax' -%}
 <div class="hr-letter" style="font-family:Georgia,'Times New Roman',serif;color:{{ ink }};font-size:14px;line-height:1.6;max-width:720px;margin:0 auto;background:#fff;padding:32px 36px;position:relative;overflow:hidden;">
-    <div class="hr-wm" aria-hidden="true" style="position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;">
-        <span style="display:block;transform:rotate(-32deg);font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:112px;letter-spacing:-2px;color:{{ brand }};opacity:.055;white-space:nowrap;">{{ name }}</span>
-    </div>
+    <div class="hr-wm" aria-hidden="true" style="position:absolute;top:0;right:0;bottom:0;left:0;pointer-events:none;z-index:0;background-image:url({{ watermark }});background-repeat:repeat-y;background-position:center top;background-size:100% auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;"></div>
     <div style="position:relative;z-index:1;">
     {% if draft %}<div style="position:absolute;top:-18px;right:-14px;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;letter-spacing:.15em;color:#b42318;border:2px solid #b42318;border-radius:4px;padding:2px 8px;background:#fff;">DRAFT</div>{% endif %}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:2px solid {{ brand }};padding-bottom:10px;margin-bottom:18px;">

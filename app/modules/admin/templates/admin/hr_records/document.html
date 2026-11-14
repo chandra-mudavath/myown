@@ -14,7 +14,8 @@
             </div>
             <div class="hr-form-actions">
                 <a class="admin-mini-btn" href="{{ '/admin/hr-records/' ~ doc.staff_id ~ ('?tab=payslips' if doc.kind == 'PAYSLIP' else '?tab=letters') if doc.staff_id else '/admin/hr-records' }}">Back</a>
-                <a class="admin-mini-btn" href="/admin/hr-records/documents/{{ doc.id }}/print" target="_blank" rel="noopener">Print / Save as PDF</a>
+                <a class="admin-mini-btn admin-mini-btn--ok" href="/admin/hr-records/documents/{{ doc.id }}/pdf">Download PDF</a>
+                <a class="admin-mini-btn" href="/admin/hr-records/documents/{{ doc.id }}/print" target="_blank" rel="noopener">Print</a>
             </div>
         </div>
     </section>

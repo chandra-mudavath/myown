@@ -6,7 +6,7 @@
 
     // FastAPI returns `detail` as a string, or a list of validation errors.
     function errorText(result, fallback) {
-        if (Array.isArray(result.detail)) return result.detail.map((d) => d.msg).join(" ");
+        if (Array.isArray(result.detail)) return result.detail.map((d) => String(d.msg).replace(/^Value error, /, "")).join(" ");
         return result.detail || fallback;
     }
 
@@ -22,9 +22,22 @@
         document.getElementById("completion-help").textContent = profile.missing_fields.length
             ? `Complete: ${profile.missing_fields.join(", ")}.`
             : "Your profile is complete.";
-        document.querySelector('[data-form="personal"] [name="first_name"]').value = profile.first_name || "";
-        document.querySelector('[data-form="personal"] [name="last_name"]').value = profile.last_name || "";
-        document.querySelector('[data-form="personal"] [name="date_of_birth"]').value = profile.date_of_birth || "";
+        const personal = document.querySelector('[data-form="personal"]');
+        personal.querySelector('[name="first_name"]').value = profile.first_name || "";
+        personal.querySelector('[name="middle_name"]').value = profile.middle_name || "";
+        personal.querySelector('[name="no_middle_name"]').checked = !!profile.no_middle_name;
+        personal.querySelector('[name="last_name"]').value = profile.last_name || "";
+        personal.querySelector('[name="gender"]').value = profile.gender || "";
+        personal.querySelector('[name="date_of_birth"]').value = profile.date_of_birth || "";
+        personal.querySelector('[name="occupation"]').value = profile.occupation || "";
+        // The SSN never comes back from the server: the box stays empty and shows the masked number
+        const ssn = personal.querySelector('[name="ssn"]');
+        ssn.value = "";
+        ssn.placeholder = profile.ssn_masked || "123-45-6789";
+        ssn.required = !profile.ssn_masked;
+        personal.querySelector("[data-ssn-hint]").textContent = profile.ssn_masked
+            ? `Saved as ${profile.ssn_masked}. Leave blank to keep it.`
+            : "9 digits, as on your Social Security card.";
         document.querySelector('[data-form="address"] [name="address_line_1"]').value = profile.address_line_1 || "";
         document.querySelector('[data-form="address"] [name="address_line_2"]').value = profile.address_line_2 || "";
         document.querySelector('[data-form="address"] [name="city"]').value = profile.city || "";
@@ -36,20 +49,33 @@
 
     function enterEdit(section) {
         section.classList.add("editing");
-        section.querySelectorAll("input:not([readonly])").forEach((input) => {
+        section.querySelectorAll("input:not([readonly]), select").forEach((input) => {
             input.disabled = false;
         });
         section.querySelector(".edit-button").hidden = true;
+        syncMiddleName();
     }
 
     function cancelEdit(section) {
         setProfile(initialProfile);
         section.classList.remove("editing");
-        section.querySelectorAll("input:not([readonly])").forEach((input) => {
+        section.querySelectorAll("input:not([readonly]), select").forEach((input) => {
             input.disabled = true;
         });
         section.querySelector(".edit-button").hidden = false;
     }
+
+    // "No middle name" ticked: the middle name box is cleared, switched off and not required
+    const noMiddle = document.querySelector("[data-no-middle]");
+    const middleName = document.querySelector("[data-middle-name]");
+    function syncMiddleName() {
+        if (!noMiddle || !middleName) return;
+        const editing = !noMiddle.disabled;
+        if (noMiddle.checked) middleName.value = "";
+        middleName.disabled = !editing || noMiddle.checked;
+        middleName.required = !noMiddle.checked;
+    }
+    if (noMiddle) noMiddle.addEventListener("change", syncMiddleName);
 
     document
         .querySelectorAll(".edit-button")
@@ -79,7 +105,7 @@
                 setProfile(result.profile);
                 initialProfile = result.profile;
                 section.classList.remove("editing");
-                section.querySelectorAll("input:not([readonly])").forEach((input) => {
+                section.querySelectorAll("input:not([readonly]), select").forEach((input) => {
                     input.disabled = true;
                 });
                 section.querySelector(".edit-button").hidden = false;

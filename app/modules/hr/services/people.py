@@ -18,7 +18,7 @@ from app.modules.staff.models.staff import Staff
 from app.modules.staff.models.staff_records import StaffDocument, StaffEmploymentDetails, StaffSalaryHistory
 from app.platform.models.auth import AccountType, AuthAccount
 from app.platform.models.system import AuditLog
-from app.platform.schemas.auth import _NAME_RE, _NAME_STRICT_RE
+from app.platform.schemas.auth import clean_name
 
 EMPLOYMENT_TYPES = [("FULL_TIME", "Full time"), ("PART_TIME", "Part time"), ("CONTRACT", "Contract"), ("INTERN", "Intern")]
 EMPLOYMENT_STATUSES = [("ACTIVE", "Active"), ("PROBATION", "Probation"), ("ON_LEAVE", "On leave"),
@@ -281,16 +281,13 @@ def payroll_view(record: StaffEmploymentDetails | None, masked: bool = True) -> 
 
 def update_name(db: Session, hr: HR, first_name: str, last_name: str | None, phone: str | None) -> str | None:
     """Same name rules as sign-up."""
-    first = (first_name or "").strip()
-    last = (last_name or "").strip() or None
-    if not first:
-        return "First name is required."
+    try:  # letters, numbers and spaces, at least one letter (Nov 2026)
+        first = clean_name(first_name, "First name", required=True)
+        last = clean_name(last_name, "Last name", required=False)
+    except ValueError as e:
+        return str(e)
     if len(first) > 15 or (last and len(last) > 15):
         return "Names can be at most 15 characters."
-    if not _NAME_RE.match(first):
-        return "First name must contain only letters and numbers."
-    if last and not _NAME_STRICT_RE.match(last):
-        return "Last name must contain only letters."
     phone = (phone or "").strip() or None
     if phone and len(phone) > 20:
         return "Enter a phone number of at most 20 characters."

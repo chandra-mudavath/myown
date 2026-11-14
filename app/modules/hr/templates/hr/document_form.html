@@ -8,7 +8,7 @@
             <div>
                 <span class="admin-kicker">{{ 'People' if kind.for_candidate else people.full_name(staff) }}</span>
                 <h1>New {{ kind.label | lower }}</h1>
-                <p>Fill in the details and click Generate draft. The wording comes from the company template; you can change the details and regenerate until you finalise.</p>
+                <p>Fill in the required details. <strong>Generate &amp; download</strong> fills the company template, finalises it and downloads the PDF. <strong>Save as draft</strong> lets you check and change it before you finalise.</p>
             </div>
             <div><a class="admin-mini-btn" href="{{ '/hr/offers' if kind.for_candidate else '/hr/employees/' ~ staff.id ~ '?tab=letters' }}">Back</a></div>
         </div>
@@ -23,7 +23,8 @@
                 {% if staff %}<input type="hidden" name="staff_id" value="{{ staff.id }}">{% endif %}
                 {% include "hr/partials/document_fields.html" %}
                 <div class="hr-form-actions">
-                    <button type="submit" class="modal-btn-submit admin-form-submit">Generate draft</button>
+                    <button type="submit" name="action" value="download" class="modal-btn-submit admin-form-submit">Generate &amp; download</button>
+                    <button type="submit" name="action" value="draft" class="admin-mini-btn">Save as draft</button>
                     <span class="admin-form-hint">Fields marked "from the record" are filled in for you; correct them here if they're wrong.</span>
                 </div>
             </form>

@@ -62,15 +62,15 @@ document.addEventListener("DOMContentLoaded", function () {
             <form id="form-quick-client">
                 <div class="modal-form-group">
                     <label>First Name *</label>
-                    <input type="text" name="first_name" required placeholder="John">
+                    <input type="text" name="first_name" required pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" placeholder="John">
                 </div>
                 <div class="modal-form-group">
                     <label>Last Name *</label>
-                    <input type="text" name="last_name" required placeholder="Doe">
+                    <input type="text" name="last_name" required pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" placeholder="Doe">
                 </div>
                 <div class="modal-form-group">
                     <label>Email Address *</label>
-                    <input type="email" name="email" required placeholder="client@example.com">
+                    <input type="email" name="email" required pattern="[A-Za-z][A-Za-z0-9._+\\-]*@[A-Za-z][A-Za-z0-9\\-]*(\\.[A-Za-z0-9\\-]+)*\\.[A-Za-z]{2,}" title="Start with a letter, e.g. name@gmail.com" placeholder="client@example.com">
                 </div>
                 <div class="modal-form-group">
                     <label>Phone Number *</label>
@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Bind triggers for Client Creation
-    ["btn-quick-new-client", "rail-btn-new-client"].forEach(id => {
+    ["btn-quick-new-client", "rail-btn-new-client", "mob-btn-new-client"].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener("click", bindClientHandler);
     });
@@ -130,15 +130,15 @@ document.addEventListener("DOMContentLoaded", function () {
             <form id="form-quick-staff">
                 <div class="modal-form-group">
                     <label>First Name *</label>
-                    <input type="text" name="first_name" required placeholder="Jane">
+                    <input type="text" name="first_name" required pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" placeholder="Jane">
                 </div>
                 <div class="modal-form-group">
                     <label>Last Name *</label>
-                    <input type="text" name="last_name" required placeholder="Smith">
+                    <input type="text" name="last_name" required pattern="[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*" title="Letters, numbers and spaces" placeholder="Smith">
                 </div>
                 <div class="modal-form-group">
                     <label>Email Address *</label>
-                    <input type="email" name="email" required placeholder="staff@covrenttax.com">
+                    <input type="email" name="email" required pattern="[A-Za-z][A-Za-z0-9._+\\-]*@[A-Za-z][A-Za-z0-9\\-]*(\\.[A-Za-z0-9\\-]+)*\\.[A-Za-z]{2,}" title="Start with a letter, e.g. name@gmail.com" placeholder="staff@covrenttax.com">
                 </div>
                 <div class="modal-form-group">
                     <label>Role *</label>
@@ -181,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    ["btn-quick-new-staff", "rail-btn-new-staff"].forEach(id => {
+    ["btn-quick-new-staff", "rail-btn-new-staff", "mob-btn-new-staff"].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener("click", bindStaffHandler);
     });
@@ -244,7 +244,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    ["btn-quick-new-filing", "rail-btn-new-filing"].forEach(id => {
+    ["btn-quick-new-filing", "rail-btn-new-filing", "mob-btn-new-filing"].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener("click", bindFilingHandler);
     });
@@ -402,7 +402,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    ["btn-quick-upload-doc", "rail-btn-upload-doc"].forEach(id => {
+    ["btn-quick-upload-doc", "rail-btn-upload-doc", "mob-btn-upload-doc"].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener("click", bindUploadDocHandler);
     });
@@ -510,3 +510,49 @@ document.querySelectorAll(".admin-settings-block [form]:not(button)").forEach((f
     field.addEventListener("change", mark);
     field.addEventListener("input", mark);
 });
+
+// Small screens: the sidebar (under 1024px) and the right rail (under 1280px) slide in as drawers.
+(function () {
+    const body = document.body;
+    const sidebar = document.getElementById("admin-sidebar");
+    const rail = document.getElementById("admin-rail");
+    const backdrop = document.querySelector(".admin-backdrop");
+    const menuBtns = document.querySelectorAll(".admin-menu-toggle");
+    const railBtns = document.querySelectorAll(".admin-rail-toggle");
+    if (!sidebar || !backdrop) return;
+    if (rail) railBtns.forEach((b) => { b.hidden = false; });
+
+    const drawers = { nav: { panel: sidebar, btns: menuBtns, cls: "admin-nav-open" },
+                      rail: { panel: rail, btns: railBtns, cls: "admin-rail-open" } };
+    let openName = null, lastTrigger = null;
+
+    function close(restoreFocus) {
+        if (!openName) return;
+        const d = drawers[openName];
+        body.classList.remove(d.cls, "admin-drawer-open");
+        d.btns.forEach((b) => b.setAttribute("aria-expanded", "false"));
+        openName = null;
+        if (restoreFocus && lastTrigger) lastTrigger.focus();
+    }
+    function open(name, trigger) {
+        const d = drawers[name];
+        if (!d.panel) return;
+        close(false);
+        openName = name; lastTrigger = trigger;
+        body.classList.add(d.cls, "admin-drawer-open");
+        d.btns.forEach((b) => b.setAttribute("aria-expanded", "true"));
+        const first = d.panel.querySelector(".admin-drawer-close");
+        if (first) first.focus({ preventScroll: true });
+    }
+    menuBtns.forEach((b) => b.addEventListener("click", () => openName === "nav" ? close(true) : open("nav", b)));
+    railBtns.forEach((b) => b.addEventListener("click", () => openName === "rail" ? close(true) : open("rail", b)));
+    backdrop.addEventListener("click", () => close(true));
+    document.querySelectorAll(".admin-drawer-close").forEach((b) => b.addEventListener("click", () => close(true)));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && openName) close(true); });
+    // Following a menu link or starting a quick action closes the drawer
+    sidebar.addEventListener("click", (e) => { if (e.target.closest("a.admin-nav-item")) close(false); });
+    if (rail) rail.addEventListener("click", (e) => { if (e.target.closest(".quick-action-btn, a")) close(false); });
+    // Growing the window past a breakpoint shows the panel in place, so drop the drawer state
+    const wide = { nav: window.matchMedia("(min-width: 1024px)"), rail: window.matchMedia("(min-width: 1280px)") };
+    Object.entries(wide).forEach(([name, mq]) => mq.addEventListener("change", (e) => { if (e.matches && openName === name) close(false); }));
+})();

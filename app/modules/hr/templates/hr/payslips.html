@@ -29,6 +29,9 @@
                 <input type="hidden" name="month" value="{{ nav.value }}">
                 <button type="submit" class="admin-mini-btn admin-mini-btn--ok">Finalise {{ drafts }} draft{{ 's' if drafts != 1 else '' }}</button></form>
             {% endif %}
+            {% if docs | selectattr('status', 'equalto', 'final') | list %}
+            <a class="admin-mini-btn" href="/hr/payslips/download?month={{ nav.value }}">Download final payslips (.zip)</a>
+            {% endif %}
             <span class="admin-form-hint">Refreshing recalculates drafts from today's attendance and keeps one-off items. Final payslips never change.</span>
         </div>
         <div class="admin-table-panel">

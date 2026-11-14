@@ -16,18 +16,19 @@
     </div>
 
     <section class="staff-panel staff-cases" aria-labelledby="notif-title" data-loading-region>
-        <div class="staff-cases-head">
+        {#- Title left, search in the centre, filters on the right (client feedback, Nov 2026) -#}
+        <div class="staff-cases-head notif-head">
             <div class="staff-cases-title">
                 <h2 id="notif-title">Recent activity</h2>
                 <span class="staff-count-chip" data-notif-count>{{ events | length }}</span>
             </div>
-            <div class="doc-toolbar">
-                {#- Search as you type, like the dashboard's client filter (client feedback, Nov 2026) -#}
-                <label class="staff-search-field">
+            {#- Search as you type, like the dashboard's client filter (client feedback, Nov 2026) -#}
+            <label class="staff-search-field notif-head__search">
                     <span class="sr-only">Search notifications</span>
                     {{ ci("search", "ci ci--sm") }}
                     <input type="search" placeholder="Search name, customer no, email…" data-notif-search aria-controls="notif-table" />
-                </label>
+            </label>
+            <div class="notif-head__filters">
                 <div class="doc-filter" role="group" aria-label="Filter by activity" data-notif-filter>
                     {#- Client feedback, Oct 2026: "New" is now "Latest", "Filings" is "Registered"; Re-uploads and Replies are
                         hidden from the filters (those rows still show under All). Was:
@@ -64,10 +65,10 @@
                     <tr data-notif-row data-kind="{{ e.kind }}" data-new="{{ 'yes' if e.is_new else 'no' }}" class="{{ 'is-new' if e.is_new else '' }}"
                         data-search="{{ [e.client_name, e.customer_no or '', e.email or '', e.label, e.detail or '', (e.assigned or []) | join(' ')] | join(' ') | lower }}">
                         <td class="col-sno">{{ loop.index }}</td>
-                        <td><a class="staff-cell-link" href="/staff/clients/{{ e.client_id }}">{{ e.client_name }}</a></td>
-                        <td class="col-mono">{% if e.customer_no %}<a class="staff-cell-link is-mono" href="/staff/cases/{{ e.filing_id }}">{{ e.customer_no }}</a>{% else %}—{% endif %}</td>
+                        <td><a class="staff-cell-link" href="{{ '/staff/cases/' ~ (e.filing.case_number or e.filing_id) if e.filing_id else '/staff/clients/' ~ e.client_id }}" title="Open client information">{{ e.client_name }}</a></td>
+                        <td class="col-mono">{% if e.customer_no %}<a class="staff-cell-link is-mono" href="/staff/cases/{{ e.filing.case_number or e.filing_id }}">{{ e.customer_no }}</a>{% else %}—{% endif %}</td>
                         <td class="col-email">{{ e.email }}</td>
-                        {# <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ e.filing_id }}">{{ e.case_id }}</a></td> #}
+                        {# <td><a class="staff-cell-link is-mono" href="/staff/cases/{{ e.filing.case_number or e.filing_id }}">{{ e.case_id }}</a></td> #}
                         <td><span class="staff-stage-pill tone-{{ kind_tone[e.kind] }}">{{ 'Registered' if e.kind == 'filing' else e.label }}</span></td>
                         <td class="notif-when">
                             {% if e.is_new %}<span class="notif-dot" aria-label="Latest"></span>{% endif %}
@@ -92,5 +93,6 @@
                 </tbody>
             </table>
         </div>
+        <div class="staff-cases-foot" data-pager="notif" hidden></div>
     </section>
 {% endblock %}

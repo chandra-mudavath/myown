@@ -60,6 +60,23 @@
                 </div>
 
                 <div data-pay-panel="inr" hidden>
+                    {#- Currency converter (client feedback, Nov 2026): any currency to any other at market rates,
+                        for information only. The amount starts empty (no default amounts). -#}
+                    <section class="cx-fx" data-fx aria-labelledby="fx-title">
+                        <h3 class="cx-fx__title" id="fx-title">{{ ci("globe", "ci ci--sm") }} Currency converter</h3>
+                        <div class="cx-fx__row">
+                            <div class="cx-field cx-fx__amount"><label class="cx-label" for="fx-amount">Amount</label>
+                                <input class="cx-input" id="fx-amount" type="number" min="0" step="any" inputmode="decimal" placeholder="Enter amount" data-fx-amount /></div>
+                            <div class="cx-field"><label class="cx-label" for="fx-from">From</label>
+                                <select class="cx-select" id="fx-from" data-fx-from><option value="USD" selected>USD – US Dollar</option></select></div>
+                            <button type="button" class="cx-btn cx-btn--ghost cx-fx__swap" data-fx-swap aria-label="Swap the two currencies" title="Swap">&#8644;</button>
+                            <div class="cx-field"><label class="cx-label" for="fx-to">To</label>
+                                <select class="cx-select" id="fx-to" data-fx-to><option value="INR" selected>INR – Indian Rupee</option></select></div>
+                        </div>
+                        <p class="cx-fx__result" data-fx-result aria-live="polite">Enter an amount to convert.</p>
+                        <p class="cx-hint" style="margin:0;" data-fx-note>Market rate, for information only.{% if inr_rate %} Your payment uses today's rate: $1 = ₹{{ "{:,.2f}".format(inr_rate) }}.{% endif %}</p>
+                    </section>
+
                     {% if rzp_on %}
                     <div class="cx-stack" data-rzp>
                         {% if one %}<input type="hidden" name="invoice_id" value="{{ one.invoice.id }}" data-rzp-field />

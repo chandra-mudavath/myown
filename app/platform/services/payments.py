@@ -38,12 +38,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.crypto import encrypt_bytes
 from app.platform.models.billing import Invoice, Payment, PaymentEvent, VirtualAccount
 from app.platform.models.system import AppSetting, AuditLog
 from app.platform.models.tax_filing import TaxFiling
 from app.platform.services import case_actions, razorpay_api, stripe_api
 from app.platform.services.catalog import case_stages
+from app.platform.services.storage_provider import storage_provider
 from app.platform.services.storage_service import generate_uuid, sanitize_filename
 
 CENT = Decimal("0.01")
@@ -229,11 +229,9 @@ def _save_proof(file: UploadFile, client_id: str, label: str) -> tuple[str, str,
         return f"The proof file is larger than {settings.MAX_UPLOAD_SIZE_MB} MB."
     if not data:
         return "The proof file is empty."
-    folder = Path(settings.PAYMENT_PROOFS_DIR) / client_id
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / f"{label}_{generate_uuid()[:8]}{ext}"
-    path.write_bytes(encrypt_bytes(data))  # encrypted at rest, like documents
-    return str(path), sanitize_filename(file.filename or f"proof{ext}")[:255], PROOF_TYPES[ext]
+    key = str(Path(settings.PAYMENT_PROOFS_DIR) / client_id / f"{label}_{generate_uuid()[:8]}{ext}")
+    path = storage_provider.save(io.BytesIO(data), key, content_type=PROOF_TYPES[ext])  # encrypted at rest, like documents
+    return path, sanitize_filename(file.filename or f"proof{ext}")[:255], PROOF_TYPES[ext]
 
 
 def submit_manual(db: Session, account_id: str, client_id: str, invoice_id: str, method: str, reference: str,

@@ -46,3 +46,13 @@ def plain_number(value) -> str:
 templates.env.filters["two_tone"] = two_tone
 templates.env.filters["num"] = plain_number
 templates.env.globals["asset"] = asset
+
+
+def signed_money(value) -> str:
+    """$4,598.00, or ($184.00) for a negative amount (a tax due). Used by the Tax Summary table."""
+    from decimal import Decimal
+    value = Decimal(str(value or 0))
+    return f"(${abs(value):,.2f})" if value < 0 else f"${value:,.2f}"
+
+
+templates.env.filters["signed_money"] = signed_money

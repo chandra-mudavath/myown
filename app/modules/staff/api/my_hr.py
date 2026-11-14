@@ -12,7 +12,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import StaffAccount
 from app.core.templates import templates
-from app.modules.hr.api.common import redirect
+from app.modules.hr.api.common import pdf_download, redirect
 from app.modules.hr.models.records import HrDocument, LeaveRequest
 from app.modules.hr.services import documents, hr_settings, notify, time_off
 from app.modules.staff.api.staff import _nav_context
@@ -140,3 +140,9 @@ def my_document_print(request: Request, doc_id: str, account: StaffAccount, db: 
     doc = _my_doc(db, account, doc_id)
     return templates.TemplateResponse(request, "hr/letters/print.html", {
         "request": request, "letter": documents.render(db, doc), "title": documents.title(doc), "doc": doc})
+
+
+@router.get("/documents/{doc_id}/pdf")
+def my_document_pdf(doc_id: str, account: StaffAccount, db: Session = Depends(get_db)):
+    doc = _my_doc(db, account, doc_id)
+    return pdf_download(db, [doc], f"/staff/hr/documents/{doc_id}/print")

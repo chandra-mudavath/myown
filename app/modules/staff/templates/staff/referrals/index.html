@@ -50,7 +50,7 @@
             <label><span>Referred by</span><input class="staff-input" name="referrer" placeholder="Client number or email, e.g. CLI-00000006" /></label>
             <label><span>Full name *</span><input class="staff-input" name="name" required minlength="2" maxlength="120" /></label>
             <label><span>Phone *</span><input class="staff-input" name="phone" type="tel" required maxlength="30" placeholder="+1 415 555 0142" /></label>
-            <label><span>Email</span><input class="staff-input" name="email" type="email" maxlength="255" /></label>
+            <label><span>Email</span><input class="staff-input" name="email" type="email" pattern="[A-Za-z][A-Za-z0-9._+\-]*@[A-Za-z][A-Za-z0-9\-]*(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}" title="Start with a letter, e.g. name@gmail.com" maxlength="255" /></label>
             <label><span>Relationship</span><select class="staff-select" name="relationship">{% for r in relationships %}<option>{{ r }}</option>{% endfor %}</select></label>
             <label class="ref-add__note"><span>Note</span><input class="staff-input" name="note" maxlength="2000" placeholder="e.g. Best time to call, what they need help with" /></label>
             <div class="staff-cases-filters__actions"><button type="submit" class="staff-btn staff-btn--primary">Save referral</button></div>

@@ -26,8 +26,53 @@
             <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--green">{{ ci("check-circle") }}</span><div><span class="cx-stat__label">Deductions</span><strong class="cx-stat__value">—</strong></div></div>
             <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--amber">{{ ci("calculator") }}</span><div><span class="cx-stat__label">Tax liability</span><strong class="cx-stat__value">—</strong></div></div>
             #}
-            <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--violet">{{ ci("sparkle") }}</span><div><span class="cx-stat__label">Est. refund</span><strong class="cx-stat__value">—</strong></div></div>
+            <div class="cx-stat"><span class="cx-stat__icon cx-stat__icon--violet">{{ ci("sparkle") }}</span><div><span class="cx-stat__label">Est. refund</span><strong class="cx-stat__value">{{ tax_summary.total.after | signed_money if tax_summary else '—' }}</strong></div></div>
         </div>
+        {#- Estimated Tax Summary from the tax team, with the fees next to it (client feedback, Nov 2026) -#}
+        {% if tax_summary %}
+        <div class="cx-card">
+            <div class="cx-card__body">
+                <dl class="ts-facts">
+                    <div><dt>Tax year</dt><dd>{{ filing.tax_year }}</dd></div>
+                    <div><dt>Email</dt><dd>{{ filing.email or account_email }}</dd></div>
+                    <div><dt>Phone number</dt><dd>{{ filing.phone or (client.phone if client else '') or '—' }}</dd></div>
+                </dl>
+                <div class="ts-grid">
+                    <div>
+                        <h3 class="ts-title">Estimated <span class="cx-accent">tax summary</span></h3>
+                        <div class="cx-table-wrap">
+                            <table class="cx-table ts-table">
+                                <thead><tr><th scope="col">Refund/(Due)</th><th scope="col">Before planning</th><th scope="col">After planning</th><th scope="col">Benefits</th></tr></thead>
+                                <tbody>
+                                    {% for r in tax_summary.rows %}
+                                    <tr><th scope="row">{{ r.label }}</th><td>{{ r.before | signed_money }}</td><td>{{ r.after | signed_money }}</td><td class="ts-benefit">{{ r.benefit | signed_money }}</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr><th scope="row">Total</th><td>{{ tax_summary.total.before | signed_money }}</td><td>{{ tax_summary.total.after | signed_money }}</td><td class="ts-benefit">{{ tax_summary.total.benefit | signed_money }}</td></tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <p class="cx-hint" style="margin-top:.6rem;">Amounts in brackets are tax due. Updated {{ tax_summary.updated_at.strftime('%b %d, %Y') }}.</p>
+                    </div>
+                    <aside class="ts-fees" aria-labelledby="fee-title">
+                        <h3 class="ts-title" id="fee-title">Fee <span class="cx-accent">details</span></h3>
+                        {% if fee_details.lines %}
+                        <ul class="ts-fee-list">
+                            {% for f in fee_details.lines %}
+                            <li><span>{{ f.name }}{% if f.quantity > 1 %} <small class="cx-muted">× {{ f.quantity }}</small>{% endif %}</span><strong>${{ '{:,.2f}'.format(f.total) }}</strong></li>
+                            {% endfor %}
+                            <li class="ts-fee-total"><span>Total fees</span><strong>${{ '{:,.2f}'.format(fee_details.total) }}</strong></li>
+                        </ul>
+                        <a class="cx-btn cx-btn--soft cx-btn--sm" href="/client/make-payment">{{ ci("card", "ci ci--sm") }} Make payment</a>
+                        {% else %}
+                        <p class="cx-muted" style="margin:0;">Your tax team hasn't added the fees yet.</p>
+                        {% endif %}
+                    </aside>
+                </div>
+            </div>
+        </div>
+        {% else %}
         <div class="cx-card">
             <div class="cx-empty">
                 <span class="cx-empty__icon">{{ ci("calculator") }}</span>
@@ -36,6 +81,7 @@
                 <a class="cx-btn cx-btn--soft" href="/client/tax-notes">{{ ci("notes", "ci ci--sm") }} Complete tax notes</a>
             </div>
         </div>
+        {% endif %}
     </section>
 
     {# ── Additional: hidden for now (client feedback, Oct 2026) ──

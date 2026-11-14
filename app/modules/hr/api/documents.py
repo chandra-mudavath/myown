@@ -1,7 +1,8 @@
 """HR workspace: payslips, offer letters and the other letters, all made from fixed templates.
 
-Flow for every document: fill the form → draft (marked DRAFT) → change and regenerate as often as
-needed → Finalise (locked, numbered) → share (email, or the staff member's own portal).
+Flow for every document: fill the form → either "Generate & download" (finalised at once and downloaded
+as a PDF) or "Save as draft" (marked DRAFT; change and regenerate as often as needed, then Finalise) →
+share (email, or the staff member's own portal). Any document can be downloaded as a PDF.
 """
 from __future__ import annotations
 
@@ -14,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import HrAccount
 from app.core.templates import templates
-from app.modules.hr.api.common import employee_or_404, hr_ctx, redirect
+from app.modules.hr.api.common import employee_or_404, hr_ctx, pdf_download, redirect
 from app.modules.hr.models.records import HrDocument
 from app.modules.hr.services import documents, notify, people, time_off
 
@@ -64,6 +65,16 @@ def hr_finalise_payslips(request: Request, account: HrAccount, db: Session = Dep
                     error=None if done else "No draft payslips to finalise.")
 
 
+@router.get("/payslips/download")
+def hr_download_payslips(account: HrAccount, db: Session = Depends(get_db), month: str = ""):
+    """Every final payslip of the month, one PDF each, in a .zip."""
+    y, m = time_off.parse_month(month)
+    docs = [d for d in documents.payslips(db, documents.period_of(y, m)) if d.status == "final"]
+    if not docs:
+        return redirect(f"/hr/payslips?month={y:04d}-{m:02d}", error="No final payslips to download for this month.")
+    return pdf_download(db, docs, f"/hr/payslips?month={y:04d}-{m:02d}", zip_name=f"Payslips_{y:04d}-{m:02d}.zip")
+
+
 # ── Offers ────────────────────────────────────────────────────────────────
 
 @router.get("/offers", response_class=HTMLResponse, name="hr_offers")
@@ -98,19 +109,24 @@ async def hr_create_document(request: Request, account: HrAccount, db: Session =
         return templates.TemplateResponse(request, "hr/document_form.html", hr_ctx(
             request, db, account, active_nav="offers" if k.for_candidate else "employees", kind=k, staff=staff,
             values=form, people=people, doc=None, error=err), status_code=400)
+    if form.get("action") == "download":  # Generate & download: final straight away, then the PDF
+        _finalise(request, db, account, doc)
+        return redirect(f"/hr/documents/{doc.id}?download=1", saved=_finalised_note(doc))
     return redirect(f"/hr/documents/{doc.id}", saved="Draft ready. Check it, change anything, then finalise.")
 
 
 # ── One document ──────────────────────────────────────────────────────────
 
 @router.get("/documents/{doc_id}", response_class=HTMLResponse, name="hr_document")
-def hr_document(request: Request, doc_id: str, account: HrAccount, db: Session = Depends(get_db), saved: str = "", error: str = ""):
+def hr_document(request: Request, doc_id: str, account: HrAccount, db: Session = Depends(get_db), saved: str = "", error: str = "",
+                download: str = ""):
     doc = _doc_or_404(db, doc_id)
     kind = documents.KINDS.get(doc.kind)
     return templates.TemplateResponse(request, "hr/document.html", hr_ctx(
         request, db, account, active_nav="payslips" if doc.kind == "PAYSLIP" else ("offers" if doc.kind == "OFFER" else "employees"),
         doc=doc, kind=kind, letter=documents.render(db, doc), title=documents.title(doc), values=doc.data,
-        extras=documents.PAYSLIP_EXTRAS, offer_statuses=documents.OFFER_STATUSES, people=people, saved=saved, error=error))
+        extras=documents.PAYSLIP_EXTRAS, offer_statuses=documents.OFFER_STATUSES, people=people, saved=saved, error=error,
+        download=bool(download) and doc.status != "void"))
 
 
 @router.post("/documents/{doc_id}")
@@ -121,9 +137,7 @@ async def hr_update_document(request: Request, doc_id: str, account: HrAccount, 
     return redirect(f"/hr/documents/{doc_id}", error=err, saved=None if err else "Draft updated.")
 
 
-@router.post("/documents/{doc_id}/finalise")
-def hr_finalise_document(request: Request, doc_id: str, account: HrAccount, db: Session = Depends(get_db)):
-    doc = _doc_or_404(db, doc_id)
+def _finalise(request: Request, db: Session, account, doc: HrDocument) -> str | None:
     err = documents.finalise(db, account.id, doc)
     if not err:
         base = notify.base_url(request)
@@ -131,8 +145,18 @@ def hr_finalise_document(request: Request, doc_id: str, account: HrAccount, db: 
             notify.payslip_ready(db, base, doc)
         else:
             notify.letter_finalised(db, base, doc)
-    msg = "Finalised. " + ("Use Send offer to email it to the candidate." if doc.kind == "OFFER" else "The employee can now see it in their portal.")
-    return redirect(f"/hr/documents/{doc_id}", error=err, saved=None if err else msg)
+    return err
+
+
+def _finalised_note(doc: HrDocument) -> str:
+    return "Finalised. " + ("Use Send offer to email it to the candidate." if doc.kind == "OFFER" else "The employee can now see it in their portal.")
+
+
+@router.post("/documents/{doc_id}/finalise")
+def hr_finalise_document(request: Request, doc_id: str, account: HrAccount, db: Session = Depends(get_db)):
+    doc = _doc_or_404(db, doc_id)
+    err = _finalise(request, db, account, doc)
+    return redirect(f"/hr/documents/{doc_id}", error=err, saved=None if err else _finalised_note(doc))
 
 
 @router.post("/documents/{doc_id}/void")
@@ -168,3 +192,11 @@ def hr_print_document(request: Request, doc_id: str, account: HrAccount, db: Ses
     doc = _doc_or_404(db, doc_id)
     return templates.TemplateResponse(request, "hr/letters/print.html", {
         "request": request, "letter": documents.render(db, doc), "title": documents.title(doc), "doc": doc})
+
+
+@router.get("/documents/{doc_id}/pdf", name="hr_document_pdf")
+def hr_document_pdf(doc_id: str, account: HrAccount, db: Session = Depends(get_db)):
+    doc = _doc_or_404(db, doc_id)
+    if doc.status == "void":
+        return redirect(f"/hr/documents/{doc_id}", error="A void document can't be downloaded.")
+    return pdf_download(db, [doc], f"/hr/documents/{doc_id}/print")

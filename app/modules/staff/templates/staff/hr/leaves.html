@@ -4,6 +4,8 @@
 {% block extra_styles %}<link rel="stylesheet" href="{{ asset('hr', 'css/hr.css') }}" />{% endblock %}
 
 {% block main %}
+    {#- Back to Profile, where My HR now lives (client feedback, Nov 2026) -#}
+    <a class="staff-back" href="/staff/profile">{{ ci("chevron-left", "ci ci--sm") }} Back to profile</a>
     <div class="staff-pagehead">
         <div>
             <p class="eyebrow">My HR</p>

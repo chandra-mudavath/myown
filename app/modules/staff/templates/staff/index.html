@@ -82,8 +82,9 @@
                     {% for c in clients %}
                     <tr data-client-row data-search="{{ [c.name, c.customer_no, c.email or '', c.phone or ''] | join(' ') | lower }}">
                         <td class="col-sno">{{ c.sno }}</td>
-                        <td><a class="staff-cell-link" href="/staff/clients/{{ c.id }}">{{ c.name }}</a></td>
-                        <td class="col-mono">{% if c.filing_id %}<a class="staff-cell-link is-mono" href="/staff/cases/{{ c.filing_id }}" title="Open client information">{{ c.customer_no }}</a>{% else %}{{ c.customer_no }}{% endif %}</td>
+                        {#- Client name opens the same page as Customer no: the client's information with the client sidebar (client feedback, Nov 2026) -#}
+                        <td><a class="staff-cell-link" href="{{ '/staff/cases/' ~ c.filing_ref if c.filing_id else '/staff/clients/' ~ c.id }}" title="Open client information">{{ c.name }}</a></td>
+                        <td class="col-mono">{{ c.customer_no }}</td>{# was a link to the case; the client name opens it (client feedback, Nov 2026) #}
                         <td class="col-email">{{ c.email or '—' }}</td>
                         <td>{{ c.phone or '—' }}</td>
                         <td>{{ c.tax_year or '—' }}</td>
@@ -104,6 +105,7 @@
                 </tbody>
             </table>
         </div>
+        <div class="staff-cases-foot" data-pager="client" hidden></div>
     </section>
 
     {# All cases table under Clients: hidden for now (client feedback, Oct 2026). The stage links in the sidebar still open each list.

@@ -8,7 +8,6 @@ from urllib.parse import quote
 
 from fastapi.responses import Response
 
-from app.core.crypto import decrypt_bytes
 from app.core.errors import AppError
 
 log = logging.getLogger(__name__)
@@ -42,19 +41,25 @@ def mime_for(filename: str | None) -> str:
 
 def send_file(path: str | None, filename: str | None = None, media_type: str | None = None,
               inline: bool = False) -> Response:
-    """The file as a download (or inline preview). A record whose file is gone from disk shows the
+    """The file as a download (or inline preview). A record whose file is gone from storage shows the
     "This file isn't available" screen instead of crashing, and is logged so an admin can follow up.
 
     media_type is ignored: the type always comes from the stored file's extension (see FILE_TYPES)."""
-    if not path or not Path(path).is_file():
-        log.warning("Stored file missing on disk: %s (%s)", path, filename)
+    from app.platform.services.storage_provider import storage_provider  # local disk or R2 (STORAGE_BACKEND)
+
+    try:
+        if not path:
+            raise FileNotFoundError(path)
+        # Stored files are encrypted at rest (app/core/crypto.py): the provider returns the original bytes
+        data = storage_provider.open(path).read()
+    except FileNotFoundError:
+        log.warning("Stored file missing: %s (%s)", path, filename)
         raise AppError("DOC-009", "File not found.", name=filename or "This file")
     ext = _ext(path)
     disposition = "inline" if inline and ext in INLINE_TYPES else "attachment"
     name = filename or Path(path).name
     quoted = quote(name)
     disposition += f"; filename*=utf-8''{quoted}" if quoted != name else f'; filename="{name}"'
-    # Stored files are encrypted at rest (app/core/crypto.py): decrypt, then send the original bytes
-    return Response(decrypt_bytes(Path(path).read_bytes()), media_type=mime_for(path),
+    return Response(data, media_type=mime_for(path),
                     headers={"Content-Disposition": disposition, "X-Content-Type-Options": "nosniff",
                              "Cache-Control": "private, no-store"})

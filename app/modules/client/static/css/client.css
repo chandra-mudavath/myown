@@ -981,7 +981,7 @@ body.cx-body::before { display: none; } /* legacy dotted overlay from profile.cs
 .cx-qnote .cx-textarea { min-height: 3.2rem; }
 @media (max-width: 640px) { .cx-qdetail { padding-left: 0; } }
 
-.cx-q--lead { margin-bottom: 0.25rem; padding: 0.9rem 1rem; border: 1px solid var(--cx-border); border-radius: 12px; background: var(--cx-card-2); }
+.cx-q--lead { margin-bottom: 0.25rem; padding: 0.9rem 1rem; border: 1px solid var(--cx-border); border-radius: var(--cx-radius-sm); background: var(--cx-card-2); }
 .cx-q--lead::before { content: "★"; }
 
 /* ── Misc checklist (Tax notes misc) ──── */
@@ -1231,7 +1231,7 @@ body.cx-body::before { display: none; } /* legacy dotted overlay from profile.cs
 .cx-refer .cx-btn { border-color: transparent; background: #fff; color: #0f766e; }
 
 .cx-howto { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
-.cx-howto li { padding: 1.1rem; border: 1px solid var(--cx-border); border-radius: 12px; background: var(--cx-card-2); }
+.cx-howto li { padding: 1.1rem; border: 1px solid var(--cx-border); border-radius: var(--cx-radius-sm); background: var(--cx-card-2); }
 .cx-howto .cx-stat__icon { margin-bottom: 0.7rem; }
 .cx-howto strong { display: block; font-size: 0.92rem; }
 .cx-howto span { color: var(--cx-muted); font-size: 0.84rem; }
@@ -1535,7 +1535,7 @@ html[data-theme="dark"] .cx-body .cx-helpcard strong { color: #ffffff; }
 
 /* ── Review Documents: documents sent by the tax team for approval (client feedback, Oct 2026) ── */
 .cx-reviewlist { display: grid; gap: 0.9rem; margin: 0; padding: 1rem 1.35rem 1.35rem; list-style: none; }
-.cx-reviewdoc { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--cx-border); border-radius: 12px; background: var(--cx-card-2); }
+.cx-reviewdoc { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--cx-border); border-radius: var(--cx-radius-sm); background: var(--cx-card-2); }
 .cx-reviewdoc__head { display: flex; align-items: center; gap: 0.75rem; }
 .cx-reviewdoc__head > div { display: grid; flex: 1; }
 .cx-reviewdoc__head strong { color: var(--cx-ink); }
@@ -1619,7 +1619,7 @@ html[data-theme="dark"] .cx-body .cx-helpcard strong { color: #ffffff; }
 .cx-pay__now:hover { background: #1d4ed8; }
 .cx-pay__brands { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; color: var(--cx-muted); font-size: .78rem; font-weight: 600; }
 /* Pay in INR (Nov 2026): rupee amount, and bank transfer to the client's own account (Razorpay Smart Collect) */
-.cx-pay__inr { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem; margin: 0; padding: .85rem 1rem; border-radius: 12px; background: var(--cx-card-2); color: var(--cx-muted); }
+.cx-pay__inr { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem; margin: 0; padding: .85rem 1rem; border-radius: var(--cx-radius-sm); background: var(--cx-card-2); color: var(--cx-muted); }
 .cx-pay__inr strong { color: var(--cx-ink); font-size: 1.35rem; }
 .cx-pay__inr small { font-size: .8rem; }
 .cx-inr-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .6rem; }
@@ -1668,3 +1668,72 @@ html[data-theme="dark"] .cx-paydlg, html[data-theme="dark"] .cx-paydlg__main { b
 /* Personal Info (client feedback, Nov 2026): earlier visa rows and the married section get room to breathe */
 .cx-visa-row { margin-top: 1.4rem; }
 #marital .cx-q--lead + [data-cx-show-when] { margin-top: 1.4rem; }
+
+/* Tax Summary: the tax team's estimate with Fee details beside it (client feedback, Nov 2026) */
+.ts-facts { display: flex; flex-wrap: wrap; gap: .5rem 2rem; margin: 0 0 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--cx-border); }
+.ts-facts div { min-width: 0; }
+.ts-facts dt { color: var(--cx-muted); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.ts-facts dd { margin: .2rem 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.ts-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(220px, 1fr); gap: 1.5rem; align-items: start; }
+.ts-title { margin: 0 0 .75rem; font-size: 1rem; }
+.ts-table th, .ts-table td { white-space: nowrap; }
+.ts-table td { text-align: right; font-variant-numeric: tabular-nums; }
+.ts-table thead th:not(:first-child) { text-align: right; }
+.ts-table tbody th, .ts-table tfoot th { text-align: left; font-weight: 600; font-size: .9rem; color: var(--cx-ink); background: transparent; text-transform: none; letter-spacing: normal; }
+.ts-table tfoot th, .ts-table tfoot td { font-weight: 700; border-top: 2px solid var(--cx-border); }
+.ts-table .ts-benefit { color: var(--cx-green); }
+.ts-fees { padding: 1rem 1.1rem; border: 1px solid var(--cx-border); border-radius: var(--cx-radius-sm); background: var(--cx-card-2); }
+.ts-fee-list { margin: 0 0 1rem; padding: 0; list-style: none; }
+.ts-fee-list li { display: flex; justify-content: space-between; gap: 1rem; padding: .45rem 0; border-bottom: 1px dashed var(--cx-border); font-size: .9rem; }
+.ts-fee-list strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ts-fee-list .ts-fee-total { border-bottom: 0; font-weight: 700; }
+@media (max-width: 900px) { .ts-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Make Payment → Pay in INR: currency converter (client feedback, Nov 2026) */
+.cx-fx { margin-bottom: 1.25rem; padding: 1rem 1.1rem; border: 1px solid var(--cx-border); border-radius: var(--cx-radius-sm); background: var(--cx-card-2); }
+.cx-fx__title { display: flex; align-items: center; gap: .4rem; margin: 0 0 .75rem; font-size: .95rem; }
+.cx-fx__row { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(0, 1.4fr) auto minmax(0, 1.4fr); gap: .75rem; align-items: end; }
+.cx-fx__row .cx-field { min-width: 0; }
+.cx-fx__row .cx-select { width: 100%; }
+.cx-fx__swap { height: 42px; padding: 0 .8rem; font-size: 1.1rem; }
+.cx-fx__result { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .75rem; margin: .9rem 0 .35rem; min-height: 1.6em; color: var(--cx-muted); }
+.cx-fx__result strong { color: var(--cx-ink); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.cx-fx__result small { color: var(--cx-muted); }
+@media (max-width: 640px) {
+    .cx-fx__row { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+    .cx-fx__amount { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+    .cx-fx__row { grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+    .cx-fx__swap { justify-self: center; height: 36px; transform: rotate(90deg); }
+}
+
+/* Sidebar "Need help?" card: a link to Messages; its text wraps instead of being cut off (Nov 2026) */
+.cx-helpcard { color: inherit; text-decoration: none; transition: background .15s, box-shadow .15s; }
+.cx-body .cx-helpcard span { display: block; white-space: normal; }
+.cx-body .cx-helpcard:hover { background: #dbeafe; }
+.cx-body .cx-helpcard:hover strong { color: #1d4ed8; }
+.cx-helpcard:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+
+/* (i) tooltip: shows its data-tip on hover, keyboard focus or tap (Bank Details, Nov 2026) */
+.cx-tip { position: relative; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: var(--cx-brand); background: none; cursor: help; vertical-align: -4px; }
+.cx-card__title .cx-tip .ci { margin-right: 0; vertical-align: 0; }
+.cx-tip:focus-visible { outline: 2px solid var(--cx-brand); outline-offset: 2px; }
+.cx-tip::after {
+    content: attr(data-tip); position: absolute; top: calc(100% + 8px); left: -6px; z-index: 30;
+    width: max-content; max-width: min(270px, 78vw); padding: .6rem .75rem; border-radius: 8px;
+    color: #fff; background: #0f172a; box-shadow: var(--cx-shadow); font-family: inherit; font-size: .78rem; font-weight: 500; line-height: 1.45; letter-spacing: normal; text-align: left; white-space: normal;
+    opacity: 0; visibility: hidden; transform: translateY(-3px); transition: opacity .15s, transform .15s, visibility .15s; pointer-events: none;
+}
+.cx-tip:hover::after, .cx-tip:focus::after { opacity: 1; visibility: visible; transform: none; }
+
+/* Bank Details cheque: labelled parts instead of sample numbers (Nov 2026) */
+.cx-cheque__top { display: flex; justify-content: space-between; gap: .75rem; font-weight: 600; letter-spacing: .02em; }
+.cx-cheque__field { display: flex; align-items: center; gap: .5rem; margin: .45rem 0; }
+.cx-cheque__field small { flex: none; width: 4.2rem; color: var(--cx-muted); font-size: .68rem; }
+.cx-cheque__field .cx-cheque__line { flex: 1; margin: 0; }
+.cx-cheque__micr { flex-wrap: wrap; font-family: inherit; font-size: .72rem; font-weight: 600; }
+.cx-cheque__micr .n { background: var(--cx-card-2); color: var(--cx-muted); border: 1px dashed var(--cx-border); }
+.cx-legendkeys { line-height: 1.45; }
+.cx-cheque__top span:last-child, .cx-cheque__micr span { white-space: nowrap; }
+.cx-cheque__micr { gap: .35rem; }

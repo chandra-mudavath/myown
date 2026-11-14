@@ -430,9 +430,12 @@
     transform: translateY(-1.25rem);
 }
 
-.landing-page .scroll-reveal-child.is-scroll-visible {
+/* As specific as the left/right/top start positions above, so a revealed child really moves back into place.
+   Was ".landing-page .scroll-reveal-child.is-scroll-visible", which lost to them: FAQ on Home and Refer & Earn
+   stayed 20px off the left edge on phones (client feedback, Nov 2026). */
+.landing-page .section[data-scroll-reveal] .scroll-reveal-child.is-scroll-visible {
     opacity: 1;
-    transform: translate(0);
+    transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -679,7 +682,7 @@
 }
 
 .landing-page .workflow-preview {
-    animation: preview-rise 0.7s ease both;
+    /* was: animation: preview-rise 0.7s ease both; no slide-in animations (client feedback, Nov 2026) */
 }
 
 .landing-page .preview-bar {
@@ -2980,3 +2983,20 @@ html[data-theme=dark] .terms-page .terms-content .solution-card p strong { color
 .contact-branch__soon .contact-branch__dir { align-self: center; }
 html[data-theme=dark] .contact-branch__soon { background: rgba(37, 99, 235, 0.08); border-color: rgba(148, 163, 184, 0.25); color: #cbd5e1; }
 html[data-theme=dark] .contact-branch__soon strong { color: var(--ink); }
+
+/* Mobile menu: a solid panel, so the hero behind it doesn't show through (client feedback, Nov 2026).
+   Was var(--landing-panel-bg), 65% see-through, forced by the .bg-white !important rule above. */
+@media (max-width: 1023.98px) {
+    .landing-page .navbar.mobile-open,
+    .landing-page .main-nav:has(.navbar.mobile-open) {
+        background: #ffffff !important;
+        backdrop-filter: none;
+    }
+    html[data-theme=dark] .landing-page .navbar.mobile-open,
+    html[data-theme=dark] .landing-page .main-nav:has(.navbar.mobile-open) {
+        background: #0f172a !important;
+    }
+    html[data-theme=dark] .landing-page .navbar.mobile-open .mobile-actions {
+        border-color: rgba(148, 163, 184, 0.25);
+    }
+}

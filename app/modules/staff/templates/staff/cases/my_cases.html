@@ -9,9 +9,10 @@
             <p class="eyebrow">Case management</p>
             <h1>{{ table.stage_label or page_title or 'Cases' }}</h1>
         </div>
+        {#- "Clear stage" removed (client feedback, Nov 2026): it opened the case list with no stage, which isn't in the menu.
         {% if table.stage_label %}
         <a class="staff-btn staff-btn--ghost" href="{{ request.url.path }}">{{ ci("x", "ci ci--sm") }} Clear stage</a>
-        {% endif %}
+        {% endif %} -#}
     </div>
 
     {% set table_title = page_title %}

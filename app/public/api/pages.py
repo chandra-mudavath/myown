@@ -32,6 +32,11 @@ def terms_and_conditions(request: Request):
     return templates.TemplateResponse(request, "terms.html", {"request": request, "app_name": settings.APP_NAME})
 
 
+@router.get("/disclaimer", response_class=HTMLResponse)
+def disclaimer(request: Request):
+    return templates.TemplateResponse(request, "disclaimer.html", {"request": request, "app_name": settings.APP_NAME})
+
+
 # Branches on Contact Us. A blank field isn't shown; a branch with no address shows "address coming soon" and no map.
 # US details are the ones in the footer (partials/landing_footer.html); keep the two in step.
 BRANCHES = [

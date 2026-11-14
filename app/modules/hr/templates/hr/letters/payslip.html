@@ -7,7 +7,7 @@
 {%- set label = cell ~ "color:#6b7280;width:22%;" -%}
 {%- set th = "border:1px solid #e5e7eb;padding:6px 8px;background:#eff6ff;text-align:left;font-weight:bold;" -%}
 {%- set band = "border:1px solid #e5e7eb;padding:5px 8px;background:#f8fafc;font-size:11px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#1e2a4a;" -%}
-{%- set grid = "border-collapse:collapse;width:100%;" ~ H ~ "font-size:12.5px;margin:0 0 14px;" -%}
+{%- set grid = "border-collapse:collapse;width:100%;" ~ H ~ "font-size:12.5px;line-height:1.4;margin:0 0 14px;" -%}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="{{ H }}margin:0 0 14px;">
     <tr>
         <td style="vertical-align:bottom;"><div style="font-size:18px;font-weight:bold;color:#1e2a4a;">Payslip for {{ d.month_label }}</div>
@@ -47,7 +47,7 @@
     {% if d.not_employed_days %}<tr><td style="{{ label }}">Before joining / after leaving</td><td colspan="5" style="{{ cell }}">{{ d.not_employed_days }} day{{ 's' if d.not_employed_days != 1 }} not paid</td></tr>{% endif %}
 </table>
 
-<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;{{ H }}font-size:12.5px;margin:0 0 14px;"><tr>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;{{ H }}font-size:12.5px;line-height:1.4;margin:0 0 14px;"><tr>
     <td style="width:55%;vertical-align:top;padding-right:8px;">
         <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;">
             <tr><th style="{{ th }}">Earnings</th><th style="{{ th }}text-align:right;">Monthly rate</th><th style="{{ th }}text-align:right;">Earned</th></tr>

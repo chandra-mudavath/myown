@@ -214,9 +214,55 @@ def _paid_map(db: Session, invoice_ids: list[str]) -> dict[str, Decimal]:
     return {i: _money(a) for i, a in rows}
 
 
-def list_invoices(db: Session, status: str = "", q: str = "", case_id: str = "") -> list[dict]:
+def period_range(period: str) -> tuple[date, date] | None:
+    """Invoice-date window [start, end) for a period value: "2026-11" (month), "2026-Q4" (quarter), "2026" (year).
+    Anything else means no period filter."""
+    try:
+        if len(period) == 7 and period[4] == "-" and period[5] == "Q":
+            year, quarter = int(period[:4]), int(period[6])
+            if not 1 <= quarter <= 4:
+                return None
+            start = date(year, 3 * quarter - 2, 1)
+            return start, (date(year + 1, 1, 1) if quarter == 4 else date(year, 3 * quarter + 1, 1))
+        if len(period) == 7 and period[4] == "-":
+            start = date(int(period[:4]), int(period[5:]), 1)
+            return start, (date(start.year + 1, 1, 1) if start.month == 12 else date(start.year, start.month + 1, 1))
+        if len(period) == 4:
+            year = int(period)
+            return date(year, 1, 1), date(year + 1, 1, 1)
+    except ValueError:
+        return None
+    return None
+
+
+def period_options() -> list[tuple[str, list[tuple[str, str]]]]:
+    """Choices for the Payments period filter, for the current year only (client feedback, Nov 2026):
+    its months and quarters so far, and the year itself. The year comes from today's date, so on
+    1 January the list moves to the new year by itself."""
+    today = datetime.now(timezone.utc).date()
+    year, this_quarter = today.year, (today.month - 1) // 3 + 1
+    months = [(f"{year}-{m:02d}", date(year, m, 1).strftime("%B %Y")) for m in range(1, today.month + 1)]
+    quarters = [(f"{year}-Q{q}", f"Q{q} {year} ({date(year, 3 * q - 2, 1):%b}–{date(year, 3 * q, 1):%b})")
+                for q in range(1, this_quarter + 1)]
+    return [("Monthly", months), ("Quarterly", quarters), ("Yearly", [(str(year), str(year))])]
+
+
+def period_label(period: str) -> str:
+    """Readable name of a period value, e.g. "November 2026", "Q4 2026", "2026"; "" if it isn't valid."""
+    span = period_range(period)
+    if not span:
+        return ""
+    if "Q" in period:
+        return f"{period[5:]} {period[:4]}"
+    return span[0].strftime("%B %Y") if len(period) == 7 else period
+
+
+def list_invoices(db: Session, status: str = "", q: str = "", case_id: str = "", period: str = "") -> list[dict]:
     today = datetime.now(timezone.utc).date()
     query = db.query(Invoice, TaxFiling).join(TaxFiling, TaxFiling.id == Invoice.case_id)
+    span = period_range(period)
+    if span:
+        query = query.filter(Invoice.invoice_date >= span[0], Invoice.invoice_date < span[1])
     if status == "overdue":
         query = query.filter(Invoice.status.in_(OPEN), Invoice.due_date < today)
     elif status == "awaiting":  # a client has submitted a payment that needs checking

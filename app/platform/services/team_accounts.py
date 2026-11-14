@@ -22,6 +22,8 @@ from app.platform.models.auth import AccountType, AuthAccount, AuthRefreshToken
 from app.platform.models.case_workflow import CaseAssignment
 from app.platform.models.referral import ReferralLead
 from app.platform.models.system import AuditLog
+from app.platform.schemas.auth import clean_name
+from app.platform.services import email_check
 from app.platform.services.catalog import staff_roles
 
 HR_ROLE = "HR"
@@ -43,11 +45,18 @@ def _clean(value: str | None) -> str:
 def create(db: Session, actor_id: str, first_name: str, last_name: str, email: str, phone: str | None,
            role_code: str, *, allow_hr: bool = True) -> tuple[AuthAccount, Staff | HR, str]:
     """Make a staff account (case role) or an HR account. Returns (account, staff or HR row, temporary password)."""
-    email = _clean(email).lower()
-    first, last = _clean(first_name), _clean(last_name) or None
     role_code = _clean(role_code).upper()
-    if not first or not email:
+    if not _clean(first_name) or not _clean(email):
         raise AccountError("Enter a first name and an email address.")
+    # Same rules as sign-up (Nov 2026): names letters, numbers and spaces; email checked for typos
+    try:
+        first = clean_name(first_name, "First name", required=True)
+        last = clean_name(last_name, "Last name", required=False)
+    except ValueError as e:
+        raise AccountError(str(e)) from None
+    email, err = email_check.clean(email)
+    if err:
+        raise AccountError(err)
     if len(first) > 15 or (last and len(last) > 15):
         raise AccountError("Names can be at most 15 characters.")
     case_roles = {r.code for r in staff_roles(db)}

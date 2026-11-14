@@ -30,36 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 115);
     });
 
-    const revealTargets = [...document.querySelectorAll(".landing-page .section")];
-    if (revealTargets.length && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        const revealDirections = ["top", "right", "bottom", "left"];
-        revealTargets.forEach((section, index) => {
-            if (section.id === "hero") return;
-            section.dataset.scrollReveal = revealDirections[(index - 1) % revealDirections.length];
-            [...section.children].forEach((child, childIndex) => {
-                child.classList.add("scroll-reveal-child");
-                child.style.setProperty("--reveal-delay", `${childIndex * 90}ms`);
-            });
-        });
-
-        const revealObserver = new IntersectionObserver(
-            (entries, observer) => {
-                entries.forEach((entry) => {
-                    if (!entry.isIntersecting) return;
-                    entry.target.classList.add("is-scroll-visible");
-                    entry.target.querySelectorAll(".scroll-reveal-child").forEach((child) => {
-                        child.classList.add("is-scroll-visible");
-                    });
-                    observer.unobserve(entry.target);
-                });
-            },
-            { threshold: 0.14, rootMargin: "0px 0px -8%" }
-        );
-
-        revealTargets.forEach((section) => {
-            if (section.id !== "hero") revealObserver.observe(section);
-        });
-    }
+    // No slide-in on scroll: every section shows in place, fitted to the screen (client feedback, Nov 2026).
+    // The scroll-reveal (sections sliding in from top / right / bottom / left) was removed.
 
     const menuButton = document.querySelector(".menu-mobile");
     const menu = document.getElementById("landing-menu");

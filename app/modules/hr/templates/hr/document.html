@@ -19,13 +19,17 @@
                 {% if doc.kind == 'PAYSLIP' %}<a class="admin-mini-btn" href="/hr/payslips?month={{ doc.period }}">All payslips</a>
                 {% elif doc.kind == 'OFFER' %}<a class="admin-mini-btn" href="/hr/offers">All offers</a>
                 {% elif doc.staff_id %}<a class="admin-mini-btn" href="/hr/employees/{{ doc.staff_id }}?tab=letters">Employee's letters</a>{% endif %}
-                {% if doc.status != 'void' %}<a class="admin-mini-btn" href="/hr/documents/{{ doc.id }}/print" target="_blank" rel="noopener">Print / Save as PDF</a>{% endif %}
+                {% if doc.status != 'void' %}
+                <a class="admin-mini-btn admin-mini-btn--ok" href="/hr/documents/{{ doc.id }}/pdf">Download PDF</a>
+                <a class="admin-mini-btn" href="/hr/documents/{{ doc.id }}/print" target="_blank" rel="noopener">Print</a>
+                {% endif %}
             </div>
         </div>
     </section>
 
     {% if error %}<div class="alert alert--error admin-alert" role="alert">{{ error }}</div>{% endif %}
-    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}</div>{% endif %}
+    {% if saved %}<div class="alert alert--success admin-alert" role="status">{{ saved }}{% if download %} Your PDF is downloading; if it didn't start, <a class="link-primary" href="/hr/documents/{{ doc.id }}/pdf">download it here</a>.{% endif %}</div>{% endif %}
+    {% if download %}<meta http-equiv="refresh" content="0;url=/hr/documents/{{ doc.id }}/pdf">{% endif %}
 
     <div class="hr-doc-layout">
         <section class="hr-doc-paper" aria-label="Document">{{ letter | safe }}</section>

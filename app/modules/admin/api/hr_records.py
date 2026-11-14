@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.core.deps import AdminAccount
 from app.core.templates import templates
 from app.modules.admin.models.admin import Admin
+from app.modules.hr.api.common import pdf_download
 from app.modules.hr.models.records import HrDocument
 from app.modules.hr.services import documents, employee_view, hr_settings, people, staff_files, time_off
 from app.modules.staff.models.staff_records import StaffDocument
@@ -63,6 +64,12 @@ def hr_record_document_print(request: Request, doc_id: str, account: AdminAccoun
     doc = _doc_or_404(db, doc_id)
     return templates.TemplateResponse(request, "hr/letters/print.html", {
         "request": request, "letter": documents.render(db, doc), "title": documents.title(doc), "doc": doc})
+
+
+@router.get("/documents/{doc_id}/pdf")
+def hr_record_document_pdf(doc_id: str, account: AdminAccount, db: Session = Depends(get_db)):
+    doc = _doc_or_404(db, doc_id)
+    return pdf_download(db, [doc], f"/admin/hr-records/documents/{doc_id}/print")
 
 
 @router.get("/files/{file_id}")

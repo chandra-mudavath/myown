@@ -1,0 +1,32 @@
+{% extends "_site_layout.html" %}
+{% block title %}Disclaimer | {{ app_name }}{% endblock %}
+{% block meta_desc %}Disclaimer and IRS Circular 230 disclosure for the information on the {{ app_name }} website.{% endblock %}
+{#- Same look as Terms & Conditions (terms-page styles); linked from the footer (client feedback, Nov 2026) -#}
+{% block body_class %}landing-page terms-page disclaimer-page{% endblock %}
+
+{% block page %}
+<main id="content" class="pt-24">
+    <section class="section py-16 md:py-20 bg-white">
+        <div class="container xl:max-w-6xl mx-auto px-4">
+            <header class="section-header about-intro">
+                <p class="eyebrow">Legal information</p>
+                <h1><span>Disclaimer</span></h1>
+                <p>Please read this before relying on any information on this site.</p>
+            </header>
+            <div class="terms-content grid lg:grid-cols-2 gap-8">
+                <article class="solution-card" id="disclaimer">
+                    <b>01</b>
+                    <h3><span>Disclaimer</span></h3>
+                    <p>The materials and answers included on this website are provided as informative summaries of current business, financial, and tax planning news and opportunities. The materials are intended for informational and educational purposes only. While we make reasonable efforts to update information on a timely basis, current developments or the current state of the law may not be reflected in the content.</p>
+                    <p>We try to provide quality information, but make no claims, promises or guarantees about the accuracy, completeness, or adequacy of the information contained in or linked to this website and its associated sites. As professional advice must be tailored to the specific circumstances of each individual, and applicable laws are constantly changing, nothing provided herein should be used as a substitute for the advice of competent qualified advisors.</p>
+                </article>
+                <article class="solution-card" id="irs-circular-230-disclosure">
+                    <b>02</b>
+                    <h3>IRS Circular 230 <span>Disclosure</span></h3>
+                    <p>To ensure compliance with requirements imposed by the IRS and applicable state and local tax provisions, we inform you that any federal, state and local tax advice contained in this website is not intended or written to be used, and cannot be used, for the purpose of avoiding penalties under the Internal Revenue Code or applicable state or local tax provisions, or promoting, marketing, or recommending to another party any transaction or matter addressed herein.</p>
+                </article>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}
